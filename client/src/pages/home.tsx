@@ -71,7 +71,6 @@ import { useTheme } from "@/components/theme-provider";
 
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
-import { useAngelOneAutoconnect } from "@/hooks/useAngelOneAutoconnect";
 
 import { cognitoSignOut, getCognitoToken, sendEmailVerificationCode, confirmEmailVerification, checkEmailVerified } from "@/cognito";
 
@@ -1917,7 +1916,18 @@ export default function Home() {
     }
   }, []);
   // AUTO-CONNECT: Angel One API - Automatically connect when app loads
-  const { isConnected: angelOneServerConnected, status: angelOneServerStatus } = useAngelOneAutoconnect();
+  // Read-only status query — auto-connect is handled exclusively by the global
+  // AngelOneGlobalAutoConnect in App.tsx. Using it here too would fire two
+  // simultaneous connect-env mutations and cause TOTP race conditions.
+  const { data: angelOneServerStatus } = useQuery<{
+    success: boolean; connected: boolean; authenticated: boolean;
+    clientCode?: string; tokenExpired?: boolean;
+  }>({
+    queryKey: ["/api/angelone/status"],
+    refetchInterval: 5000,
+    staleTime: 4000,
+  });
+  const angelOneServerConnected = !!(angelOneServerStatus?.connected && angelOneServerStatus?.authenticated && !angelOneServerStatus?.tokenExpired);
 
   // Sync server-side Angel One connection status into local state so chart data
   // (journal tab, etc.) works even without visiting the trading dashboard tab first.

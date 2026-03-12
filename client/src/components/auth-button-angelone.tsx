@@ -740,30 +740,6 @@ export function AngelOneLiveMarketPrices() {
   );
 }
 
-// Global Auto-Connect Component - Now functional with environment credentials
-export function AngelOneGlobalAutoConnect() {
-  const { data: angelStatus, isLoading } = useQuery<AngelOneStatusData>({
-    queryKey: ["/api/angelone/status"],
-    refetchInterval: 5000,
-  });
-
-  const connectMutation = useMutation({
-    mutationFn: async () => {
-      return await apiRequest("POST", "/api/angelone/connect-env");
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/angelone/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/angelone/profile"] });
-    },
-  });
-
-  // Auto-connect on app load if not connected
-  useEffect(() => {
-    if (!isLoading && angelStatus && !angelStatus.connected && !connectMutation.isPending) {
-      console.log('🔶 [Angel One] Global auto-connect with environment credentials...');
-      connectMutation.mutate();
-    }
-  }, [isLoading, angelStatus?.connected]);
-
-  return null;
-}
+// Note: Global auto-connect is handled by AngelOneGlobalAutoConnect in
+// client/src/hooks/useAngelOneAutoconnect.ts, mounted in App.tsx.
+// Do not add a second auto-connect here — it causes TOTP race conditions.

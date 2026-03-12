@@ -1917,7 +1917,19 @@ export default function Home() {
     }
   }, []);
   // AUTO-CONNECT: Angel One API - Automatically connect when app loads
-  useAngelOneAutoconnect();
+  const { isConnected: angelOneServerConnected, status: angelOneServerStatus } = useAngelOneAutoconnect();
+
+  // Sync server-side Angel One connection status into local state so chart data
+  // (journal tab, etc.) works even without visiting the trading dashboard tab first.
+  useEffect(() => {
+    if (angelOneServerConnected && angelOneServerStatus?.clientCode) {
+      const clientCode = angelOneServerStatus.clientCode;
+      localStorage.setItem('angel_one_token', clientCode);
+      setAngelOneAccessToken(clientCode);
+      setAngelOneIsConnected(true);
+      console.log('✅ [AUTO-CONNECT] Synced Angel One server connection to local state');
+    }
+  }, [angelOneServerConnected, angelOneServerStatus?.clientCode]);
   const { theme, toggleTheme } = useTheme();
   const [isNavVisible, setIsNavVisible] = useState(true);
   const lastScrollY = useRef(0);

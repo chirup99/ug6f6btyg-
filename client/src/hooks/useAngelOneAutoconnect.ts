@@ -17,13 +17,19 @@ export function AngelOneGlobalAutoConnect() {
 }
 
 export function useAngelOneAutoconnect() {
-  const hasAttemptedRef = useRef(false);
   const isConnectingRef = useRef(false);
+  const wasConnectedRef = useRef(false);
 
   const { data: angelStatus, isLoading } = useQuery<AngelOneStatusData>({
     queryKey: ["/api/angelone/status"],
-    refetchInterval: 30000,
-    staleTime: 10000,
+    // Poll faster (5s) when disconnected so charts recover quickly after token expiry;
+    // slower (30s) when already connected to reduce unnecessary requests.
+    refetchInterval: (query) => {
+      const data = query.state.data as AngelOneStatusData | undefined;
+      const ok = data?.connected && data?.authenticated && !data?.tokenExpired;
+      return ok ? 30000 : 5000;
+    },
+    staleTime: 4000,
   });
 
   const connectMutation = useMutation({
@@ -45,63 +51,35 @@ export function useAngelOneAutoconnect() {
   });
 
   useEffect(() => {
-    if (isLoading || hasAttemptedRef.current || isConnectingRef.current) {
-      return;
-    }
+    if (isLoading || isConnectingRef.current) return;
+    if (!angelStatus) return;
 
-    if (!angelStatus) {
-      return;
-    }
+    const isOk = angelStatus.connected && angelStatus.authenticated && !angelStatus.tokenExpired;
 
-    const needsConnect = !angelStatus.connected || !angelStatus.authenticated || angelStatus.tokenExpired;
-
-    if (needsConnect) {
-      console.log("🔶 [AUTO-CONNECT] Angel One status check:", {
-        connected: angelStatus.connected,
-        authenticated: angelStatus.authenticated,
-        tokenExpired: angelStatus.tokenExpired,
-      });
-      
-      // Removed: hasAttemptedRef.current = true;
-      // We want it to retry on page reload if it's still not connected
-      isConnectingRef.current = true;
-      
-      const timer = setTimeout(() => {
-        console.log("🔶 [AUTO-CONNECT] Triggering Angel One auto-connect...");
-        connectMutation.mutate();
-      }, 500);
-
-      return () => clearTimeout(timer);
-    } else {
+    if (isOk) {
+      wasConnectedRef.current = true;
       console.log("✅ [AUTO-CONNECT] Angel One already connected");
-      hasAttemptedRef.current = true;
+      return;
     }
-  }, [isLoading, angelStatus, connectMutation]);
 
-  // Periodic check to ensure connection stays alive
-  useEffect(() => {
-    const interval = setInterval(() => {
-      if (angelStatus && (!angelStatus.connected || !angelStatus.authenticated || angelStatus.tokenExpired)) {
-        if (!isConnectingRef.current) {
-          console.log("🔄 [AUTO-CONNECT] Periodic health check: Reconnecting...");
-          isConnectingRef.current = true;
-          connectMutation.mutate();
-        }
-      }
-    }, 60000); // Check every minute
+    // Disconnected — attempt reconnect. Reset wasConnected so we re-trigger
+    // even if we were previously connected (covers mid-session token expiry).
+    wasConnectedRef.current = false;
+    isConnectingRef.current = true;
 
-    return () => clearInterval(interval);
-  }, [angelStatus, connectMutation]);
+    console.log("🔶 [AUTO-CONNECT] Angel One status check:", {
+      connected: angelStatus.connected,
+      authenticated: angelStatus.authenticated,
+      tokenExpired: angelStatus.tokenExpired,
+    });
 
-  useEffect(() => {
-    if (!angelStatus?.connected || !angelStatus?.authenticated) return;
-    
-    if (angelStatus.tokenExpired && !isConnectingRef.current) {
-      console.log("⏰ [AUTO-CONNECT] Token expired, triggering reconnection...");
-      isConnectingRef.current = true;
+    const timer = setTimeout(() => {
+      console.log("🔶 [AUTO-CONNECT] Triggering Angel One auto-connect...");
       connectMutation.mutate();
-    }
-  }, [angelStatus?.tokenExpired, angelStatus?.connected, angelStatus?.authenticated, connectMutation]);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [isLoading, angelStatus, connectMutation]);
 
   return {
     isConnected: angelStatus?.connected && angelStatus?.authenticated && !angelStatus?.tokenExpired,

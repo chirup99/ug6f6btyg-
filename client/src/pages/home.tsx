@@ -1921,13 +1921,13 @@ export default function Home() {
 
   // Sync server-side Angel One connection status into local state so chart data
   // (journal tab, etc.) works even without visiting the trading dashboard tab first.
+  // NOTE: Only sets angelOneAccessToken (for charts/data), NOT angelOneIsConnected
+  // (broker UI) — the company auto-connect is separate from the user's broker selection.
   useEffect(() => {
     if (angelOneServerConnected && angelOneServerStatus?.clientCode) {
       const clientCode = angelOneServerStatus.clientCode;
-      localStorage.setItem('angel_one_token', clientCode);
       setAngelOneAccessToken(clientCode);
-      setAngelOneIsConnected(true);
-      console.log('✅ [AUTO-CONNECT] Synced Angel One server connection to local state');
+      console.log('✅ [AUTO-CONNECT] Synced Angel One chart token to local state (broker UI unchanged)');
     }
   }, [angelOneServerConnected, angelOneServerStatus?.clientCode]);
   const { theme, toggleTheme } = useTheme();

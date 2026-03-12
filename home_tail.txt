@@ -1,0 +1,1000 @@
+                                  <SelectItem value="percent">% SL</SelectItem>
+                                  <SelectItem value="duration">Duration</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+
+                            {(paperTradeSLType === 'high' || paperTradeSLType === 'low') && (
+                              <div>
+                                <label className="text-[10px] text-gray-500 uppercase">Timeframe</label>
+                                <Select value={paperTradeSLTimeframe} onValueChange={(v) => setPaperTradeSLTimeframe(v)}>
+                                  <SelectTrigger className="h-9 text-sm mt-1">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="1m">1 Minute</SelectItem>
+                                    <SelectItem value="5m">5 Minutes</SelectItem>
+                                    <SelectItem value="15m">15 Minutes</SelectItem>
+                                    <SelectItem value="30m">30 Minutes</SelectItem>
+                                    <SelectItem value="1h">1 Hour</SelectItem>
+                                    <SelectItem value="4h">4 Hours</SelectItem>
+                                    <SelectItem value="1d">1 Day</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            {paperTradeSLType === 'duration' && (
+                              <div>
+                                <label className="text-[10px] text-gray-500 uppercase">Duration Unit</label>
+                                <Select value={paperTradeSLDurationUnit} onValueChange={(v) => setPaperTradeSLDurationUnit(v)}>
+                                  <SelectTrigger className="h-9 text-sm mt-1">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="min">Minutes</SelectItem>
+                                    <SelectItem value="hr">Hours</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            )}
+
+                            {paperTradeSLType !== 'high' && paperTradeSLType !== 'low' && (
+                              <div>
+                                <label className="text-[10px] text-gray-500 uppercase">{paperTradeSLType === 'duration' ? 'Duration' : 'Value'}</label>
+                                <Input
+                                  type="number"
+                                  placeholder={paperTradeSLType === 'price' ? 'Price' : paperTradeSLType === 'duration' ? (paperTradeSLDurationUnit === 'min' ? 'Minutes' : 'Hours') : '%'}
+                                  value={paperTradeSLValue}
+                                  onChange={(e) => setPaperTradeSLValue(e.target.value)}
+                                  className="h-9 text-sm mt-1"
+                                  data-testid="input-paper-sl-value-mobile-tab"
+                                />
+                              </div>
+                            )}
+
+                            <div className="flex gap-2 pt-1">
+                              <Button
+                                onClick={() => {
+                                  setPaperTradeSLEnabled(false);
+                                  setPaperTradeSLValue("");
+                                  setPaperTradeSLPrice("");
+                                  setShowMobilePaperTradeSLDropdown(false);
+                                }}
+                                size="sm"
+                                variant="outline"
+                                className="flex-1 h-9"
+                                data-testid="button-clear-sl-mobile-tab"
+                              >
+                                Clear
+                              </Button>
+                              <Button
+                                onClick={() => {
+                                  if (paperTradeSLValue || paperTradeSLType === 'high' || paperTradeSLType === 'low') {
+                                    setPaperTradeSLEnabled(true);
+                                    setPaperTradeSLPrice(paperTradeSLValue);
+                                    toast({
+                                      title: "Stop Loss Set",
+                                      description: paperTradeSLType === 'price' 
+                                        ? `SL at ₹${paperTradeSLValue}` 
+                                        : paperTradeSLType === 'percent'
+                                        ? `SL at ${paperTradeSLValue}% loss`
+                                        : paperTradeSLType === 'duration'
+                                        ? `SL after ${paperTradeSLValue} ${paperTradeSLDurationUnit}`
+                                        : `SL at ${paperTradeSLTimeframe} candle ${paperTradeSLType}`
+                                    });
+                                  }
+                                  setShowMobilePaperTradeSLDropdown(false);
+                                }}
+                                size="sm"
+                                className="flex-1 h-9 bg-orange-500 hover:bg-orange-600 text-white"
+                                data-testid="button-set-sl-mobile-tab"
+                              >
+                                Set SL
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+
+                  {/* Action Buttons */}
+                  <div className="flex gap-3">
+                    {(() => {
+                      const inputValue = paperTradeType === 'STOCK' ? paperTradeQuantity : paperTradeLotInput;
+                      return (
+                        <>
+                          <Button
+                            onClick={() => { setPaperTradeAction('BUY'); executePaperTrade(); }}
+                            disabled={!paperTradeSymbol || !inputValue || !paperTradeCurrentPrice}
+                            className="flex-1 h-12 rounded-xl bg-green-600 hover:bg-green-700 text-white font-semibold text-base"
+                            data-testid="button-paper-buy-mobile-tab"
+                          >
+                            BUY
+                          </Button>
+                          <Button
+                            onClick={() => { setPaperTradeAction('SELL'); executePaperTrade(); }}
+                            disabled={!paperTradeSymbol || !inputValue || !paperTradeCurrentPrice}
+                            className="flex-1 h-12 rounded-xl bg-red-600 hover:bg-red-700 text-white font-semibold text-base"
+                            data-testid="button-paper-sell-mobile-tab"
+                          >
+                            SELL
+                          </Button>
+                        </>
+                      );
+                    })()}
+                  </div>
+                </div>
+              </div>
+
+              {/* Positions & Trade History Toggle Section */}
+              {(paperPositions.filter(p => p.isOpen).length > 0 || paperTradeHistory.length > 0) && (
+                <div className="">
+                  <div className="flex items-center justify-start mb-3">
+                    <Button
+                      onClick={() => setShowMobileTradeHistory(!showMobileTradeHistory)}
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 text-gray-400 hover:text-slate-900 dark:hover:text-white"
+                      data-testid="button-toggle-mobile-position-history"
+                    >
+                      <ChevronLeft className="h-4 w-4" />
+                    </Button>
+                    <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                      {showMobileTradeHistory ? 'Trade History' : 'Open Positions'}
+                      {!showMobileTradeHistory && paperTradingWsStatus === 'connected' && <span className="w-1.5 h-1.5 bg-green-500 rounded-full" />}
+                    </div>
+                    <Button
+                      onClick={showMobileTradeHistory ? recordAllPaperTrades : exitAllPaperPositions}
+                      size="sm"
+                      variant="ghost"
+                      className={`h-7 px-2 text-xs ${
+                        showMobileTradeHistory 
+                          ? 'text-blue-400 hover:text-blue-500' 
+                          : 'text-red-500 hover:text-red-600'
+                      }`}
+                      data-testid={showMobileTradeHistory ? "button-record-all-mobile-tab" : "button-exit-all-mobile-tab"}
+                    >
+                      {showMobileTradeHistory ? 'Record' : 'Exit All'}
+                    </Button>
+                  </div>
+
+
+
+
+                  {/* Open Positions View */}
+                  {!showMobileTradeHistory && paperPositions.filter(p => p.isOpen).length > 0 && (
+                    <div className="space-y-2 px-4 divide-gray-200 dark:divide-gray-800">
+                      {paperPositions.filter(p => p.isOpen).map(position => (
+                        <div 
+                          key={position.id}
+                          className="relative bg-red-500 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden select-none cursor-grab active:cursor-grabbing h-auto"
+                          data-testid={`position-card-tab-${position.symbol}`}
+                          onMouseDown={(e) => {
+                            swipeStartXRef.current = e.clientX;
+                            swipeStartYRef.current = e.clientY;
+                            console.log('🔴 MOUSE DOWN on', position.symbol, ':', swipeStartXRef.current);
+                          }}
+                          onMouseUp={(e) => {
+                            const endX = e.clientX;
+                            const endY = e.clientY;
+                            const diffX = swipeStartXRef.current - endX;
+                            const diffY = Math.abs(swipeStartYRef.current - endY);
+
+                            console.log('🟢 MOUSE UP on', position.symbol, '- diffX:', diffX, 'diffY:', diffY);
+
+                            // Swipe left (diffX > 0) with minimal vertical movement - REVEAL EXIT
+                            if (diffX > 25 && diffY < 50) {
+                              console.log('✅ LEFT SWIPE DETECTED - SHOW EXIT BUTTON');
+                              setSwipedPositionId(position.id);
+                            }
+                            // Swipe right to close (diffX < 0) - HIDE EXIT
+                            else if (diffX < -25 && diffY < 50) {
+                              console.log('✅ RIGHT SWIPE DETECTED - HIDE EXIT BUTTON');
+                              setSwipedPositionId(null);
+                            }
+                          }}
+                          onTouchStart={(e) => {
+                            if (e.touches && e.touches[0]) {
+                              swipeStartXRef.current = e.touches[0].clientX;
+                              swipeStartYRef.current = e.touches[0].clientY;
+                              console.log('🔴 TOUCH START on', position.symbol, ':', swipeStartXRef.current);
+                            }
+                          }}
+                          onTouchMove={(e) => {
+                            if (Math.abs(swipeStartXRef.current - (e.touches[0]?.clientX || 0)) > 10) {
+                              e.preventDefault();
+                            }
+                          }}
+                          onTouchEnd={(e) => {
+                            if (e.changedTouches && e.changedTouches[0]) {
+                              const endX = e.changedTouches[0].clientX;
+                              const endY = e.changedTouches[0].clientY;
+                              const diffX = swipeStartXRef.current - endX;
+                              const diffY = Math.abs(swipeStartYRef.current - endY);
+
+                              console.log('🟢 TOUCH END on', position.symbol, '- diffX:', diffX, 'diffY:', diffY);
+
+                              if (diffX > 25 && diffY < 50) {
+                                console.log('✅ LEFT SWIPE DETECTED - SHOW EXIT BUTTON');
+                                setSwipedPositionId(position.id);
+                              }
+                              else if (diffX < -25 && diffY < 50) {
+                                console.log('✅ RIGHT SWIPE DETECTED - HIDE EXIT BUTTON');
+                                setSwipedPositionId(null);
+                              }
+                            }
+                          }}
+                        >
+                          {/* Exit button - always rendered, visible when card slides */}
+                          <div className="absolute right-0 top-0 bottom-0 w-1/5 bg-red-500 flex items-center justify-center">
+                            <button
+                              onClick={() => exitPosition(position.id)}
+                              className="flex flex-col items-center justify-center w-full h-full hover:bg-red-600 transition-colors active:bg-red-700"
+                              data-testid={`button-exit-position-${position.symbol}`}
+                              title="Exit position"
+                            >
+                              <div className="text-white text-sm font-bold">×</div>
+                              <div className="text-[7px] text-white dark:text-white font-bold whitespace-nowrap">EXIT</div>
+                            </button>
+                          </div>
+
+                          {/* Main position card content - slides left on swipe */}
+                          <div 
+                            className="w-full p-3 bg-white dark:bg-gray-900 cursor-pointer"
+                            style={{
+                              transform: swipedPositionId === position.id ? 'translateX(-20%)' : 'translateX(0)',
+                              transition: 'transform 300ms ease-in-out'
+                            }}
+                            onClick={() => {
+                              // Clicking on main content (80% area) resets the swipe
+                              if (swipedPositionId === position.id) {
+                                console.log('🔄 Tapped on content - resetting swipe');
+                                setSwipedPositionId(null);
+                              }
+                            }}
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <span className="font-medium text-sm">{position.symbol}</span>
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded ${
+                                  position.action === 'BUY' 
+                                    ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400' 
+                                    : 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400'
+                                }`}>
+                                  {position.action}
+                                </span>
+                              </div>
+                              {swipedPositionId !== position.id && (
+                                <ChevronLeft className="w-4 h-4 text-gray-400 opacity-50" />
+                              )}
+                            </div>
+                            <div className="flex items-center justify-start text-xs">
+                              <div className="text-gray-600 dark:text-gray-400">
+                                Qty: {position.quantity} | Avg: {hidePositionDetails ? '***' : `₹${position.entryPrice.toFixed(2)}`}
+                              </div>
+                              <div className={`font-semibold ${position.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {hidePositionDetails ? '***' : `₹${position.pnl.toFixed(0)}`}
+                              </div>
+                            </div>
+                            <div className="text-[10px] text-gray-400 mt-1 flex items-center justify-start">
+                              <div>
+                                LTP: ₹{position.currentPrice.toFixed(2)}
+                                {(position as any).slType === "duration" ? ((position as any).slExpiryTime ? <span className="text-orange-500 ml-2">Time: <Countdown expiryTime={(position as any).slExpiryTime} onExpiry={() => exitPosition(position.id)} /></span> : null) : (position as any).slTriggerPrice && (
+                                  <span className="text-orange-500 ml-2">SL: ₹{(position as any).slTriggerPrice.toFixed(2)}</span>
+                                )}
+                              </div>
+                              <div className={`text-[10px] font-semibold ${position.pnlPercent >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {position.pnlPercent >= 0 ? '+' : ''}{position.pnlPercent.toFixed(2)}%
+                              </div>
+                            </div>
+                          </div>
+
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+
+
+
+
+                  {/* Trade History View */}
+                  {showMobileTradeHistory && paperTradeHistory.length > 0 && (
+                    <div className="space-y-1 bg-white dark:bg-gray-900/50 rounded-lg p-3">
+                      {[...paperTradeHistory].reverse().slice(0, 10).map(trade => (
+                        <div 
+                          key={trade.id}
+                          className="flex items-center justify-start py-2.5 border-b border-gray-200 dark:border-gray-800 last:border-0"
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-medium ${
+                              trade.action === 'BUY' 
+                                ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                                : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                            }`}>
+                              {trade.action === 'BUY' ? 'B' : 'S'}
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-900 dark:text-white">{trade.symbol}</div>
+                              <div className="text-[10px] text-gray-400">{trade.time} | Qty: {trade.quantity}</div>
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm font-medium text-gray-900 dark:text-white">₹{trade.price.toFixed(2)}</div>
+                            <div className={`text-xs ${
+                              !trade.pnl ? 'text-gray-600 dark:text-gray-400' : trade.pnl.includes('+') ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'
+                            }`}>
+                              {trade.pnl || '-'}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Footer */}
+              <div className="px-4 pb-6">
+                <div className="flex items-center justify-start pt-3 border-t border-gray-800">
+                  <button
+                    onClick={resetPaperTradingAccount}
+                    className="text-xs text-gray-400 hover:text-red-500 transition-colors"
+                    data-testid="button-reset-mobile-tab"
+                  >
+                    Reset Account
+                  </button>
+                  <span className="text-xs text-gray-400">Demo mode</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Share Tradebook Dialog */}
+        <Dialog 
+          open={showShareDialog} 
+          onOpenChange={(open) => {
+            if (!open) {
+              // Use the centralized close handler
+              handleShareDialogClose();
+              // Reset BOTH share dialog tag highlight AND report dialog tag highlight
+              setShareDialogTagHighlight(null);
+              setReportDialogTagHighlight(null);
+              console.log('🔄 Share Dialog closed - reset tag highlighting and shareable URL');
+            } else {
+              setShowShareDialog(open);
+            }
+          }}
+        >
+          <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" data-testid="dialog-share-tradebook">
+            <DialogHeader className="flex-shrink-0">
+              <div className="flex items-start justify-between w-full gap-4">
+                {/* Left side: PERALA and tagline */}
+                <div className="flex flex-col gap-1">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg bg-white dark:bg-slate-800">
+                      <img 
+                        src="/logo.png" 
+                        alt="PERALA Logo" 
+                        className="w-full h-full object-contain" 
+                      />
+                    </div>
+                    <h1 className="text-2xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">PERALA</h1>
+                  </div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Break the Loop, Find Your Edge</p>
+                    <svg 
+                      width="24" 
+                      height="12" 
+                      viewBox="0 0 24 12" 
+                      fill="none" 
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="text-purple-600 dark:text-purple-400 opacity-80"
+                    >
+                      <path 
+                        d="M11 5.2C10.2 4 9 3 7.5 3C4.5 3 3 4.5 3 6C3 7.5 4.5 9 7.5 9C10.5 9 12 6 12 6" 
+                        stroke="currentColor" 
+                        strokeWidth="1.5" 
+                        strokeLinecap="round" 
+                      />
+                      <path 
+                        d="M12 6C12 6 13.5 9 16.5 9C19.5 9 21 7.5 21 6C21 5.6 20.9 5.2 20.7 4.8" 
+                        stroke="currentColor" 
+                        strokeWidth="1.5" 
+                        strokeLinecap="round" 
+                      />
+                      <path 
+                        d="M17.8 3.3C17.4 3.1 16.9 3 16.5 3C13.5 3 12 6 12 6" 
+                        stroke="currentColor" 
+                        strokeWidth="1.5" 
+                        strokeLinecap="round" 
+                      />
+                      <path 
+                        d="M21 2L23 1" 
+                        stroke="currentColor" 
+                        strokeWidth="1.5" 
+                        strokeLinecap="round" 
+                        className="animate-pulse"
+                      />
+                    </svg>
+                  </div>
+                </div>
+                <div className="flex flex-col items-end text-right gap-2">
+                  <DialogTitle className="text-lg font-semibold">MY trading report</DialogTitle>
+
+                  {/* UserID */}
+                  <p className="text-xs text-muted-foreground text-right">
+                    userID: {isSharedReportMode && sharedReportData?.reportData?.username 
+                      ? sharedReportData.reportData.username 
+                      : (currentUser?.displayName || currentUser?.email || currentUser?.userId || 'Guest')}
+                  </p>
+
+                  {/* Link icon button - Only show for owners (not in shared report mode) */}
+                  {!isSharedReportMode && (
+                    <div className="flex flex-col items-end gap-1">
+                      {!shareableUrl ? (
+                        <Button
+                          size="icon"
+                          onClick={handleCreateShareableLink}
+                          disabled={isCreatingShareableLink}
+                          className="bg-green-600 hover:bg-green-700 h-8 w-8"
+                          data-testid="button-create-shareable-link"
+                        >
+                          {isCreatingShareableLink ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Link2 className="w-4 h-4" />
+                          )}
+                        </Button>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="bg-green-600 hover:bg-green-700 text-white h-8 w-8"
+                            onClick={() => {
+                              navigator.clipboard.writeText(shareableUrl);
+                              toast({
+                                title: "Link copied!",
+                                description: "Shareable URL copied to clipboard",
+                              });
+                            }}
+                            data-testid="button-copy-shareable-url"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-8 w-8"
+                            onClick={() => window.open(shareableUrl, '_blank')}
+                            data-testid="button-open-shareable-url"
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-auto space-y-4 scrollbar-hide">
+              {/* Heatmap Container with ref for curved lines */}
+              <div className="relative">
+                <div 
+                  ref={reportDialogHeatmapContainerRef}
+                  className="max-h-96 overflow-auto border border-gray-200 scrollbar-hide dark:border-gray-700 rounded-lg"
+                >
+                  <DemoHeatmap
+                    tradingDataByDate={isSharedReportMode && sharedReportData?.reportData?.tradingDataByDate 
+                      ? sharedReportData.reportData.tradingDataByDate 
+                      : getFilteredHeatmapData()}
+                    onDateSelect={() => {}}
+                    selectedDate={null}
+                    onDataUpdate={() => {}}
+                    isPublicView={true}
+                    onSelectDateForHeatmap={(symbol, date) => {
+                      console.log(`📊 [REPORT] Switching to heatmap mode - Symbol: ${symbol}, Date: ${date}`);
+                      setJournalChartMode('heatmap');
+                      fetchHeatmapChartData(symbol, date);
+                    }}
+                  />
+                </div>
+
+                {/* Curved Lines Overlay for FOMO button */}
+                {reportDialogTagHighlight?.tag === 'fomo' && reportDialogTagHighlight.dates.length > 0 && (() => {
+                  // Force recalculation on scroll
+                  void reportDialogScrollTrigger;
+
+                  const paths: JSX.Element[] = [];
+
+                  if (!reportDialogFomoButtonRef.current || !reportDialogHeatmapContainerRef.current) {
+                    return null;
+                  }
+
+                  // Get scrollable dimensions
+                  const scrollWidth = reportDialogHeatmapContainerRef.current.scrollWidth || 0;
+                  const scrollHeight = reportDialogHeatmapContainerRef.current.scrollHeight || 0;
+                  const scrollLeft = reportDialogHeatmapContainerRef.current.scrollLeft || 0;
+                  const scrollTop = reportDialogHeatmapContainerRef.current.scrollTop || 0;
+
+                  // Get positions relative to the heatmap's scrollable content
+                  const containerRect = reportDialogHeatmapContainerRef.current.getBoundingClientRect();
+                  const buttonRect = reportDialogFomoButtonRef.current.getBoundingClientRect();
+
+                  // Calculate button position relative to scrollable content
+                  const buttonCenterX = buttonRect.left - containerRect.left + scrollLeft + buttonRect.width / 2;
+                  const buttonCenterY = buttonRect.top - containerRect.top + scrollTop + buttonRect.height / 2;
+
+                  // Find all highlighted date cells and draw curved lines to them
+                  reportDialogTagHighlight.dates.forEach((date, index) => {
+                    // Find the heatmap cell for this date
+                    const cellElement = reportDialogHeatmapContainerRef.current?.querySelector(
+                      `[data-date="${date}"]`
+                    );
+
+                    if (cellElement) {
+                      const cellRect = cellElement.getBoundingClientRect();
+
+                      // Calculate cell position relative to scrollable content
+                      const cellCenterX = cellRect.left - containerRect.left + scrollLeft + cellRect.width / 2;
+                      const cellCenterY = cellRect.top - containerRect.top + scrollTop + cellRect.height / 2;
+
+                      // Create quadratic Bezier curve (Q command)
+                      // Control point is positioned to create a nice arc
+                      const controlX = (buttonCenterX + cellCenterX) / 2;
+                      const controlY = Math.min(buttonCenterY, cellCenterY) - 50; // Arc upward
+
+                      const pathD = `M ${buttonCenterX} ${buttonCenterY} Q ${controlX} ${controlY}, ${cellCenterX} ${cellCenterY}`;
+
+                      paths.push(
+                        <g key={`connection-${date}-${index}`}>
+                          {/* Bright colored line with dashed pattern */}
+                          <path
+                            d={pathD}
+                            fill="none"
+                            stroke="url(#reportDialogCurvedLineGradient)"
+                            strokeWidth="2.5"
+                            strokeDasharray="6,4"
+                            opacity="0.95"
+                          />
+                          {/* Glowing dot at the end of each line */}
+                          <circle
+                            cx={cellCenterX}
+                            cy={cellCenterY}
+                            r="4"
+                            fill="#fcd34d"
+                            opacity="0.9"
+                          />
+                          <circle
+                            cx={cellCenterX}
+                            cy={cellCenterY}
+                            r="3"
+                            fill="#fbbf24"
+                            className="animate-pulse"
+                          />
+                        </g>
+                      );
+                    }
+                  });
+
+                  return (
+                    <svg
+                      style={{
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                        width: `${scrollWidth}px`,
+                        height: `${scrollHeight}px`,
+                        pointerEvents: 'none',
+                        zIndex: 10,
+                      }}
+                    >
+                      {/* Define bright gradient for the curved lines */}
+                      <defs>
+                        <linearGradient id="reportDialogCurvedLineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                          <stop offset="0%" stopColor="#c084fc" stopOpacity="1" />
+                          <stop offset="50%" stopColor="#f472b6" stopOpacity="1" />
+                          <stop offset="100%" stopColor="#fbbf24" stopOpacity="1" />
+                        </linearGradient>
+                      </defs>
+                      {paths}
+                    </svg>
+                  );
+                })()}
+              </div>
+
+              {/* Stats Bar - Purple metrics from journal tab */}
+              {(() => {
+                const filteredData = isSharedReportMode && sharedReportData?.reportData?.tradingDataByDate 
+                  ? sharedReportData.reportData.tradingDataByDate 
+                  : getFilteredHeatmapData();
+                const dates = Object.keys(filteredData).sort();
+
+                let totalPnL = 0;
+                let totalTrades = 0;
+                let winningTrades = 0;
+                let currentStreak = 0;
+                let maxWinStreak = 0;
+                let fomoTrades = 0;
+                const trendData: number[] = [];
+
+                dates.forEach(dateKey => {
+                  const dayData = filteredData[dateKey];
+                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                  const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+
+                  if (metrics) {
+                    const netPnL = metrics.netPnL || 0;
+                    totalPnL += netPnL;
+                    totalTrades += metrics.totalTrades || 0;
+                    winningTrades += metrics.winningTrades || 0;
+                    trendData.push(netPnL);
+
+                    // Calculate streak
+                    if (netPnL > 0) {
+                      currentStreak++;
+                      maxWinStreak = Math.max(maxWinStreak, currentStreak);
+                    } else {
+                      currentStreak = 0;
+                    }
+
+                    // Count FOMO tags
+                    if (Array.isArray(tags)) {
+                      tags.forEach((tag: string) => {
+                        if (tag.toLowerCase().includes('fomo')) {
+                          fomoTrades++;
+                        }
+                      });
+                    }
+                  }
+                });
+
+                const isProfitable = totalPnL >= 0;
+                const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+
+                // Create trend path function (from public-heatmap.tsx)
+                const createTrendPath = (data: number[]) => {
+                  if (data.length === 0) return '';
+                  const max = Math.max(...data, 0);
+                  const min = Math.min(...data, 0);
+                  const range = max - min || 1;
+                  const width = 40;
+                  const height = 20;
+
+                  const points = data.map((val, i) => {
+                    const x = (i / (data.length - 1 || 1)) * width;
+                    const y = height - ((val - min) / range) * height;
+                    return `${x},${y}`;
+                  }).join(' L ');
+
+                  return `M ${points}`;
+                };
+
+                return (
+                  <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-md px-2 py-1.5">
+                    <div className="flex items-center justify-around text-white gap-1">
+                      {/* P&L */}
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-[10px] opacity-80">P&L</div>
+                        <div className="text-xs font-bold">
+                          {isProfitable ? '+' : ''}₹{(totalPnL / 1000).toFixed(1)}K
+                        </div>
+                      </div>
+
+                      {/* Trend */}
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-[10px] opacity-80">Trend</div>
+                        <div className="w-8 h-4">
+                          <svg viewBox="0 0 40 20" className="w-full h-full">
+                            <path
+                              d={createTrendPath(trendData)}
+                              fill="none"
+                              stroke="white"
+                              strokeWidth="1.5"
+                              opacity="0.9"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            />
+                          </svg>
+                        </div>
+                      </div>
+
+                      {/* FOMO - Clickable button with curved lines */}
+                      <button
+                        ref={reportDialogFomoButtonRef}
+                        className={`flex flex-col items-center justify-center hover-elevate active-elevate-2 rounded px-1 transition-all ${
+                          reportDialogTagHighlight?.tag === 'fomo' ? 'bg-white/30 ring-2 ring-white/50' : ''
+                        }`}
+                        onClick={() => {
+                          if (reportDialogTagHighlight?.tag === 'fomo') {
+                            // Toggle off if already active
+                            setReportDialogTagHighlight(null);
+                            console.log('📍 Deactivated FOMO tag highlighting in report dialog');
+                          } else {
+                            // Get FOMO dates from filtered data
+                            const filteredData = isSharedReportMode && sharedReportData?.reportData?.tradingDataByDate 
+                              ? sharedReportData.reportData.tradingDataByDate 
+                              : getFilteredHeatmapData();
+                            const dates = Object.keys(filteredData).sort();
+
+                            const fomoDates: string[] = [];
+                            dates.forEach(dateKey => {
+                              const dayData = filteredData[dateKey];
+                              const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+
+                              if (Array.isArray(tags)) {
+                                tags.forEach((tag: string) => {
+                                  if (tag.toLowerCase().includes('fomo') && !fomoDates.includes(dateKey)) {
+                                    fomoDates.push(dateKey);
+                                  }
+                                });
+                              }
+                            });
+
+                            // Activate FOMO highlighting
+                            setReportDialogTagHighlight({ tag: 'fomo', dates: fomoDates });
+                            console.log(`📍 Activated FOMO tag highlighting in report dialog for ${fomoDates.length} dates:`, fomoDates);
+                          }
+                        }}
+                        title={`Click to ${reportDialogTagHighlight?.tag === 'fomo' ? 'hide' : 'show'} FOMO dates on heatmap`}
+                      >
+                        <div className="text-[10px] opacity-80">FOMO</div>
+                        <div className="text-xs font-bold">{fomoTrades}</div>
+                      </button>
+
+                      {/* Win% */}
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-[10px] opacity-80">Win%</div>
+                        <div className="text-xs font-bold">{winRate.toFixed(0)}%</div>
+                      </div>
+
+                      {/* Streak */}
+                      <div className="flex flex-col items-center justify-center">
+                        <div className="text-[10px] opacity-80">Streak</div>
+                        <div className="text-xs font-bold">{maxWinStreak}</div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Analytics Row: Total P&L, Performance Trend, Top Tags */}
+              <div className="grid grid-cols-3 gap-3">
+                {(() => {
+                  const filteredData = isSharedReportMode && sharedReportData?.reportData?.tradingDataByDate 
+                    ? sharedReportData.reportData.tradingDataByDate 
+                    : getFilteredHeatmapData();
+                  const dates = Object.keys(filteredData).sort();
+
+                  let totalPnL = 0;
+                  let totalTrades = 0;
+                  let winningTrades = 0;
+                  const trendData: number[] = [];
+                  const lossTagsMap = new Map<string, number>();
+
+                  dates.forEach(dateKey => {
+                    const dayData = filteredData[dateKey];
+                    const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                    const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+
+                    if (metrics) {
+                      const netPnL = metrics.netPnL || 0;
+                      totalPnL += netPnL;
+                      totalTrades += metrics.totalTrades || 0;
+                      winningTrades += metrics.winningTrades || 0;
+                      trendData.push(netPnL);
+
+                      // Only track tags from losing trades - accumulate actual loss amounts
+                      if (netPnL < 0 && Array.isArray(tags) && tags.length > 0) {
+                        tags.forEach((tag: string) => {
+                          const normalizedTag = tag.trim().toLowerCase();
+                          lossTagsMap.set(normalizedTag, (lossTagsMap.get(normalizedTag) || 0) + Math.abs(netPnL));
+                        });
+                      }
+                    }
+                  });
+
+                  const isProfitable = totalPnL >= 0;
+                  const successRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+
+                  const lossTags = Array.from(lossTagsMap.entries())
+                    .sort((a, b) => b[1] - a[1])
+                    .map(([tag, lossAmount]) => ({ tag, lossAmount }));
+
+                  const createTrendPath = (data: number[]) => {
+                    if (data.length === 0) return '';
+                    const max = Math.max(...data, 0);
+                    const min = Math.min(...data, 0);
+                    const range = max - min || 1;
+                    const width = 100;
+                    const height = 45;
+
+                    if (data.length === 1) {
+                      const x = width / 2;
+                      const y = height - ((data[0] - min) / range) * height;
+                      return `M ${x} ${y}`;
+                    }
+
+                    // Create smooth bezier curve
+                    let path = '';
+                    const points = data.map((val, i) => {
+                      const x = (i / (data.length - 1)) * width;
+                      const y = height - ((val - min) / range) * height;
+                      return { x, y };
+                    });
+
+                    // Start path
+                    path += `M ${points[0].x} ${points[0].y}`;
+
+                    // Use quadratic bezier curves for smoothness
+                    for (let i = 1; i < points.length; i++) {
+                      const current = points[i];
+                      const prev = points[i - 1];
+                      const cpX = (prev.x + current.x) / 2;
+                      const cpY = (prev.y + current.y) / 2;
+                      path += ` Q ${cpX} ${cpY}, ${current.x} ${current.y}`;
+                    }
+
+                    return path;
+                  };
+
+                  return (
+                    <>
+                      {/* Column 1: Total P&L - Minimalistic Card */}
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800 shadow-lg">
+                        <div className="mb-4">
+                          <div className="text-[11px] text-slate-600 dark:text-slate-400 uppercase font-semibold mb-2">Total P&L</div>
+                          <div className={`text-2xl font-bold ${isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {isProfitable ? '+' : ''}₹{(Math.abs(totalPnL) / 1000).toFixed(1)}K
+                          </div>
+                        </div>
+                        <div className="space-y-2.5">
+                          <div className="flex justify-start text-[12px]">
+                            <span className="text-slate-600 dark:text-slate-400">Total Trades</span>
+                            <span className="font-medium text-slate-900 dark:text-slate-100">{totalTrades}</span>
+                          </div>
+                          <div className="flex justify-start text-[12px]">
+                            <span className="text-slate-600 dark:text-slate-400">Success Rate</span>
+                            <span className="font-medium text-slate-900 dark:text-slate-100">{successRate.toFixed(1)}%</span>
+                          </div>
+                          <div className="mt-3">
+                            <div className="h-1.5 bg-slate-200 dark:bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                              <div 
+                                className={`h-full rounded-full transition-all ${isProfitable ? 'bg-emerald-500' : 'bg-red-500'}`}
+                                style={{ width: `${successRate}%` }}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Column 2: Performance Trend */}
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800 shadow-lg">
+                        <div className="flex items-start justify-start mb-3">
+                          <div className="text-[11px] text-gray-600 dark:text-gray-400 uppercase font-semibold">Performance Trend</div>
+                          <div className={`text-[10px] px-2 py-1 rounded ${isProfitable ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
+                            {isProfitable ? 'Profitable' : 'Not Profitable'}
+                          </div>
+                        </div>
+                        {trendData.length > 0 ? (
+                          <div className="h-28 w-full">
+                            {(() => {
+                              // Convert trend data to chart format
+                              const chartData = trendData.map((pnl, idx) => ({
+                                day: `${idx + 1}`,
+                                value: pnl,
+                                pnl: pnl,
+                              }));
+
+                              
+  return (
+                                <ResponsiveContainer width="100%" height="100%">
+                                  <AreaChart
+                                    data={chartData}
+                                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                                  >
+                                    <defs>
+                                      <linearGradient id="reportTrendGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="0%" stopColor="rgb(107, 114, 128)" stopOpacity={0.4} />
+                                        <stop offset="100%" stopColor="rgb(107, 114, 128)" stopOpacity={0.05} />
+                                      </linearGradient>
+                                    </defs>
+                                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={false} />
+                                    <YAxis orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 7, fill: "#64748b" }} tickFormatter={(value) => `₹${(value/1000).toFixed(1)}k`} domain={['auto', 'auto']} />
+                                    <Tooltip
+                                      contentStyle={{
+                                        background: 'var(--background)',
+                                        border: '1px solid var(--border)',
+                                        borderRadius: '8px',
+                                        fontSize: '11px',
+                                        padding: '6px 10px',
+                                      }}
+                                      formatter={(value: any) => [
+                                        `${value >= 0 ? '₹' : '-₹'}${Math.abs(value).toLocaleString()}`,
+                                        'P&L',
+                                      ]}
+                                    />
+                                    <Area
+                                      type="natural"
+                                      dataKey="value"
+                                      stroke={isProfitable ? '#16a34a' : '#dc2626'}
+                                      strokeWidth={2}
+                                      fill="url(#reportTrendGradient)"
+                                      dot={false}
+                                      activeDot={{
+                                        r: 4,
+                                        fill: isProfitable ? '#16a34a' : '#dc2626',
+                                        stroke: 'white',
+                                        strokeWidth: 2,
+                                      }}
+                                      isAnimationActive={true}
+                                      animationDuration={600}
+                                      animationEasing="ease-in-out"
+                                    />
+                                  </AreaChart>
+                                </ResponsiveContainer>
+                              );
+                            })()}
+                          </div>
+                        ) : (
+                          <div className="h-28 flex items-center justify-center text-gray-400 text-xs">
+                            No data
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Column 3: Loss Tags */}
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800 shadow-lg">
+                        <div className="text-[11px] text-gray-600 dark:text-gray-400 uppercase font-semibold mb-3">Loss Tags</div>
+                        {lossTags.length > 0 ? (
+                          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md p-3 space-y-2 max-h-32 overflow-y-auto">
+                            {lossTags.map(({ tag, lossAmount }) => (
+                              <div
+                                key={tag}
+                                className="flex items-center justify-start px-2.5 py-1.5 bg-red-100 dark:bg-red-900/50 border border-red-300 dark:border-red-700 rounded-md"
+                                data-testid={`tag-loss-${tag}`}
+                              >
+                                <span className="text-[12px] font-medium text-red-800 dark:text-red-300 capitalize truncate">{tag}</span>
+                                <span className="text-[11px] font-bold text-red-600 dark:text-red-400 ml-2 flex-shrink-0">-₹{lossAmount.toLocaleString('en-IN')}</span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-[12px] text-gray-500 dark:text-gray-400 italic py-3">No loss tags</div>
+                        )}
+                      </div>
+                    </>
+                  );
+                })()}
+              </div>
+
+              {/* Promotional Section */}
+              <div className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-950/30 dark:to-pink-950/30 rounded-lg p-4 border border-purple-200 dark:border-purple-800 mt-4">
+                <div className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <div className="w-5 h-5 rounded-full bg-gradient-to-br from-purple-600 to-pink-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                      <span className="text-white text-xs font-bold">★</span>
+                    </div>
+                    <div>
+                      <p className="text-sm font-semibold text-gray-800 dark:text-gray-100">Advanced Trading Journal</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">Tracks emotional decisions • Works on all brokers • NSE, Crypto, Commodity, Forex</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+          </DialogContent>
+        </Dialog>
+
+      </div>
+    </div>
+  );
+}

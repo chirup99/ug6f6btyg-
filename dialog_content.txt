@@ -1,0 +1,621 @@
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Dialog open={isUpstoxDialogOpen} onOpenChange={setIsUpstoxDialogOpen}>
+                              <DialogTrigger asChild>
+                                <Button
+                                  variant="outline"
+                                  className={`w-full h-10 ${
+                                    (zerodhaIsConnected || angelOneIsConnected || dhanIsConnected)
+                                      ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                      : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+                                  }`}
+                                  data-testid="button-upstox-dialog"
+                                  disabled={zerodhaIsConnected || angelOneIsConnected || dhanIsConnected}
+                                >
+                                  <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-4 mr-2" />
+                                  Upstox
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                <DialogHeader>
+                                  <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                    <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-5" />
+                                    Connect Upstox Broker
+                                  </DialogTitle>
+                                </DialogHeader>
+                                <div className="space-y-4 py-4">
+                                  <div className="space-y-2">
+                                    <Label htmlFor="upstox-api-key" className="text-slate-700 dark:text-slate-300">API Key</Label>
+                                    <Input
+                                      id="upstox-api-key"
+                                      placeholder="Enter your Upstox API Key"
+                                      value={upstoxApiKeyInput}
+                                      onChange={(e) => setUpstoxApiKeyInput(e.target.value)}
+                                      className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                    />
+                                  </div>
+                                  <div className="space-y-2">
+                                    <Label htmlFor="upstox-api-secret" className="text-slate-700 dark:text-slate-300">API Secret</Label>
+                                    <div className="relative">
+                                      <Input
+                                        id="upstox-api-secret"
+                                        type={showUpstoxSecret ? "text" : "password"}
+                                        placeholder="Enter your Upstox API Secret"
+                                        value={upstoxApiSecretInput}
+                                        onChange={(e) => setUpstoxApiSecretInput(e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
+                                      />
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute right-0 top-0 h-10 w-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-transparent"
+                                        onClick={() => setShowUpstoxSecret(!showUpstoxSecret)}
+                                      >
+                                        {showUpstoxSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                      </Button>
+                                    </div>
+                                    <div className="flex items-center gap-2 mt-1 px-2 py-1 bg-slate-100 dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 w-full group hover:border-blue-200 dark:hover:border-blue-900/40 transition-colors overflow-hidden">
+                                      <span className="text-[10px] text-slate-500 font-medium shrink-0">Redirect URL:</span>
+                                      <div className="flex-1 min-w-0 overflow-hidden">
+                                        <code className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold truncate block max-w-[200px]">{window.location.protocol}//{window.location.host}/api/upstox/callback</code>
+                                      </div>
+                                      <Button
+                                        size="icon"
+                                        variant="ghost"
+                                        className="h-4 w-4 hover:bg-slate-200 dark:hover:bg-slate-800 shrink-0 ml-0.5"
+                                        onClick={() => {
+                                          navigator.clipboard.writeText(`${window.location.protocol}//${window.location.host}/api/upstox/callback`);
+                                          toast({
+                                            title: "Copied",
+                                            description: "Redirect URL copied to clipboard",
+                                          });
+                                        }}
+                                      >
+                                        <Copy className="h-2.5 w-2.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                      </Button>
+                                    </div>
+                                    <p className="text-[10px] text-slate-500 mt-2">
+                                      Generate API keys at: <a href="https://account.upstox.com/developer/apps" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://account.upstox.com/developer/apps</a>
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex justify-end gap-3 pt-2">
+                                  <Button variant="outline" onClick={() => setIsUpstoxDialogOpen(false)}>
+                                    Cancel
+                                  </Button>
+                                  <Button onClick={handleUpstoxConnect} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                    Connect Account
+                                  </Button>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                          )}
+                              <Dialog open={isAngelOneDialogOpen} onOpenChange={setIsAngelOneDialogOpen}>
+                                <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                  <DialogHeader>
+                                    <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                      <img src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701" alt="Angel One" className="h-5" />
+                                      Connect Angel One Broker
+                                    </DialogTitle>
+                                  </DialogHeader>
+                                  <div className="space-y-4 py-4">
+                                    <div className="space-y-2">
+                                      <Label htmlFor="angelone-api-key" className="text-slate-700 dark:text-slate-300">API Key</Label>
+                                      <Input
+                                        id="angelone-api-key"
+                                        placeholder="Enter your Angel One API Key"
+                                        value={angelOneApiKeyInput}
+                                        onChange={(e) => setAngelOneApiKeyInput(e.target.value)}
+                                        className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                      />
+                                    </div>
+                                    <div className="space-y-2">
+                                      <Label htmlFor="angelone-api-secret" className="text-slate-700 dark:text-slate-300">API Secret</Label>
+                                      <div className="relative">
+                                        <Input
+                                          id="angelone-api-secret"
+                                          type={showAngelOneSecret ? "text" : "password"}
+                                          placeholder="Enter your Angel One API Secret"
+                                          value={angelOneClientCodeInput}
+                                          onChange={(e) => setAngelOneClientCodeInput(e.target.value)}
+                                          className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
+                                        />
+                                        <Button
+                                          type="button"
+                                          variant="ghost"
+                                          size="icon"
+                                          className="absolute right-0 top-0 h-10 w-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-transparent"
+                                          onClick={() => setShowAngelOneSecret(!showAngelOneSecret)}
+                                        >
+                                          {showAngelOneSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                        </Button>
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-1 px-2 py-1 bg-slate-100 dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 w-full group hover:border-blue-200 dark:hover:border-blue-900/40 transition-colors overflow-hidden">
+                                        <span className="text-[10px] text-slate-500 font-medium shrink-0">Redirect URL:</span>
+                                        <div className="flex-1 min-w-0 overflow-hidden">
+                                          <code className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold truncate block max-w-[200px]">{window.location.protocol}//{window.location.host}/api/angelone/callback</code>
+                                        </div>
+                                        <Button
+                                          size="icon"
+                                          variant="ghost"
+                                          className="h-4 w-4 hover:bg-slate-200 dark:hover:bg-slate-800 shrink-0 ml-0.5"
+                                          onClick={() => {
+                                            navigator.clipboard.writeText(`${window.location.protocol}//${window.location.host}/api/angelone/callback`);
+                                            toast({
+                                              title: "Copied",
+                                              description: "Redirect URL copied to clipboard",
+                                            });
+                                          }}
+                                        >
+                                          <Copy className="h-2.5 w-2.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                        </Button>
+                                      </div>
+                                      <p className="text-[10px] text-slate-500 mt-2">
+                                        Generate API keys at: <a href="https://smartapi.angelone.in" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://smartapi.angelone.in</a>
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex justify-end gap-3 pt-2">
+                                    <Button variant="outline" onClick={() => setIsAngelOneDialogOpen(false)}>
+                                      Cancel
+                                    </Button>
+                                    <Button onClick={handleAngelOneConnect} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                      Connect Account
+                                    </Button>
+                                  </div>
+                                </DialogContent>
+                              </Dialog>
+                              {angelOneIsConnected ? (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                className="flex-1 h-10 bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700 cursor-default"
+                                data-testid="button-angelone-connected-display"
+                              >
+                                <img src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701" alt="Angel One" className="h-4 mr-2" />
+                                Angel One
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-10 w-10 border border-slate-200 hover:border-red-100"
+                                onClick={() => {
+                                  localStorage.removeItem("angel_one_token");
+                                  setAngelOneAccessToken(null);
+                                  setAngelOneIsConnected(false);
+                                }}
+                                title="Disconnect Angel One"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              className={`w-full h-10 ${
+                                (zerodhaIsConnected || upstoxIsConnected || dhanIsConnected)
+                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                  : 'bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700'
+                              }`}
+                              data-testid="button-angelone-dialog"
+                              onClick={() => setIsAngelOneDialogOpen(true)}
+                              disabled={zerodhaIsConnected || upstoxIsConnected || dhanIsConnected}
+                            >
+                              <img src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701" alt="Angel One" className="h-4 mr-2" />
+                              Angel One
+                            </Button>
+                          )}
+                          {dhanIsConnected ? (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                className="flex-1 h-10 bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700 cursor-default"
+                                data-testid="button-dhan-connected-display"
+                              >
+                                <img src="https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701" alt="Dhan" className="h-4 mr-2" />
+                                Dhan
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-10 w-10 border border-slate-200 hover:border-red-100"
+                                onClick={() => {
+                                  localStorage.removeItem("dhan_token");
+                                  setDhanAccessToken(null);
+                                  setDhanIsConnected(false);
+                                }}
+                                title="Disconnect Dhan"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              onClick={handleDhanConnect}
+                              variant="outline"
+                              className={`w-full h-10 ${
+                                (zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected)
+                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                  : 'bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700'
+                              }`}
+                              data-testid="button-dhan-dialog"
+                              disabled={zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected}
+                            >
+                              <img src="https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701" alt="Dhan" className="h-4 mr-2" />
+                              Dhan
+                            </Button>
+                          )}
+
+                          {/* Fyers */}
+                          {fyersIsConnected ? (
+                            <div className="flex items-center gap-2">
+                              <Button
+                                variant="outline"
+                                className="flex-1 h-10 bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 cursor-default"
+                              >
+                                <img 
+                                  src="https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw" 
+                                  alt="Fyers" 
+                                  className="w-4 h-4 mr-2 rounded-full"
+                                />
+                                Fyers
+                              </Button>
+                              <Button 
+                                variant="ghost" 
+                                size="icon" 
+                                className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-10 w-10 border border-slate-200 hover:border-red-100"
+                                onClick={() => {
+                                  apiRequest("POST", "/api/fyers/disconnect").then(() => {
+                                    queryClient.invalidateQueries({ queryKey: ["/api/fyers/status"] });
+                                    toast({ title: "Disconnected", description: "Fyers account disconnected" });
+                                  });
+                                }}
+                                title="Disconnect Fyers"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="outline"
+                              className={`w-full h-10 ${
+                                (zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected)
+                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                  : 'bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700 relative'
+                              }`}
+                              onClick={() => setIsFyersDialogOpen(true)}
+                              disabled={zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected}
+                            >
+                              <img src="https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw" alt="Fyers" className="w-4 h-4 mr-2 rounded-full" />
+                              Fyers
+                            </Button>
+                          )}
+
+                          {/* Groww */}
+                          <Button
+                            variant="outline"
+                            className="w-full h-10 bg-slate-50/50 dark:bg-slate-900/20 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 cursor-not-allowed relative hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+                            disabled
+                          >
+                            <img src="https://play-lh.googleusercontent.com/LHjOai6kf1IsstKNWO9jbMxD-ix_FVYaJSLodKCqYQdoFVzQBuV9z5txxzcTagQcyX8=s48-rw" alt="Groww" className="w-4 h-4 mr-2 rounded-full" />
+                            Groww
+                            <span className="absolute top-1 right-1 text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Coming Soon</span>
+                          </Button>
+
+                          {/* ICICI Securities */}
+                          <Button
+                            variant="outline"
+                            className="w-full h-10 bg-slate-50/50 dark:bg-slate-900/20 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 cursor-not-allowed relative hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+                            disabled
+                          >
+                            <img src="https://play-lh.googleusercontent.com/RqpvFiLwp9Vz8dY3QZplf7IZ0ZzCCjH9CVXlO61FIrCUQQCDfSrvPufjDw6sfbjTKg=w240-h480-rw" alt="ICICI Securities" className="w-4 h-4 mr-2 rounded-full" />
+                            ICICI Securities
+                            <span className="absolute top-1 right-1 text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Coming Soon</span>
+                          </Button>
+
+                          {/* Alice Blue */}
+                          <Button
+                            variant="outline"
+                            className="w-full h-10 bg-slate-50/50 dark:bg-slate-900/20 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 cursor-not-allowed relative hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+                            disabled
+                          >
+                            <img src="https://play-lh.googleusercontent.com/tVA2zP_nU106-0ySk0z_5aJlbv1AC-IVBEnF5qcGnhk1dzoA0m0-lqTC45lnkQ-ZVpC_5CL-JCxgPMNlWLbV98g=w240-h480-rw" alt="Alice Blue" className="w-4 h-4 mr-2 rounded-full" />
+                            Alice Blue
+                            <span className="absolute top-1 right-1 text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Coming Soon</span>
+                          </Button>
+
+                          {/* 5 Paisa */}
+                          <Button
+                            variant="outline"
+                            className="w-full h-10 bg-slate-50/50 dark:bg-slate-900/20 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 cursor-not-allowed relative hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+                            disabled
+                          >
+                            <img src="https://play-lh.googleusercontent.com/-MNspIooJf9VXXApEo8Z1eaokA5k5Be7TcgKeWSwBZGTRcsKZTVWkEcCzHq5ntAcsI0=s48-rw" alt="5 Paisa" className="w-4 h-4 mr-2 rounded-full" />
+                            5 Paisa
+                            <span className="absolute top-1 right-1 text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Coming Soon</span>
+                          </Button>
+
+                          {/* M Stock */}
+                          <Button
+                            variant="outline"
+                            className="w-full h-10 bg-slate-50/50 dark:bg-slate-900/20 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 cursor-not-allowed relative hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
+                            disabled
+                          >
+                            <img src="https://play-lh.googleusercontent.com/wb3FdD8R_he5C0Vy4ZB3PM8VoiE3ukB_9i7v3WloUUAUdHOvfjO-ieUnqmtCj2fa120BbX7FdrWrfJHgo3wSTw=w240-h480-rw" alt="M Stock" className="w-4 h-4 mr-2 rounded-full" />
+                            M Stock
+                            <span className="absolute top-1 right-1 text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Coming Soon</span>
+                          </Button>
+                            </div>
+                          )}
+
+                          
+                          
+
+
+                          
+
+                          <Dialog open={isDhanDialogOpen} onOpenChange={setIsDhanDialogOpen}>
+                            <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                  <img src="https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701" alt="Dhan" className="h-5" />
+                                  Connect Dhan Broker
+                                </DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="dhan-client-id" className="text-slate-700 dark:text-slate-300">Client ID</Label>
+                                  <Input
+                                    id="dhan-client-id"
+                                    placeholder="Enter your Dhan Client ID"
+                                    value={dhanClientIdInput}
+                                    onChange={(e) => {
+                                      setDhanClientIdInput(e.target.value);
+                                      localStorage.setItem("dhan_client_id", e.target.value);
+                                    }}
+                                    className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="dhan-access-token" className="text-slate-700 dark:text-slate-300">Access Token</Label>
+                                  <div className="relative">
+                                    <Input
+                                      id="dhan-access-token"
+                                      type={showDhanToken ? "text" : "password"}
+                                      placeholder="Enter your Dhan Access Token"
+                                      value={dhanTokenInput}
+                                      onChange={(e) => {
+                                        setDhanTokenInput(e.target.value);
+                                        localStorage.setItem("dhan_access_token", e.target.value);
+                                      }}
+                                      className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-0 top-0 h-10 w-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-transparent"
+                                      onClick={() => setShowDhanToken(!showDhanToken)}
+                                    >
+                                      {showDhanToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </Button>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1 px-2 py-1 bg-slate-100 dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 w-fit group hover:border-blue-200 dark:hover:border-blue-900/40 transition-colors">
+                                    <span className="text-[10px] text-slate-500 font-medium">Postback URL:</span>
+                                    <code className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold">{window.location.protocol}//{window.location.host}/api/dhan/callback</code>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-4 w-4 hover:bg-slate-200 dark:hover:bg-slate-800 ml-0.5"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.protocol}//${window.location.host}/api/dhan/callback`);
+                                        toast({
+                                          title: "Copied",
+                                          description: "Postback URL copied to clipboard",
+                                        });
+                                      }}
+                                    >
+                                      <Copy className="h-2.5 w-2.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                    </Button>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 mt-2">
+                                    Generate token at: <a href="https://web.dhan.co/index/profile" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://web.dhan.co/index/profile</a>
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-3 pt-2">
+                                <Button variant="outline" onClick={() => setIsDhanDialogOpen(false)}>
+                                  Cancel
+                                </Button>
+                                <Button onClick={submitDhanCredentials} className="bg-green-600 hover:bg-green-700 text-white">
+                                  Connect Account
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
+                          <Dialog open={isZerodhaDialogOpen} onOpenChange={setIsZerodhaDialogOpen}>
+                            <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                  <img src="https://kite.zerodha.com/static/images/kite-logo.svg" alt="Zerodha" className="h-5" />
+                                  Connect Zerodha Broker
+                                </DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="zerodha-api-key" className="text-slate-700 dark:text-slate-300">API Key</Label>
+                                  <Input
+                                    id="zerodha-api-key"
+                                    placeholder="Enter your Zerodha API Key"
+                                    value={zerodhaApiKeyInput}
+                                    onChange={(e) => {
+                                      setZerodhaApiKeyInput(e.target.value);
+                                    }}
+                                    className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="zerodha-api-secret" className="text-slate-700 dark:text-slate-300">API Secret</Label>
+                                  <div className="relative">
+                                    <Input
+                                      id="zerodha-api-secret"
+                                      type={showZerodhaSecret ? "text" : "password"}
+                                      placeholder="Enter your Zerodha API Secret"
+                                      value={zerodhaApiSecretInput}
+                                      onChange={(e) => {
+                                        setZerodhaApiSecretInput(e.target.value);
+                                      }}
+                                      className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-0 top-0 h-10 w-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-transparent"
+                                      onClick={() => setShowZerodhaSecret(!showZerodhaSecret)}
+                                    >
+                                      {showZerodhaSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </Button>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1 px-2 py-1 bg-slate-100 dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 w-full group hover:border-blue-200 dark:hover:border-blue-900/40 transition-colors overflow-hidden">
+                                    <span className="text-[10px] text-slate-500 font-medium shrink-0">Redirect URL:</span>
+                                    <div className="flex-1 min-w-0 overflow-hidden">
+                                      <code className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold truncate block max-w-[200px]">{window.location.protocol}//{window.location.host}/api/zerodha/callback</code>
+                                    </div>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-4 w-4 hover:bg-slate-200 dark:hover:bg-slate-800 shrink-0 ml-0.5"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.protocol}//${window.location.host}/api/zerodha/callback`);
+                                        toast({
+                                          title: "Copied",
+                                          description: "Redirect URL copied to clipboard",
+                                        });
+                                      }}
+                                    >
+                                      <Copy className="h-2.5 w-2.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                    </Button>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 mt-2">
+                                    Generate API keys at: <a href="https://developers.kite.trade" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://developers.kite.trade</a>
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-3 pt-2">
+                                <Button variant="outline" onClick={() => setIsZerodhaDialogOpen(false)}>
+                                  Cancel
+                                </Button>
+                                <Button onClick={submitZerodhaCredentials} className="bg-blue-600 hover:bg-blue-700 text-white">
+                                  Connect Account
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+
+                          <Dialog open={isFyersDialogOpen} onOpenChange={setIsFyersDialogOpen}>
+                            <DialogContent className="sm:max-w-md p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl">
+                              {!fyersIsConnected && (
+                                <AuthButtonFyers 
+                                  externalAppId={fyersAppId} 
+                                  externalSecretId={fyersSecretId} 
+                                  onSuccess={() => setIsFyersDialogOpen(false)} 
+                                  onClose={() => setIsFyersDialogOpen(false)}
+                                />
+                              )}
+                            </DialogContent>
+                          </Dialog>
+
+                          <Dialog open={isDeltaExchangeDialogOpen} onOpenChange={setIsDeltaExchangeDialogOpen}>
+                            <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                              <DialogHeader>
+                                <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                  <img src="https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw" alt="Delta Exchange India" className="h-5 rounded-full" />
+                                  Connect Delta Exchange India
+                                </DialogTitle>
+                              </DialogHeader>
+                              <div className="space-y-4 py-4">
+                                <div className="space-y-2">
+                                  <Label htmlFor="delta-api-key" className="text-slate-700 dark:text-slate-300">API Key</Label>
+                                  <Input
+                                    id="delta-api-key"
+                                    placeholder="Enter your Delta Exchange API Key"
+                                    value={deltaExchangeApiKey}
+                                    onChange={(e) => {
+                                      setDeltaExchangeApiKey(e.target.value);
+                                      localStorage.setItem("delta_api_key", e.target.value);
+                                    }}
+                                    className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                    data-testid="input-delta-api-key"
+                                  />
+                                </div>
+                                <div className="space-y-2">
+                                  <Label htmlFor="delta-api-secret" className="text-slate-700 dark:text-slate-300">API Secret</Label>
+                                  <div className="relative">
+                                    <Input
+                                      id="delta-api-secret"
+                                      type={showDeltaSecret ? "text" : "password"}
+                                      placeholder="Enter your Delta Exchange API Secret"
+                                      value={deltaExchangeApiSecret}
+                                      onChange={(e) => {
+                                        setDeltaExchangeApiSecret(e.target.value);
+                                        localStorage.setItem("delta_api_secret", e.target.value);
+                                      }}
+                                      className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
+                                      data-testid="input-delta-api-secret"
+                                    />
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      className="absolute right-0 top-0 h-10 w-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-transparent"
+                                      onClick={() => setShowDeltaSecret(!showDeltaSecret)}
+                                    >
+                                      {showDeltaSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                    </Button>
+                                  </div>
+                                  <div className="flex items-center gap-2 mt-1 px-2 py-1 bg-slate-100 dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 w-fit group hover:border-orange-200 dark:hover:border-orange-900/40 transition-colors">
+                                    <span className="text-[10px] text-slate-500 font-medium">Whitelisted IP:</span>
+                                    <code className="text-[10px] font-mono text-orange-600 dark:text-orange-400 font-bold">{deltaWhitelistedIP}</code>
+                                    <Button
+                                      size="icon"
+                                      variant="ghost"
+                                      className="h-4 w-4 hover:bg-slate-200 dark:hover:bg-slate-800 ml-0.5"
+                                      onClick={() => {
+                                        navigator.clipboard.writeText(deltaWhitelistedIP);
+                                        toast({
+                                          title: "Copied",
+                                          description: "IP address copied to clipboard",
+                                        });
+                                      }}
+                                    >
+                                      <Copy className="h-2.5 w-2.5 text-slate-400 group-hover:text-orange-500 transition-colors" />
+                                    </Button>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500">
+                                    Create your API keys at: <a href="https://www.delta.exchange/app/account/manageapikeys" target="_blank" rel="noopener noreferrer" className="text-orange-600 hover:underline">https://www.delta.exchange/app/account/manageapikeys</a>
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex justify-end gap-3 pt-2">
+                                <Button variant="outline" onClick={() => setIsDeltaExchangeDialogOpen(false)}>
+                                  Cancel
+                                </Button>
+                                <Button onClick={handleDeltaExchangeConnect} className="bg-orange-600 hover:bg-orange-700 text-white">
+                                  Connect Account
+                                </Button>
+                              </div>
+                            </DialogContent>
+                          </Dialog>
+                        </div>
+                        <p className="text-center text-[10px] text-gray-500 py-3 border-t border-slate-100 dark:border-slate-800">
+                          Connect your broker account to auto-import trades
+                        </p>
+                      </DialogContent>
+                    </Dialog>
+
+                    {/* Trade Book - Right Side (Functional Calendar) */}

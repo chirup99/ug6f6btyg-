@@ -1,0 +1,43 @@
+{
+  "originalCandles": [
+    {
+      "timestamp": 1753415100,
+      "open": 1543.4,
+      "high": 1549.5,
+      "low": 1541,
+      "close": 1547.2,
+      "volume": 125000
+    },
+    {
+      "timestamp": 1753416300,
+      "open": 1547.2,
+      "high": 1550.1,
+      "low": 1545.5,
+      "close": 1548.8,
+      "volume": 110000
+    },
+    {
+      "timestamp": 1753417500,
+      "open": 1548.8,
+      "high": 1552,
+      "low": 1546.9,
+      "close": 1549.5,
+      "volume": 130000
+    },
+    {
+      "timestamp": 1753418700,
+      "open": 1549.5,
+      "high": 1553.2,
+      "low": 1547.8,
+      "close": 1551.1,
+      "volume": 135000
+    }
+  ],
+  "oneMinuteCandles": [],
+  "exactHighTimestamps": [],
+  "exactLowTimestamps": [],
+  "preciseSlopes": [],
+  "analysisTimestamp": 1753471812659,
+  "symbol": "NSE:INFY-EQ",
+  "timeframe": 20
+}

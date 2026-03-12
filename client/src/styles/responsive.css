@@ -1,0 +1,100 @@
+/* Responsive Utilities */
+
+/* Container with responsive padding */
+.container-responsive {
+  @apply px-4 sm:px-6 md:px-8 lg:px-12;
+}
+
+/* Responsive text sizes */
+.text-responsive-xs {
+  @apply text-xs sm:text-sm;
+}
+
+.text-responsive-sm {
+  @apply text-sm sm:text-base;
+}
+
+.text-responsive-base {
+  @apply text-base sm:text-lg;
+}
+
+.text-responsive-lg {
+  @apply text-lg sm:text-xl md:text-2xl;
+}
+
+.text-responsive-xl {
+  @apply text-xl sm:text-2xl md:text-3xl;
+}
+
+.text-responsive-2xl {
+  @apply text-2xl sm:text-3xl md:text-4xl;
+}
+
+/* Responsive card */
+.card-responsive {
+  @apply p-4 sm:p-6 rounded-lg sm:rounded-xl;
+}
+
+/* Responsive grid */
+.grid-responsive {
+  @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6;
+}
+
+.grid-responsive-2 {
+  @apply grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6;
+}
+
+.grid-responsive-4 {
+  @apply grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-4;
+}
+
+/* Responsive spacing */
+.space-y-responsive {
+  @apply space-y-4 sm:space-y-6 md:space-y-8;
+}
+
+.gap-responsive {
+  @apply gap-3 sm:gap-4 md:gap-6;
+}
+
+/* Mobile-first visibility */
+.mobile-only {
+  @apply md:hidden;
+}
+
+.desktop-only {
+  @apply hidden md:block;
+}
+
+.tablet-up {
+  @apply hidden md:block;
+}
+
+/* Touch-friendly buttons */
+.btn-touch {
+  @apply min-h-[44px] min-w-[44px];
+}
+
+/* Responsive table */
+.table-responsive {
+  @apply overflow-x-auto;
+}
+
+.table-responsive table {
+  @apply min-w-full;
+}
+
+/* Responsive image */
+.img-responsive {
+  @apply w-full h-auto;
+}
+
+/* Flex responsive */
+.flex-responsive {
+  @apply flex flex-col md:flex-row gap-4;
+}
+
+/* Responsive modal */
+.modal-responsive {
+  @apply w-full sm:max-w-md md:max-w-lg lg:max-w-xl;
+}

@@ -1,0 +1,517 @@
+{
+  "methodology": "CORRECTED_BLOCK_LEVEL_ANALYSIS_WITH_DUAL_VALIDATION",
+  "baseCandles": [
+    {
+      "timestamp": 1753242300,
+      "open": 25139.35,
+      "high": 25149.85,
+      "low": 25111.15,
+      "close": 25123.65,
+      "volume": 0
+    },
+    {
+      "timestamp": 1753242900,
+      "open": 25124.2,
+      "high": 25127.4,
+      "low": 25104.8,
+      "close": 25114.3,
+      "volume": 0
+    },
+    {
+      "timestamp": 1753243500,
+      "open": 25114.1,
+      "high": 25122.65,
+      "low": 25094.55,
+      "close": 25096.9,
+      "volume": 0
+    },
+    {
+      "timestamp": 1753244100,
+      "open": 25097.55,
+      "high": 25113.4,
+      "low": 25085.5,
+      "close": 25106.55,
+      "volume": 0
+    }
+  ],
+  "oneMinuteData": {
+    "C1A": [
+      {
+        "timestamp": 1753242300,
+        "open": 25139.35,
+        "high": 25149.85,
+        "low": 25111.15,
+        "close": 25135.2,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242360,
+        "open": 25137.2,
+        "high": 25143.5,
+        "low": 25129.6,
+        "close": 25130.5,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242420,
+        "open": 25130.3,
+        "high": 25132.8,
+        "low": 25121,
+        "close": 25123.25,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242480,
+        "open": 25124.85,
+        "high": 25133.5,
+        "low": 25120.4,
+        "close": 25131.1,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242540,
+        "open": 25131.7,
+        "high": 25138.85,
+        "low": 25130.7,
+        "close": 25132.6,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242600,
+        "open": 25132.55,
+        "high": 25142.95,
+        "low": 25132.05,
+        "close": 25138.5,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242660,
+        "open": 25137.7,
+        "high": 25142.4,
+        "low": 25129.25,
+        "close": 25129.25,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242720,
+        "open": 25128.4,
+        "high": 25132,
+        "low": 25116.9,
+        "close": 25130.8,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242780,
+        "open": 25130.6,
+        "high": 25134.4,
+        "low": 25124.65,
+        "close": 25127.3,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242840,
+        "open": 25126.9,
+        "high": 25128.05,
+        "low": 25119.85,
+        "close": 25123.65,
+        "volume": 0
+      }
+    ],
+    "C1B": [
+      {
+        "timestamp": 1753242900,
+        "open": 25124.2,
+        "high": 25125.4,
+        "low": 25118.7,
+        "close": 25123.35,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753242960,
+        "open": 25124.25,
+        "high": 25127.2,
+        "low": 25119.9,
+        "close": 25123.15,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243020,
+        "open": 25121.15,
+        "high": 25124.8,
+        "low": 25118.45,
+        "close": 25120.35,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243080,
+        "open": 25119.95,
+        "high": 25121.15,
+        "low": 25107.6,
+        "close": 25108.65,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243140,
+        "open": 25108.25,
+        "high": 25114.1,
+        "low": 25105.05,
+        "close": 25113.75,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243200,
+        "open": 25114.35,
+        "high": 25127.4,
+        "low": 25114.35,
+        "close": 25121.85,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243260,
+        "open": 25122.2,
+        "high": 25124.75,
+        "low": 25111.4,
+        "close": 25111.4,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243320,
+        "open": 25111.65,
+        "high": 25112.4,
+        "low": 25104.8,
+        "close": 25108.25,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243380,
+        "open": 25107.45,
+        "high": 25118.85,
+        "low": 25107.05,
+        "close": 25118.75,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243440,
+        "open": 25119.15,
+        "high": 25119.15,
+        "low": 25111.95,
+        "close": 25114.3,
+        "volume": 0
+      }
+    ],
+    "C2A": [
+      {
+        "timestamp": 1753243500,
+        "open": 25114.1,
+        "high": 25116.85,
+        "low": 25108.8,
+        "close": 25116.35,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243560,
+        "open": 25115.8,
+        "high": 25122.65,
+        "low": 25113.3,
+        "close": 25116.8,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243620,
+        "open": 25116.95,
+        "high": 25117.45,
+        "low": 25104.45,
+        "close": 25105.6,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243680,
+        "open": 25105.8,
+        "high": 25111.7,
+        "low": 25105.05,
+        "close": 25111.45,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243740,
+        "open": 25110.8,
+        "high": 25111.7,
+        "low": 25108.15,
+        "close": 25111.4,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243800,
+        "open": 25111.45,
+        "high": 25113.4,
+        "low": 25109.2,
+        "close": 25111.3,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243860,
+        "open": 25110.75,
+        "high": 25111.25,
+        "low": 25101.1,
+        "close": 25101.95,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243920,
+        "open": 25101.85,
+        "high": 25103.65,
+        "low": 25094.55,
+        "close": 25096.3,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753243980,
+        "open": 25097.35,
+        "high": 25104.15,
+        "low": 25096.25,
+        "close": 25101.25,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244040,
+        "open": 25100.6,
+        "high": 25102.15,
+        "low": 25096.2,
+        "close": 25096.9,
+        "volume": 0
+      }
+    ],
+    "C2B": [
+      {
+        "timestamp": 1753244100,
+        "open": 25097.55,
+        "high": 25100.5,
+        "low": 25090.3,
+        "close": 25100.35,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244160,
+        "open": 25099.1,
+        "high": 25101.95,
+        "low": 25095.1,
+        "close": 25095.1,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244220,
+        "open": 25095.25,
+        "high": 25095.7,
+        "low": 25090.1,
+        "close": 25093.4,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244280,
+        "open": 25093.3,
+        "high": 25096.5,
+        "low": 25086.65,
+        "close": 25086.8,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244340,
+        "open": 25086.8,
+        "high": 25100.3,
+        "low": 25085.5,
+        "close": 25098.4,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244400,
+        "open": 25098.95,
+        "high": 25113.25,
+        "low": 25098.25,
+        "close": 25112.3,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244460,
+        "open": 25112.45,
+        "high": 25112.45,
+        "low": 25105.3,
+        "close": 25108.2,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244520,
+        "open": 25109.45,
+        "high": 25113.4,
+        "low": 25108.6,
+        "close": 25111.35,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244580,
+        "open": 25111,
+        "high": 25111.4,
+        "low": 25099.8,
+        "close": 25100.45,
+        "volume": 0
+      },
+      {
+        "timestamp": 1753244640,
+        "open": 25100.2,
+        "high": 25106.6,
+        "low": 25094.45,
+        "close": 25106.55,
+        "volume": 0
+      }
+    ]
+  },
+  "blockAnalysis": {
+    "C1": {
+      "high": {
+        "price": 25149.85,
+        "timestamp": 1753242300,
+        "sourceCandle": "C1A"
+      },
+      "low": {
+        "price": 25104.8,
+        "timestamp": 1753243320,
+        "sourceCandle": "C1B"
+      }
+    },
+    "C2": {
+      "high": {
+        "price": 25122.65,
+        "timestamp": 1753243560,
+        "sourceCandle": "C2A"
+      },
+      "low": {
+        "price": 25085.5,
+        "timestamp": 1753244340,
+        "sourceCandle": "C2B"
+      }
+    }
+  },
+  "slopeAnalysis": {
+    "C1_to_C2_trends": {
+      "uptrend": {
+        "pointA": {
+          "price": 25104.8,
+          "timestamp": 1753243320,
+          "block": "C1"
+        },
+        "pointB": {
+          "price": 25122.65,
+          "timestamp": 1753243560,
+          "block": "C2"
+        },
+        "slope": 4462.500000000546,
+        "durationMinutes": 0.004
+      },
+      "downtrend": {
+        "pointA": {
+          "price": 25149.85,
+          "timestamp": 1753242300,
+          "block": "C1"
+        },
+        "pointB": {
+          "price": 25085.5,
+          "timestamp": 1753244340,
+          "block": "C2"
+        },
+        "slope": -1892.6470588234865,
+        "durationMinutes": 0.034
+      }
+    },
+    "trendStrengthRatio": 2.3578088578091996
+  },
+  "dualValidation": {
+    "validationResults": {
+      "uptrend": {
+        "total4CandleDuration": "0.03",
+        "pointAToPointBDuration": "0.00",
+        "pointATo5thDuration": "10.01",
+        "pointBTo5thDuration": "10.01",
+        "timeFromPointBRequired": "0.01",
+        "timeFromPointBActual": "10.01",
+        "validation1_50percent": true,
+        "validation2_34percent": true,
+        "canPlaceOrders": true,
+        "requiredFor34Percent": "0.00",
+        "minutesNeededFromB": "0.00",
+        "slopeRate": "4462.500",
+        "breakoutPrice": "25122.65",
+        "duration5thFromBToBreakout": "10.01",
+        "target5thPrice": "69787.81",
+        "exit5thPrice": "60854.78",
+        "duration6thFromBToBreakout": "20.01",
+        "target6thPrice": "114412.81",
+        "exit6thPrice": "96554.78",
+        "tradeValidityDeadline": "30.01",
+        "tradeValidRule": "Cancel SL orders if both 5th and 6th candles fail to break breakout line by 6th candle close",
+        "realBreakoutValidation": {
+          "fifthCandle": null,
+          "sixthCandle": null,
+          "fifthCandleBrokeBreakout": false,
+          "sixthCandleBrokeBreakout": false,
+          "fifthBreakoutTimestamp": null,
+          "sixthBreakoutTimestamp": null,
+          "fifthBreakoutPrice": null,
+          "sixthBreakoutPrice": null,
+          "tradeIsValid": true,
+          "currentTime": "2025-07-27T17:32:25.041Z",
+          "breakoutPrice": 25122.65,
+          "trendType": "uptrend"
+        },
+        "exitAt80Percent": true
+      },
+      "downtrend": {
+        "total4CandleDuration": "0.03",
+        "pointAToPointBDuration": "0.03",
+        "pointATo5thDuration": "10.03",
+        "pointBTo5thDuration": "10.00",
+        "timeFromPointBRequired": "-0.02",
+        "timeFromPointBActual": "10.00",
+        "validation1_50percent": true,
+        "validation2_34percent": true,
+        "canPlaceOrders": true,
+        "requiredFor34Percent": "0.01",
+        "minutesNeededFromB": "0.00",
+        "slopeRate": "-1892.647",
+        "breakoutPrice": "25085.50",
+        "duration5thFromBToBreakout": "10.00",
+        "target5thPrice": "6166.60",
+        "exit5thPrice": "9950.38",
+        "duration6thFromBToBreakout": "20.00",
+        "target6thPrice": "-12759.87",
+        "exit6thPrice": "-5190.80",
+        "tradeValidityDeadline": "30.00",
+        "tradeValidRule": "Cancel SL orders if both 5th and 6th candles fail to break breakout line by 6th candle close",
+        "realBreakoutValidation": {
+          "fifthCandle": null,
+          "sixthCandle": null,
+          "fifthCandleBrokeBreakout": false,
+          "sixthCandleBrokeBreakout": false,
+          "fifthBreakoutTimestamp": null,
+          "sixthBreakoutTimestamp": null,
+          "fifthBreakoutPrice": null,
+          "sixthBreakoutPrice": null,
+          "tradeIsValid": true,
+          "currentTime": "2025-07-27T17:32:25.042Z",
+          "breakoutPrice": 25085.5,
+          "trendType": "downtrend"
+        },
+        "exitAt80Percent": true
+      }
+    },
+    "summary": {
+      "total4CandleDuration": 0.03,
+      "rulesApplied": [
+        "50% breakout rule from Point B perspective",
+        "34% SL order rule",
+        "5th & 6th candle target calculations with 80% exit",
+        "Trade validity: Cancel if both 5th & 6th fail to break by 6th close"
+      ],
+      "timestamp": "2025-07-27T17:32:25.043Z"
+    }
+  },
+  "analysisTimestamp": "2025-07-27T17:32:25.043Z"
+}

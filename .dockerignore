@@ -1,0 +1,17 @@
+node_modules
+npm-debug.log
+.git
+.gitignore
+README.md
+.env
+.env.local
+.env.production
+.env.production.backup
+dist/public
+attached_assets
+.replit
+replit.nix
+.local
+firebase-service-account.json
+.firebaserc
+firebase.json

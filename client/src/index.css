@@ -1,0 +1,468 @@
+@import './styles/responsive.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Light Mode Variables */
+  --background: hsl(0, 0%, 100%);
+  --foreground: hsl(240, 10%, 3.9%);
+  --muted: hsl(240, 4.8%, 95.9%);
+  --muted-foreground: hsl(240, 3.8%, 46.1%);
+  --popover: hsl(0, 0%, 100%);
+  --popover-foreground: hsl(240, 10%, 3.9%);
+  --card: hsl(0, 0%, 100%);
+  --card-foreground: hsl(240, 10%, 3.9%);
+  --border: hsl(240, 5.9%, 90%);
+  --input: hsl(240, 5.9%, 90%);
+  --primary: hsl(142, 76%, 36%);
+  --primary-foreground: hsl(355, 100%, 99%);
+  --secondary: hsl(240, 4.8%, 95.9%);
+  --secondary-foreground: hsl(240, 5.9%, 10%);
+  --accent: hsl(240, 4.8%, 95.9%);
+  --accent-foreground: hsl(240, 5.9%, 10%);
+  --destructive: hsl(0, 84%, 60%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(142, 76%, 36%);
+  --radius: 0.75rem;
+  --success: hsl(142, 76%, 36%);
+  --warning: hsl(45, 93%, 47%);
+  --error: hsl(0, 84%, 60%);
+  
+  /* Light Mode Sidebar */
+  --sidebar-bg: hsl(0, 0%, 96%);
+  --main-content-bg: hsl(0, 0%, 100%);
+  --sidebar-text: hsl(240, 10%, 3.9%);
+  --sidebar-muted: hsl(240, 3.8%, 46.1%);
+
+  /* Light theme specific colors for better UI */
+  --light-text: hsl(240, 10%, 3.9%);
+  --light-text-secondary: hsl(240, 3.8%, 46.1%);
+  --light-border: hsl(240, 5.9%, 90%);
+  --light-bg-secondary: hsl(0, 0%, 96%);
+}
+
+.dark {
+  /* Dark Mode Variables */
+  --background: hsl(240, 10%, 3.9%);
+  --foreground: hsl(0, 0%, 98%);
+  --muted: hsl(240, 3.7%, 15.9%);
+  --muted-foreground: hsl(240, 5%, 64.9%);
+  --popover: hsl(240, 10%, 3.9%);
+  --popover-foreground: hsl(0, 0%, 98%);
+  --card: hsl(240, 10%, 3.9%);
+  --card-foreground: hsl(0, 0%, 98%);
+  --border: hsl(240, 3.7%, 15.9%);
+  --input: hsl(240, 3.7%, 15.9%);
+  --primary: hsl(142, 76%, 36%);
+  --primary-foreground: hsl(355, 100%, 99%);
+  --secondary: hsl(240, 3.7%, 15.9%);
+  --secondary-foreground: hsl(0, 0%, 98%);
+  --accent: hsl(240, 3.7%, 15.9%);
+  --accent-foreground: hsl(0, 0%, 98%);
+  --destructive: hsl(0, 62.8%, 30.6%);
+  --destructive-foreground: hsl(0, 0%, 98%);
+  --ring: hsl(240, 4.9%, 83.9%);
+  --radius: 0.5rem;
+  --success: hsl(142, 76%, 36%);
+  --warning: hsl(45, 93%, 47%);
+  --error: hsl(0, 62.8%, 30.6%);
+  
+  /* Dark Mode Sidebar */
+  --sidebar-bg: hsl(220, 13%, 18%);
+  --main-content-bg: hsl(217, 19%, 27%);
+  --sidebar-text: hsl(0, 0%, 90%);
+  --sidebar-muted: hsl(0, 0%, 65%);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  :root ::-webkit-scrollbar-track {
+    background: hsl(240, 5.9%, 90%);
+    border-radius: 10px;
+  }
+
+  :root ::-webkit-scrollbar-thumb {
+    background: hsl(240, 5.9%, 70%);
+    border-radius: 10px;
+  }
+
+  :root ::-webkit-scrollbar-thumb:hover {
+    background: hsl(240, 5.9%, 60%);
+  }
+
+  /* Dark theme scrollbar */
+  .dark ::-webkit-scrollbar-track {
+    background: hsl(215, 28%, 20%);
+    border-radius: 10px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb {
+    background: hsl(215, 20%, 35%);
+    border-radius: 10px;
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background: hsl(215, 20%, 45%);
+    border-radius: 10px;
+  }
+}
+
+/* ChatGPT-like layout styles */
+.chatgpt-sidebar {
+  background: var(--sidebar-bg) !important;
+  color: var(--sidebar-text) !important;
+}
+
+.chatgpt-main-content {
+  background: var(--main-content-bg) !important;
+}
+
+.chatgpt-sidebar .sidebar-text {
+  color: var(--sidebar-text) !important;
+}
+
+.chatgpt-sidebar .sidebar-muted {
+  color: var(--sidebar-muted) !important;
+}
+
+/* Custom thin scrollbar for heatmap - sleek design */
+.custom-thin-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 0, 0, 0.6) transparent;
+}
+
+.custom-thin-scrollbar::-webkit-scrollbar {
+  height: 4px;
+  width: 4px;
+}
+
+.custom-thin-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.custom-thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.6);
+  border-radius: 2px;
+  min-width: 20px;
+  border: none;
+}
+
+.custom-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.8);
+}
+
+.custom-thin-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Dark theme version */
+.dark .custom-thin-scrollbar {
+  scrollbar-color: rgba(255, 255, 255, 0.4) transparent;
+}
+
+.dark .custom-thin-scrollbar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.4);
+}
+
+.dark .custom-thin-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.6);
+}
+
+/* Billboard Animation Keyframes */
+@keyframes billboardSlide {
+  0%, 100% {
+    transform: translateX(0) scale(1);
+    filter: brightness(1);
+  }
+  25% {
+    transform: translateX(-2px) scale(1.02);
+    filter: brightness(1.1);
+  }
+  50% {
+    transform: translateX(0) scale(1.05);
+    filter: brightness(1.2) contrast(1.1);
+  }
+  75% {
+    transform: translateX(2px) scale(1.02);
+    filter: brightness(1.1);
+  }
+}
+
+@keyframes billboardGlow {
+  0% {
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3), 0 0 20px rgba(147, 51, 234, 0.2);
+    opacity: 0.9;
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.5), 0 0 40px rgba(147, 51, 234, 0.4), 0 0 60px rgba(236, 72, 153, 0.3);
+    opacity: 1;
+  }
+  100% {
+    box-shadow: 0 0 10px rgba(59, 130, 246, 0.3), 0 0 20px rgba(147, 51, 234, 0.2);
+    opacity: 0.9;
+  }
+}
+
+@keyframes billboardSweep {
+  0% {
+    transform: translateX(-100%) skewX(-25deg);
+    opacity: 0;
+  }
+  30% {
+    opacity: 1;
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(200%) skewX(-25deg);
+    opacity: 0;
+  }
+}
+
+@keyframes billboardBorderGlow {
+  0% {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+  33% {
+    border-color: rgba(147, 51, 234, 0.7);
+    box-shadow: 0 0 15px rgba(147, 51, 234, 0.5);
+  }
+  66% {
+    border-color: rgba(236, 72, 153, 0.7);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.5);
+  }
+  100% {
+    border-color: rgba(59, 130, 246, 0.5);
+    box-shadow: 0 0 5px rgba(59, 130, 246, 0.3);
+  }
+}
+
+/* 🕘 DUAL RANGE SLIDER STYLING - Beautiful Time Range Selector */
+.slider-thumb-blue::-webkit-slider-thumb {
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.slider-thumb-blue::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.6);
+}
+
+.slider-thumb-purple::-webkit-slider-thumb {
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+  cursor: pointer;
+  position: relative;
+  z-index: 10;
+  transition: all 0.2s ease;
+}
+
+.slider-thumb-purple::-webkit-slider-thumb:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.6);
+}
+
+/* Firefox slider styling */
+.slider-thumb-blue::-moz-range-thumb {
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.slider-thumb-purple::-moz-range-thumb {
+  appearance: none;
+  height: 18px;
+  width: 18px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  border: 2px solid white;
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.4);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+/* Remove default slider track styling */
+input[type="range"].slider-thumb-blue::-webkit-slider-track,
+input[type="range"].slider-thumb-purple::-webkit-slider-track {
+  background: transparent;
+  border: none;
+}
+
+input[type="range"].slider-thumb-blue::-moz-range-track,
+input[type="range"].slider-thumb-purple::-moz-range-track {
+  background: transparent;
+  border: none;
+}
+
+/* Audio MiniCast Card Swipe Animation */
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(20px) scale(0.9);
+  }
+  50% {
+    transform: translateY(-5px) scale(1.05);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.5s ease-out;
+}
+
+/* Auto-scrolling heatmap animation for showcase */
+@keyframes heatmapAutoScroll {
+  0% {
+    scroll-behavior: smooth;
+    scroll-left: 0;
+  }
+  25% {
+    scroll-left: 100%;
+  }
+  50% {
+    scroll-left: 100%;
+  }
+  75% {
+    scroll-left: 0;
+  }
+  100% {
+    scroll-left: 0;
+  }
+}
+
+.heatmap-auto-scroll {
+  animation: heatmapAutoScrollAnimation 8s ease-in-out infinite;
+}
+
+/* Modal Zoom Animation */
+@keyframes modalZoom {
+  0% {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.animate-modal-bounce {
+  animation: modalZoom 0.4s ease-out;
+}
+
+/* Hide scrollbar for Chrome, Safari and Opera */
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Hide scrollbar for IE, Edge and Firefox */
+.hide-scrollbar {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;  /* Firefox */
+}
+.overflow-y-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(156, 163, 175) rgb(243, 244, 246);
+}
+
+.dark .overflow-y-auto {
+  scrollbar-color: rgb(75, 85, 99) rgb(17, 24, 39);
+}
+
+.overflow-y-auto::-webkit-scrollbar {
+  width: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-track {
+  background: rgb(243, 244, 246);
+  border-radius: 4px;
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-track {
+  background: rgb(17, 24, 39);
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgb(156, 163, 175);
+  border-radius: 4px;
+}
+
+.overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: rgb(107, 114, 128);
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgb(75, 85, 99);
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: rgb(107, 114, 128);
+}
+
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* Carousel utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Carousel utilities */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

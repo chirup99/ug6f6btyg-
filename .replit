@@ -1,0 +1,68 @@
+modules = ["nodejs-20", "bash", "web", "python-3.12"]
+run = "npm run dev"
+hidden = [".config", ".git", "generated-icon.png", "node_modules", "dist"]
+
+[nix]
+channel = "stable-25_05"
+packages = ["jq", "python3", "awscli2", "zip", "unzip"]
+
+[deployment]
+deploymentTarget = "autoscale"
+build = ["npm", "run", "build"]
+run = ["node", "./dist/index.cjs"]
+
+[[ports]]
+localPort = 5000
+externalPort = 80
+
+[env]
+PORT = "5000"
+
+[workflows]
+runButton = "Project"
+
+[[workflows.workflow]]
+name = "Project"
+mode = "parallel"
+author = "agent"
+
+[[workflows.workflow.tasks]]
+task = "workflow.run"
+args = "Start application"
+
+[[workflows.workflow]]
+name = "Start application"
+author = "agent"
+
+[workflows.workflow.metadata]
+outputType = "webview"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "npm run dev"
+waitForPort = 5000
+
+[agent]
+integrations = ["javascript_gemini:1.0.0", "javascript_openai:1.0.0", "javascript_websocket:1.0.0", "javascript_object_storage:1.0.0", "javascript_database:1.0.0", "javascript_log_in_with_replit:1.0.0", "javascript_openai_ai_integrations:2.0.0"]
+expertMode = true
+
+[userenv]
+
+[userenv.shared]
+ANGEL_ONE_CLIENT_CODE = "P176266"
+ANGEL_ONE_PIN = "1971"
+ANGEL_ONE_API_KEY = "ecukV7DU"
+ANGEL_ONE_TOTP_SECRET = "FVCV27YGTWBD3VX7DOOJBEHASQ"
+AWS_REGION = "ap-south-1"
+VITE_COGNITO_USER_POOL_ID = "ap-south-1_mI3xwITv7"
+VITE_COGNITO_APP_CLIENT_ID = "437nbg5agv5e5ecqsn2g6i6crl"
+VITE_COGNITO_DOMAIN = "perala-auth.auth.ap-south-1.amazoncognito.com"
+VITE_COGNITO_REDIRECT_URI = "https://perala.in/landing"
+VITE_COGNITO_LOGOUT_URI = "https://perala.in/landing"
+AWS_COGNITO_USER_POOL_ID = "ap-south-1_mI3xwITv7"
+AWS_COGNITO_APP_CLIENT_ID = "437nbg5agv5e5ecqsn2g6i6crl"
+AWS_S3_BUCKET = "neofeed-profile-images"
+PRODUCTION_DOMAIN = "perala.in"
+GOOGLE_CLIENT_SECRET = "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"
+VITE_GOOGLE_CLIENT_ID = "..."
+ACM_REGION = "ap-south-1"

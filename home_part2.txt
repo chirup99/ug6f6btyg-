@@ -1,0 +1,61 @@
+};
+
+export default function Home() {
+  const [location, setLocation] = useLocation();
+
+  // 🔶 Detect Angel One OAuth callback from redirect
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("angelone_connected")) {
+      console.log("✅ Angel One connected successfully (redirect callback)");
+      setAngelOneIsConnected(true);
+      setAngelOneAccessToken(params.get("angelone_client_code") || "P176266");
+      localStorage.setItem("angel_one_client_code", params.get("angelone_client_code") || "P176266");
+      toast({ title: "Success", description: "Angel One connected successfully" });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    if (params.has("angelone_error")) {
+      const error = decodeURIComponent(params.get("angelone_error") || "");
+      console.error("❌ Angel One auth error:", error);
+      toast({ variant: "destructive", title: "Error", description: error });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+  // AUTO-CONNECT: Angel One API - Automatically connect when app loads
+  useAngelOneAutoconnect();
+  const { theme, toggleTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState("trading-home");
+  const [showTutorOverlay, setShowTutorOverlay] = useState(false);
+  const [swipeStartY, setSwipeStartY] = useState(0);
+  const [swipeCurrentY, setSwipeCurrentY] = useState(0);
+  const [isSwipingUp, setIsSwipingUp] = useState(false);
+  const [showJournalAI, setShowJournalAI] = useState(false);
+  const [journalAIData, setJournalAIData] = useState<any>(null);
+  const [statisticsTab, setStatisticsTab] = useState("overview");
+  // Shared timeframe state for chart and crossings display
+  const [chartTimeframe, setChartTimeframe] = useState<string>("1");
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [isEditingDisplayName, setIsEditingDisplayName] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [isEditingDob, setIsEditingDob] = useState(false);
+  const [newDob, setNewDob] = useState("");
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [newLocation, setNewLocation] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  // Navigation menu state
+  const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isProfileActive, setIsProfileActive] = useState(false);
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+
+  const handleUpdateProfile = async (updates: any) => {
+    try {
+      const token = await getCognitoToken();
+      const response = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(updates),

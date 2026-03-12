@@ -1,0 +1,189 @@
+{
+  "methodology": "CORRECTED_BLOCK_LEVEL_ANALYSIS",
+  "baseCandles": [
+    {
+      "timestamp": null,
+      "high": null,
+      "low": null,
+      "volume": null
+    },
+    {
+      "timestamp": null,
+      "high": null,
+      "low": null,
+      "volume": null
+    },
+    {
+      "timestamp": null,
+      "high": null,
+      "low": null,
+      "volume": null
+    },
+    {
+      "timestamp": null,
+      "high": null,
+      "low": null,
+      "volume": null
+    }
+  ],
+  "oneMinuteData": {
+    "C1A": [
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      }
+    ],
+    "C1B": [
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      }
+    ],
+    "C2A": [
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      }
+    ],
+    "C2B": [
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      },
+      {
+        "timestamp": null
+      }
+    ]
+  },
+  "blockAnalysis": {
+    "C1": {
+      "high": {
+        "price": null,
+        "timestamp": "",
+        "sourceCandle": ""
+      },
+      "low": {
+        "price": null,
+        "timestamp": "",
+        "sourceCandle": ""
+      }
+    },
+    "C2": {
+      "high": {
+        "price": null,
+        "timestamp": "",
+        "sourceCandle": ""
+      },
+      "low": {
+        "price": null,
+        "timestamp": "",
+        "sourceCandle": ""
+      }
+    }
+  },
+  "slopeAnalysis": {
+    "C1_to_C2_trends": {}
+  },
+  "analysisTimestamp": "2025-07-26T09:17:51.289Z"
+}

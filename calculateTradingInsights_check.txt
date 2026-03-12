@@ -1,0 +1,118 @@
+                    const calculateTradingInsights = (data = tradingDataByDate) => {
+                      const allData = Object.values(data).filter(
+                        (data: any) => {
+                          const d = data?.tradingData || data;
+                          return d &&
+                                 d.tradeHistory &&
+                                 Array.isArray(d.tradeHistory) &&
+                                 d.tradeHistory.length > 0;
+                        }
+                      );
+
+                      if (allData.length === 0) {
+                        return {
+                          tagAnalysis: [],
+                          overallStats: {
+                            totalTrades: 0,
+                            winRate: 0,
+                            totalPnL: 0,
+                          },
+                          topPerformers: [],
+                          worstPerformers: [],
+                          tradingDayAnalysis: [],
+                        };
+                      }
+
+                      // Tag-based performance analysis
+                      const tagStats: any = {};
+                      const dailyStats: any[] = [];
+
+                      allData.forEach((data: any, index: number) => {
+                        const dayData = data?.tradingData || data;
+                        const trades = dayData.tradeHistory || [];
+                        const tags = dayData.tradingTags || [];
+                        const metrics = dayData.performanceMetrics;
+
+                        // Calculate day statistics
+                        if (metrics) {
+                          dailyStats.push({
+                            day: index + 1,
+                            trades: metrics.totalTrades || trades.length,
+                            winRate: parseFloat(metrics.winRate) || 0,
+                            netPnL: metrics.netPnL || 0,
+                            tags: tags,
+                          });
+                        }
+
+                        // Analyze each tag's performance
+                        tags.forEach((tag: string) => {
+                          if (!tagStats[tag]) {
+                            tagStats[tag] = {
+                              tag,
+                              tradingDays: 0,
+                              totalTrades: 0,
+                              wins: 0,
+                              losses: 0,
+                              totalPnL: 0,
+                              winRate: 0,
+                              avgPnL: 0,
+                              bestDay: 0,
+                              worstDay: 0,
+                              totalDuration: 0,
+                              durations: [],
+                            };
+                          }
+
+                          const stats = tagStats[tag];
+                          stats.tradingDays++;
+
+                          if (metrics) {
+                            const dayTrades = metrics.totalTrades || 1;
+                            stats.totalTrades += dayTrades;
+                            stats.wins += metrics.winningTrades || 0;
+                            stats.losses += metrics.losingTrades || 0;
+                            stats.totalPnL += metrics.netPnL || 0;
+                            
+                            // Track duration if available (assuming duration in minutes)
+                            const duration = metrics.avgDuration || metrics.duration || 0;
+                            if (duration > 0) {
+                              stats.totalDuration += (duration * dayTrades);
+                              stats.durations.push(duration);
+                            }
+                            stats.bestDay = Math.max(
+                              stats.bestDay,
+                              metrics.netPnL || 0,
+                            );
+                            stats.worstDay = Math.min(
+                              stats.worstDay,
+                              metrics.netPnL || 0,
+                            );
+                          }
+                        });
+                      });
+
+                      // Calculate final stats for each tag
+                      Object.values(tagStats).forEach((stats: any) => {
+                        stats.winRate =
+                          stats.totalTrades > 0
+                            ? (stats.wins / stats.totalTrades) * 100
+                            : 0;
+                        stats.avgPnL =
+                          stats.tradingDays > 0
+                            ? stats.totalPnL / stats.tradingDays
+                            : 0;
+                        
+                        stats.avgDuration = stats.totalTrades > 0 ? (stats.totalDuration / stats.totalTrades) : 0;
+                        
+                        // Determine trading style
+                        if (stats.avgDuration === 0) {
+                          stats.tradingStyle = "Inconsistent";
+                        } else if (stats.avgDuration < 15) {
+                          stats.tradingStyle = "Scalper";
+                        } else if (stats.avgDuration < 60) {
+                          stats.tradingStyle = "Intraday";
+                        } else if (stats.avgDuration < 1440) {
+                          stats.tradingStyle = "Swing Trade";
+                        } else {
+                          stats.tradingStyle = "Holding";
+                        }

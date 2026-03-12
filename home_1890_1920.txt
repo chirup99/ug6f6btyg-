@@ -1,0 +1,31 @@
+};
+
+export default function Home() {
+  const [location, setLocation] = useLocation();
+
+  // 🔶 Detect Angel One OAuth callback from redirect
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("angelone_connected")) {
+      console.log("✅ Angel One connected successfully (redirect callback)");
+      setAngelOneIsConnected(true);
+      setAngelOneAccessToken(params.get("angelone_client_code") || "P176266");
+      localStorage.setItem("angel_one_client_code", params.get("angelone_client_code") || "P176266");
+      toast({ title: "Success", description: "Angel One connected successfully" });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    if (params.has("angelone_error")) {
+      const error = decodeURIComponent(params.get("angelone_error") || "");
+      console.error("❌ Angel One auth error:", error);
+      toast({ variant: "destructive", title: "Error", description: error });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+  // AUTO-CONNECT: Angel One API - Automatically connect when app loads
+  useAngelOneAutoconnect();
+  const { theme, toggleTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState("trading-home");
+  const [showTutorOverlay, setShowTutorOverlay] = useState(false);
+  const [swipeStartY, setSwipeStartY] = useState(0);
+  const [swipeCurrentY, setSwipeCurrentY] = useState(0);
+  const [isSwipingUp, setIsSwipingUp] = useState(false);

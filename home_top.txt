@@ -1,0 +1,2000 @@
+﻿import { motion, AnimatePresence } from "framer-motion";
+import { BrokerData } from "@/components/broker-data";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+import { AuthButtonAngelOne, AngelOneStatus, AngelOneApiStatistics, AngelOneSystemStatus, AngelOneLiveMarketPrices } from "@/components/auth-button-angelone";
+import { AuthButtonUpstox } from "@/components/auth-button-upstox";
+import { TradingJournalModal } from "@/components/trading-journal-modal";
+// REMOVED: All Fyers-related imports
+// import { AuthButton } from "@/components/auth-button";
+// import { ConnectionStatus } from "@/components/connection-status";
+// import { MonthlyProgressTracker } from "@/components/monthly-progress-tracker";
+// import { ApiStatistics } from "@/components/api-statistics";
+// import { ErrorPanel } from "@/components/error-panel";
+import { SigninDataWindow } from "@/components/signin-data-window";
+import { TradingViewWidget } from "@/components/tradingview-widget";
+import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-chart";
+import { EnhancedTradingViewWidget } from "@/components/enhanced-tradingview-widget";
+import { TradingViewStyleChart } from "@/components/tradingview-style-chart";
+import { MinimalChart } from "@/components/minimal-chart";
+import {
+  MultipleImageUpload,
+  MultipleImageUploadRef,
+} from "@/components/multiple-image-upload";
+import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
+// import { BattuScanSimulation } from "@/components/battu-scan-simulation";
+// import { FourCandleRuleScanner } from "@/components/four-candle-rule-scanner";
+import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
+import SimpleCompleteScanner from "@/components/simple-complete-scanner";
+// import { BattuDocumentationDisplay } from "@/components/battu-documentation-display";
+import { StrategyBuilder } from "@/components/strategy-builder";
+import { TradingMaster } from "@/components/trading-master";
+import { WorldMap } from "@/components/world-map";
+import { DemoHeatmap } from "@/components/DemoHeatmap";
+import { PersonalHeatmap } from "@/components/PersonalHeatmap";
+import { useTheme } from "@/components/theme-provider";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+import { useAngelOneAutoconnect } from "@/hooks/useAngelOneAutoconnect";
+import { cognitoSignOut, getCognitoToken, sendEmailVerificationCode, confirmEmailVerification, checkEmailVerified } from "@/cognito";
+import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickSeries, LineSeries, HistogramSeries, IPriceLine, createSeriesMarkers } from 'lightweight-charts';
+import { ArrowLeft, Banknote, Clock, ExternalLink, Info, Loader2, LogOut, Newspaper, RefreshCw, Save, TrendingUp, Award, Headset, X, Play, Music2 } from "lucide-react";
+import { parseBrokerTrades, ParseError } from "@/utils/trade-parser";
+
+// Global window type declaration for audio control
+declare global {
+  interface Window {
+    stopNewsAudio?: () => void;
+  }
+}
+
+// import ThreeCycleScanner from "@/components/three-cycle-scanner";
+import HistoricalTradeSimulator from "@/components/historical-trade-simulator";
+import {
+  PriceChangeAnimation,
+  TradeExecutionAnimation,
+  VolumeSpikeAnimation,
+  MarketStatusPulse,
+  ProfitLossAnimation,
+  CandlestickAnimation,
+  MarketDataSkeleton,
+} from "@/components/micro-animations";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  TrendingDown,
+  Activity,
+  Calendar,
+  BarChart3,
+  
+  Pause,
+  RotateCcw,
+  RotateCw,
+  DollarSign,
+  Zap,
+  Sun,
+  Moon,
+  GraduationCap,
+  Download,
+  Mic,
+  MessageCircle,
+  BookOpen,
+  Home as HomeIcon,
+  Search,
+  Code,
+  PenTool,
+  Target,
+  Grid3X3,
+  Send,
+  Sparkles,
+  Users,
+  Upload,
+  Timer,
+  Edit,
+  Check,
+  Mail,
+  CheckCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Tag,
+  Trash2,
+  AlertTriangle,
+  AlertCircle,
+  Shield,
+  Bot,
+  User,
+  SkipBack,
+  SkipForward,
+  Heart,
+  Lightbulb,
+  Star,
+  FileText,
+  Bell,
+  Briefcase,
+  PieChart,
+  Lock,
+  Trophy,
+  Radio,
+  Eye,
+  EyeOff,
+  Blocks,
+  Hammer,
+  Plus,
+  Share2,
+  Copy,
+  Link2,
+  Facebook,
+  Linkedin,
+  Twitter,
+  Settings,
+  Filter,
+  Radar,
+  RefreshCcw,
+  MoreVertical,
+  ChevronsUpDown,
+  CalendarDays,
+  Brain,
+  ShieldCheck,
+} from "lucide-react";
+import { AIChatWindow } from "@/components/ai-chat-window";
+import { BrokerImportDialog } from "@/components/broker-import-dialog";
+import { TradeBlockEditor } from "@/components/TradeBlockEditor";
+import type { BrokerTrade } from "@shared/schema";
+
+// Type definitions for stock data and trading
+interface StockData {
+  symbol: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  volume: string | number;
+  marketCap: string;
+  pe: number;
+  high: number;
+  low: number;
+  open: number;
+  sentiment: {
+    trend?: string;
+    confidence?: string;
+    score?: number;
+  } | null;
+  indicators: {
+    rsi?: string;
+    ema50?: string;
+    macd?: string;
+  } | null;
+}
+
+interface TradeMarker {
+  candleIndex: number;
+  price: number;
+  type: "buy" | "sell";
+  symbol: string;
+  quantity: number;
+  time: string;
+  pnl: string;
+}
+
+// SwipeableCardStack Component
+interface SwipeableCardStackProps {
+  onSectorChange: (sector: string) => void;
+  selectedSector: string;
+  onCardIndexChange?: (index: number) => void;
+  currentCardIndex?: number;
+}
+
+function SwipeableCardStack({
+  onSectorChange,
+  selectedSector,
+  onCardIndexChange,
+  currentCardIndex = 0,
+}: SwipeableCardStackProps) {
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [currentContent, setCurrentContent] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [currentAudio, setCurrentAudio] =
+    useState<SpeechSynthesisUtterance | null>(null);
+
+  const [cards, setCards] = useState([
+    {
+      id: 1,
+      title: "TECH NEWS",
+      subtitle: "Latest in\ntechnology",
+      buttonText: "Read Now",
+      gradient: "from-blue-500 to-blue-600",
+      buttonColor: "text-blue-600",
+      icon: "💻",
+      sector: "IT",
+    },
+    {
+      id: 2,
+      title: "FINANCE NEWS",
+      subtitle: "Market updates\n& trends",
+      buttonText: "Listen",
+      gradient: "from-green-500 to-green-600",
+      buttonColor: "text-green-600",
+      icon: "📈",
+      sector: "FINANCE",
+    },
+    {
+      id: 3,
+      title: "COMMODITY NEWS",
+      subtitle: "Commodity\nmarket trends",
+      buttonText: "Listen",
+      gradient: "from-orange-500 to-orange-600",
+      buttonColor: "text-orange-600",
+      icon: "🏗️",
+      sector: "COMMODITY",
+    },
+    {
+      id: 4,
+      title: "GLOBAL NEWS",
+      subtitle: "World events\n& updates",
+      buttonText: "Listen",
+      gradient: "from-purple-500 to-purple-600",
+      buttonColor: "text-purple-600",
+      icon: "🌍",
+      sector: "GLOBAL",
+    },
+    {
+      id: 5,
+      title: "BANKING NEWS",
+      subtitle: "Banking sector\nupdates",
+      buttonText: "Listen",
+      gradient: "from-indigo-500 to-indigo-600",
+      buttonColor: "text-indigo-600",
+      icon: "🏦",
+      sector: "BANKS",
+    },
+    {
+      id: 6,
+      title: "AUTO NEWS",
+      subtitle: "Automotive\nindustry news",
+      buttonText: "Listen",
+      gradient: "from-red-500 to-red-600",
+      buttonColor: "text-red-600",
+      icon: "🚗",
+      sector: "AUTOMOBILE",
+    },
+  ]);
+
+  // News cache for faster loading - ultra-short cache for speed
+  const newsCache = React.useRef<
+    Record<string, { content: string; timestamp: number }>
+  >({});
+  const CACHE_DURATION = 10 * 1000; // 10 seconds - ultra-short for instant refresh
+
+  // Global cleanup function to stop all audio
+  const globalStopAudio = React.useCallback(() => {
+    if (currentAudio) {
+      speechSynthesis.cancel();
+      setCurrentAudio(null);
+      setIsPlaying(false);
+    }
+  }, [currentAudio]);
+
+  // Fetch AI-generated news content for current card with caching
+  const fetchAndPlayContent = async (cardTitle: string, sector: string) => {
+    // Stop any currently playing audio immediately
+    globalStopAudio();
+
+    try {
+      setIsLoading(true);
+
+      // Check cache first
+      const cacheKey = sector;
+      const cachedData = newsCache.current[cacheKey];
+      const now = Date.now();
+
+      if (cachedData && now - cachedData.timestamp < CACHE_DURATION) {
+        // Use cached content
+        setCurrentContent(cachedData.content);
+        playAudio(cachedData.content);
+        setIsLoading(false);
+        return;
+      }
+
+      const response = await fetch(getFullApiUrl("/api/daily-news"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ sector: sector }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to generate news content");
+      }
+
+      const data = await response.json();
+      const content = data.summary;
+
+      // Cache the content
+      newsCache.current[cacheKey] = {
+        content,
+        timestamp: now,
+      };
+
+      setCurrentContent(content);
+      playAudio(content);
+    } catch (error) {
+      console.error("Error fetching news:", error);
+      const fallbackContent = `${sector.toLowerCase()} market update. Current developments in progress. Trading activity continues.`;
+      setCurrentContent(fallbackContent);
+      playAudio(fallbackContent);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Play audio using Speech Synthesis with optimized settings
+  const playAudio = (text: string) => {
+    // Stop current audio if playing
+    if (currentAudio) {
+      speechSynthesis.cancel();
+    }
+
+    // Clean the text to remove any potential greetings
+    const cleanText = text
+      .replace(
+        /^(good morning|good afternoon|good evening|hello|hi|welcome)/gi,
+        "",
+      )
+      .replace(/^(ladies and gentlemen|dear listeners|in today's news)/gi, "")
+      .replace(/^[.,\s]+/, "") // Remove leading punctuation and spaces
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
+    // Get available voices and select neutral/direct voices
+    const voices = speechSynthesis.getVoices();
+
+    // Prioritize Moira voice specifically, then other natural voices
+    const moiraVoice = voices.find(
+      (voice) =>
+        voice.lang.startsWith("en") &&
+        voice.name.toLowerCase().includes("moira"),
+    );
+
+    const otherNaturalVoices = voices.filter(
+      (voice) =>
+        voice.lang.startsWith("en") &&
+        !voice.name.toLowerCase().includes("moira") &&
+        // Other premium female voices that sound very natural
+        (voice.name.toLowerCase().includes("samantha") ||
+          voice.name.toLowerCase().includes("karen") ||
+          voice.name.toLowerCase().includes("susan") ||
+          voice.name.toLowerCase().includes("fiona") ||
+          voice.name.toLowerCase().includes("serena") ||
+          voice.name.toLowerCase().includes("allison") ||
+          voice.name.toLowerCase().includes("ava") ||
+          voice.name.toLowerCase().includes("claire") ||
+          voice.name.toLowerCase().includes("aria") ||
+          voice.name.toLowerCase().includes("zira") ||
+          voice.name.toLowerCase().includes("hazel") ||
+          // Neural/premium indicators
+          voice.name.toLowerCase().includes("neural") ||
+          voice.name.toLowerCase().includes("premium") ||
+          voice.name.toLowerCase().includes("enhanced")),
+    );
+
+    // Use Moira first, then other natural voices, then any English voice
+    if (moiraVoice) {
+      utterance.voice = moiraVoice;
+    } else if (otherNaturalVoices.length > 0) {
+      utterance.voice = otherNaturalVoices[0];
+    } else {
+      const englishVoices = voices.filter(
+        (voice) =>
+          voice.lang.startsWith("en") &&
+          !voice.name.toLowerCase().includes("novelty"),
+      );
+      if (englishVoices.length > 0) {
+        utterance.voice = englishVoices[0];
+      }
+    }
+
+    // Settings for natural, human-like delivery
+    utterance.rate = 0.9; // Slightly slower for more natural pacing
+    utterance.pitch = 1.05; // Slight variation for more natural sound
+    utterance.volume = 0.85; // Comfortable listening volume
+
+    // Set language for neutral pronunciation
+    utterance.lang = "en-US";
+
+    utterance.onstart = () => setIsPlaying(true);
+    utterance.onend = () => {
+      setIsPlaying(false);
+      setCurrentAudio(null);
+    };
+    utterance.onerror = () => {
+      setIsPlaying(false);
+      setCurrentAudio(null);
+    };
+
+    setCurrentAudio(utterance);
+    speechSynthesis.speak(utterance);
+  };
+
+  // Stop audio playback
+  const stopAudio = () => {
+    if (currentAudio) {
+      speechSynthesis.cancel();
+      setIsPlaying(false);
+      setCurrentAudio(null);
+    }
+  };
+
+  const swipeCard = (direction: "left" | "right") => {
+    // Immediately stop current audio
+    globalStopAudio();
+
+    setCards((prev) => {
+      const newCards = [...prev];
+      let newIndex = currentCardIndex;
+
+      if (direction === "right") {
+        // Right swipe: Move to next card (current card goes to back)
+        const topCard = newCards.shift();
+        if (topCard) {
+          newCards.push(topCard);
+        }
+        newIndex = (currentCardIndex + 1) % 7;
+      } else {
+        // Left swipe: Move to previous card (bottom card comes to front)
+        const bottomCard = newCards.pop();
+        if (bottomCard) {
+          newCards.unshift(bottomCard);
+        }
+        newIndex = (currentCardIndex - 1 + 7) % 7;
+      }
+
+      // Notify parent of index change
+      if (onCardIndexChange) {
+        onCardIndexChange(newIndex);
+      }
+
+      // Auto-play content for the new front card (faster response)
+      if (newCards.length > 0) {
+        const frontCard = newCards[0];
+        setTimeout(() => {
+          fetchAndPlayContent(frontCard.title, frontCard.sector);
+        }, 100); // Reduced delay for faster response
+      }
+
+      return newCards;
+    });
+  };
+
+  // Expose global stop function to window for tab switching
+  React.useEffect(() => {
+    window.stopNewsAudio = globalStopAudio;
+
+    return () => {
+      delete window.stopNewsAudio;
+    };
+  }, [globalStopAudio]);
+
+  // Add window focus/blur detection to stop voice when clicking away
+  React.useEffect(() => {
+    const handleWindowBlur = () => {
+      // Stop audio when user clicks away from the window
+      globalStopAudio();
+    };
+
+    const handleVisibilityChange = () => {
+      // Stop audio when tab becomes hidden
+      if (document.hidden) {
+        globalStopAudio();
+      }
+    };
+
+    // Listen for window losing focus
+    window.addEventListener("blur", handleWindowBlur);
+    // Listen for tab visibility changes
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      window.removeEventListener("blur", handleWindowBlur);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [globalStopAudio]);
+
+  // Load voices on component mount
+  React.useEffect(() => {
+    // Ensure voices are loaded
+    const loadVoices = () => {
+      speechSynthesis.getVoices();
+    };
+
+    // Load voices immediately and on voiceschanged event
+    loadVoices();
+    speechSynthesis.addEventListener("voiceschanged", loadVoices);
+
+    // Cleanup on unmount
+    return () => {
+      speechSynthesis.removeEventListener("voiceschanged", loadVoices);
+      globalStopAudio(); // Stop any playing audio when component unmounts
+    };
+  }, [globalStopAudio]);
+
+  // Voice functionality is now only triggered by manual clicks
+
+  return (
+    <div className="relative w-56 h-48 md:w-44 md:h-52">
+      {cards.map((card, index) => {
+        const isTop = index === 0;
+        const isSecond = index === 1;
+        const isThird = index === 2;
+
+        return (
+          <div
+            key={card.id}
+            data-card-index={index}
+            className={`absolute inset-0 transition-all duration-300 ease-out cursor-grab active:cursor-grabbing ${
+              isTop
+                ? "z-40 scale-100 rotate-0"
+                : isSecond
+                  ? "z-30 scale-95 rotate-1 translate-y-2"
+                  : isThird
+                    ? "z-20 scale-90 rotate-2 translate-y-4"
+                    : "z-10 scale-85 rotate-3 translate-y-6 opacity-50"
+            }`}
+            onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
+              if (!isTop) return;
+
+              const startX = e.clientX;
+              const startY = e.clientY;
+              const cardElement = e.currentTarget as HTMLElement;
+              let isDragging = false;
+
+              const handleMouseMove = (e: MouseEvent) => {
+                const deltaX = e.clientX - startX;
+                const deltaY = e.clientY - startY;
+
+                if (
+                  !isDragging &&
+                  (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)
+                ) {
+                  isDragging = true;
+                }
+
+                if (isDragging) {
+                  const rotation = deltaX * 0.1;
+                  cardElement.style.transform = `translate(${deltaX}px, ${deltaY}px) rotate(${rotation}deg)`;
+                  cardElement.style.opacity = String(
+                    Math.max(0.3, 1 - Math.abs(deltaX) / 300),
+                  );
+                }
+              };
+
+              const handleMouseUp = (e: MouseEvent) => {
+                if (isDragging) {
+                  const deltaX = e.clientX - startX;
+                  if (Math.abs(deltaX) > 100) {
+                    // Determine swipe direction
+                    const swipeDirection = deltaX > 0 ? "right" : "left";
+
+                    if (swipeDirection === "right") {
+                      // Right swipe: Card moves away animation
+                      const direction = "150%";
+                      const rotation = "30deg";
+                      cardElement.style.transform = `translate(${direction}, ${
+                        deltaX * 0.5
+                      }px) rotate(${rotation})`;
+                      cardElement.style.opacity = "0";
+
+                      setTimeout(() => {
+                        cardElement.style.transform = "";
+                        cardElement.style.opacity = "";
+                        swipeCard(swipeDirection);
+                      }, 300);
+                    } else {
+                      // Left swipe: Previous card slides in from left (reverse animation)
+                      cardElement.style.transform = "";
+                      cardElement.style.opacity = "";
+
+                      // Change the card order first
+                      swipeCard(swipeDirection);
+
+                      // Then animate the new top card sliding in from the right (coming back)
+                      setTimeout(() => {
+                        const newTopCard =
+                          cardElement.parentElement?.querySelector(
+                            '[data-card-index="0"]',
+                          ) as HTMLElement;
+                        if (newTopCard) {
+                          // Start from right side with rotation (like it's coming back)
+                          newTopCard.style.transform =
+                            "translate(150%, 0) rotate(30deg)";
+                          newTopCard.style.opacity = "0";
+
+                          // Animate to center
+                          setTimeout(() => {
+                            newTopCard.style.transform = "";
+                            newTopCard.style.opacity = "";
+                            newTopCard.style.transition =
+                              "transform 300ms ease-out, opacity 300ms ease-out";
+
+                            // Clear transition after animation
+                            setTimeout(() => {
+                              newTopCard.style.transition = "";
+                            }, 300);
+                          }, 10);
+                        }
+                      }, 10);
+                    }
+                  } else {
+                    // Snap back to center
+                    cardElement.style.transform = "";
+                    cardElement.style.opacity = "";
+                  }
+                }
+
+                document.removeEventListener("mousemove", handleMouseMove);
+                document.removeEventListener("mouseup", handleMouseUp);
+              };
+
+              document.addEventListener("mousemove", handleMouseMove);
+              document.addEventListener("mouseup", handleMouseUp);
+            }}
+            onTouchStart={(e: React.TouchEvent<HTMLDivElement>) => {
+              if (!isTop) return;
+
+              const startX = e.touches[0].clientX;
+              const startY = e.touches[0].clientY;
+              const cardElement = e.currentTarget as HTMLElement;
+              let isDragging = false;
+
+              const handleTouchMove = (e: TouchEvent) => {
+                const deltaX = e.touches[0].clientX - startX;
+                const deltaY = e.touches[0].clientY - startY;
+
+                if (
+                  !isDragging &&
+                  (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)
+                ) {
+                  isDragging = true;
+                }
+
+                if (isDragging) {
+                  e.preventDefault();
+                  const rotation = deltaX * 0.1;
+                  cardElement.style.transform = `translate(${deltaX}px, ${deltaY}px) rotate(${rotation}deg)`;
+                  cardElement.style.opacity = String(
+                    Math.max(0.3, 1 - Math.abs(deltaX) / 300),
+                  );
+                }
+              };
+
+              const handleTouchEnd = (e: TouchEvent) => {
+                if (isDragging) {
+                  const deltaX = e.changedTouches[0].clientX - startX;
+                  if (Math.abs(deltaX) > 100) {
+                    // Determine swipe direction
+                    const swipeDirection = deltaX > 0 ? "right" : "left";
+
+                    if (swipeDirection === "right") {
+                      // Right swipe: Card moves away animation
+                      const direction = "150%";
+                      const rotation = "30deg";
+                      cardElement.style.transform = `translate(${direction}, ${
+                        deltaX * 0.5
+                      }px) rotate(${rotation})`;
+                      cardElement.style.opacity = "0";
+
+                      setTimeout(() => {
+                        cardElement.style.transform = "";
+                        cardElement.style.opacity = "";
+                        swipeCard(swipeDirection);
+                      }, 300);
+                    } else {
+                      // Left swipe: Previous card slides in from left (reverse animation)
+                      cardElement.style.transform = "";
+                      cardElement.style.opacity = "";
+
+                      // Change the card order first
+                      swipeCard(swipeDirection);
+
+                      // Then animate the new top card sliding in from the right (coming back)
+                      setTimeout(() => {
+                        const newTopCard =
+                          cardElement.parentElement?.querySelector(
+                            '[data-card-index="0"]',
+                          ) as HTMLElement;
+                        if (newTopCard) {
+                          // Start from right side with rotation (like it's coming back)
+                          newTopCard.style.transform =
+                            "translate(150%, 0) rotate(30deg)";
+                          newTopCard.style.opacity = "0";
+
+                          // Animate to center
+                          setTimeout(() => {
+                            newTopCard.style.transform = "";
+                            newTopCard.style.opacity = "";
+                            newTopCard.style.transition =
+                              "transform 300ms ease-out, opacity 300ms ease-out";
+
+                            // Clear transition after animation
+                            setTimeout(() => {
+                              newTopCard.style.transition = "";
+                            }, 300);
+                          }, 10);
+                        }
+                      }, 10);
+                    }
+                  } else {
+                    // Snap back to center
+                    cardElement.style.transform = "";
+                    cardElement.style.opacity = "";
+                  }
+                }
+
+                document.removeEventListener("touchmove", handleTouchMove);
+                document.removeEventListener("touchend", handleTouchEnd);
+              };
+
+              document.addEventListener("touchmove", handleTouchMove, {
+                passive: false,
+              });
+              document.addEventListener("touchend", handleTouchEnd);
+            }}
+            onClick={() => {
+              if (isTop) {
+                console.log(`Clicked on ${card.title}`);
+                onSectorChange(card.sector);
+              }
+            }}
+          >
+            <div
+              className={`bg-gradient-to-br ${card.gradient} rounded-2xl p-5 md:p-6 h-full relative overflow-hidden shadow-xl border-2 border-white/10 flex flex-col`}
+            >
+              {/* Character illustration area */}
+              <div className="absolute bottom-0 right-0 w-20 h-20 md:w-24 md:h-24 opacity-20">
+                <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/10 rounded-full"></div>
+              </div>
+
+              {/* Card content */}
+              <div className="relative z-10 flex flex-col h-full">
+                <div className="text-[10px] md:text-[9px] text-white/90 mb-1 md:mb-1.5 uppercase tracking-wider font-semibold">
+                  {card.title}
+                </div>
+                <h3 className="text-lg md:text-base font-bold text-white mb-3 md:mb-3 leading-snug flex-grow">
+                  {card.subtitle.split("\n").map((line, i) => (
+                    <div key={i} className="block">{line}</div>
+                  ))}
+                </h3>
+                <Button
+                  className={`bg-white ${card.buttonColor} hover:bg-gray-100 px-3 py-1.5 md:px-3 md:py-1 rounded-full text-xs md:text-[11px] font-semibold shadow-lg w-fit`}
+                  onClick={() => {
+                    if (isTop) {
+                      const userId = localStorage.getItem('currentUserId');
+                      const userEmail = localStorage.getItem('currentUserEmail');
+
+                      if (!userId || !userEmail) {
+                        console.log('🔒 User not authenticated, redirecting to login');
+                        window.location.href = '/login';
+                        return;
+                      }
+
+                      if (isPlaying) {
+                        stopAudio();
+                      } else {
+                        fetchAndPlayContent(card.title, card.sector);
+                      }
+                    }
+                  }}
+                  disabled={isLoading && isTop}
+                >
+                  <div className="flex items-center gap-2">
+                    {isTop && isLoading ? (
+                      <RotateCcw className="w-4 h-4 animate-spin" />
+                    ) : isTop && isPlaying ? (
+                      <Pause className="w-4 h-4" />
+                    ) : (
+                      <Play className="w-4 h-4" />
+                    )}
+                    <span>
+                      {isTop && isLoading
+                        ? "Generating..."
+                        : isTop && isPlaying
+                          ? "Pause"
+                          : card.buttonText}
+                    </span>
+                  </div>
+                </Button>
+              </div>
+
+              {/* Icon */}
+              <div className="absolute top-2 right-2 md:top-1.5 md:right-1.5 text-xl md:text-lg filter drop-shadow-lg">
+                {card.icon}
+              </div>
+
+              {/* Stack indicator for non-top cards */}
+              {!isTop && (
+                <div className="absolute inset-0 bg-black/10 rounded-2xl"></div>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+import { format } from "date-fns";
+import { apiRequest } from "@/lib/queryClient";
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  ResponsiveContainer,
+  Tooltip,
+  CartesianGrid,
+  Pie,
+  Cell,
+  ReferenceLine,
+} from "recharts";
+
+function NiftyIndex() {
+  const {
+    data: marketData,
+    isLoading,
+    error,
+  } = useQuery({
+    queryKey: ["/api/market-data"],
+    refetchInterval: 3000, // Refresh every 3 seconds for live data
+  });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            NIFTY 50 Index
+          </CardTitle>
+          <CardDescription>Live market data</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="animate-pulse">Loading...</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            NIFTY 50 Index
+          </CardTitle>
+          <CardDescription>Live market data</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="text-red-500">Error loading data</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  // Find NIFTY50 data from the response
+  const niftyData = Array.isArray(marketData)
+    ? marketData.find((item: any) => item.symbol === "NIFTY50")
+    : null;
+
+  if (!niftyData) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Activity className="h-5 w-5" />
+            NIFTY 50 Index
+          </CardTitle>
+          <CardDescription>Live market data</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div>NIFTY data not available</div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const isPositive = niftyData.change >= 0;
+  const TrendIcon = isPositive ? TrendingUp : TrendingDown;
+  const trendColor = isPositive ? "text-green-600" : "text-red-600";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Activity className="h-5 w-5" />
+          {niftyData.name}
+        </CardTitle>
+        <CardDescription>Live streaming data from NSE</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <div className="text-2xl font-bold">
+              {niftyData.ltp?.toLocaleString("en-IN", {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2,
+              }) || "N/A"}
+            </div>
+            <div className="text-sm text-gray-500">Last Traded Price</div>
+          </div>
+          <div className={`text-right ${trendColor}`}>
+            <div className="flex items-center justify-end gap-1">
+              <TrendIcon className="h-4 w-4" />
+              <span className="text-lg font-semibold">
+                {isPositive ? "+" : ""}
+                {niftyData.change?.toFixed(2) || "N/A"}
+              </span>
+            </div>
+            <div className="text-sm">
+              ({isPositive ? "+" : ""}
+              {niftyData.changePercent?.toFixed(2) || "N/A"}%)
+            </div>
+          </div>
+        </div>
+
+        <div className="pt-4 border-t">
+          <div className="text-xs text-gray-500">
+            Last Updated: {new Date(niftyData.lastUpdate).toLocaleTimeString()}
+          </div>
+          <div className="text-xs text-gray-500">Code: {niftyData.code}</div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+interface HistoricalDataResponse {
+  symbol: string;
+  resolution: string;
+  range_from: string;
+  range_to: string;
+  candles: Array<{
+    timestamp: number;
+    open: number;
+    high: number;
+    low: number;
+    close: number;
+    volume: number;
+  }>;
+}
+
+function HistoricalDataSection() {
+  // Set default dates to a few days ago to ensure data availability (avoid weekends/holidays)
+  const defaultDate = new Date();
+  defaultDate.setDate(defaultDate.getDate() - 3); // Go back 3 days to avoid weekend issues
+  const [fromDate, setFromDate] = useState(format(defaultDate, "yyyy-MM-dd"));
+  const [toDate, setToDate] = useState(format(defaultDate, "yyyy-MM-dd"));
+  const [timeframe, setTimeframe] = useState("1");
+  const [selectedSymbol, setSelectedSymbol] = useState("NSE:INFY-EQ");
+  const [sentimentAnalysis, setSentimentAnalysis] = useState<any[]>([]);
+  const [isAnalyzingSentiment, setIsAnalyzingSentiment] = useState(false);
+  const queryClient = useQueryClient();
+
+  const { data: historicalData } = useQuery<HistoricalDataResponse>({
+    queryKey: [
+      "/api/historical-data",
+      selectedSymbol,
+      fromDate,
+      toDate,
+      timeframe,
+    ],
+    enabled: true, // Enable automatic fetching
+  });
+
+  const fetchHistoricalData = useMutation({
+    mutationFn: async () => {
+      const response = await fetch(getFullApiUrl("/api/historical-data"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          symbol: selectedSymbol,
+          resolution: timeframe,
+          range_from: fromDate,
+          range_to: toDate,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to fetch historical data");
+      }
+
+      return response.json();
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(
+        ["/api/historical-data", selectedSymbol, fromDate, toDate, timeframe],
+        data,
+      );
+    },
+  });
+
+  const handleFetchData = () => {
+    fetchHistoricalData.mutate();
+  };
+
+  const analyzeSentiment = async (candles: any[], symbol: string) => {
+    if (!candles || candles.length === 0) return;
+
+    setIsAnalyzingSentiment(true);
+    try {
+      const response = await fetch(getFullApiUrl("/api/sentiment-analysis"), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          candles,
+          symbol,
+        }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setSentimentAnalysis(data.sentiment || []);
+      } else {
+        console.error("Failed to analyze sentiment");
+        setSentimentAnalysis([]);
+      }
+    } catch (error) {
+      console.error("Sentiment analysis error:", error);
+      setSentimentAnalysis([]);
+    } finally {
+      setIsAnalyzingSentiment(false);
+    }
+  };
+
+  // Auto-analyze sentiment when historical data changes
+  React.useEffect(() => {
+    if (historicalData?.candles && historicalData.candles.length > 0) {
+      analyzeSentiment(historicalData.candles, selectedSymbol);
+    }
+  }, [historicalData, selectedSymbol]);
+
+  const handleExportToExcel = () => {
+    if (
+      !historicalData ||
+      !historicalData.candles ||
+      historicalData.candles.length === 0
+    ) {
+      return;
+    }
+
+    // Prepare CSV content with sentiment data
+    const headers = [
+      "Date",
+      "Time",
+      "Open",
+      "High",
+      "Low",
+      "Close",
+      "Volume",
+      "Sentiment_Signal",
+      "Sentiment_Score",
+      "Confidence",
+    ];
+    const csvContent = [
+      headers.join(","),
+      ...historicalData.candles.map((candle, index) => {
+        const date = new Date(candle.timestamp * 1000);
+        const dateStr = format(date, "d/M/yyyy");
+        const timeStr = format(date, "HH:mm:ss");
+        const sentiment = sentimentAnalysis[index];
+        return [
+          dateStr,
+          timeStr,
+          candle.open.toFixed(2),
+          candle.high.toFixed(2),
+          candle.low.toFixed(2),
+          candle.close.toFixed(2),
+          candle.volume.toString(),
+          sentiment?.signal || "N/A",
+          sentiment?.score?.toFixed(2) || "N/A",
+          sentiment?.confidence?.toFixed(0) || "N/A",
+        ].join(",");
+      }),
+    ].join("\n");
+
+    // Create and download file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+
+    // Generate filename with symbol, timeframe, and date range
+    const symbolName = (selectedSymbol || "UNKNOWN")
+      .replace("NSE:", "")
+      .replace("-EQ", "")
+      .replace("-INDEX", "");
+    const timeframeName = timeframe === "1" ? "1min" : `${timeframe}min`;
+    const dateRange =
+      fromDate === toDate ? fromDate : `${fromDate}_to_${toDate}`;
+    const filename = `${symbolName}_${timeframeName}_${dateRange}_OHLC.csv`;
+
+    link.setAttribute("download", filename);
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <BarChart3 className="h-5 w-5" />
+          Historical OHLC Data
+        </CardTitle>
+        <CardDescription>
+          Custom date range, symbol, and timeframe selection with real-time
+          Fyers API data
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Date, Symbol, and Timeframe Selection */}
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="from-date">From Date</Label>
+            <Input
+              id="from-date"
+              type="date"
+              value={fromDate}
+              onChange={(e) => setFromDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="to-date">To Date</Label>
+            <Input
+              id="to-date"
+              type="date"
+              value={toDate}
+              onChange={(e) => setToDate(e.target.value)}
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="symbol">Symbol</Label>
+            <Select value={selectedSymbol} onValueChange={setSelectedSymbol}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select symbol" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="NSE:NIFTY50-INDEX">NIFTY 50</SelectItem>
+                <SelectItem value="NSE:INFY-EQ">INFOSYS</SelectItem>
+                <SelectItem value="NSE:RELIANCE-EQ">RELIANCE</SelectItem>
+                <SelectItem value="NSE:TCS-EQ">TCS</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="timeframe">Timeframe</Label>
+            <Select value={timeframe} onValueChange={setTimeframe}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select timeframe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1 Minute</SelectItem>
+                <SelectItem value="5">5 Minutes</SelectItem>
+                <SelectItem value="10">10 Minutes</SelectItem>
+                <SelectItem value="15">15 Minutes</SelectItem>
+                <SelectItem value="20">20 Minutes</SelectItem>
+                <SelectItem value="30">30 Minutes</SelectItem>
+                <SelectItem value="40">40 Minutes</SelectItem>
+                <SelectItem value="60">1 Hour</SelectItem>
+                <SelectItem value="80">80 Minutes</SelectItem>
+                <SelectItem value="120">2 Hours</SelectItem>
+                <SelectItem value="160">160 Minutes</SelectItem>
+                <SelectItem value="240">4 Hours</SelectItem>
+                <SelectItem value="320">320 Minutes</SelectItem>
+                <SelectItem value="480">8 Hours</SelectItem>
+                <SelectItem value="960">16 Hours</SelectItem>
+                <SelectItem value="1D">1 Day</SelectItem>
+                <SelectItem value="2D">2 Days</SelectItem>
+                <SelectItem value="4D">4 Days</SelectItem>
+                <SelectItem value="8D">8 Days</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>&nbsp;</Label>
+            <div className="flex gap-1.5">
+              <Button
+                onClick={handleFetchData}
+                disabled={fetchHistoricalData.isPending}
+                className="flex-1"
+              >
+                <Calendar className="h-4 w-4 mr-2" />
+                {fetchHistoricalData.isPending ? "Fetching..." : "Fetch Data"}
+              </Button>
+              <Button
+                onClick={handleExportToExcel}
+                disabled={
+                  !historicalData || historicalData.candles.length === 0
+                }
+                variant="outline"
+                size="default"
+                className="px-3"
+                title="Export OHLC data to Excel"
+              >
+                <Download className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Display */}
+        {fetchHistoricalData.isError && (
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <div className="bg-red-100 rounded-full p-1">
+                <svg
+                  className="h-5 w-5 text-red-600"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </div>
+              <div className="flex-1">
+                <h3 className="text-red-800 font-medium">
+                  Fyers API Temporary Service Issue
+                </h3>
+                <div className="text-red-700 text-sm mt-1 space-y-2">
+                  <p>
+                    <strong>Current Status:</strong> Fyers API is experiencing
+                    intermittent service issues with historical data endpoints.
+                    Live market data continues working perfectly.
+                  </p>
+                  <div className="bg-green-100 p-3 rounded border-l-4 border-green-400">
+                    <p className="font-medium text-green-800">
+                      What's Still Working:
+                    </p>
+                    <ul className="mt-1 space-y-1 text-xs text-green-700">
+                      <li>
+                        • <strong>Live Market Data:</strong> Real-time prices
+                        streaming every 3 seconds (Dashboard tab)
+                      </li>
+                      <li>
+                        • <strong>Chart Tab:</strong> Professional interactive
+                        candlestick chart with zoom controls
+                      </li>
+                      <li>
+                        • <strong>Pattern Analysis:</strong> All 14 Battu API
+                        endpoints for technical analysis
+                      </li>
+                      <li>
+                        • <strong>Previously Successful:</strong> CB Tab fetched
+                        375 candles earlier before API maintenance
+                      </li>
+                    </ul>
+                  </div>
+                  <div className="bg-blue-100 p-3 rounded border-l-4 border-blue-400">
+                    <p className="font-medium text-blue-800">
+                      Alternative Solutions:
+                    </p>
+                    <ul className="mt-1 space-y-1 text-xs text-blue-700">
+                      <li>
+                        • <strong>Use Chart Tab:</strong> Interactive
+                        candlestick chart may have different data endpoints
+                      </li>
+                      <li>
+                        • <strong>Try Later:</strong> API maintenance typically
+                        resolves within 30-60 minutes
+                      </li>
+                      <li>
+                        • <strong>Different Dates:</strong> Try various past
+                        trading days as availability varies
+                      </li>
+                      <li>
+                        • <strong>Monitor Dashboard:</strong> Live streaming
+                        data remains fully functional
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {historicalData && (
+          <div className="space-y-4">
+            <div className="p-3 bg-green-50 border border-green-200 rounded-lg mb-4">
+              <div className="flex items-center space-x-2">
+                <div className="bg-green-100 rounded-full p-1">
+                  <svg
+                    className="h-4 w-4 text-green-600"
+                    fill="currentColor"
+                    viewBox="0 0 20 20"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <div className="text-green-800 font-medium">
+                  ✅ Fyers API Successfully Connected & Data Loaded!
+                </div>
+              </div>
+              <div className="text-green-700 text-sm mt-1">
+                Real-time historical OHLC data fetched successfully from Fyers
+                API v3.0.0
+              </div>
+            </div>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold">
+                OHLC Data ({historicalData?.candles?.length || 0} candles) - CB
+                Tab
+              </h3>
+              <div className="text-sm text-gray-500 space-y-1">
+                <div>
+                  {fromDate} to {toDate} | {timeframe} minute timeframe
+                </div>
+                <div className="text-xs">
+                  Total Candles: {historicalData?.candles?.length || 0}
+                </div>
+              </div>
+            </div>
+
+            <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Date/Time</TableHead>
+                    <TableHead className="text-right">Open</TableHead>
+                    <TableHead className="text-right">High</TableHead>
+                    <TableHead className="text-right">Low</TableHead>
+                    <TableHead className="text-right">Close</TableHead>
+                    <TableHead className="text-right">Volume</TableHead>
+                    <TableHead className="text-center">Sentiment</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {historicalData?.candles?.map((candle, index) => (
+                    <TableRow key={index}>
+                      <TableCell className="font-medium">
+                        {new Date(candle.timestamp * 1000).toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {candle.open.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {candle.high.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {candle.low.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {candle.close.toFixed(2)}
+                      </TableCell>
+                      <TableCell className="text-right">
+                        {candle.volume.toLocaleString()}
+                      </TableCell>
+                      <TableCell className="text-center">
+                        {isAnalyzingSentiment &&
+                        index < sentimentAnalysis.length ? (
+                          <div className="flex items-center justify-center space-x-1">
+                            <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-blue-600"></div>
+                            <span className="text-xs text-gray-500">
+                              Analyzing...
+                            </span>
+                          </div>
+                        ) : sentimentAnalysis[index] ? (
+                          <div className="space-y-1 bg-white dark:bg-gray-900/50 rounded-lg p-3">
+                            <div
+                              className={`text-xs font-semibold px-2 py-1 rounded ${
+                                sentimentAnalysis[index].signal === "BUY"
+                                  ? "bg-green-100 text-green-800"
+                                  : sentimentAnalysis[index].signal === "SELL"
+                                    ? "bg-red-100 text-red-800"
+                                    : "bg-gray-100 text-gray-800"
+                              }`}
+                            >
+                              {sentimentAnalysis[index].signal}
+                            </div>
+                            <div className="text-xs text-gray-600">
+                              {sentimentAnalysis[index].confidence}%
+                            </div>
+                            <div className="w-full bg-gray-200 rounded-full h-1">
+                              <div
+                                className={`h-1 rounded-full ${
+                                  sentimentAnalysis[index].score > 0
+                                    ? "bg-green-500"
+                                    : "bg-red-500"
+                                }`}
+                                style={{
+                                  width: `${
+                                    Math.abs(sentimentAnalysis[index].score) *
+                                    100
+                                  }%`,
+                                }}
+                              ></div>
+                            </div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">-</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {(!historicalData?.candles ||
+                    historicalData.candles.length === 0) && (
+                    <TableRow>
+                      <TableCell
+                        colSpan={7}
+                        className="text-center text-gray-500"
+                      >
+                        <div className="space-y-2">
+                          <div>No historical data available</div>
+                          <div className="text-sm">
+                            Historical data access may require specific API
+                            permissions or market hours. Use the "Fetch Data"
+                            button above to attempt loading data.
+                          </div>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function MicroAnimationsDemoPage() {
+  const [demoPrice, setDemoPrice] = useState(1552.5);
+  const [prevPrice, setPrevPrice] = useState(1552.5);
+  const [isExecuting, setIsExecuting] = useState(false);
+  const [tradeType, setTradeType] = useState<"buy" | "sell">("buy");
+  const [volume, setVolume] = useState(1000000);
+  const [isLive, setIsLive] = useState(true);
+  const [profitLoss, setProfitLoss] = useState(0);
+  const [showCandleAnimation, setShowCandleAnimation] = useState(false);
+
+  // Demo candle data
+  const demoCandleData = {
+    open: 1580.0,
+    high: 1585.5,
+    low: 1548.2,
+    close: 1552.5,
+  };
+
+  const updatePrice = (direction: "up" | "down") => {
+    setPrevPrice(demoPrice);
+    const change =
+      direction === "up" ? Math.random() * 5 + 1 : -(Math.random() * 5 + 1);
+    setDemoPrice((prev) => Math.max(prev + change, 1500));
+  };
+
+  const simulateTradeExecution = () => {
+    setIsExecuting(true);
+    setTimeout(() => {
+      setIsExecuting(false);
+      const change =
+        tradeType === "buy"
+          ? Math.random() * 10 + 5
+          : -(Math.random() * 10 + 5);
+      setProfitLoss(change);
+    }, 3000);
+  };
+
+  const simulateVolumeSpike = () => {
+    setVolume((prev) => prev * (1.5 + Math.random()));
+    setTimeout(() => setVolume(1000000), 3000);
+  };
+
+  const toggleMarketStatus = () => {
+    setIsLive(!isLive);
+  };
+
+  const triggerCandleAnimation = () => {
+    setShowCandleAnimation(false);
+    setTimeout(() => setShowCandleAnimation(true), 100);
+  };
+
+  return (
+    <div className="max-w-7xl mx-auto space-y-8">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Micro-Animations for Trading Interface
+          </CardTitle>
+          <CardDescription>
+            Interactive demos showcasing smooth animations for trade execution
+            and market movements
+          </CardDescription>
+        </CardHeader>
+      </Card>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+        {/* Price Change Animation */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Price Change Animation</CardTitle>
+            <CardDescription>
+              Live price updates with directional indicators
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-center p-6 bg-gray-50 dark:bg-white dark:bg-gray-900 rounded-lg">
+              <PriceChangeAnimation
+                value={demoPrice}
+                previousValue={prevPrice}
+                className="text-lg"
+              />
+            </div>
+            <div className="flex gap-1.5">
+              <Button onClick={() => updatePrice("up")} className="flex-1">
+                <TrendingUp className="h-4 w-4 mr-2" />
+                Price Up
+              </Button>
+              <Button
+                onClick={() => updatePrice("down")}
+                variant="outline"
+                className="flex-1"
+              >
+                <TrendingDown className="h-4 w-4 mr-2" />
+                Price Down
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Trade Execution Animation */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Trade Execution Animation</CardTitle>
+            <CardDescription>
+              Order execution feedback with loading states
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-1">
+              <div className="flex gap-1.5">
+                <Button
+                  onClick={() => setTradeType("buy")}
+                  variant={tradeType === "buy" ? "default" : "outline"}
+                  size="sm"
+                >
+                  Buy
+                </Button>
+                <Button
+                  onClick={() => setTradeType("sell")}
+                  variant={tradeType === "sell" ? "default" : "outline"}
+                  size="sm"
+                >
+                  Sell
+                </Button>
+              </div>
+              <Button
+                onClick={simulateTradeExecution}
+                disabled={isExecuting}
+                className="w-full"
+              >
+                {isExecuting ? (
+                  <>
+                    <Activity className="h-4 w-4 mr-2 animate-spin" />
+                    Executing...
+                  </>
+                ) : (
+                  <>
+                    <Play className="h-4 w-4 mr-2" />
+                    Execute {tradeType.toUpperCase()} Order
+                  </>
+                )}
+              </Button>
+            </div>
+            <TradeExecutionAnimation
+              isExecuting={isExecuting}
+              tradeType={tradeType}
+              amount="100"
+              symbol="INFY"
+            />
+          </CardContent>
+        </Card>
+
+        {/* Volume Spike Animation */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Volume Spike Animation</CardTitle>
+            <CardDescription>
+              Animated volume alerts and notifications
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <VolumeSpikeAnimation
+                volume={volume}
+                averageVolume={1000000}
+                className="text-sm"
+              />
+            </div>
+            <Button onClick={simulateVolumeSpike} className="w-full">
+              <Zap className="h-4 w-4 mr-2" />
+              Trigger Volume Spike
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Market Status Pulse */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Market Status Animation</CardTitle>
+            <CardDescription>
+              Live market status with pulsing indicators
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <MarketStatusPulse isLive={isLive} />
+            </div>
+            <Button onClick={toggleMarketStatus} className="w-full">
+              <RotateCcw className="h-4 w-4 mr-2" />
+              Toggle Market Status
+            </Button>
+          </CardContent>
+        </Card>
+
+        {/* Profit/Loss Animation */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Profit/Loss Animation</CardTitle>
+            <CardDescription>
+              Animated P&L with color transitions
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              <ProfitLossAnimation
+                value={profitLoss}
+                showCurrency={true}
+                className="text-lg"
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <Button
+                onClick={() => setProfitLoss(Math.random() * 100 + 10)}
+                size="sm"
+              >
+                <TrendingUp className="h-3 w-3 mr-1" />
+                Profit
+              </Button>
+              <Button
+                onClick={() => setProfitLoss(-(Math.random() * 100 + 10))}
+                variant="outline"
+                size="sm"
+              >
+                <TrendingDown className="h-3 w-3 mr-1" />
+                Loss
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Candlestick Animation */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Candlestick Formation</CardTitle>
+            <CardDescription>Animated candle drawing process</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-900 rounded-lg">
+              {showCandleAnimation && (
+                <CandlestickAnimation candle={demoCandleData} duration={2000} />
+              )}
+            </div>
+            <Button onClick={triggerCandleAnimation} className="w-full">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Animate Candle Formation
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Loading Skeleton Demo */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Market Data Loading Animation</CardTitle>
+          <CardDescription>
+            Skeleton loading states for market data
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <MarketDataSkeleton />
+            <MarketDataSkeleton />
+            <MarketDataSkeleton />
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Integration Examples */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Live Market Data with Animations</CardTitle>
+          <CardDescription>
+            Real INFY data enhanced with micro-animations
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <Label>Live Price</Label>
+              <PriceChangeAnimation
+                value={1552.5}
+                previousValue={1574.5}
+                className="p-3 border rounded-lg bg-white dark:bg-gray-700"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>P&L Today</Label>
+              <ProfitLossAnimation
+                value={-22.0}
+                showCurrency={true}
+                className="p-3 border rounded-lg bg-white dark:bg-gray-700"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Market Status</Label>
+              {isReportLoading && (
+                                                  <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 rounded-lg">
+                                                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg p-8 border border-gray-700 shadow-2xl max-w-md">
+                                                      <div className="text-center">
+                                                        <style>{`
+                                                          @keyframes thinkingDot {
+                                                            0%, 60%, 100% { opacity: 0.3; transform: translateY(0); }
+                                                            30% { opacity: 1; transform: translateY(-8px); }
+                                                          }
+                                                          .thinking-dot {
+                                                            display: inline-block;
+                                                            width: 10px;
+                                                            height: 10px;
+                                                            border-radius: 50%;
+                                                            background-color: #3b82f6;
+                                                            animation: thinkingDot 1.4s infinite;
+                                                            margin: 0 4px;
+                                                          }
+                                                          .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+                                                          .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+                                                        `}</style>
+                                                        <h3 className="text-lg font-semibold text-white mb-4">Generating Financial Report</h3>
+                                                        <div className="flex items-center justify-center gap-2 mb-3">
+                                                          <div className="thinking-dot"></div>
+                                                          <div className="thinking-dot"></div>
+                                                          <div className="thinking-dot"></div>
+                                                        </div>
+                                                        <p className="text-sm text-gray-400">Analyzing quarterly data, company insights, and financial statements...</p>
+                                                      </div>
+                                                    </div>
+                                                  </div>
+                                                )}
+                                                <div className="p-3 border rounded-lg bg-white dark:bg-gray-700">
+                <MarketStatusPulse isLive={false} />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
+// API base URL for Cloud Run compatibility - use environment variable
+// BUT: In development mode (localhost), always use relative URLs to avoid CORS issues
+const isDevelopmentMode = window.location.hostname === 'localhost' || 
+                          window.location.hostname === '127.0.0.1' ||
+                          window.location.hostname.includes('replit.dev') ||
+                          window.location.port === '5000';
+
+const API_BASE_URL = isDevelopmentMode ? '' : (import.meta.env.VITE_API_URL || '');
+
+// Helper function to construct full API URLs for Cloud Run compatibility
+const getFullApiUrl = (path: string): string => {
+  if (path.startsWith('http')) return path;
+  return `${API_BASE_URL}${path}`;
+};
+
+export default function Home() {
+  const [location, setLocation] = useLocation();
+
+  // 🔶 Detect Angel One OAuth callback from redirect
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("angelone_connected")) {
+      console.log("✅ Angel One connected successfully (redirect callback)");
+      setAngelOneIsConnected(true);
+      setAngelOneAccessToken(params.get("angelone_client_code") || "P176266");
+      localStorage.setItem("angel_one_client_code", params.get("angelone_client_code") || "P176266");
+      toast({ title: "Success", description: "Angel One connected successfully" });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    if (params.has("angelone_error")) {
+      const error = decodeURIComponent(params.get("angelone_error") || "");
+      console.error("❌ Angel One auth error:", error);
+      toast({ variant: "destructive", title: "Error", description: error });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+  // AUTO-CONNECT: Angel One API - Automatically connect when app loads
+  useAngelOneAutoconnect();
+  const { theme, toggleTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState("trading-home");
+  const [showTutorOverlay, setShowTutorOverlay] = useState(false);
+  const [swipeStartY, setSwipeStartY] = useState(0);
+  const [swipeCurrentY, setSwipeCurrentY] = useState(0);
+  const [isSwipingUp, setIsSwipingUp] = useState(false);
+  const [showJournalAI, setShowJournalAI] = useState(false);
+  const [journalAIData, setJournalAIData] = useState<any>(null);
+  const [statisticsTab, setStatisticsTab] = useState("overview");
+  // Shared timeframe state for chart and crossings display
+  const [chartTimeframe, setChartTimeframe] = useState<string>("1");
+  // Navigation menu state
+  const [isNavOpen, setIsNavOpen] = useState(false);
+  // Mobile bottom navigation state (home, insight, ranking, paper-trade)
+  const [mobileBottomTab, setMobileBottomTab] = useState<
+    "home" | "insight" | "ranking" | "paper-trade"
+  >("home");
+  // Settings panel state
+  const [showSettingsPanel, setShowSettingsPanel] = useState(false);
+  const [emailVerified, setEmailVerified] = useState<boolean | null>(null);
+  const [verificationOtp, setVerificationOtp] = useState("");
+  const [verificationSending, setVerificationSending] = useState(false);
+  const [verificationConfirming, setVerificationConfirming] = useState(false);
+  const [verificationCodeSent, setVerificationCodeSent] = useState(false);
+  const [verificationError, setVerificationError] = useState("");
+
+  // Clear old localStorage data - using AWS only now
+  useEffect(() => {
+    localStorage.removeItem("tradingDataByDate");
+    console.log("🧹 Cleared old localStorage tradingDataByDate - using AWS only");
+  }, []);
+
+  // Auth state initialization - wait for AWS to sync
+  const [authInitialized, setAuthInitialized] = useState(false);
+  // View-only mode for unauthenticated users - they can view but not interact with protected features
+  const [isViewOnlyMode, setIsViewOnlyMode] = useState(false);
+  const [selectedAudioTrack, setSelectedAudioTrack] = useState<{title: string, duration: string, id: string, youtubeId: string} | null>({ title: 'Bruce Lee: "Your Greatest Enemy Is Within"', duration: "22:30", id: "p1", youtubeId: "KnppzfiZcgM" });
+  const [audioProgress, setAudioProgress] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const youtubePlayerRef = useRef<any>(null);
+
+  useEffect(() => {
+    const tag = document.createElement("script");
+    tag.src = "https://www.youtube.com/iframe_api";
+    const firstScriptTag = document.getElementsByTagName("script")[0];
+    firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+    (window as any).onYouTubeIframeAPIReady = () => {
+      console.log("📺 YouTube IFrame API Ready");
+    };
+  }, []);
+
+  useEffect(() => {
+    if (selectedAudioTrack?.youtubeId) {
+      if (youtubePlayerRef.current) {
+        youtubePlayerRef.current.destroy();
+      }
+
+      const playerContainer = document.getElementById("youtube-audio-player");
+      if (playerContainer) {
+        youtubePlayerRef.current = new (window as any).YT.Player("youtube-audio-player", {
+          height: "0",
+          width: "0",
+          videoId: selectedAudioTrack.youtubeId,
+          playerVars: {
+            autoplay: 1,
+            controls: 0,
+            showinfo: 0,
+            modestbranding: 1,
+            loop: 1,
+            fs: 0,
+            cc_load_policy: 0,
+            iv_load_policy: 3,
+            autohide: 0
+          },
+          events: {
+            onReady: (event: any) => {
+              setDuration(event.target.getDuration());
+              const interval = setInterval(() => {
+                if (youtubePlayerRef.current && youtubePlayerRef.current.getCurrentTime) {
+                  const time = youtubePlayerRef.current.getCurrentTime();
+                  setCurrentTime(time);
+                  if (youtubePlayerRef.current.getDuration) {
+                    const dur = youtubePlayerRef.current.getDuration();
+                    setDuration(dur);
+                    setAudioProgress((time / dur) * 100);
+                  }
+                }
+              }, 1000);
+              console.log("🎵 YouTube Audio Ready");
+              event.target.playVideo();
+              setIsAudioPlaying(true);
+            },
+            onStateChange: (event: any) => {
+              if (event.data === (window as any).YT.PlayerState.ENDED) {
+                event.target.playVideo();
+              }
+            }
+          }
+        });
+      }
+    }
+  }, [selectedAudioTrack]);
+
+  useEffect(() => {
+    if (youtubePlayerRef.current) {

@@ -1,0 +1,906 @@
+                {/* Home Screen - Stacks on top with card effect */}
+                <div
+                  onClick={() => isNavOpen && setIsNavOpen(false)}
+                  className={`min-h-screen bg-gray-900 flex flex-col transition-all duration-500 ease-out relative z-20 ${
+                    isNavOpen
+                      ? "scale-90 -translate-x-[70%] rounded-2xl shadow-2xl"
+                      : "scale-100 translate-x-0"
+                  }`}
+                  style={{
+                    transformOrigin: "right center",
+                  }}
+                >
+                  {/* Two-line Hamburger Icon - Mobile only */}
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsNavOpen(!isNavOpen);
+                    }}
+                    className="md:hidden fixed top-4 right-4 z-50 w-10 h-10 flex flex-col items-center justify-center gap-1.5 bg-transparent hover:bg-white/10 rounded-lg transition-all duration-300"
+                    data-testid="button-nav-toggle"
+                  >
+                    <div
+                      className={`h-0.5 bg-white transition-all duration-300 ${isNavOpen ? "w-5 rotate-45 translate-y-1" : "w-5"}`}
+                    ></div>
+                    <div
+                      className={`h-0.5 bg-white transition-all duration-300 ${isNavOpen ? "w-5 -rotate-45 -translate-y-1" : "w-4 ml-1"}`}
+                    ></div>
+                  </button>
+
+                  {/* World Map Section: Desktop 31% white background, Mobile unchanged */}
+                  <div className="h-1/4 md:h-[31vh] w-full flex items-center justify-center md:px-2 md:py-3 px-8 pt-1 pb-1 relative" style={{ background: window.innerWidth >= 768 ? (theme === 'dark' ? '#1a1a1a' : '#ffffff') : undefined }}>
+                    {/* Simple container for WorldMap */}
+                    <div className="w-full md:max-w-lg max-w-6xl flex items-center justify-center">
+                      <WorldMap />
+                    </div>
+                  </div>
+                  {/* Blue Section: Desktop 69vh, Mobile 75vh */}
+                  <div className="h-[75vh] md:h-[69vh] w-full bg-blue-900 flex flex-col items-center justify-start md:py-6 py-0 md:px-4 px-0 relative md:overflow-y-auto">
+                    <div className="max-w-4xl w-full md:space-y-4">
+                      {/* Greeting - Hidden on mobile */}
+                      <div className="text-center spacey-4 md:block hidden">
+                        <div className="flex items-center justify-center gap-3">
+                          <Sparkles className="4-5 w-4 text-blue-400" />
+                          <h1 className="text-2xl font-normal text-gray-100">
+                            Welcome to Trading Platform
+                          </h1>
+                        </div>
+                      </div>
+
+                      {/* Search Input - Hidden on mobile */}
+                      <div
+                        className={`relative mx-auto transition-all duration-300 md:block hidden ${
+                          isSearchActive ? "max-w-4xl" : "max-w-2xl"
+                        }`}
+                      >
+                        <Input
+                          placeholder="Search stocks, technical analysis, social feed, news, journal, alerts, or ask AI anything..."
+                          value={searchQuery}
+                          onFocus={() => setIsSearchActive(true)}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setSearchQuery(value);
+                            setIsSearchActive(value.length > 0);
+                          }}
+                          onKeyPress={async (e) => {
+                            if (e.key === "Enter" && searchQuery.trim()) {
+                              await handleSearch();
+                            }
+                          }}
+                          className={`w-full transition-all duration-300 bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400 pr-12 text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
+                            isSearchActive
+                              ? "h-14 rounded-xl"
+                              : "h-12 rounded-2xl"
+                          }`}
+                        />
+                        <Button
+                          size="sm"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 bg-gray-700 hover:bg-gray-600 text-gray-300 h-6 w-6 p-0"
+                          onClick={() => handleSearch()}
+                          disabled={!searchQuery.trim() || isSearchLoading}
+                        >
+                          {isSearchLoading ? (
+                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Bot className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+
+                      {/* AI Search Results - Desktop only */}
+                      {isSearchActive && (
+                        <div className="max-w-5xl mx-auto mt-4 animate-in slide-in-from-top-4 duration-300 md:block hidden">
+                          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-4">
+                            {searchResults ? (
+                              <div className="space-y-3">
+                                <div className="flex items-center gap-2 pb-3 border-b border-gray-700">
+                                  <Bot className="h-4 w-4 text-blue-400" />
+                                  <h3 className="text-lg font-medium text-gray-100">
+                                    AI Assistant
+                                  </h3>
+                                </div>
+                                <div className="prose prose-invert max-w-none">
+                                  <div className="text-gray-300 whitespace-pre-wrap leading-relaxed">
+                                    {(() => {
+                                      // Render text with inline charts
+                                      if (
+                                        searchResults.includes(
+                                          "[CHART:PERFORMANCE_TREND]",
+                                        )
+                                      ) {
+                                        const parts = searchResults.split(
+                                          "[CHART:PERFORMANCE_TREND]",
+                                        );
+                                        const chartData =
+                                          (window as any)
+                                            .performanceTrendChartData || [];
+
+                                        return (
+                                          <>
+                                            {parts[0]}
+                                            {chartData.length > 0 && (
+                                              <div className="my-4 bg-gray-900/50 rounded-lg p-3 border border-gray-600">
+                                                <div className="h-32 w-full">
+                                                  <ResponsiveContainer
+                                                    width="100%"
+                                                    height="100%"
+                                                  >
+                                                    <AreaChart
+                                                      data={chartData}
+                                                      margin={{
+                                                        top: 20,
+                                                        right: 20,
+                                                        left: 10,
+                                                        bottom: 5,
+                                                      }}
+                                                    >
+                                                      <defs>
+                                                        <linearGradient
+                                                          id="aiAreaGradient"
+                                                          x1="0"
+                                                          y1="0"
+                                                          x2="0"
+                                                          y2="1"
+                                                        >
+                                                          <stop
+                                                            offset="0%"
+                                                            stopColor="rgb(107, 114, 128)"
+                                                            stopOpacity={0.6}
+                                                          />
+                                                          <stop
+                                                            offset="100%"
+                                                            stopColor="rgb(107, 114, 128)"
+                                                            stopOpacity={0.1}
+                                                          />
+                                                        </linearGradient>
+                                                      </defs>
+                                                      <XAxis
+                                                        dataKey="day"
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={false}
+                                                        className="text-slate-500 dark:text-slate-400"
+                                                      />
+                                                      <YAxis
+                                                        axisLine={false}
+                                                        tickLine={false}
+                                                        tick={{
+                                                          fontSize: 10,
+                                                          fill: "#64748b",
+                                                        }}
+                                                        tickFormatter={(
+                                                          value,
+                                                        ) =>
+                                                          `${
+                                                            value >= 0
+                                                              ? ""
+                                                              : "-"
+                                                          }${(
+                                                            Math.abs(value) /
+                                                            1000
+                                                          ).toFixed(0)}K`
+                                                        }
+                                                        domain={[
+                                                          "dataMin - 1000",
+                                                          "dataMax + 1000",
+                                                        ]}
+                                                        className="text-slate-500 dark:text-slate-400"
+                                                      />
+                                                      <Tooltip
+                                                        contentStyle={{
+                                                          background:
+                                                            "var(--background)",
+                                                          border:
+                                                            "1px solid var(--border)",
+                                                          borderRadius: "8px",
+                                                          color:
+                                                            "var(--foreground)",
+                                                          fontSize: "11px",
+                                                          padding: "6px 10px",
+                                                        }}
+                                                        formatter={(
+                                                          value: any,
+                                                        ) => [
+                                                          `${
+                                                            value >= 0
+                                                              ? "₹"
+                                                              : "-₹"
+                                                          }${Math.abs(
+                                                            value,
+                                                          ).toLocaleString()}`,
+                                                          "Daily P&L",
+                                                        ]}
+                                                        labelFormatter={(
+                                                          label,
+                                                        ) => `${label}`}
+                                                      />
+                                                      <Area
+                                                        type="monotone"
+                                                        dataKey="value"
+                                                        stroke="#000000"
+                                                        strokeWidth={2}
+                                                        fill="url(#aiAreaGradient)"
+                                                        dot={false}
+                                                        activeDot={{
+                                                          r: 4,
+                                                          stroke: "#000000",
+                                                          strokeWidth: 1,
+                                                          fill: "#ffffff",
+                                                        }}
+                                                      />
+                                                    </AreaChart>
+                                                  </ResponsiveContainer>
+                                                </div>
+                                              </div>
+                                            )}
+                                            {parts[1] || ""}
+                                          </>
+                                        );
+                                      }
+                                      return searchResults;
+                                    })()}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 pt-4 border-t border-gray-700">
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSearchQuery("");
+                                      setIsSearchActive(false);
+                                      setSearchResults("");
+                                    }}
+                                    className="text-gray-400 hover:text-gray-200"
+                                  >
+                                    <X className="h-4 w-4 mr-2" />
+                                    Clear
+                                  </Button>
+                                </div>
+                              </div>
+                            ) : searchQuery && !isSearchLoading ? (
+                              <div className="text-center text-gray-400 py-8">
+                                <Bot className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                                <p>
+                                  Press Enter or click the search button to get
+                                  AI assistance
+                                </p>
+                              </div>
+                            ) : isSearchLoading ? (
+                              <div className="text-center text-gray-400 py-8">
+                                <div className="flex items-center justify-center gap-3">
+                                  <div className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" />
+                                  <p>Getting AI assistance...</p>
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Enhanced AI Suggestion Buttons - Desktop only */}
+                      <div className="md:flex hidden flex-wrap items-center justify-center gap-3 max-w-6xl mx-auto md:mt-6">
+                        {/* <Button
+                        variant="secondary"
+                        className="bg-blue-600 hover:bg-blue-700 text-white border-0 h-11 px-4 rounded-full font-medium transition-all duration-200"
+                        onClick={() =>
+                          handleSuggestionClick(
+                            "Get live stock prices and fundamentals for NIFTY, SENSEX, and top Indian stocks"
+                          )
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          <DollarSign className="h-4 w-4" />
+                          <span>Stock Prices</span>
+                        </div>
+                      </Button> */}
+
+                        <Button
+                          variant="secondary"
+                          className="bg-cyan-600 hover:bg-cyan-700  text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200"
+                          onClick={() =>
+                            handleSuggestionClick(
+                              "RSI technical analysis for RELIANCE",
+                            )
+                          }
+                        >
+                          <div className="flex items-center justify-center gap-1">
+                            <BarChart3 className="h-3 w-3" />
+                            <span>Technical Analysis</span>
+                          </div>
+                        </Button>
+
+                        <Button
+                          variant="secondary"
+                          className="bg-pink-600 hover:bg-pink-700  text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200"
+                          onClick={() =>
+                            handleSuggestionClick(
+                              "Social feed community discussions and trending topics",
+                            )
+                          }
+                        >
+                          <div className="flex items-center gap-2">
+                            <User className="h-3 w-3" />
+                            <span>Social Feed</span>
+                          </div>
+                        </Button>
+
+                        <Button
+                          variant="secondary"
+                          className="bg-green-600 hover:bg-green-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200"
+                          onClick={() =>
+                            handleSuggestionClick(
+                              "What are today's top financial news and market updates?",
+                            )
+                          }
+                        >
+                          <div className="flex items-center gap-2">
+                            <Newspaper className="h-3 w-3" />
+                            <span>Market News</span>
+                          </div>
+                        </Button>
+
+                        <Button
+                          variant="secondary"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200"
+                          onClick={generateJournalAIReport}
+                          data-testid="button-trading-journal"
+                        >
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-3 w-3" />
+                            <span>Trading Journal</span>
+                          </div>
+                        </Button>
+
+                        {/* <Button
+                        variant="secondary"
+                        className="bg-yellow-600 hover:bg-yellow-700 text-white border-0 h-11 px-4 rounded-full font-medium transition-all duration-200"
+                        onClick={() =>
+                          handleSuggestionClick(
+                            "Add TCS to watchlist and set alerts"
+                          )
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          <Bell className="h-4 w-4" />
+                          <span>Quick Actions</span>
+                        </div>
+                      </Button> */}
+
+                        {/* <Button
+                        variant="secondary"
+                        className="bg-purple-600 hover:bg-purple-700 text-white border-0 h-11 px-4 rounded-full font-medium transition-all duration-200"
+                        onClick={() =>
+                          handleSuggestionClick(
+                            "Show me upcoming IPOs and recent IPO performance in Indian markets"
+                          )
+                        }
+                      >
+                        <div className="flex items-center gap-2">
+                          <TrendingUp className="h-4 w-4" />
+                          <span>IPO Updates</span>
+                        </div>
+                      </Button> */}
+
+                        <Button
+                          variant="secondary"
+                          className="bg-orange-600 hover:bg-orange-700  text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200"
+                          onClick={() =>
+                            handleSuggestionClick(
+                              "Analyze fundamentals for top stocks - P/E ratio, market cap, growth metrics",
+                            )
+                          }
+                        >
+                          <div className="flex items-center gap-2">
+                            <BarChart3 className="h-3 w-3" />
+                            <span>Fundamentals</span>
+                          </div>
+                        </Button>
+                      </div>
+
+                      {/* Mobile Welcome Text - Fixed position in blue area */}
+                      <div className="md:hidden flex items-center justify-center gap-2 pt-4 pb-6 px-4 relative z-10">
+                        <Sparkles className="h-4 w-4 text-blue-400" />
+                        <h1 className="text-base font-normal text-gray-100">
+                          Welcome to Trading Platform
+                        </h1>
+                      </div>
+
+                      {/* Trading Tools Section - White container with centered cards */}
+                      <div className="bg-white md:pt-4 pt-4 md:pb-4 pb-4 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 mt-0 w-full">
+                        {/* Mobile Search Bar - Fully visible at top */}
+                        <div className="md:hidden absolute -top-3 left-4 right-4 z-50">
+                          <div className="relative">
+                            <Input
+                              placeholder="Search stocks, technical analysis, social feed..."
+                              value={searchQuery}
+                              onFocus={() => setIsSearchActive(true)}
+                              onChange={(e) => {
+                                const value = e.target.value;
+                                setSearchQuery(value);
+                                setIsSearchActive(value.length > 0);
+                              }}
+                              onKeyPress={async (e) => {
+                                if (e.key === "Enter" && searchQuery.trim()) {
+                                  await handleSearch();
+                                }
+                              }}
+                              className="w-full h-12 bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400 pr-24 text-xs rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-lg"
+                            />
+                            {searchQuery && (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="absolute right-14 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 h-8 w-8 p-0"
+                                onClick={() => {
+                                  setSearchQuery("");
+                                  setIsSearchActive(false);
+                                  setSearchResults("");
+                                }}
+                                data-testid="button-clear-search"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            )}
+                            <Button
+                              size="sm"
+                              className="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-700 hover:bg-gray-600 text-gray-300"
+                              onClick={() => handleSearch()}
+                              disabled={!searchQuery.trim() || isSearchLoading}
+                            >
+                              {isSearchLoading ? (
+                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Bot className="h-4 w-4" />
+                              )}
+                            </Button>
+                          </div>
+
+                          {/* Mobile Quick Suggestion Buttons - Horizontal scroll when search is active */}
+                          {isSearchActive && (
+                            <div
+                              className="mt-2 flex gap-2 overflow-x-auto scrollbar-hide pb-2"
+                              style={{
+                                scrollbarWidth: "none",
+                                msOverflowStyle: "none",
+                              }}
+                            >
+                              <Button
+                                variant="secondary"
+                                className="bg-blue-600 hover:bg-blue-700 text-white border-0 h-7 px-3 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                                onClick={() =>
+                                  handleSuggestionClick(
+                                    "Show me live stock prices for ICICI Bank and TCS",
+                                  )
+                                }
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <TrendingUp className="h-3 w-3" />
+                                  <span>Stock Prices</span>
+                                </div>
+                              </Button>
+
+                              <Button
+                                variant="secondary"
+                                className="bg-pink-600 hover:bg-pink-700 text-white border-0 h-7 px-3 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                                onClick={() =>
+                                  handleSuggestionClick(
+                                    "Social feed community discussions and trending topics",
+                                  )
+                                }
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <User className="h-3 w-3" />
+                                  <span>Social Feed</span>
+                                </div>
+                              </Button>
+
+                              <Button
+                                variant="secondary"
+                                className="bg-green-600 hover:bg-green-700 text-white border-0 h-7 px-3 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                                onClick={() =>
+                                  handleSuggestionClick(
+                                    "What are today's top financial news and market updates?",
+                                  )
+                                }
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <Newspaper className="h-3 w-3" />
+                                  <span>Market News</span>
+                                </div>
+                              </Button>
+
+                              <Button
+                                variant="secondary"
+                                className="bg-orange-600 hover:bg-orange-700 text-white border-0 h-7 px-3 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                                onClick={() =>
+                                  handleSuggestionClick(
+                                    "Analyze fundamentals for top stocks - P/E ratio, market cap, growth metrics",
+                                  )
+                                }
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <BarChart3 className="h-3 w-3" />
+                                  <span>Fundamentals</span>
+                                </div>
+                              </Button>
+
+                              <Button
+                                variant="secondary"
+                                className="bg-emerald-600 hover:bg-emerald-700 text-white border-0 h-7 px-3 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                                onClick={() => checkAuthAndNavigate("journal")}
+                                data-testid="button-quick-journal"
+                              >
+                                <div className="flex items-center gap-1.5">
+                                  <BookOpen className="h-3 w-3" />
+                                  <span>Journal</span>
+                                </div>
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Mobile AI Search Results - Extends to bottom */}
+                          {isSearchActive && searchResults && (
+                            <div className="md:hidden fixed inset-x-0 top-0 bottom-0 bg-gray-900/95 backdrop-blur-sm z-[60] overflow-y-auto">
+                              <div className="p-3 space-y-3">
+                                <div className="flex items-center justify-between pb-2 border-b border-gray-700">
+                                  <div className="flex items-center gap-1.5">
+                                    <Bot className="h-4 w-4 text-blue-400" />
+                                    <h3 className="text-xs font-medium text-gray-100">
+                                      AI Assistant
+                                    </h3>
+                                  </div>
+                                  <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={() => {
+                                      setSearchQuery("");
+                                      setIsSearchActive(false);
+                                      setSearchResults("");
+                                    }}
+                                    className="text-gray-400 hover:text-gray-200 h-6 w-6 p-0"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                                <div className="prose prose-invert max-w-none">
+                                  <div className="text-gray-300 whitespace-pre-wrap leading-tight text-xs">
+                                    {searchResults}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        {/* Trading Tools Grid - Desktop: 4 columns centered, Mobile: 3 horizontal cards + swipeable below */}
+                        <div className="mx-auto max-w-6xl hidden md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 md:px-6 md:items-center">
+                          {/* Social Feed Card */}
+                          <div
+                            className="bg-blue-500 rounded-2xl overflow-hidden h-36 w-full relative cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => checkAuthAndNavigate("voice")}
+                          >
+                            <div className="absolute top-3 left-3">
+                              <span className="bg-white bg-opacity-90 text-blue-600 px-2.5 py-1 rounded-full text-xs font-medium">
+                                Social Feed
+                              </span>
+                            </div>
+                            <div className="absolute bottom-3 right-3">
+                              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <MessageCircle className="h-6 w-6 text-white" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Trading Master Card */}
+                          <div
+                            className="bg-indigo-500 rounded-2xl overflow-hidden h-36 w-full relative cursor-pointer hover:scale-105 transition-transform"
+                            onClick={handleTradingMasterAccess}
+                          >
+                            <div className="absolute top-3 left-3">
+                              <span className="bg-white bg-opacity-90 text-indigo-600 px-2.5 py-1 rounded-full text-xs font-medium">
+                                Trading Master
+                              </span>
+                            </div>
+                            <div className="absolute bottom-3 right-3">
+                              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <Activity className="h-6 w-6 text-white" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Trading Charts Card */}
+                          <div
+                            className="bg-emerald-500 rounded-2xl overflow-hidden h-36 w-full relative cursor-pointer hover:scale-105 transition-transform"
+                            onClick={() => checkAuthAndNavigate("journal")}
+                          >
+                            <div className="absolute top-3 left-3">
+                              <span className="bg-white bg-opacity-90 text-emerald-600 px-2.5 py-1 rounded-full text-xs font-medium">
+                                Journal
+                              </span>
+                            </div>
+                            <div className="absolute bottom-3 right-3">
+                              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <BarChart3 className="h-6 w-6 text-white" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Tutor Daily News Swipeable Cards - Portrait orientation with proper spacing */}
+                          <div className="relative h-36 w-full flex items-center justify-center">
+                            <SwipeableCardStack
+                              onSectorChange={handleSectorChange}
+                              selectedSector={selectedSector}
+                              onCardIndexChange={setCurrentCardIndex}
+                              currentCardIndex={currentCardIndex}
+                            />
+                          </div>
+                        </div>
+                        {/* Mobile Layout: 3 horizontal cards + swipeable below */}
+                        <div className="md:hidden mt-6">
+                          {/* Three cards in a row */}
+                          <div className="grid grid-cols-3 gap-3 px-4 mb-3">
+                            {/* Social Feed Card */}
+                            <div
+                              className="bg-blue-500 rounded-xl overflow-hidden h-20 relative cursor-pointer active:scale-95 transition-transform"
+                              onClick={() => checkAuthAndNavigate("voice")}
+                            >
+                              <div className="absolute top-2 left-2">
+                                <span className="bg-white bg-opacity-90 text-blue-600 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                                  Social Feed
+                                </span>
+                              </div>
+                              <div className="absolute bottom-2 right-2">
+                                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                  <MessageCircle className="h-5 w-5 text-white" />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Trading Master Card */}
+                            <div
+                              className="bg-purple-500 rounded-xl overflow-hidden h-20 relative cursor-pointer active:scale-95 transition-transform"
+                              onClick={handleTradingMasterAccess}
+                            >
+                              <div className="absolute top-2 left-2">
+                                <span className="bg-white bg-opacity-90 text-purple-600 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                                  Trading Master
+                                </span>
+                              </div>
+                              <div className="absolute bottom-2 right-2">
+                                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                  <Activity className="h-5 w-5 text-white" />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Journal Card */}
+                            <div
+                              className="bg-green-500 rounded-xl overflow-hidden h-20 relative cursor-pointer active:scale-95 transition-transform"
+                              onClick={() => checkAuthAndNavigate("journal")}
+                            >
+                              <div className="absolute top-2 left-2">
+                                <span className="bg-white bg-opacity-90 text-green-600 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                                  Journal
+                                </span>
+                              </div>
+                              <div className="absolute bottom-2 right-2">
+                                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                  <BarChart3 className="h-5 w-5 text-white" />
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Swipeable News Cards Below - Properly Centered */}
+                          <div className="flex items-center justify-center px-4 pb-0">
+                            <SwipeableCardStack
+                              onSectorChange={handleSectorChange}
+                              selectedSector={selectedSector}
+                              onCardIndexChange={setCurrentCardIndex}
+                              currentCardIndex={currentCardIndex}
+                            />
+                          </div>
+                        </div>
+
+                        {/* Navigation Dots - Outside white container, in blue area */}
+                        <div className="md:hidden absolute -bottom-10 left-1/2 transform -translate-x-1/2 flex gap-2 justify-center z-40">
+                          {[0, 1, 2, 3, 4, 5].map((index) => (
+                            <button
+                              key={index}
+                              data-testid={`nav-dot-${index}`}
+                              onClick={() => {
+                                // Calculate how many swipes needed to get to this card
+                                const diff = index - currentCardIndex;
+                                // Navigate to the selected card (this would need to be implemented in SwipeableCardStack)
+                                setCurrentCardIndex(index);
+                              }}
+                              className={`w-2 h-2 rounded-full transition-all duration-300 cursor-pointer hover:scale-110 ${
+                                index === currentCardIndex
+                                  ? "bg-white scale-125"
+                                  : "bg-white/40"
+                              }`}
+                            ></button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Animated Floating Tutor Button */}
+                    <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 pointer-events-auto">
+                      <div className="relative">
+                        {/* Background animation rings */}
+                        <div className="absolute inset-0 w-16 h-16 rounded-full bg-gradient-to-r from-violet-600/30 to-indigo-600/30 animate-ping pointer-events-none"></div>
+                        <div className="absolute inset-0 w-16 h-16 rounded-full bg-gradient-to-r from-violet-600/20 to-indigo-600/20 animate-pulse pointer-events-none"></div>
+
+                        {/* Main clickable button */}
+                        <Button
+                          onClick={() => setTabWithAuthCheck("tutor")}
+                          className="relative w-16 h-16 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-2xl hover:animate-none transition-all duration-300 border-4 border-white/20 pointer-events-auto animate-bounce hover:scale-110"
+                        >
+                          <ChevronUp className="h-8 w-8 text-gray-400 pointer-events-none" />
+                        </Button>
+                      </div>
+                    </div>
+
+                    {/* Tutor Vertical Sidebar - Slides from right */}
+                    {showTutorOverlay && (
+                      <>
+                        {/* Backdrop */}
+                        <div
+                          className="fixed inset-0 bg-black/50 z-40 transition-opacity duration-300"
+                          onClick={() => setShowTutorOverlay(false)}
+                        />
+
+                        {/* Sidebar */}
+                        <div
+                          className="fixed top-0 right-0 h-full w-96 bg-slate-900 z-50 shadow-2xl transition-transform duration-500 ease-out"
+                          style={{
+                            animation: "slideInFromRight 0.5s ease-out",
+                          }}
+                        >
+                          {/* Header with close button */}
+                          <div className="flex items-center justify-between p-4 border-b border-slate-700">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 bg-gradient-to-r from-violet-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                                <GraduationCap className="h-5 w-5 text-white" />
+                              </div>
+                              <span className="text-lg font-semibold text-white">
+                                AI Trading Tutor
+                              </span>
+                            </div>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setShowTutorOverlay(false)}
+                              className="text-slate-400 hover:text-white hover:bg-slate-800"
+                            >
+                              <X className="h-5 w-5" />
+                            </Button>
+                          </div>
+
+                          {/* Scrollable content */}
+                          <div className="h-full overflow-y-auto pb-20 custom-thin-scrollbar">
+                            <div className="p-4 space-y-6">
+                              {/* Welcome message */}
+                              <div className="text-center space-y-2">
+                                <h2 className="text-xl font-bold text-white">
+                                  Learn & Master Trading
+                                </h2>
+                                <p className="text-slate-300 text-sm">
+                                  Interactive lessons and personalized guidance
+                                </p>
+                              </div>
+
+                              {/* Quick access cards - vertical stack */}
+                              <div className="space-y-4">
+                                <div className="bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition-colors cursor-pointer">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                                      <BookOpen className="h-5 w-5 text-white" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-white">
+                                      Trading Basics
+                                    </h3>
+                                  </div>
+                                  <p className="text-slate-300 text-sm">
+                                    Learn fundamental concepts and strategies
+                                  </p>
+                                </div>
+
+                                <div className="bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition-colors cursor-pointer">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                                      <BarChart3 className="h-5 w-5 text-white" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-white">
+                                      Chart Analysis
+                                    </h3>
+                                  </div>
+                                  <p className="text-slate-300 text-sm">
+                                    Master technical analysis and patterns
+                                  </p>
+                                </div>
+
+                                <div className="bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition-colors cursor-pointer">
+                                  <div className="flex items-center gap-3 mb-3">
+                                    <div className="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                                      <Target className="h-5 w-5 text-white" />
+                                    </div>
+                                    <h3 className="text-lg font-semibold text-white">
+                                      Risk Management
+                                    </h3>
+                                  </div>
+                                  <p className="text-slate-300 text-sm">
+                                    Protect your capital with smart strategies
+                                  </p>
+                                </div>
+                              </div>
+
+                              {/* Additional learning sections */}
+                              <div className="space-y-4">
+                                <h3 className="text-lg font-semibold text-white">
+                                  Quick Actions
+                                </h3>
+
+                                <div className="bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition-colors cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-orange-500 rounded-lg flex items-center justify-center">
+                                      <Lightbulb className="h-4 w-4 text-white" />
+                                    </div>
+                                    <span className="text-white font-medium">
+                                      Trading Tips
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition-colors cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-red-500 rounded-lg flex items-center justify-center">
+                                      <AlertCircle className="h-4 w-4 text-white" />
+                                    </div>
+                                    <span className="text-white font-medium">
+                                      Market Alerts
+                                    </span>
+                                  </div>
+                                </div>
+
+                                <div className="bg-slate-800 rounded-xl p-4 hover:bg-slate-700 transition-colors cursor-pointer">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
+                                      <TrendingUp className="h-4 w-4 text-white" />
+                                    </div>
+                                    <span className="text-white font-medium">
+                                      Performance Insights
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
+                    {/* Global CSS for animations */}
+                    <style>{`
+                  @keyframes slideUpFromBottom {
+                    from {
+                      transform: translateY(100%);
+                    }
+                    to {
+                      transform: translateY(0);
+                    }
+                  }
+                  
+                  @keyframes slideInFromRight {
+                    from {
+                      transform: translateX(100%);
+                    }
+                    to {
+                      transform: translateX(0);
+                    }
+                  }
+                `}</style>
+                  </div>
+                </div>
+              </div>
+            )}

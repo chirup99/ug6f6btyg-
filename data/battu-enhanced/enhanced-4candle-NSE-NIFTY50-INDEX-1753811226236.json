@@ -1,0 +1,43 @@
+{
+  "originalCandles": [
+    {
+      "timestamp": 1753747200000,
+      "open": 24614.2,
+      "high": 24727.15,
+      "low": 24608.3,
+      "close": 24639.2,
+      "volume": 0
+    },
+    {
+      "timestamp": 1753749600000,
+      "open": 24639.8,
+      "high": 24705.45,
+      "low": 24614.3,
+      "close": 24674.35,
+      "volume": 0
+    },
+    {
+      "timestamp": 1753752000000,
+      "open": 24674.65,
+      "high": 24738,
+      "low": 24662.95,
+      "close": 24734.7,
+      "volume": 0
+    },
+    {
+      "timestamp": 1753754400000,
+      "open": 24734.75,
+      "high": 24828.15,
+      "low": 24727.2,
+      "close": 24808.45,
+      "volume": 0
+    }
+  ],
+  "oneMinuteCandles": [],
+  "exactHighTimestamps": [],
+  "exactLowTimestamps": [],
+  "preciseSlopes": [],
+  "analysisTimestamp": 1753811226236,
+  "symbol": "NSE:NIFTY50-INDEX",
+  "timeframe": 40
+}

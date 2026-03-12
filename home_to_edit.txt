@@ -1,0 +1,263 @@
+﻿import { motion, AnimatePresence } from "framer-motion";
+
+import { BrokerData } from "@/components/broker-data";
+
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import { useLocation } from "wouter";
+
+import { useToast } from "@/hooks/use-toast";
+
+import { AuthButtonAngelOne, AngelOneStatus, AngelOneApiStatistics, AngelOneSystemStatus, AngelOneLiveMarketPrices } from "@/components/auth-button-angelone";
+
+import { AuthButtonUpstox } from "@/components/auth-button-upstox";
+
+import { TradingJournalModal } from "@/components/trading-journal-modal";
+
+// REMOVED: All Fyers-related imports
+// import { AuthButton } from "@/components/auth-button";
+
+// import { ConnectionStatus } from "@/components/connection-status";
+
+// import { MonthlyProgressTracker } from "@/components/monthly-progress-tracker";
+
+// import { ApiStatistics } from "@/components/api-statistics";
+
+// import { ErrorPanel } from "@/components/error-panel";
+
+import { SigninDataWindow } from "@/components/signin-data-window";
+
+import { TradingViewWidget } from "@/components/tradingview-widget";
+
+import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-chart";
+
+import { EnhancedTradingViewWidget } from "@/components/enhanced-tradingview-widget";
+
+import { TradingViewStyleChart } from "@/components/tradingview-style-chart";
+
+import { MinimalChart } from "@/components/minimal-chart";
+
+import {
+
+  MultipleImageUpload,
+  MultipleImageUploadRef,
+} from "@/components/multiple-image-upload";
+import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
+
+// import { BattuScanSimulation } from "@/components/battu-scan-simulation";
+
+// import { FourCandleRuleScanner } from "@/components/four-candle-rule-scanner";
+
+import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
+import SimpleCompleteScanner from "@/components/simple-complete-scanner";
+// import { BattuDocumentationDisplay } from "@/components/battu-documentation-display";
+
+import { StrategyBuilder } from "@/components/strategy-builder";
+
+import { TradingMaster } from "@/components/trading-master";
+
+import { WorldMap } from "@/components/world-map";
+
+import { DemoHeatmap } from "@/components/DemoHeatmap";
+
+import { PersonalHeatmap } from "@/components/PersonalHeatmap";
+
+import { useTheme } from "@/components/theme-provider";
+
+import { useCurrentUser } from "@/hooks/useCurrentUser";
+
+import { useAngelOneAutoconnect } from "@/hooks/useAngelOneAutoconnect";
+
+import { cognitoSignOut, getCognitoToken, sendEmailVerificationCode, confirmEmailVerification, checkEmailVerified } from "@/cognito";
+
+import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickSeries, LineSeries, HistogramSeries, IPriceLine, createSeriesMarkers } from 'lightweight-charts';
+
+import { ArrowLeft, Banknote, Clock, ExternalLink, Info, Loader2, LogOut, Newspaper, RefreshCw, Save, TrendingUp, Award, Headset, X, Play, Music2, Pencil, CheckCircle } from "lucide-react";
+
+import { parseBrokerTrades, ParseError } from "@/utils/trade-parser";
+
+
+// Global window type declaration for audio control
+declare global {
+  interface Window {
+    stopNewsAudio?: () => void;
+  }
+}
+
+// import ThreeCycleScanner from "@/components/three-cycle-scanner";
+import HistoricalTradeSimulator from "@/components/historical-trade-simulator";
+import {
+
+  PriceChangeAnimation,
+  TradeExecutionAnimation,
+  VolumeSpikeAnimation,
+  MarketStatusPulse,
+  ProfitLossAnimation,
+      .replace(
+        /^(good morning|good afternoon|good evening|hello|hi|welcome)/gi,
+        "",
+      )
+      .replace(/^(ladies and gentlemen|dear listeners|in today's news)/gi, "")
+      .replace(/^[.,\s]+/, "") // Remove leading punctuation and spaces
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
+    const voices = speechSynthesis.getVoices();
+    const voiceProfileMap: Record<string, string[]> = {
+      ravi: ["ravi", "moira", "samantha", "aria", "ava"],
+      vaib: ["vaib", "susan", "karen", "claire", "hazel"],
+      kids: ["kids", "allison", "serena", "zira", "fiona"]
+    };
+    const selectedProfile = activeVoiceProfileId || "ravi";
+    const priorityKeywords = voiceProfileMap[selectedProfile] || voiceProfileMap.ravi;
+
+    let preferredVoice = voices.find(v => 
+      v.lang.startsWith("en") && 
+      priorityKeywords.some(keyword => v.name.toLowerCase().includes(keyword.toLowerCase()))
+    );
+
+    if (!preferredVoice) {
+      preferredVoice = voices.find(v => v.lang.startsWith("en"));
+    }
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }
+};
+
+export default function Home() {
+  const [location, setLocation] = useLocation();
+
+  // 🔶 Detect Angel One OAuth callback from redirect
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("angelone_connected")) {
+      console.log("✅ Angel One connected successfully (redirect callback)");
+      setAngelOneIsConnected(true);
+      setAngelOneAccessToken(params.get("angelone_client_code") || "P176266");
+      localStorage.setItem("angel_one_client_code", params.get("angelone_client_code") || "P176266");
+      toast({ title: "Success", description: "Angel One connected successfully" });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+    if (params.has("angelone_error")) {
+      const error = decodeURIComponent(params.get("angelone_error") || "");
+      console.error("❌ Angel One auth error:", error);
+      toast({ variant: "destructive", title: "Error", description: error });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, []);
+  // AUTO-CONNECT: Angel One API - Automatically connect when app loads
+  useAngelOneAutoconnect();
+  const { theme, toggleTheme } = useTheme();
+  const [activeTab, setActiveTab] = useState("trading-home");
+  const [showTutorOverlay, setShowTutorOverlay] = useState(false);
+  const [swipeStartY, setSwipeStartY] = useState(0);
+  const [swipeCurrentY, setSwipeCurrentY] = useState(0);
+  const [isSwipingUp, setIsSwipingUp] = useState(false);
+  const [showJournalAI, setShowJournalAI] = useState(false);
+  const [journalAIData, setJournalAIData] = useState<any>(null);
+  const [statisticsTab, setStatisticsTab] = useState("overview");
+  // Shared timeframe state for chart and crossings display
+  const [chartTimeframe, setChartTimeframe] = useState<string>("1");
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [isEditingDisplayName, setIsEditingDisplayName] = useState(false);
+  const [newDisplayName, setNewDisplayName] = useState("");
+  const [isEditingDob, setIsEditingDob] = useState(false);
+  const [newDob, setNewDob] = useState("");
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
+  const [newLocation, setNewLocation] = useState("");
+  const [newUsername, setNewUsername] = useState("");
+  const [isUsernameAvailable, setIsUsernameAvailable] = useState<boolean | null>(null);
+  const [isCheckingUsername, setIsCheckingUsername] = useState(false);
+  // Navigation menu state
+  const [isNavOpen, setIsNavOpen] = useState(false);
+  const [isProfileActive, setIsProfileActive] = useState(false);
+  const [isVoiceActive, setIsVoiceActive] = useState(false);
+
+  const handleUpdateProfile = async (updates: any) => {
+    try {
+      const token = await getCognitoToken();
+      const response = await fetch("/api/user/profile", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`
+        },
+        body: JSON.stringify(updates),
+                              </button>
+
+                              {isVoiceActive && (
+                                <div className="px-4 py-6 bg-gray-800/50 border border-gray-700 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200">
+                                  <div className="flex flex-col items-center gap-4"><span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">voice profiles</span><div className="flex items-center justify-center gap-4 overflow-x-auto no-scrollbar py-2">{[{ id: "ravi", name: "Ravi", avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop" }, { id: "vaib", name: "Vaib", avatar: "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop" }, { id: "kids", name: "Kids", avatar: "https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?w=100&h=100&fit=crop" }, { id: "add", name: "Add", isAdd: true }].map((profile) => (<div key={profile.id} className="flex flex-col items-center gap-1.5 group cursor-pointer" onClick={() => !profile.isAdd && setActiveVoiceProfileId(profile.id)}><div className={`relative w-12 h-12 rounded-full flex items-center justify-center border-2 border-transparent transition-all group-hover:scale-105 active:scale-95 overflow-hidden bg-gray-700 shadow-lg`}>{profile.isAdd ? (<Plus className="h-5 w-5 text-gray-400" />) : (<img src={profile.avatar} alt={profile.name} className="w-full h-full object-cover" />)}</div><span className="text-[10px] font-medium text-gray-300 group-hover:text-blue-400 transition-colors">{profile.name}</span></div>))}</div><div className="w-full h-px bg-gray-700/50 my-1" /><p className="text-[11px] text-gray-500 italic">Select a voice for your minicast</p></div>
+                                </div>
+                              )}
+
+                              {!isVoiceActive && (
+                                <>
+                                  {localStorage.getItem('currentUserEmail') === 'chiranjeevi.perala99@gmail.com' && (
+                                    <button
+                                      onClick={() => {
+                                        setTabWithAuthCheck("dashboard");
+                                        setIsNavOpen(false);
+                                      }}
+                                      className="w-full px-4 py-3 text-white hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"
+                                      data-testid="nav-dashboard"
+                                    >
+                                      <BarChart3 className="h-4 w-4" />
+                                      <span>dashboard</span>
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => setShowSettingsPanel(true)}
+                                    className="w-full px-4 py-3 text-white hover:bg-white/10 rounded-lg transition-colors text-left flex items-center gap-2"
+                                    data-testid="nav-settings"
+                                  >
+                                    <Settings className="h-4 w-4" />
+                                    <span>setting & privacy</span>
+                                  </button>
+                                  <button
+                                    onClick={toggleTheme}
+                                    className="w-full px-4 py-3 text-white hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"
+                                    data-testid="nav-dark-theme"
+                                  >
+                                    {theme === 'dark' ? (
+                                      <>
+                                        <Sun className="h-4 w-4" />
+                                        <span>light mode</span>
+                                      </>
+                                    ) : (
+                                      <>
+                                        <Moon className="h-4 w-4" />
+                                        <span>dark mode</span>
+                                      </>
+                                    )}
+                                  </button>
+                                  <button
+                                    onClick={async () => {
+                                      try {
+                                        await cognitoSignOut();
+                                        localStorage.clear();
+                                        window.location.href = "/login";
+                                      } catch (error) {
+                                        console.error("Logout error:", error);
+                                      }
+                                    }}
+                                    className="w-full px-4 py-3 text-white hover:bg-white/10 rounded-lg transition-colors flex items-center gap-2"
+                                    data-testid="nav-logout"
+                                  >
+                                    <LogOut className="h-4 w-4" />
+                                    <span>logout</span>
+                                  </button>
+                                </>
+                              )}
+                            </>
+                          )}</div>
+                      </>
+                    ) : (<div className="flex flex-col items-center justify-center space-y-4">
+                        <button

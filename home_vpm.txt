@@ -1,0 +1,31 @@
+      .replace(
+        /^(good morning|good afternoon|good evening|hello|hi|welcome)/gi,
+        "",
+      )
+      .replace(/^(ladies and gentlemen|dear listeners|in today's news)/gi, "")
+      .replace(/^[.,\s]+/, "") // Remove leading punctuation and spaces
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleanText);
+
+    const voices = speechSynthesis.getVoices();
+    const voiceProfileMap: Record<string, string[]> = {
+      ravi: ["ravi", "moira", "samantha", "aria", "ava"],
+      vaib: ["vaib", "susan", "karen", "claire", "hazel"],
+      kids: ["kids", "allison", "serena", "zira", "fiona"]
+    };
+    const selectedProfile = activeVoiceProfileId || "ravi";
+    const priorityKeywords = voiceProfileMap[selectedProfile] || voiceProfileMap.ravi;
+
+    let preferredVoice = voices.find(v => 
+      v.lang.startsWith("en") && 
+      priorityKeywords.some(keyword => v.name.toLowerCase().includes(keyword.toLowerCase()))
+    );
+
+    if (!preferredVoice) {
+      preferredVoice = voices.find(v => v.lang.startsWith("en"));
+    }
+
+    if (preferredVoice) {
+      utterance.voice = preferredVoice;
+    }

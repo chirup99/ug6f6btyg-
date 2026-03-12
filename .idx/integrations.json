@@ -1,0 +1,7 @@
+{
+  "firebase_hosting": {
+    "deploymentHostingUrl": "https://fast-planet-470408-f1.web.app"
+  },
+  "cloud_run_deploy": {},
+  "secrets_manager": {}
+}

@@ -1,0 +1,50 @@
+﻿import { motion, AnimatePresence } from "framer-motion";
+
+import { BrokerData } from "@/components/broker-data";
+
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import { useLocation } from "wouter";
+
+import { useToast } from "@/hooks/use-toast";
+
+import { AuthButtonAngelOne, AngelOneStatus, AngelOneApiStatistics, AngelOneSystemStatus, AngelOneLiveMarketPrices } from "@/components/auth-button-angelone";
+
+import { AuthButtonUpstox } from "@/components/auth-button-upstox";
+
+import { TradingJournalModal } from "@/components/trading-journal-modal";
+
+// REMOVED: All Fyers-related imports
+// import { AuthButton } from "@/components/auth-button";
+
+// import { ConnectionStatus } from "@/components/connection-status";
+
+// import { MonthlyProgressTracker } from "@/components/monthly-progress-tracker";
+
+// import { ApiStatistics } from "@/components/api-statistics";
+
+// import { ErrorPanel } from "@/components/error-panel";
+
+import { SigninDataWindow } from "@/components/signin-data-window";
+
+import { TradingViewWidget } from "@/components/tradingview-widget";
+
+import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-chart";
+
+import { EnhancedTradingViewWidget } from "@/components/enhanced-tradingview-widget";
+
+import { TradingViewStyleChart } from "@/components/tradingview-style-chart";
+
+import { MinimalChart } from "@/components/minimal-chart";
+
+import {
+
+  MultipleImageUpload,
+  MultipleImageUploadRef,
+} from "@/components/multiple-image-upload";
+import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";

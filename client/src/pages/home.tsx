@@ -1926,6 +1926,15 @@ export default function Home() {
   useEffect(() => {
     if (angelOneServerConnected && angelOneServerStatus?.clientCode) {
       const clientCode = angelOneServerStatus.clientCode;
+      // Clean up any company clientCode that was wrongly stored as a broker token
+      // (from a previous fix). If the stored value matches the company clientCode,
+      // it is not a user-connected broker token — remove it and reset broker UI state.
+      const storedToken = localStorage.getItem('angel_one_token');
+      if (storedToken === clientCode) {
+        localStorage.removeItem('angel_one_token');
+        setAngelOneIsConnected(false);
+        console.log('🧹 [AUTO-CONNECT] Removed company clientCode from broker token storage');
+      }
       setAngelOneAccessToken(clientCode);
       console.log('✅ [AUTO-CONNECT] Synced Angel One chart token to local state (broker UI unchanged)');
     }

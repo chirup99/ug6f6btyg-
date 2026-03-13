@@ -31,7 +31,7 @@ const REVIEWS = [
     name: "Riya S.",
     color: "bg-blue-600",
     initial: "R",
-    rating: 5,
+    rating: 4.5,
     text: "Best trading journal app I've ever used. I tried 6 others and deleted them all. Perala is the only one that actually helps me understand my patterns. Never going back.",
     tag: "Trading Journal",
   },
@@ -39,7 +39,7 @@ const REVIEWS = [
     name: "Suresh K.",
     color: "bg-green-600",
     initial: "S",
-    rating: 5,
+    rating: 4,
     text: "The FOMO and over-trading tracker is genius. I used to revenge trade every losing day. Now I see the data and stop myself. Cut my loss days by 60% in 2 months.",
     tag: "FOMO & Over-trading",
   },
@@ -55,7 +55,7 @@ const REVIEWS = [
     name: "Vikram P.",
     color: "bg-pink-600",
     initial: "V",
-    rating: 5,
+    rating: 3.5,
     text: "Notes + AI analysis together is something else. I write my trade reasoning, AI highlights my pattern errors. The fund tracking and news tab keeps me one step ahead.",
     tag: "AI Analysis & News",
   },
@@ -63,7 +63,7 @@ const REVIEWS = [
     name: "Meena R.",
     color: "bg-teal-600",
     initial: "M",
-    rating: 5,
+    rating: 4.5,
     text: "Before Perala I was undisciplined — overtrading, ignoring stop losses, pure FOMO. After 3 months using it, I cut losses early, trade less and profit more. Psychology section saved me.",
     tag: "Trading Psychology",
   },
@@ -2108,10 +2108,23 @@ export default function Landing() {
               {REVIEWS[reviewIndex].tag}
             </span>
             {/* Stars */}
-            <div className="flex gap-0.5 mb-3">
-              {Array.from({ length: REVIEWS[reviewIndex].rating }).map((_, i) => (
-                <span key={i} className="text-yellow-400 text-sm">★</span>
-              ))}
+            <div className="flex items-center gap-0.5 mb-3">
+              {Array.from({ length: 5 }).map((_, i) => {
+                const full = i < Math.floor(REVIEWS[reviewIndex].rating);
+                const half = !full && i < REVIEWS[reviewIndex].rating;
+                return (
+                  <span key={i} className="relative inline-block text-sm leading-none">
+                    <span className="text-gray-700">★</span>
+                    {(full || half) && (
+                      <span
+                        className="absolute inset-0 text-yellow-400 overflow-hidden"
+                        style={{ width: full ? "100%" : "50%" }}
+                      >★</span>
+                    )}
+                  </span>
+                );
+              })}
+              <span className="text-[11px] text-gray-500 ml-1">{REVIEWS[reviewIndex].rating}</span>
             </div>
             {/* Quote */}
             <p className="text-sm text-gray-300 leading-relaxed mb-4">

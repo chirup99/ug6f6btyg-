@@ -780,62 +780,111 @@ export default function Landing() {
   }
 
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center justify-center px-4 py-6">
-      <div className="text-center mb-8 relative inline-block">
-        <link rel="preload" as="image" href="/logo.png" />
-        <div className="flex flex-col items-center">
-          <div className="flex items-center gap-3">
-            <img
-              src="/logo.png"
-              alt="Perala Logo"
-              className="w-12 h-12 rounded-lg"
-              fetchpriority="high"
-              loading="eager"
-            />
-            <h1 className="text-5xl md:text-6xl font-bold text-white tracking-tighter">
-              PERALA
-            </h1>
-          </div>
-          <div className="flex items-center gap-1.5 text-[9px] text-gray-500 font-medium tracking-widest uppercase mt-1 w-full justify-end pl-[0px] pr-[0px]">
-            <span>rethink . reinvest .</span>
-            <div className="relative inline-flex items-center ml-1">
-              <svg
-                width="24"
-                height="12"
-                viewBox="0 0 24 12"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-                className="text-purple-500"
-              >
-                <path
-                  d="M11 5.2C10.2 4 9 3 7.5 3C4.5 3 3 4.5 3 6C3 7.5 4.5 9 7.5 9C10.5 9 12 6 12 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M12 6C12 6 13.5 9 16.5 9C19.5 9 21 7.5 21 6C21 5.6 20.9 5.2 20.7 4.8"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-                <path
-                  d="M17.8 3.3C17.4 3.1 16.9 3 16.5 3C13.5 3 12 6 12 6"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                />
-              </svg>
-              {/* Broken flying piece */}
-              <div className="absolute -top-[5px] -right-[4px] -rotate-[15deg]">
-                <div className="w-[6px] h-[2.2px] bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.6)] animate-pulse mt-[5px] mb-[5px]" />
+    <div className="min-h-screen bg-black flex flex-col lg:flex-row">
+
+      {/* ── Desktop Left Panel ────────────────────────────────────────── */}
+      <div className="hidden lg:flex flex-1 flex-col items-center justify-center px-14 xl:px-20 py-16 relative overflow-hidden border-r border-gray-900/60">
+        <div className="absolute inset-0 bg-gradient-to-br from-purple-900/8 via-transparent to-transparent pointer-events-none" />
+        <div className="relative z-10 w-full max-w-lg">
+
+          {/* Logo */}
+          <div className="flex items-center gap-4 mb-10">
+            <img src="/logo.png" alt="Perala Logo" className="w-14 h-14 rounded-xl" fetchpriority="high" loading="eager" />
+            <div>
+              <h1 className="text-5xl xl:text-6xl font-bold text-white tracking-tighter leading-none">PERALA</h1>
+              <div className="flex items-center gap-1.5 text-[9px] text-gray-500 font-medium tracking-widest uppercase mt-1">
+                <span>rethink . reinvest .</span>
+                <div className="relative inline-flex items-center ml-1">
+                  <svg width="24" height="12" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-purple-500">
+                    <path d="M11 5.2C10.2 4 9 3 7.5 3C4.5 3 3 4.5 3 6C3 7.5 4.5 9 7.5 9C10.5 9 12 6 12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M12 6C12 6 13.5 9 16.5 9C19.5 9 21 7.5 21 6C21 5.6 20.9 5.2 20.7 4.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    <path d="M17.8 3.3C17.4 3.1 16.9 3 16.5 3C13.5 3 12 6 12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  </svg>
+                  <div className="absolute -top-[5px] -right-[4px] -rotate-[15deg]">
+                    <div className="w-[6px] h-[2.2px] bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.6)] animate-pulse mt-[5px] mb-[5px]" />
+                  </div>
+                </div>
               </div>
             </div>
+          </div>
+
+          {/* Hero Headline */}
+          <h2 className="text-3xl xl:text-4xl font-bold text-white mb-4 leading-tight">
+            Journal. Analyse.<br />
+            <span className="text-purple-400">Post. Connect.</span>
+          </h2>
+          <p className="text-gray-400 text-sm xl:text-base mb-10 leading-relaxed">
+            More than a trading journal — Perala is your complete finance hub. Track trades, get AI-driven insights, share voice posts, and grow with a community of serious traders.
+          </p>
+
+          {/* Feature Grid */}
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { icon: "📓", label: "Trade Journal", desc: "Daily P&L, entries & notes" },
+              { icon: "🤖", label: "AI Analysis", desc: "Behaviour & pattern insights" },
+              { icon: "🌐", label: "Finance Social", desc: "Community feed & market views" },
+              { icon: "🎙️", label: "Voice & Audio Posts", desc: "Share analysis hands-free" },
+              { icon: "📊", label: "Live Market Data", desc: "Real-time prices & charts" },
+              { icon: "🔍", label: "Pattern Detection", desc: "Spot FOMO, overtrading & more" },
+            ].map(({ icon, label, desc }) => (
+              <div key={label} className="flex items-start gap-3 p-3 rounded-xl bg-gray-900/50 border border-gray-800/60 hover:border-purple-800/40 transition-colors">
+                <span className="text-xl leading-none mt-0.5">{icon}</span>
+                <div>
+                  <div className="text-xs font-semibold text-white leading-tight">{label}</div>
+                  <div className="text-[11px] text-gray-500 mt-0.5">{desc}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Social proof strip */}
+          <div className="flex items-center gap-3 mt-8 pt-6 border-t border-gray-900">
+            <div className="flex -space-x-2">
+              {["bg-purple-600","bg-blue-600","bg-green-600","bg-orange-600"].map((c,i) => (
+                <div key={i} className={`w-7 h-7 rounded-full ${c} border-2 border-black flex items-center justify-center text-[9px] text-white font-bold`}>{["A","R","S","K"][i]}</div>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500">Join traders already using Perala</p>
           </div>
         </div>
       </div>
 
-      <div className="max-w-md w-full space-y-4">
+      {/* ── Right Panel (Form) ─────────────────────────────────────────── */}
+      <div className="flex flex-col items-center justify-center px-4 py-8 lg:py-0 lg:w-[460px] xl:w-[500px] lg:flex-none lg:min-h-screen">
+
+        {/* Logo — mobile only */}
+        <div className="lg:hidden text-center mb-6 relative inline-block">
+          <link rel="preload" as="image" href="/logo.png" />
+          <div className="flex flex-col items-center">
+            <div className="flex items-center gap-3">
+              <img
+                src="/logo.png"
+                alt="Perala Logo"
+                className="w-12 h-12 rounded-lg"
+                fetchpriority="high"
+                loading="eager"
+              />
+              <h1 className="text-5xl font-bold text-white tracking-tighter">
+                PERALA
+              </h1>
+            </div>
+            <div className="flex items-center gap-1.5 text-[9px] text-gray-500 font-medium tracking-widest uppercase mt-1 w-full justify-end">
+              <span>rethink . reinvest .</span>
+              <div className="relative inline-flex items-center ml-1">
+                <svg width="24" height="12" viewBox="0 0 24 12" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-purple-500">
+                  <path d="M11 5.2C10.2 4 9 3 7.5 3C4.5 3 3 4.5 3 6C3 7.5 4.5 9 7.5 9C10.5 9 12 6 12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M12 6C12 6 13.5 9 16.5 9C19.5 9 21 7.5 21 6C21 5.6 20.9 5.2 20.7 4.8" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <path d="M17.8 3.3C17.4 3.1 16.9 3 16.5 3C13.5 3 12 6 12 6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+                <div className="absolute -top-[5px] -right-[4px] -rotate-[15deg]">
+                  <div className="w-[6px] h-[2.2px] bg-purple-500 rounded-full shadow-[0_0_8px_rgba(168,85,247,0.6)] animate-pulse mt-[5px] mb-[5px]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      <div className="w-full max-w-md space-y-4">
         <div className="text-center relative flex flex-col items-center justify-center p-0 m-0 overflow-hidden">
           {/* Tradebook Preview - Always visible or transitions in */}
           <div
@@ -1555,17 +1604,25 @@ export default function Landing() {
             <h2 className="text-2xl font-bold text-white mb-1">
               Get Early Access
             </h2>
-            <p className="text-gray-400 text-xs mb-2">
-              Perala: Your Advanced Trading Journal & Performance Analysis Hub.
+            <p className="text-gray-400 text-xs mb-3 leading-relaxed">
+              Journal trades, get AI insights, share voice posts & connect with serious traders.
             </p>
-            <div className="flex justify-center gap-4 text-[10px] text-gray-500">
+            <div className="flex flex-wrap justify-center gap-x-4 gap-y-1.5 text-[10px] text-gray-500">
               <div className="flex items-center gap-1">
                 <div className="w-1 h-1 bg-green-500 rounded-full" />
-                <span>Daily Trade Tracking</span>
+                <span>Trade Journal & P&L</span>
               </div>
               <div className="flex items-center gap-1">
-                <div className="w-1 h-1 bg-green-500 rounded-full" />
+                <div className="w-1 h-1 bg-purple-500 rounded-full" />
                 <span>AI Performance Analysis</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-1 bg-blue-500 rounded-full" />
+                <span>Finance Social Feed</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-1 h-1 bg-orange-500 rounded-full" />
+                <span>Voice & Audio Posts</span>
               </div>
             </div>
           </div>
@@ -1928,14 +1985,22 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="flex justify-center gap-6 text-xs text-gray-600 py-4">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-gray-600 py-4">
+          <div className="flex items-center gap-1.5">
             <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-            <span>Improve Your Trading</span>
+            <span>Trade Journal & P&L</span>
           </div>
-          <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-            <span>Data-Driven Patterns</span>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
+            <span>AI-Driven Insights</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
+            <span>Finance Social Feed</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
+            <span>Voice & Audio Posts</span>
           </div>
         </div>
 
@@ -1947,5 +2012,6 @@ export default function Landing() {
         </div>
       </div>
     </div>
+  </div>
   );
 }

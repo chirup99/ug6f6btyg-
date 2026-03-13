@@ -16195,8 +16195,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                                 {s.sentiment === 'positive' ? '▲' : s.sentiment === 'negative' ? '▼' : '●'}
                                                               </span>
                                                               <span className="text-xs text-gray-400 flex-1 line-clamp-1">{s.keyTheme}</span>
-                                                              <span className={`text-xs font-bold px-2 py-0.5 rounded shrink-0 ${s.investmentSignal === 'BUY' ? 'bg-green-500/20 text-green-400' : s.investmentSignal === 'SELL' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
-                                                                {s.investmentSignal}
+                                                              <span className={`text-sm px-1.5 py-0.5 rounded shrink-0 ${s.investmentSignal === 'BUY' ? 'bg-green-500/20' : s.investmentSignal === 'SELL' ? 'bg-red-500/20' : 'bg-yellow-500/20'}`} title={s.investmentSignal}>
+                                                                {s.investmentSignal === 'BUY' ? '🐂' : s.investmentSignal === 'SELL' ? '🐻' : '👁️'}
                                                               </span>
                                                             </div>
                                                           ))}

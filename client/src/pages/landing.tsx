@@ -203,24 +203,40 @@ export default function Landing() {
         const user = await getCognitoUser();
         if (user && user.userId) {
           console.log("👤 [Landing] User already authenticated:", user.email);
-          console.log("🚀 [Landing] Redirecting to home page...");
 
-          // Ensure localStorage is synced but respect existing linked ID
-          const storedUserId = localStorage.getItem("currentUserId");
-
-          // Only overwrite if not set, or if we want to force sync (but here we want to preserve link)
-          // If storedUserId exists and is different from user.userId (506c...), it might be the linked ID (c06...)
-          // So we should NOT overwrite it with the raw token ID.
-          if (!storedUserId) {
-            localStorage.setItem("currentUserId", user.userId);
+          // Always resolve the canonical userId via the backend linking system.
+          // This is critical: Google sign-in and email/password sign-up produce
+          // different Cognito subs for the same email. The backend resolves them
+          // to one canonical ID so data is never split across two accounts.
+          let finalUserId = user.userId;
+          try {
+            const token = await getCognitoToken();
+            if (token) {
+              const response = await fetch("/api/auth/cognito", {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                  Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ name: user.name, email: user.email }),
+              });
+              const result = await response.json();
+              if (result.success && result.userId) {
+                finalUserId = result.userId;
+                console.log(`🔗 [Landing] Canonical userId resolved: ${finalUserId} (accountLinked=${result.accountLinked})`);
+              }
+            }
+          } catch (linkErr) {
+            console.warn("⚠️ [Landing] Backend account linking failed, using raw sub:", linkErr);
           }
 
+          localStorage.setItem("currentUserId", finalUserId);
           localStorage.setItem("currentUserEmail", user.email);
           localStorage.setItem("currentUsername", user.email);
           localStorage.setItem("currentDisplayName", user.displayName);
           localStorage.setItem("currentUserName", user.displayName);
 
-          // Force redirect to home
+          console.log("🚀 [Landing] Redirecting to home page...");
           window.location.href = "/";
           return true;
         } else {
@@ -432,16 +448,12 @@ export default function Landing() {
       console.log("🔐 Signing in after verification...");
       const authUser = await cognitoSignIn(email, password);
 
-      localStorage.setItem("currentUserId", authUser.userId);
-      localStorage.setItem("currentUserEmail", authUser.email);
-      localStorage.setItem("currentUsername", authUser.email);
-      localStorage.setItem("currentDisplayName", authUser.name);
-      localStorage.setItem("currentUserName", authUser.name);
-
+      // Resolve canonical userId via backend linking before storing
+      let finalUserId = authUser.userId;
       const token = await getCognitoToken();
       if (token) {
         try {
-          await fetch("/api/auth/cognito", {
+          const linkResponse = await fetch("/api/auth/cognito", {
             method: "POST",
             headers: {
               "Content-Type": "application/json",
@@ -452,10 +464,21 @@ export default function Landing() {
               email: authUser.email,
             }),
           });
+          const linkResult = await linkResponse.json();
+          if (linkResult.success && linkResult.userId) {
+            finalUserId = linkResult.userId;
+            console.log(`🔗 Canonical userId after signup: ${finalUserId}`);
+          }
         } catch (err) {
           console.warn("Backend sync failed, continuing...", err);
         }
       }
+
+      localStorage.setItem("currentUserId", finalUserId);
+      localStorage.setItem("currentUserEmail", authUser.email);
+      localStorage.setItem("currentUsername", authUser.email);
+      localStorage.setItem("currentDisplayName", authUser.name);
+      localStorage.setItem("currentUserName", authUser.name);
 
       console.log("✅ Auto-login successful, redirecting to app...");
       window.location.href = "/";

@@ -1932,8 +1932,8 @@ export default function Landing() {
 
                   <Button
                     type="submit"
-                    disabled={isEmailLoading}
-                    className="w-full bg-purple-600 hover:bg-purple-700 h-11 rounded-xl font-semibold"
+                    disabled={isEmailLoading || (!isLogin && !!email && !email.toLowerCase().endsWith("@gmail.com"))}
+                    className="w-full bg-purple-600 hover:bg-purple-700 h-11 rounded-xl font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {isEmailLoading
                       ? (isLogin ? "Logging in..." : "Creating account...")

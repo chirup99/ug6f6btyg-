@@ -524,6 +524,15 @@ export default function Landing() {
       return;
     }
 
+    if (!isLogin && !email.toLowerCase().endsWith("@gmail.com")) {
+      toast({
+        title: "Gmail Required",
+        description: "Only @gmail.com email addresses are allowed for sign up.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (password.length < 8) {
       toast({
         title: "Password Too Short",
@@ -1890,6 +1899,11 @@ export default function Landing() {
                     onChange={(e) => setEmail(e.target.value)}
                     className="bg-gray-950 border-gray-800 text-white placeholder-gray-400 h-11 rounded-xl"
                   />
+                  {!isLogin && email && !email.toLowerCase().endsWith("@gmail.com") && (
+                    <p className="text-[11px] text-amber-400 px-1 flex items-center gap-1">
+                      <span>⚠</span> Only @gmail.com addresses are allowed for sign up.
+                    </p>
+                  )}
                   <div className="relative">
                     <Input
                       type={showPassword ? "text" : "password"}

@@ -16045,17 +16045,17 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         return (
                                           <div className="w-full">
                                             {/* Header row */}
-                                            <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center justify-between mb-3 gap-2">
                                               {/* Pill-style tab switcher */}
                                               <div
-                                                className="flex items-center p-0.5 rounded-full"
+                                                className="flex items-center p-0.5 rounded-full shrink-0"
                                                 style={{ background: '#1a1a1a' }}
                                                 data-testid="market-news-tab-switcher"
                                               >
                                                 {[
-                                                  { key: 'all', label: 'All News' },
-                                                  { key: 'watchlist', label: 'Watchlist' },
-                                                  { key: 'nifty50', label: 'Nifty 50' },
+                                                  { key: 'all', label: 'All', labelFull: 'All News' },
+                                                  { key: 'watchlist', label: 'Watch', labelFull: 'Watchlist' },
+                                                  { key: 'nifty50', label: 'N50', labelFull: 'Nifty 50' },
                                                 ].map((tab) => (
                                                   <button
                                                     key={tab.key}
@@ -16070,7 +16070,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                       if (tab.key === 'nifty50' && nifty50NewsItems.length === 0) fetchNifty50News();
                                                     }}
                                                     data-testid={`tab-market-news-${tab.key}`}
-                                                    className="relative px-4 py-1.5 text-sm font-medium rounded-full transition-all duration-200"
+                                                    className="relative px-2.5 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-medium rounded-full transition-all duration-200"
                                                     style={
                                                       marketNewsMode === tab.key
                                                         ? {
@@ -16081,12 +16081,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         : { color: '#9ca3af' }
                                                     }
                                                   >
-                                                    {tab.label}
+                                                    <span className="md:hidden">{tab.label}</span>
+                                                    <span className="hidden md:inline">{tab.labelFull}</span>
                                                   </button>
                                                 ))}
                                               </div>
-                                              <div className="flex items-center gap-2">
-                                                <span className="text-xs text-gray-500">
+                                              <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
+                                                <span className="hidden md:block text-xs text-gray-500 truncate">
                                                   {newsSelectedSector
                                                     ? `${newsItems.length} articles · ${newsSelectedSector}`
                                                     : isAllMode
@@ -16097,23 +16098,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                   <button
                                                     onClick={handleAiAnalysis}
                                                     disabled={isNewsAiAnalysisLoading}
-                                                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all"
+                                                    className="flex items-center gap-1 px-2 py-1.5 md:px-3 rounded-lg text-xs font-medium transition-all shrink-0"
                                                     style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff', opacity: isNewsAiAnalysisLoading ? 0.7 : 1 }}
                                                     data-testid="button-news-ai-analysis"
                                                   >
                                                     {isNewsAiAnalysisLoading
                                                       ? <Loader2 className="h-3 w-3 animate-spin" />
                                                       : <Sparkles className="h-3 w-3" />}
-                                                    AI Analysis
+                                                    <span className="hidden md:inline">AI Analysis</span>
                                                   </button>
                                                 )}
                                                 <button
                                                   onClick={handleRefresh}
-                                                  className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs text-gray-300 transition-colors"
+                                                  className="flex items-center gap-1 px-2 py-1.5 md:px-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs text-gray-300 transition-colors shrink-0"
                                                   data-testid="button-refresh-market-news"
                                                 >
                                                   <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-                                                  Refresh
+                                                  <span className="hidden md:inline">Refresh</span>
                                                 </button>
                                               </div>
                                             </div>

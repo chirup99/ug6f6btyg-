@@ -15859,9 +15859,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           </DialogContent>
         </Dialog>
 
-                      {/* AI Search Results - Desktop only */}
+                      {/* AI Search Results - Desktop always; Mobile only for Market News */}
                       {isSearchActive && (
-                        <div className="max-w-5xl mx-auto mt-4 animate-in slide-in-from-top-4 duration-300 md:block hidden">
+                        <div className={`max-w-5xl mx-auto mt-4 animate-in slide-in-from-top-4 duration-300 ${searchResults && searchResults.includes('[CHART:MARKET_NEWS]') ? 'block' : 'hidden md:block'}`}>
                           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-4">
                             {searchResults ? (
                               <div className="space-y-1">
@@ -18120,8 +18120,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             </div>
                           )}
 
-                          {/* Mobile AI Search Results - Extends to bottom */}
-                          {isSearchActive && searchResults && (
+                          {/* Mobile AI Search Results - Extends to bottom (not used for Market News - uses desktop layout instead) */}
+                          {isSearchActive && searchResults && !searchResults.includes('[CHART:MARKET_NEWS]') && (
                             <div className="md:hidden fixed inset-x-0 top-0 bottom-0 bg-gray-900/95 backdrop-blur-sm z-[60] overflow-y-auto">
                               <div className="p-3 space-y-3">
                                 <div className="flex items-center justify-start pb-2 border-b border-gray-700">

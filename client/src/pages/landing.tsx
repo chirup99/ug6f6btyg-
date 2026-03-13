@@ -1985,25 +1985,6 @@ export default function Landing() {
           </div>
         </div>
 
-        <div className="flex flex-wrap justify-center gap-x-5 gap-y-2 text-xs text-gray-600 py-4">
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 bg-green-500 rounded-full" />
-            <span>Trade Journal & P&L</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 bg-purple-500 rounded-full" />
-            <span>AI-Driven Insights</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full" />
-            <span>Finance Social Feed</span>
-          </div>
-          <div className="flex items-center gap-1.5">
-            <div className="w-1.5 h-1.5 bg-orange-500 rounded-full" />
-            <span>Voice & Audio Posts</span>
-          </div>
-        </div>
-
         <div className="flex justify-center gap-4 text-xs text-gray-600 border-t border-gray-900 pt-4">
           <a href="/privacy" className="hover:text-gray-400 transition-colors">
             Privacy Policy

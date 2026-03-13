@@ -389,61 +389,6 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded }: { po
                           {formatCommentTimestamp(existingComment.createdAt)}
                         </span>
                       </div>
-                        {post.metadata?.type === 'trade_insight' && (
-                          <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
-                            <div className="flex h-[140px]">
-                              {/* Left side: Date and Chart */}
-                              <div className="flex-1 p-4 flex flex-col">
-                                <div className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
-                                  {post.metadata.date}
-                                </div>
-                                <div className="flex-1 w-full min-h-0 relative">
-                                  {post.metadata.chartData && post.metadata.chartData.length > 0 ? (
-                                    <ResponsiveContainer width="100%" height="100%">
-                                      <LineChart data={post.metadata.chartData.map((val: number, i: number) => ({ val, i }))}>
-                                        <defs>
-                                          <linearGradient id={`pnlGradient-${post.id}`} x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor={post.metadata.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0.1}/>
-                                            <stop offset="95%" stopColor={post.metadata.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0}/>
-                                          </linearGradient>
-                                        </defs>
-                                        <Line 
-                                          type="monotone" 
-                                          dataKey="val" 
-                                          stroke={post.metadata.pnl >= 0 ? "#22c55e" : "#ef4444"} 
-                                          strokeWidth={2} 
-                                          dot={false}
-                                          animationDuration={1000}
-                                        />
-                                      </LineChart>
-                                    </ResponsiveContainer>
-                                  ) : (
-                                    <div className="h-full flex items-center justify-center text-[10px] text-gray-400">
-                                      No chart data
-                                    </div>
-                                  )}
-                                </div>
-                              </div>
-                              {/* Right side: Stats */}
-                              <div className="w-[120px] bg-gray-50/50 dark:bg-zinc-900/20 border-l border-gray-100 dark:border-zinc-800/50 p-4 flex flex-col justify-center space-y-3">
-                                <div>
-                                  <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">TOTAL P&L</div>
-                                  <div className={`text-sm font-bold ${post.metadata.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                    ₹{Math.floor(post.metadata.pnl).toLocaleString()}
-                                  </div>
-                                </div>
-                                <div>
-                                  <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">TRADES</div>
-                                  <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">{post.metadata.trades}</div>
-                                </div>
-                                <div>
-                                  <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">WIN RATE</div>
-                                  <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">{post.metadata.winRate}%</div>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        )}
                         <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed">
                           <CommentContent content={existingComment.content} />
                         </p>
@@ -1028,7 +973,7 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
 
   return (
     <>
-      <div className="bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 sticky top-0 z-50 shadow-sm">
+      <div className="bg-background border-b border-border sticky top-0 z-50">
         
         <div className="max-w-7xl mx-auto px-4 py-4">
           {/* App Header - Hides on scroll */}
@@ -1037,12 +982,12 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
           }`}>
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center border border-gray-200 dark:border-gray-600">
-                  <div className="text-gray-700 dark:text-gray-300 font-bold text-sm">⚡</div>
+                <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center border border-border">
+                  <div className="text-foreground font-bold text-sm">⚡</div>
                 </div>
                 <div>
-                  <h1 className="text-gray-900 dark:text-white font-bold text-xl">NeoFeed</h1>
-                  <p className="text-gray-600 dark:text-gray-400 text-sm font-medium">AI-Powered Trading Network</p>
+                  <h1 className="text-foreground font-bold text-xl">NeoFeed</h1>
+                  <p className="text-muted-foreground text-sm font-medium">AI-Powered Trading Network</p>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -1080,27 +1025,29 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
           </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center justify-between gap-2 pb-2">
-          <div className="flex gap-2 overflow-x-auto">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex overflow-x-auto border-b border-border -mb-[1px]">
             {['All', 'Bullish', 'Bearish', 'Profile'].map((filter, index) => (
-              <Button
+              <button
                 key={filter}
                 onClick={filter === 'All' ? onAllClick : () => onFilterChange(filter)}
-                variant={selectedFilter === filter ? "default" : "ghost"}
                 disabled={filter === 'All' && isRefreshing}
-                className={`px-4 py-2 rounded-full whitespace-nowrap ${
+                className={`px-4 pb-3 pt-1 font-medium text-sm whitespace-nowrap relative transition-colors ${
                   selectedFilter === filter
-                    ? `bg-blue-600 hover:bg-blue-700 text-white ${filter === 'All' && isRefreshing ? 'opacity-80' : ''}` 
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                    ? 'text-foreground'
+                    : 'text-muted-foreground hover:text-foreground'
                 }`}
               >
                 <div className="flex items-center gap-2">
                   {index === 0 && isRefreshing && (
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                   )}
                   {filter}
                 </div>
-              </Button>
+                {selectedFilter === filter && (
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full"></div>
+                )}
+              </button>
             ))}
           </div>
           
@@ -1110,7 +1057,7 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
               onClick={onBackClick}
               variant="ghost"
               size="icon"
-              className="lg:hidden flex-shrink-0 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
+              className="lg:hidden flex-shrink-0 text-muted-foreground hover:text-foreground hover:bg-muted rounded-full"
               data-testid="button-back-to-home"
             >
               <ArrowLeft className="h-5 w-5" />
@@ -3035,7 +2982,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
   }
 
   return (
-    <Card className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm hover:shadow-md mb-4 transition-none">
+    <Card className="bg-card border border-border shadow-none mb-3 rounded-lg transition-none">
       
       <CardContent className="p-3 xl:p-4 transition-none">
         {/* User Header - For reposts, shows the reposter (current user) as the main author */}
@@ -3045,19 +2992,12 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
               {(() => {
                 const avatarUrl = post.authorAvatar || post.user?.avatar;
                 const isValidAvatar = avatarUrl && avatarUrl.includes('s3.') && !avatarUrl.includes('ui-avatars.com');
-                console.log('🖼️ PostCard avatar debug:', { 
-                  postId: post.id, 
-                  authorAvatar: post.authorAvatar, 
-                  userAvatar: post.user?.avatar,
-                  avatarUrl, 
-                  isValidAvatar 
-                });
                 return (
-                  <Avatar className="w-10 h-10 border border-gray-200 dark:border-gray-600 ">
+                  <Avatar className="w-9 h-9 border border-border">
                     {isValidAvatar ? (
                       <AvatarImage src={avatarUrl} alt={post.authorDisplayName || post.authorUsername} className="object-cover" />
                     ) : null}
-                    <AvatarFallback className="bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 font-bold text-sm ">
+                    <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-sm">
                       {post.user?.initial || 
                        post.authorDisplayName?.charAt(0) || 
                        post.authorUsername?.charAt(0) || 
@@ -3083,7 +3023,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                       }
                     }
                   }}
-                  className="text-gray-900 dark:text-white font-bold text-lg hover:underline cursor-pointer transition-colors"
+                  className="text-foreground font-semibold text-base hover:underline cursor-pointer transition-colors"
                   data-testid={`button-profile-${post.authorUsername}`}
                 >
                   {post.user?.username || 
@@ -3249,61 +3189,6 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             </div>
           )}
           <div className="relative">
-                          {post.metadata?.type === 'trade_insight' && (
-                            <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
-                              <div className="flex h-[140px]">
-                                {/* Left side: Date and Chart */}
-                                <div className="flex-1 p-4 flex flex-col">
-                                  <div className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
-                                    {post.metadata.date}
-                                  </div>
-                                  <div className="flex-1 w-full min-h-0 relative">
-                                    {post.metadata.chartData && post.metadata.chartData.length > 0 ? (
-                                      <ResponsiveContainer width="100%" height="100%">
-                                        <LineChart data={post.metadata.chartData.map((val: number, i: number) => ({ val, i }))}>
-                                          <defs>
-                                            <linearGradient id={`pnlGradient-neofeed-post-${post.id}`} x1="0" y1="0" x2="0" y2="1">
-                                              <stop offset="5%" stopColor={post.metadata.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0.1}/>
-                                              <stop offset="95%" stopColor={post.metadata.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0}/>
-                                            </linearGradient>
-                                          </defs>
-                                          <Line 
-                                            type="monotone" 
-                                            dataKey="val" 
-                                            stroke={post.metadata.pnl >= 0 ? "#22c55e" : "#ef4444"} 
-                                            strokeWidth={2} 
-                                            dot={false}
-                                            animationDuration={1000}
-                                          />
-                                        </LineChart>
-                                      </ResponsiveContainer>
-                                    ) : (
-                                      <div className="h-full flex items-center justify-center text-[10px] text-gray-400">
-                                        No chart data
-                                      </div>
-                                    )}
-                                  </div>
-                                </div>
-                                {/* Right side: Stats */}
-                                <div className="w-[120px] bg-gray-50/50 dark:bg-zinc-900/20 border-l border-gray-100 dark:border-zinc-800/50 p-4 flex flex-col justify-center space-y-3">
-                                  <div>
-                                    <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">TOTAL P&L</div>
-                                    <div className={`text-sm font-bold ${post.metadata.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                      ₹{Math.floor(post.metadata.pnl).toLocaleString()}
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">TRADES</div>
-                                    <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">{post.metadata.trades}</div>
-                                  </div>
-                                  <div>
-                                    <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">WIN RATE</div>
-                                    <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">{post.metadata.winRate}%</div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          )}
             <p 
               className={`text-gray-900 dark:text-white leading-relaxed mb-2 xl:mb-3 text-base font-medium ${
                 isAudioMode ? 'cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors rounded-lg p-2 -m-2' : ''
@@ -3393,14 +3278,14 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-4 border-t border-gray-300 dark:border-cyan-400/30 bg-gradient-to-r from-gray-100/80 to-gray-200/80 dark:from-black/40 dark:to-indigo-900/40 py-4 rounded-b-lg">
+        <div className="flex items-center justify-between pt-3 border-t border-border py-3">
           <div className="flex items-center gap-8">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowCommentSection(!showCommentSection)}
-              className={`flex items-center gap-2 backdrop-blur-sm hover:bg-gray-500/20 px-3 py-2 rounded-lg transition-colors ${
-                showCommentSection ? 'text-blue-500 dark:text-blue-400' : 'text-black dark:text-white hover:text-gray-700 dark:hover:text-gray-300'
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                showCommentSection ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
               data-testid={`button-comment-${post.id}`}
             >
@@ -3413,8 +3298,8 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
               size="sm"
               onClick={() => repostMutation.mutate({ wasReposted: reposted })}
               disabled={repostMutation.isPending}
-              className={`flex items-center gap-2 backdrop-blur-sm hover:bg-gray-500/20 px-3 py-2 rounded-lg transition-colors ${
-                reposted ? 'text-green-500 dark:text-green-400' : 'text-black dark:text-white hover:text-gray-700 dark:hover:text-gray-300'
+              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                reposted ? 'text-green-500 dark:text-green-400' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
               data-testid={`button-repost-${post.id}`}
             >
@@ -3428,10 +3313,10 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 size="sm"
                 onClick={() => setShowVoteBar(!showVoteBar)}
                 disabled={likeMutation.isPending || downtrendMutation.isPending}
-                className={`flex items-center gap-2 backdrop-blur-sm hover:bg-gray-500/20 px-3 py-2 rounded-lg transition-colors ${
+                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
                   liked || downtrended
                     ? liked ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'
-                    : 'text-black dark:text-white hover:text-gray-700 dark:hover:text-gray-300'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted'
                 }`}
                 data-testid={`button-vote-${post.id}`}
                 title="Click to vote"
@@ -4459,29 +4344,29 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   // Show skeleton loading only on initial load, not during background fetches
   if (isLoading && posts.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 text-foreground">
+      <div className="min-h-screen bg-background text-foreground">
         <FeedHeader onAllClick={handleAllClick} isRefreshing={isFetching} selectedFilter={selectedFilter} onFilterChange={handleFilterChange} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} showAppBar={showAppBar} onBackClick={onBackClick} />
         <div className="max-w-3xl mx-auto px-3 py-3">
           <div className="space-y-4">
             {[...Array(8)].map((_, i) => (
-              <Card key={i} className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 animate-pulse shadow-sm">
-                <CardContent className="p-6">
+              <Card key={i} className="bg-card border border-border animate-pulse shadow-none">
+                <CardContent className="p-4">
                   <div className="flex items-center gap-3 mb-4">
-                    <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                    <div className="w-9 h-9 bg-muted rounded-full"></div>
                     <div className="space-y-2">
-                      <div className="w-32 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                      <div className="w-24 h-3 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                      <div className="w-32 h-4 bg-muted rounded"></div>
+                      <div className="w-24 h-3 bg-muted rounded"></div>
                     </div>
                   </div>
                   <div className="space-y-2 mb-4">
-                    <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    <div className="w-3/4 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    <div className="w-1/2 h-4 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="w-full h-4 bg-muted rounded"></div>
+                    <div className="w-3/4 h-4 bg-muted rounded"></div>
+                    <div className="w-1/2 h-4 bg-muted rounded"></div>
                   </div>
                   <div className="flex items-center gap-4 mt-4">
-                    <div className="w-16 h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    <div className="w-16 h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
-                    <div className="w-16 h-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+                    <div className="w-16 h-6 bg-muted rounded"></div>
+                    <div className="w-16 h-6 bg-muted rounded"></div>
+                    <div className="w-16 h-6 bg-muted rounded"></div>
                   </div>
                 </CardContent>
               </Card>
@@ -4494,7 +4379,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background dark:from-slate-900 dark:via-slate-800 dark:to-slate-900 text-foreground">
+      <div className="min-h-screen bg-background text-foreground">
         <FeedHeader onAllClick={handleAllClick} isRefreshing={isFetching} selectedFilter={selectedFilter} onFilterChange={handleFilterChange} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} showAppBar={showAppBar} onBackClick={onBackClick} />
         <div className="max-w-3xl mx-auto px-3 py-3">
           <Card className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 shadow-sm">
@@ -4522,7 +4407,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background dark:from-slate-900 dark:via-slate-800 dark:to-slate-900" ref={containerRef}>
+    <div className="min-h-screen bg-background" ref={containerRef}>
       {/* Back Button - Absolute positioned in top-right corner (Mobile Only) */}
       {onBackClick && (
         <Button

@@ -48,7 +48,7 @@ const REVIEWS = [
     color: "bg-orange-600",
     initial: "K",
     rating: 5,
-    text: "The social feed is incredible — I found a mentor, shared my setups, and got real feedback from disciplined traders. It's like a trading community that actually helps.",
+    text: "I post my trade insights directly from the journal tab to the social feed in one tap. The AI audio voice post feature is next level — this is a new era of social media. India's best super app combining finance, trade tracking, and social all in one.",
     tag: "Social Feed",
   },
   {

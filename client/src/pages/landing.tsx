@@ -18,12 +18,65 @@ import {
   getCognitoUser,
 } from "@/cognito";
 
+const REVIEWS = [
+  {
+    name: "Arjun M.",
+    color: "bg-purple-600",
+    initial: "A",
+    rating: 5,
+    text: "Connected all my brokers — Angel One, Zerodha, Dhan — in one place. Finally I can track every trade without switching apps. Multi-broker sync is a game changer!",
+    tag: "Multi-Broker Connect",
+  },
+  {
+    name: "Riya S.",
+    color: "bg-blue-600",
+    initial: "R",
+    rating: 5,
+    text: "Best trading journal app I've ever used. I tried 6 others and deleted them all. Perala is the only one that actually helps me understand my patterns. Never going back.",
+    tag: "Trading Journal",
+  },
+  {
+    name: "Suresh K.",
+    color: "bg-green-600",
+    initial: "S",
+    rating: 5,
+    text: "The FOMO and over-trading tracker is genius. I used to revenge trade every losing day. Now I see the data and stop myself. Cut my loss days by 60% in 2 months.",
+    tag: "FOMO & Over-trading",
+  },
+  {
+    name: "Kavya T.",
+    color: "bg-orange-600",
+    initial: "K",
+    rating: 5,
+    text: "The social feed is incredible — I found a mentor, shared my setups, and got real feedback from disciplined traders. It's like a trading community that actually helps.",
+    tag: "Social Feed",
+  },
+  {
+    name: "Vikram P.",
+    color: "bg-pink-600",
+    initial: "V",
+    rating: 5,
+    text: "Notes + AI analysis together is something else. I write my trade reasoning, AI highlights my pattern errors. The fund tracking and news tab keeps me one step ahead.",
+    tag: "AI Analysis & News",
+  },
+  {
+    name: "Meena R.",
+    color: "bg-teal-600",
+    initial: "M",
+    rating: 5,
+    text: "Before Perala I was undisciplined — overtrading, ignoring stop losses, pure FOMO. After 3 months using it, I cut losses early, trade less and profit more. Psychology section saved me.",
+    tag: "Trading Psychology",
+  },
+];
+
 export default function Landing() {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [emailBlurred, setEmailBlurred] = useState(false);
   const [password, setPassword] = useState("");
+  const [showReviewsDialog, setShowReviewsDialog] = useState(false);
+  const [reviewIndex, setReviewIndex] = useState(0);
   const [showAccessInfo, setShowAccessInfo] = useState(true);
   const [showJournalCarousel, setShowJournalCarousel] = useState(false);
   const [showPerformanceWindow, setShowPerformanceWindow] = useState(false);
@@ -80,6 +133,14 @@ export default function Landing() {
     }, 9000);
     return () => clearTimeout(trendTimer);
   }, []);
+
+  useEffect(() => {
+    if (!showReviewsDialog) return;
+    const interval = setInterval(() => {
+      setReviewIndex((prev) => (prev + 1) % REVIEWS.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, [showReviewsDialog]);
 
   useEffect(() => {
     const notesTimer = setTimeout(() => {
@@ -790,6 +851,7 @@ export default function Landing() {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-black flex flex-col lg:flex-row">
 
       {/* ── Desktop Left Panel ────────────────────────────────────────── */}
@@ -848,14 +910,18 @@ export default function Landing() {
           </div>
 
           {/* Social proof strip */}
-          <div className="flex items-center gap-3 mt-8 pt-6 border-t border-gray-900">
+          <button
+            type="button"
+            onClick={() => { setReviewIndex(0); setShowReviewsDialog(true); }}
+            className="flex items-center gap-3 mt-8 pt-6 border-t border-gray-900 w-full text-left hover:opacity-80 transition-opacity group"
+          >
             <div className="flex -space-x-2">
               {["bg-purple-600","bg-blue-600","bg-green-600","bg-orange-600"].map((c,i) => (
-                <div key={i} className={`w-7 h-7 rounded-full ${c} border-2 border-black flex items-center justify-center text-[9px] text-white font-bold`}>{["A","R","S","K"][i]}</div>
+                <div key={i} className={`w-7 h-7 rounded-full ${c} border-2 border-black flex items-center justify-center text-[9px] text-white font-bold group-hover:scale-105 transition-transform`}>{["A","R","S","K"][i]}</div>
               ))}
             </div>
-            <p className="text-xs text-gray-500">Join traders already using Perala</p>
-          </div>
+            <p className="text-xs text-gray-500 group-hover:text-purple-400 transition-colors">Join traders already using Perala</p>
+          </button>
         </div>
       </div>
 
@@ -2010,5 +2076,82 @@ export default function Landing() {
       </div>
     </div>
   </div>
+
+  {/* ── Reviews Dialog ──────────────────────────────────────────────── */}
+  {showReviewsDialog && (
+    <div
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4"
+      onClick={() => setShowReviewsDialog(false)}
+    >
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" />
+      <div
+        className="relative w-full max-w-sm bg-[#0d0d0d] border border-gray-800 rounded-2xl shadow-2xl overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-800">
+          <div>
+            <p className="text-[10px] text-purple-400 font-semibold uppercase tracking-widest mb-0.5">Trader Reviews</p>
+            <h3 className="text-sm font-bold text-white">What our traders say</h3>
+          </div>
+          <button
+            onClick={() => setShowReviewsDialog(false)}
+            className="w-7 h-7 rounded-full bg-gray-800 flex items-center justify-center text-gray-400 hover:text-white text-xs"
+          >✕</button>
+        </div>
+
+        {/* Carousel card */}
+        <div className="px-5 py-4 min-h-[200px] flex flex-col justify-between">
+          <div key={reviewIndex} className="animate-fade-in">
+            {/* Tag */}
+            <span className="inline-block text-[10px] bg-purple-900/50 text-purple-300 border border-purple-800/50 px-2 py-0.5 rounded-full mb-3">
+              {REVIEWS[reviewIndex].tag}
+            </span>
+            {/* Stars */}
+            <div className="flex gap-0.5 mb-3">
+              {Array.from({ length: REVIEWS[reviewIndex].rating }).map((_, i) => (
+                <span key={i} className="text-yellow-400 text-sm">★</span>
+              ))}
+            </div>
+            {/* Quote */}
+            <p className="text-sm text-gray-300 leading-relaxed mb-4">
+              "{REVIEWS[reviewIndex].text}"
+            </p>
+            {/* Reviewer */}
+            <div className="flex items-center gap-2">
+              <div className={`w-8 h-8 rounded-full ${REVIEWS[reviewIndex].color} flex items-center justify-center text-[11px] text-white font-bold`}>
+                {REVIEWS[reviewIndex].initial}
+              </div>
+              <span className="text-xs text-gray-400 font-medium">{REVIEWS[reviewIndex].name}</span>
+            </div>
+          </div>
+
+          {/* Dots */}
+          <div className="flex items-center justify-center gap-1.5 mt-5">
+            {REVIEWS.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setReviewIndex(i)}
+                className={`rounded-full transition-all duration-300 ${i === reviewIndex ? "w-4 h-1.5 bg-purple-500" : "w-1.5 h-1.5 bg-gray-700 hover:bg-gray-500"}`}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* Prev / Next */}
+        <div className="flex border-t border-gray-800">
+          <button
+            onClick={() => setReviewIndex((prev) => (prev - 1 + REVIEWS.length) % REVIEWS.length)}
+            className="flex-1 py-3 text-xs text-gray-500 hover:text-white transition-colors border-r border-gray-800"
+          >← Prev</button>
+          <button
+            onClick={() => setReviewIndex((prev) => (prev + 1) % REVIEWS.length)}
+            className="flex-1 py-3 text-xs text-gray-500 hover:text-white transition-colors"
+          >Next →</button>
+        </div>
+      </div>
+    </div>
+  )}
+    </>
   );
 }

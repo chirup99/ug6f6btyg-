@@ -5,6 +5,9 @@ import axios from "axios";
 import multer from "multer";
 import YahooFinance from "yahoo-finance2";
 
+// Module-level yahoo-finance2 instance for use across all helper functions
+const yfGlobal = new (YahooFinance as any)({ suppressNotices: ['yahooSurvey'] });
+
 // Configure multer for memory storage (files stored in memory as Buffer)
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -1494,38 +1497,274 @@ function transformScreenerData(screenerData: any) {
   };
 }
 
+// PRIMARY: Fetch comprehensive fundamental data using yahoo-finance2 library
+async function fetchYahooFinanceLibraryData(symbol: string) {
+  try {
+    // Map NSE symbols to Yahoo Finance format (strip -EQ, add .NS)
+    const cleanSymbol = symbol
+      .replace(/^NSE:/i, '')
+      .replace(/^BSE:/i, '')
+      .replace(/-EQ$/i, '')
+      .replace(/-INDEX$/i, '')
+      .trim();
+    const yahooSymbol = `${cleanSymbol}.NS`;
+
+    console.log(`📊 [YF-LIB] Fetching data for ${yahooSymbol} via yahoo-finance2 library...`);
+
+    const [quote, summary] = await Promise.allSettled([
+      yfGlobal.quote(yahooSymbol).catch(() => null),
+      yfGlobal.quoteSummary(yahooSymbol, {
+        modules: ['summaryDetail', 'financialData', 'defaultKeyStatistics', 'price']
+      }).catch(() => null)
+    ]);
+
+    const q: any = quote.status === 'fulfilled' ? quote.value : null;
+    const s: any = summary.status === 'fulfilled' ? summary.value : null;
+
+    if (!q && !s) {
+      console.log(`⚠️ [YF-LIB] No data returned for ${yahooSymbol}`);
+      return null;
+    }
+
+    const price = q?.regularMarketPrice || s?.price?.regularMarketPrice || 0;
+    if (!price) return null;
+
+    const sd = s?.summaryDetail || {};
+    const fd = s?.financialData || {};
+    const ks = s?.defaultKeyStatistics || {};
+    const pr = s?.price || {};
+
+    // Format market cap
+    const marketCapRaw = q?.marketCap || pr.marketCap || 0;
+    let marketCap = 'N/A';
+    if (marketCapRaw > 0) {
+      if (marketCapRaw >= 1e12) marketCap = `₹${(marketCapRaw / 1e12).toFixed(2)}T`;
+      else if (marketCapRaw >= 1e9) marketCap = `₹${(marketCapRaw / 1e9).toFixed(2)}B`;
+      else if (marketCapRaw >= 1e7) marketCap = `₹${(marketCapRaw / 1e7).toFixed(2)}Cr`;
+      else marketCap = `₹${marketCapRaw.toFixed(0)}`;
+    }
+
+    // Format volume
+    const volumeRaw = q?.regularMarketVolume || 0;
+    let volumeStr = 'N/A';
+    if (volumeRaw > 0) {
+      if (volumeRaw >= 1e7) volumeStr = `${(volumeRaw / 1e7).toFixed(2)}Cr`;
+      else if (volumeRaw >= 1e5) volumeStr = `${(volumeRaw / 1e5).toFixed(2)}L`;
+      else volumeStr = `${volumeRaw}`;
+    }
+
+    // PE ratio
+    const pe = q?.trailingPE || sd?.trailingPE || 0;
+    // PB ratio
+    const pb = ks?.priceToBook || 0;
+    // EPS
+    const eps = ks?.trailingEps || fd?.epsTrailingTwelveMonths || 0;
+    // Book value
+    const bookValue = ks?.bookValue || 0;
+    // Dividend yield
+    const divYield = sd?.dividendYield ? `${(sd.dividendYield * 100).toFixed(2)}%` : 'N/A';
+    // ROE / ROA
+    const roe = fd?.returnOnEquity ? `${(fd.returnOnEquity * 100).toFixed(2)}%` : 'N/A';
+    const roa = fd?.returnOnAssets ? `${(fd.returnOnAssets * 100).toFixed(2)}%` : 'N/A';
+    // Debt to Equity
+    const deRatio = fd?.debtToEquity ? Number((fd.debtToEquity / 100).toFixed(2)) : 0;
+    // Current ratio
+    const currentRatio = fd?.currentRatio || 0;
+    // Beta
+    const beta = sd?.beta || ks?.beta || 0;
+    // Profit margins
+    const profitMargin = fd?.profitMargins ? `${(fd.profitMargins * 100).toFixed(2)}%` : 'N/A';
+    const ebitdaMargin = fd?.ebitdaMargins ? `${(fd.ebitdaMargins * 100).toFixed(2)}%` : 'N/A';
+    // Revenue growth & earnings growth
+    const revenueGrowth = fd?.revenueGrowth ? `${(fd.revenueGrowth * 100).toFixed(2)}%` : 'N/A';
+    const epsGrowth = fd?.earningsGrowth ? `${(fd.earningsGrowth * 100).toFixed(2)}%` : 'N/A';
+    // EV/EBITDA
+    const evEbitda = ks?.enterpriseToEbitda ? Number(ks.enterpriseToEbitda.toFixed(2)) : 0;
+    // 52W high/low - use real decimal values
+    const high52W = q?.fiftyTwoWeekHigh || sd?.fiftyTwoWeekHigh || 0;
+    const low52W = q?.fiftyTwoWeekLow || sd?.fiftyTwoWeekLow || 0;
+
+    const result = {
+      priceData: {
+        open: Number((q?.regularMarketOpen || price).toFixed(2)),
+        high: Number((q?.regularMarketDayHigh || price).toFixed(2)),
+        low: Number((q?.regularMarketDayLow || price).toFixed(2)),
+        close: Number(price.toFixed(2)),
+        volume: volumeStr,
+        high52W: Number(high52W.toFixed(2)),
+        low52W: Number(low52W.toFixed(2))
+      },
+      valuation: {
+        marketCap,
+        peRatio: pe ? Number(pe.toFixed(2)) : 'N/A',
+        pbRatio: pb ? Number(pb.toFixed(2)) : 'N/A',
+        psRatio: 'N/A',
+        evEbitda: evEbitda || 'N/A',
+        pegRatio: 'N/A'
+      },
+      financialHealth: {
+        eps: eps ? Number(eps.toFixed(2)) : 'N/A',
+        bookValue: bookValue ? Number(bookValue.toFixed(2)) : 'N/A',
+        dividendYield: divYield,
+        roe,
+        roa,
+        deRatio: deRatio || 'N/A'
+      },
+      growthMetrics: {
+        revenueGrowth,
+        epsGrowth,
+        profitMargin,
+        ebitdaMargin,
+        freeCashFlowYield: 'N/A'
+      },
+      additionalIndicators: {
+        beta: beta ? Number(beta.toFixed(2)) : 'N/A',
+        currentRatio: currentRatio ? Number(currentRatio.toFixed(2)) : 'N/A',
+        quickRatio: fd?.quickRatio ? Number(fd.quickRatio.toFixed(2)) : 'N/A',
+        priceToSales: 'N/A',
+        enterpriseValue: ks?.enterpriseValue
+          ? `₹${(ks.enterpriseValue / 1e9).toFixed(2)}B`
+          : 'N/A'
+      }
+    };
+
+    console.log(`✅ [YF-LIB] Data fetched for ${yahooSymbol}: price=${price}, PE=${pe}, 52WH=${high52W}, 52WL=${low52W}`);
+    return result;
+  } catch (error) {
+    console.log(`⚠️ [YF-LIB] Error fetching data for ${symbol}:`, error);
+    return null;
+  }
+}
+
+// Fetch chart data for a symbol using yahoo-finance2 library
+async function fetchYahooFinanceChartData(symbol: string, timeframe: string) {
+  try {
+    const cleanSymbol = symbol
+      .replace(/^NSE:/i, '')
+      .replace(/^BSE:/i, '')
+      .replace(/-EQ$/i, '')
+      .replace(/-INDEX$/i, '')
+      .trim();
+    const yahooSymbol = `${cleanSymbol}.NS`;
+
+    const now = new Date();
+    let period1: Date;
+    let interval: string;
+
+    switch (timeframe) {
+      case '1D':
+      case '1d':
+        period1 = new Date(now);
+        period1.setHours(0, 0, 0, 0);
+        interval = '5m';
+        break;
+      case '5D':
+      case '5d':
+        period1 = new Date(now);
+        period1.setDate(period1.getDate() - 5);
+        interval = '60m';
+        break;
+      case '1M':
+        period1 = new Date(now);
+        period1.setMonth(period1.getMonth() - 1);
+        interval = '1d';
+        break;
+      case '6M':
+        period1 = new Date(now);
+        period1.setMonth(period1.getMonth() - 6);
+        interval = '1d';
+        break;
+      case '1Y':
+        period1 = new Date(now);
+        period1.setFullYear(period1.getFullYear() - 1);
+        interval = '1d';
+        break;
+      default:
+        period1 = new Date(now);
+        period1.setHours(0, 0, 0, 0);
+        interval = '5m';
+    }
+
+    console.log(`📊 [YF-CHART] Fetching ${yahooSymbol} ${timeframe} data (interval=${interval})...`);
+
+    const chartResult = await yfGlobal.chart(yahooSymbol, {
+      interval,
+      period1,
+      period2: now
+    });
+
+    const quotes = chartResult?.quotes ?? [];
+    if (!quotes.length) {
+      // If today has no data (market closed), try previous trading day for 1D
+      if (['1D', '1d'].includes(timeframe)) {
+        const prev = new Date(period1);
+        prev.setDate(prev.getDate() - 1);
+        while (prev.getDay() === 0 || prev.getDay() === 6) prev.setDate(prev.getDate() - 1);
+        const prevEnd = new Date(prev);
+        prevEnd.setHours(23, 59, 59, 999);
+        const fallback = await yfGlobal.chart(yahooSymbol, { interval, period1: prev, period2: prevEnd });
+        const fallbackQuotes = fallback?.quotes ?? [];
+        if (fallbackQuotes.length > 0) {
+          return formatYahooChartQuotes(fallbackQuotes, timeframe);
+        }
+      }
+      return [];
+    }
+
+    return formatYahooChartQuotes(quotes, timeframe);
+  } catch (error) {
+    console.log(`⚠️ [YF-CHART] Error fetching chart for ${symbol}:`, error);
+    return [];
+  }
+}
+
+function formatYahooChartQuotes(quotes: any[], timeframe: string) {
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return quotes
+    .filter((q: any) => q.close && q.close > 0)
+    .map((q: any) => {
+      const d = new Date(q.date);
+      let timeLabel: string;
+      if (['1D', '1d'].includes(timeframe)) {
+        const hh = d.getHours().toString().padStart(2, '0');
+        const mm = d.getMinutes().toString().padStart(2, '0');
+        timeLabel = `${hh}:${mm}`;
+      } else if (['5D', '5d'].includes(timeframe)) {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        timeLabel = `${days[d.getDay()]} ${d.getHours().toString().padStart(2, '0')}:00`;
+      } else if (timeframe === '1M') {
+        timeLabel = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+      } else {
+        timeLabel = `${months[d.getMonth()]} ${d.getDate()}`;
+      }
+      return {
+        time: timeLabel,
+        price: Math.round((q.close) * 100) / 100,
+        volume: q.volume || 0
+      };
+    });
+}
+
 // Helper function to get fundamental data from secondary sources
 async function getFundamentalDataFromSources(symbol: string) {
   try {
     console.log(`🔍 [ENHANCED-FUNDAMENTAL] Starting comprehensive data fetch for ${symbol}...`);
 
-    // PRIMARY: Try Screener.in web scraping first for real fundamental data
-    try {
-      const screenerData = await screenerScraper.getStockData(symbol);
-      if (screenerData && Object.keys(screenerData).length > 0) {
-        console.log(`✅ [SCREENER-PRIMARY] Real web-scraped data found for ${symbol}`);
-        const transformed = transformScreenerData(screenerData);
-        if (transformed) return transformed;
-      }
-    } catch (screenerError) {
-      console.log(`⚠️ [SCREENER] Screener.in fetch failed for ${symbol}:`, screenerError);
+    // PRIMARY: Yahoo Finance library - real, reliable fundamental data
+    const yfLibData = await fetchYahooFinanceLibraryData(symbol);
+    if (yfLibData) {
+      console.log(`✅ [YF-LIB-PRIMARY] Yahoo Finance library data found for ${symbol}`);
+      return yfLibData;
     }
 
-    // Try Yahoo Finance for comprehensive fundamental data
-    const yahooFinanceData = await fetchYahooFinanceData(symbol);
-    if (yahooFinanceData) {
-      console.log(`✅ [ENHANCED-FUNDAMENTAL] Yahoo Finance data found for ${symbol}`);
-      return yahooFinanceData;
-    }
-
-    // Try Google Finance for comprehensive fundamental data
+    // SECONDARY: Try Google Finance for comprehensive fundamental data
     const googleFinanceData = await fetchGoogleFinanceData(symbol);
     if (googleFinanceData) {
       console.log(`✅ [ENHANCED-FUNDAMENTAL] Google Finance data found for ${symbol}`);
       return googleFinanceData;
     }
 
-    // Try MoneyControl for Indian market specific data
+    // TERTIARY: Try MoneyControl for Indian market specific data
     const moneyControlData = await fetchMoneyControlData(symbol);
     if (moneyControlData) {
       console.log(`✅ [ENHANCED-FUNDAMENTAL] MoneyControl data found for ${symbol}`);
@@ -3450,17 +3689,25 @@ async function getRealChartData(symbol: string, timeframe: string) {
       stockToken = ANGEL_ONE_STOCK_TOKENS[noSpaceSymbol];
     }
 
-    // 🔶 Token not in static mapping - will use fallback data generation on client side
+    // 🔶 Token not in static mapping - try Yahoo Finance
     if (!stockToken) {
-      console.log(`⚠️ No Angel One token found for ${symbol} (${cleanSymbol}) - client will generate fallback data`);
-      console.log(`📋 Available static tokens: ${Object.keys(ANGEL_ONE_STOCK_TOKENS).slice(0, 20).join(', ')}...`);
-      console.log(`💡 Tip: Ensure the instrument exists on NSE/BSE/MCX`);
+      console.log(`⚠️ No Angel One token found for ${symbol} (${cleanSymbol}) - trying Yahoo Finance...`);
+      const yfChart = await fetchYahooFinanceChartData(symbol, timeframe);
+      if (yfChart && yfChart.length > 0) {
+        console.log(`✅ [YF-CHART-FALLBACK] Yahoo Finance returned ${yfChart.length} points for ${symbol}`);
+        return yfChart;
+      }
       return [];
     }
 
     // Check if Angel One is authenticated FIRST
     if (!angelOneApi.isAuthenticated) {
-      console.log(`⚠️ Angel One not authenticated - Please authenticate to view chart data`);
+      console.log(`⚠️ Angel One not authenticated - trying Yahoo Finance...`);
+      const yfChart = await fetchYahooFinanceChartData(symbol, timeframe);
+      if (yfChart && yfChart.length > 0) {
+        console.log(`✅ [YF-CHART-FALLBACK] Yahoo Finance returned ${yfChart.length} points for ${symbol}`);
+        return yfChart;
+      }
       return [];
     }
 
@@ -3568,11 +3815,21 @@ async function getRealChartData(symbol: string, timeframe: string) {
         console.log(`✅ Angel One returned ${formattedData.length} data points for ${symbol}`);
         return formattedData;
       } else {
-        console.log(`⚠️ No data returned from Angel One for ${symbol}`);
+        console.log(`⚠️ No data returned from Angel One for ${symbol} - trying Yahoo Finance...`);
+        const yfChart = await fetchYahooFinanceChartData(symbol, timeframe);
+        if (yfChart && yfChart.length > 0) {
+          console.log(`✅ [YF-CHART-FALLBACK] Yahoo Finance returned ${yfChart.length} points for ${symbol}`);
+          return yfChart;
+        }
         return [];
       }
     } catch (angelError: any) {
       console.log(`❌ Angel One error for ${symbol}:`, angelError.message);
+      const yfChart = await fetchYahooFinanceChartData(symbol, timeframe);
+      if (yfChart && yfChart.length > 0) {
+        console.log(`✅ [YF-CHART-FALLBACK] Yahoo Finance returned ${yfChart.length} points for ${symbol}`);
+        return yfChart;
+      }
       return [];
     }
 
@@ -3731,93 +3988,6 @@ async function fetchMoneyControlChartData(symbol: string, timeframe: string) {
   }
 }
 
-// Fetch real data from Yahoo Finance (backup)
-async function fetchYahooFinanceChartData(symbol: string, timeframe: string) {
-  try {
-    // Convert NSE symbol to Yahoo format
-    const yahooSymbol = `${symbol}.NS`;
-
-    // Determine time period and interval
-    let period = '1d';
-    let interval = '5m';
-
-    switch (timeframe) {
-      case '1D':
-        period = '1d';
-        interval = '5m';
-        break;
-      case '5D':
-        period = '5d';
-        interval = '15m';
-        break;
-      case '1M':
-        period = '1mo';
-        interval = '1d';
-        break;
-      case '1Y':
-        period = '1y';
-        interval = '1wk';
-        break;
-    }
-
-    // Yahoo Finance API (free, no key required)
-    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yahooSymbol}?period1=0&period2=9999999999&interval=${interval}&includePrePost=false&events=div%2Csplit`;
-
-    const response = await fetch(url, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
-
-    if (response.ok) {
-      const data = await response.json();
-
-      if (data.chart && data.chart.result && data.chart.result[0]) {
-        const result = data.chart.result[0];
-        const timestamps = result.timestamp || [];
-        const prices = result.indicators?.quote?.[0]?.close || [];
-        const volumes = result.indicators?.quote?.[0]?.volume || [];
-
-        // Convert to chart format
-        const chartData: any[] = [];
-
-        for (let i = Math.max(0, timestamps.length - 20); i < timestamps.length; i++) {
-          if (prices[i] != null) {
-            const time = new Date(timestamps[i] * 1000);
-            let timeLabel = '';
-
-            if (timeframe === '1D') {
-              timeLabel = time.toLocaleTimeString('en-US', { 
-                hour: '2-digit', 
-                minute: '2-digit', 
-                hour12: false 
-              });
-            } else {
-              timeLabel = time.toLocaleDateString('en-US', { 
-                month: 'short', 
-                day: 'numeric' 
-              });
-            }
-
-            chartData.push({
-              time: timeLabel,
-              price: Math.round(prices[i] * 100) / 100,
-              volume: volumes[i] || 0
-            });
-          }
-        }
-
-        return chartData;
-      }
-    }
-
-    return null;
-
-  } catch (error) {
-    console.error(`❌ Yahoo Finance error for ${symbol}:`, error);
-    return null;
-  }
-}
 
 // Fetch chart data from Google Finance (scraping)
 async function fetchGoogleFinanceChartData(symbol: string, timeframe: string) {
@@ -6087,18 +6257,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Get real chart data from financial APIs
       let chartData = await getRealChartData(symbol, timeframe);
 
-      // If no real data available, generate realistic fallback chart data
+      // If no real data from Angel One, try Yahoo Finance directly
       if (!chartData || chartData.length === 0) {
-        console.log(`⚠️ No real data for ${symbol}, generating fallback chart data...`);
-        chartData = generateFallbackChartData(symbol, timeframe);
+        console.log(`⚠️ No Angel One data for ${symbol}, fetching from Yahoo Finance...`);
+        chartData = await fetchYahooFinanceChartData(symbol, timeframe);
       }
 
-      res.json(chartData);
+      res.json(chartData || []);
     } catch (error) {
       console.error('❌ Chart data error:', error);
-      // Return fallback data on error instead of error response
-      const fallbackData = generateFallbackChartData(req.params.symbol.toUpperCase(), req.query.timeframe as string || '1D');
-      res.json(fallbackData);
+      res.json([]);
     }
   });
 

@@ -15657,8 +15657,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   </div>
 
                   {/* Blue Section: Expands to 100% when search results show, fixed height otherwise */}
-                  <div className={`w-full bg-blue-900 flex flex-col items-center justify-start md:py-6 py-0 md:px-4 px-0 relative overflow-y-auto ${
-                    searchResults ? "h-screen" : "h-[75vh] md:h-[69vh]"
+                  <div className={`w-full bg-blue-900 flex flex-col items-center justify-start md:py-6 py-0 relative overflow-y-auto ${
+                    searchResults ? "h-screen px-3 md:px-4" : "h-[75vh] md:h-[69vh] px-0 md:px-4"
                   }`}>
                     <div className="max-w-4xl w-full md:space-y-4">
                       {/* Dynamic Greeting - Hidden on mobile */}
@@ -15724,8 +15724,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                       {/* Search bar at bottom when results are shown */}
                       {searchResults && (
-                      <div className="fixed bottom-0 left-0 right-0 z-50 md:block hidden">
-                        <div className="w-full bg-blue-900/30 backdrop-blur-sm border-t border-gray-700 px-4 py-3">
+                      <div className="fixed bottom-20 md:bottom-0 left-0 right-0 z-[55] block">
+                        <div className="w-full bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 px-4 py-3">
                           <div className="max-w-4xl mx-auto flex gap-2">
                             <Input
                               placeholder="New search..."
@@ -15861,40 +15861,49 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                       {/* AI Search Results - All screen sizes for all tabs */}
                       {isSearchActive && (
-                        <div className={`max-w-5xl mx-auto mt-4 animate-in slide-in-from-top-4 duration-300 ${searchResults ? 'block' : 'hidden md:block'}`}>
-                          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-4">
+                        <div className={`max-w-5xl mx-auto mt-4 animate-in slide-in-from-top-4 duration-300 ${searchResults ? 'block pb-20' : 'hidden md:block'}`}>
+                          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-3 md:p-4">
                             {searchResults ? (
                               <div className="space-y-1">
-                                <div className="flex items-center gap-2 pb-3 border-b border-transparent">
+                                <div className="flex items-center justify-between pb-3 border-b border-gray-700/50">
+                                  <div className="flex items-center gap-2">
                                   {searchResults.includes("[CHART:WATCHLIST]") ? (
                                       <>
-                      <Eye className="h-4 w-4 text-gray-700 dark:text-blue-400" />
-                      <h3 className="text-lg font-medium text-gray-100">
+                      <Eye className="h-4 w-4 text-blue-400" />
+                      <h3 className="text-base md:text-lg font-medium text-gray-100">
                         Watchlist
                                       </h3>
                                       </>
                                     ) : searchResults.includes("[CHART:MARKET_NEWS]") ? (
                                       <>
                       <Newspaper className="h-4 w-4 text-green-400" />
-                      <h3 className="text-lg font-medium text-gray-100">
+                      <h3 className="text-base md:text-lg font-medium text-gray-100">
                         Market News
                                       </h3>
                                       </>
                                     ) : searchResults.includes("[CHART:TRADE]") ? (
                                       <>
                       <Trophy className="h-4 w-4 text-orange-400" />
-                      <h3 className="text-lg font-medium text-gray-100">
+                      <h3 className="text-base md:text-lg font-medium text-gray-100">
                         Trading Challenge
                                       </h3>
                                       </>
                                     ) : (
                                       <>
                       <Bot className="h-4 w-4 text-blue-400" />
-                      <h3 className="text-lg font-medium text-gray-100">
+                      <h3 className="text-base md:text-lg font-medium text-gray-100">
                         AI Assistant
                                       </h3>
                                       </>
                                     )}
+                                  </div>
+                                  <button
+                                    onClick={() => { setSearchResults(""); setIsSearchActive(false); setSearchQuery(""); }}
+                                    className="text-gray-400 hover:text-gray-200 p-1 rounded-lg hover:bg-gray-700/50 transition-colors"
+                                    data-testid="button-close-results"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </button>
                                 </div>
                                 <div className="prose prose-invert max-w-none">
                                   <div className="text-gray-300 whitespace-pre-wrap leading-relaxed">
@@ -16205,7 +16214,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                       </div>
                                                     )}
 
-                                                    <div className="grid grid-cols-2 gap-3">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                                                       {/* Key Events */}
                                                       {newsAiAnalysis.keyEvents?.length > 0 && (
                                                         <div>
@@ -16298,7 +16307,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 <p className="text-xs text-gray-500">{emptyMsg}</p>
                                               </div>
                                             ) : (
-                                              <div className="space-y-2 max-h-[680px] overflow-y-auto pr-1">
+                                              <div className="space-y-2 max-h-[50vh] md:max-h-[680px] overflow-y-auto pr-1">
                                                 {newsItems.map((item, index) => {
                                                   const stockData = !isAllMode ? newsStockPrices[(item as any).symbol] : null;
                                                   const isUp = stockData ? stockData.change >= 0 : null;
@@ -17944,7 +17953,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
 
                       {/* Trading Tools Section - White container with centered cards */}
-                      <div className={`${searchResults ? 'bg-transparent' : 'bg-white'} md:pt-4 md:pb-4 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mt-[21px] mb-[21px] pt-[32px] pb-[16px] ml-[0px] mr-[0px] pl-[0px] pr-[0px]`}>
+                      <div className={`${searchResults ? 'bg-transparent hidden md:block' : 'bg-white'} md:pt-4 md:pb-4 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mt-[21px] mb-[21px] pt-[32px] pb-[16px] ml-[0px] mr-[0px] pl-[0px] pr-[0px]`}>
                         {/* Mobile Search Bar - Fully visible at top */}
                         <div className="md:hidden absolute -top-3 left-4 right-4 z-50">
                           <div className="relative">

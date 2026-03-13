@@ -22,6 +22,7 @@ export default function Landing() {
   const [isLogin, setIsLogin] = useState(true);
   const [isForgotPassword, setIsForgotPassword] = useState(false);
   const [email, setEmail] = useState("");
+  const [emailBlurred, setEmailBlurred] = useState(false);
   const [password, setPassword] = useState("");
   const [showAccessInfo, setShowAccessInfo] = useState(true);
   const [showJournalCarousel, setShowJournalCarousel] = useState(false);
@@ -1896,10 +1897,11 @@ export default function Landing() {
                     placeholder="Email"
                     value={email}
                     autoComplete="email"
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => { setEmail(e.target.value); setEmailBlurred(false); }}
+                    onBlur={() => setEmailBlurred(true)}
                     className="bg-gray-950 border-gray-800 text-white placeholder-gray-400 h-11 rounded-xl"
                   />
-                  {!isLogin && email && !email.toLowerCase().endsWith("@gmail.com") && (
+                  {!isLogin && emailBlurred && email && !email.toLowerCase().endsWith("@gmail.com") && (
                     <p className="text-[11px] text-amber-400 px-1 flex items-center gap-1">
                       <span>⚠</span> Only @gmail.com addresses are allowed for sign up.
                     </p>

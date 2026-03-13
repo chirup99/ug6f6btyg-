@@ -87,6 +87,10 @@ import { fyersOAuthManager } from './fyers-oauth';
 import { sarvamTTSService } from './tts-service';
 
 const ANGEL_ONE_STOCK_TOKENS: { [key: string]: { token: string; exchange: string; tradingSymbol: string } } = {
+  'NIFTY50': { token: '99926000', exchange: 'NSE', tradingSymbol: 'Nifty 50' },
+  'NIFTY': { token: '99926000', exchange: 'NSE', tradingSymbol: 'Nifty 50' },
+  'BANKNIFTY': { token: '99926009', exchange: 'NSE', tradingSymbol: 'Nifty Bank' },
+  'NIFTYBANK': { token: '99926009', exchange: 'NSE', tradingSymbol: 'Nifty Bank' },
   'NIFTYFIN': { token: '99926037', exchange: 'NSE', tradingSymbol: 'Nifty Fin Service' },
   'MIDCPNIFTY': { token: '99926074', exchange: 'NSE', tradingSymbol: 'NIFTY MID SELECT' },
   'NIFTYMIDCAP': { token: '99926074', exchange: 'NSE', tradingSymbol: 'NIFTY MID SELECT' },
@@ -6139,20 +6143,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           if (!quote || !quote.regularMarketPrice) return;
 
           // Fetch intraday chart for sparkline (1d, 5m interval)
+          // Falls back to previous trading day when market is closed
           const now = new Date();
           const dayStart = new Date(now);
           dayStart.setHours(0, 0, 0, 0);
 
-          let chartData: Array<{ price: number; time: string }> = [];
-          try {
-            const chartResult = await yf.chart(yahooSymbol, {
-              interval: '5m',
-              period1: dayStart,
-              period2: now,
-            });
-            const quotes = chartResult?.quotes ?? [];
+          // Helper: get previous trading day (skip weekends)
+          const getPrevTradingDay = (d: Date): Date => {
+            const prev = new Date(d);
+            prev.setDate(prev.getDate() - 1);
+            while (prev.getDay() === 0 || prev.getDay() === 6) {
+              prev.setDate(prev.getDate() - 1);
+            }
+            return prev;
+          };
+
+          const buildChartData = (quotes: any[]): Array<{ price: number; time: string }> => {
             const step = Math.max(1, Math.floor(quotes.length / 20));
-            chartData = quotes
+            return quotes
               .filter((_: any, i: number) => i % step === 0)
               .map((q: any) => {
                 const d = new Date(q.date);
@@ -6162,6 +6170,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
               })
               .filter((p: any) => p.price > 0)
               .slice(0, 20);
+          };
+
+          let chartData: Array<{ price: number; time: string }> = [];
+          try {
+            // Try today's intraday data first
+            const chartResult = await yf.chart(yahooSymbol, {
+              interval: '5m',
+              period1: dayStart,
+              period2: now,
+            });
+            const quotes = chartResult?.quotes ?? [];
+            chartData = buildChartData(quotes);
+
+            // If market is closed (no data today), fall back to previous trading day
+            if (chartData.length < 2) {
+              const prevDay = getPrevTradingDay(dayStart);
+              const prevDayEnd = new Date(prevDay);
+              prevDayEnd.setHours(23, 59, 59, 999);
+              const fallbackResult = await yf.chart(yahooSymbol, {
+                interval: '5m',
+                period1: prevDay,
+                period2: prevDayEnd,
+              });
+              const fallbackQuotes = fallbackResult?.quotes ?? [];
+              if (fallbackQuotes.length >= 2) {
+                chartData = buildChartData(fallbackQuotes);
+              }
+            }
           } catch {
             // Chart data optional; just return price without sparkline
           }

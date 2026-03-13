@@ -891,16 +891,83 @@ export default function Landing() {
 
           {/* Feature Grid */}
           <div className="grid grid-cols-2 gap-3">
-            {[
-              { icon: "📓", label: "Trade Journal", desc: "Daily P&L, entries & notes" },
-              { icon: "🤖", label: "AI Analysis", desc: "Behaviour & pattern insights" },
-              { icon: "🌐", label: "Finance Social", desc: "Community feed & market views" },
-              { icon: "🎙️", label: "Voice & Audio Posts", desc: "Share analysis hands-free" },
-              { icon: "📊", label: "Live Market Data", desc: "Real-time prices & charts" },
-              { icon: "🔍", label: "Pattern Detection", desc: "Spot FOMO, overtrading & more" },
-            ].map(({ icon, label, desc }) => (
+            {([
+              {
+                icon: (
+                  <svg className="w-5 h-5 text-purple-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="3" width="18" height="18" rx="2"/>
+                    <line x1="3" y1="9" x2="21" y2="9"/>
+                    <line x1="9" y1="21" x2="9" y2="9"/>
+                  </svg>
+                ),
+                label: "Trade Journal", desc: "Daily P&L, entries & notes"
+              },
+              {
+                icon: (
+                  <svg className="w-5 h-5 text-blue-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z" strokeOpacity="0.3" fill="none"/>
+                    <path d="M9 9h.01M15 9h.01"/>
+                    <path d="M8 13s1.5 2 4 2 4-2 4-2"/>
+                    <path d="M12 2v2M12 20v2M2 12h2M20 12h2"/>
+                    <circle cx="12" cy="12" r="1" fill="currentColor"/>
+                  </svg>
+                ),
+                label: "AI Analysis", desc: "Behaviour & pattern insights"
+              },
+              {
+                icon: (
+                  <svg className="w-5 h-5 text-green-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <circle cx="18" cy="5" r="3"/>
+                    <circle cx="6" cy="12" r="3"/>
+                    <circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                  </svg>
+                ),
+                label: "Finance Social", desc: "Community feed & market views"
+              },
+              {
+                icon: (
+                  <div className="mt-0.5 shrink-0 relative w-[34px] h-[38px]">
+                    <div className="absolute inset-0 scale-75 origin-bottom-left translate-x-[7px] -translate-y-[2px] rounded-md bg-purple-800/60 border border-purple-700/40 rotate-[-8deg]" />
+                    <div className="absolute inset-0 scale-90 origin-bottom-left translate-x-[3px] -translate-y-[1px] rounded-md bg-purple-700/70 border border-purple-600/40 rotate-[-4deg]" />
+                    <div className="absolute inset-0 rounded-md bg-gradient-to-br from-purple-600 to-purple-800 border border-purple-500/60 flex flex-col px-1 py-0.5 overflow-hidden">
+                      <div className="flex items-center justify-between mb-0.5">
+                        <span className="text-[4px] text-purple-200 font-bold tracking-widest uppercase">Insight</span>
+                        <div className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+                      </div>
+                      <div className="text-[4.5px] text-white font-semibold leading-tight flex-1">AI Audio<br/>Voice Post</div>
+                      <div className="flex items-center gap-0.5 mt-0.5 bg-white/10 rounded px-0.5 py-[1px] w-fit">
+                        <svg className="w-1.5 h-1.5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <span className="text-[3.5px] text-white">Listen</span>
+                      </div>
+                    </div>
+                  </div>
+                ),
+                label: "Voice & Audio Posts", desc: "Share analysis hands-free"
+              },
+              {
+                icon: (
+                  <svg className="w-5 h-5 text-yellow-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/>
+                    <polyline points="17 6 23 6 23 12"/>
+                  </svg>
+                ),
+                label: "Live Market Data", desc: "Real-time prices & charts"
+              },
+              {
+                icon: (
+                  <svg className="w-5 h-5 text-red-400 mt-0.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/>
+                    <circle cx="12" cy="12" r="3"/>
+                    <line x1="2" y1="2" x2="22" y2="22" strokeOpacity="0" />
+                  </svg>
+                ),
+                label: "Pattern Detection", desc: "Spot FOMO, overtrading & more"
+              },
+            ] as Array<{ icon: React.ReactNode; label: string; desc: string }>).map(({ icon, label, desc }) => (
               <div key={label} className="flex items-start gap-3 p-3 rounded-xl bg-gray-900/50 border border-gray-800/60 hover:border-purple-800/40 transition-colors">
-                <span className="text-xl leading-none mt-0.5">{icon}</span>
+                {icon}
                 <div>
                   <div className="text-xs font-semibold text-white leading-tight">{label}</div>
                   <div className="text-[11px] text-gray-500 mt-0.5">{desc}</div>

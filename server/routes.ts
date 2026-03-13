@@ -1637,15 +1637,29 @@ async function fetchYahooFinanceLibraryData(symbol: string) {
 }
 
 // Fetch chart data for a symbol using yahoo-finance2 library
+const CHART_SPECIAL_SYMBOL_MAP: Record<string, string> = {
+  NIFTY:     '^NSEI',
+  NIFTY50:   '^NSEI',
+  BANKNIFTY: '^NSEBANK',
+  SENSEX:    '^BSESN',
+  GOLD:      'GC=F',
+  SILVER:    'SI=F',
+  CRUDEOIL:  'CL=F',
+};
+
 async function fetchYahooFinanceChartData(symbol: string, timeframe: string) {
   try {
     const cleanSymbol = symbol
+      .replace(/^\$+/, '')
       .replace(/^NSE:/i, '')
       .replace(/^BSE:/i, '')
+      .replace(/^MCX:/i, '')
       .replace(/-EQ$/i, '')
       .replace(/-INDEX$/i, '')
+      .toUpperCase()
       .trim();
-    const yahooSymbol = `${cleanSymbol}.NS`;
+    const specialYahoo = CHART_SPECIAL_SYMBOL_MAP[cleanSymbol];
+    const yahooSymbol = specialYahoo ?? `${cleanSymbol}.NS`;
 
     const now = new Date();
     let period1: Date;

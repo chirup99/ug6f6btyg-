@@ -732,16 +732,18 @@ interface AnalysisData {
 // Price Chart Section Component
 function PriceChartSection({ ticker, analysisData }: { ticker: string; analysisData: AnalysisData }) {
   const [timeframe, setTimeframe] = useState('1D');
-  
-  // Fetch real chart data from the API with optimized caching for faster loading
+  // Clean symbol: strip leading $ and any exchange prefix so the API receives e.g. "RELIANCE" not "$RELIANCE"
+  const cleanTicker = ticker.replace(/^\$+/, '').replace(/^(NSE|BSE|MCX):/i, '').replace(/-EQ$/i, '').toUpperCase();
+
+  // Fetch real chart data — same Yahoo Finance logic as market news tab
   const { data: chartData = [], isLoading: chartLoading } = useQuery({
-    queryKey: ['stock-chart', ticker, timeframe],
-    queryFn: () => fetch(`/api/stock-chart-data/${ticker}?timeframe=${timeframe}`).then(res => res.json()),
-    refetchInterval: timeframe === '1D' ? 60000 : 300000, // Reduced frequency: 1min for 1D, 5min for others
-    staleTime: timeframe === '1D' ? 30000 : 180000, // Longer cache: 30s for 1D, 3min for others
-    gcTime: 600000, // Keep in cache for 10 minutes
-    refetchOnMount: false, // Use cached data on mount for faster loading
-    refetchOnWindowFocus: false // Reduce unnecessary refetches
+    queryKey: ['stock-chart', cleanTicker, timeframe],
+    queryFn: () => fetch(`/api/stock-chart-data/${cleanTicker}?timeframe=${timeframe}`).then(res => res.json()),
+    refetchInterval: timeframe === '1D' ? 60000 : 300000,
+    staleTime: timeframe === '1D' ? 30000 : 180000,
+    gcTime: 600000,
+    refetchOnMount: true,
+    refetchOnWindowFocus: false
   });
   // Get current price from chart data (latest point) or fallback to analysis data
   const getLatestChartPrice = () => {

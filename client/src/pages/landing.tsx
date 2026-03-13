@@ -928,18 +928,27 @@ export default function Landing() {
               },
               {
                 icon: (
-                  <div className="mt-0.5 shrink-0 relative w-[34px] h-[38px]">
-                    <div className="absolute inset-0 scale-75 origin-bottom-left translate-x-[7px] -translate-y-[2px] rounded-md bg-purple-800/60 border border-purple-700/40 rotate-[-8deg]" />
-                    <div className="absolute inset-0 scale-90 origin-bottom-left translate-x-[3px] -translate-y-[1px] rounded-md bg-purple-700/70 border border-purple-600/40 rotate-[-4deg]" />
-                    <div className="absolute inset-0 rounded-md bg-gradient-to-br from-purple-600 to-purple-800 border border-purple-500/60 flex flex-col px-1 py-0.5 overflow-hidden">
-                      <div className="flex items-center justify-between mb-0.5">
-                        <span className="text-[4px] text-purple-200 font-bold tracking-widest uppercase">Insight</span>
-                        <div className="w-1.5 h-1.5 rounded-full bg-orange-400 shrink-0" />
+                  <div className="mt-0.5 shrink-0 relative w-[48px] h-[40px]">
+                    {/* Card 4 — furthest back, fanned far left */}
+                    <div className="absolute rounded-md border border-green-500/30"
+                      style={{ width: 32, height: 38, background: "linear-gradient(135deg,#16a34a,#15803d)", top: 1, left: 0, transform: "rotate(-18deg) translateX(-6px)", opacity: 0.55 }} />
+                    {/* Card 3 — pink, mid-left */}
+                    <div className="absolute rounded-md border border-pink-500/30"
+                      style={{ width: 32, height: 38, background: "linear-gradient(135deg,#db2777,#9d174d)", top: 1, left: 4, transform: "rotate(-12deg) translateX(-3px)", opacity: 0.65 }} />
+                    {/* Card 2 — blue, near-left */}
+                    <div className="absolute rounded-md border border-blue-500/30"
+                      style={{ width: 32, height: 38, background: "linear-gradient(135deg,#2563eb,#1d4ed8)", top: 1, left: 8, transform: "rotate(-6deg) translateX(-1px)", opacity: 0.75 }} />
+                    {/* Card 1 — front, purple with content */}
+                    <div className="absolute rounded-md border border-purple-500/60 flex flex-col px-1 py-[3px] overflow-hidden"
+                      style={{ width: 32, height: 38, background: "linear-gradient(135deg,#7c3aed,#4c1d95)", top: 1, left: 14 }}>
+                      <div className="flex items-center justify-between mb-[2px]">
+                        <span className="text-[3.5px] text-purple-200 font-bold tracking-widest uppercase leading-none">Insight</span>
+                        <div className="w-[4px] h-[4px] rounded-full bg-orange-400 shrink-0" />
                       </div>
-                      <div className="text-[4.5px] text-white font-semibold leading-tight flex-1">AI Audio<br/>Voice Post</div>
-                      <div className="flex items-center gap-0.5 mt-0.5 bg-white/10 rounded px-0.5 py-[1px] w-fit">
-                        <svg className="w-1.5 h-1.5 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-                        <span className="text-[3.5px] text-white">Listen</span>
+                      <div className="text-[4px] text-white font-semibold leading-tight flex-1">AI Audio<br/>Voice Post</div>
+                      <div className="flex items-center gap-[2px] bg-white/15 rounded-sm px-[2px] py-[1px] w-fit mt-[2px]">
+                        <svg className="w-[4px] h-[4px] text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
+                        <span className="text-[3px] text-white leading-none">Play</span>
                       </div>
                     </div>
                   </div>

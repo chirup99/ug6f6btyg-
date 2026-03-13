@@ -1895,6 +1895,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
                             
                             createPostMutation.mutate({
                               content: postText.trim(),
+                              userId: currentUser?.userId,
                               authorUsername: username,
                               authorDisplayName: displayName,
                               sentiment: pnlValue > 0 ? 'bullish' : (pnlValue < 0 ? 'bearish' : 'neutral'),
@@ -1902,7 +1903,6 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
                               tags: [],
                               hasImage: false,
                               isAudioPost: false,
-                              // Add trade data for image 1 style rendering
                               metadata: {
                                 type: 'trade_insight',
                                 pnl: pnlValue,

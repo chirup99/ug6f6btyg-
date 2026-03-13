@@ -7899,7 +7899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Parse post data from request body
-      const { content, stockMentions, sentiment, tags, hasImage, imageUrl, isAudioPost, selectedPostIds, selectedPosts } = req.body;
+      const { content, stockMentions, sentiment, tags, hasImage, imageUrl, isAudioPost, selectedPostIds, selectedPosts, metadata } = req.body;
 
       if (!content || content.trim().length === 0) {
         console.log(`❌ [${requestId}] Empty post content`);
@@ -7907,13 +7907,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`📝 [${requestId}] Post content length: ${content.length} chars`);
-      console.log(`📊 [${requestId}] Post metadata: stockMentions=${stockMentions?.length || 0}, hasImage=${hasImage}, isAudioPost=${isAudioPost}`);
+      console.log(`📊 [${requestId}] Post metadata: stockMentions=${stockMentions?.length || 0}, hasImage=${hasImage}, isAudioPost=${isAudioPost}, hasMetadata=${!!metadata}`);
 
       // Create post data with authenticated user's profile information
-      const postData = {
+      const postData: any = {
         content: content.trim(),
         authorUsername: userData.username,
         authorDisplayName: userData.displayName,
+        authorAvatar: userData.profilePicUrl || null,
+        authorVerified: userData.verified || false,
         userId: userId,
         stockMentions: stockMentions || [],
         sentiment: sentiment || 'neutral',
@@ -7929,6 +7931,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         createdAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedAt: admin.firestore.FieldValue.serverTimestamp()
       };
+
+      // Include trade insight metadata if present (for Journal → Social Feed posts)
+      if (metadata && typeof metadata === 'object') {
+        postData.metadata = metadata;
+      }
 
       console.log(`📝 [${requestId}] Creating social post for user: ${userData.username} | ${userData.displayName}`);
       console.log(`📄 [${requestId}] Post content: ${content.substring(0, 50)}${content.length > 50 ? '...' : ''}`);

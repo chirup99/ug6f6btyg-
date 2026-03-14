@@ -234,6 +234,13 @@ import {
   CalendarDays,
   Brain,
   ShieldCheck,
+  Bookmark,
+  Volume2,
+  Globe,
+  Cpu,
+  Building2,
+  Headphones,
+  UserPlus,
 } from "lucide-react";
 import { AIChatWindow } from "@/components/ai-chat-window";
 
@@ -2588,6 +2595,14 @@ export default function Home() {
   const [isPodcastsLoading, setIsPodcastsLoading] = useState(false);
   const [selectedPodcast, setSelectedPodcast] = useState<any>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState<number>(0);
+
+  // MiniCast social platform state
+  const [minicastFeedTab, setMinicastFeedTab] = useState<"discover" | "following">("discover");
+  const [minicastCategory, setMinicastCategory] = useState<string>("All");
+  const [minicastPlayingId, setMinicastPlayingId] = useState<string | null>(null);
+  const [minicastLikes, setMinicastLikes] = useState<Record<string, boolean>>({});
+  const [minicastBookmarks, setMinicastBookmarks] = useState<Record<string, boolean>>({});
+  const [minicastShowCreate, setMinicastShowCreate] = useState(false);
 
   // Animated greeting stocks state
   const [currentStockIndex, setCurrentStockIndex] = useState(0);
@@ -13568,937 +13583,571 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // MiniCast/Tutor tab with full page view
   if (activeTab === "tutor") {
+    // MiniCast data
+    const minicastStories = [
+      { id: "s1", name: "You", initials: "ME", gradient: "from-teal-400 to-cyan-500", isYou: true },
+      { id: "s2", name: "RaviFinance", initials: "RF", gradient: "from-pink-500 to-rose-600", hasNew: true },
+      { id: "s3", name: "AITrader", initials: "AT", gradient: "from-violet-500 to-purple-600", hasNew: true },
+      { id: "s4", name: "MarketGuru", initials: "MG", gradient: "from-amber-400 to-orange-500", hasNew: false },
+      { id: "s5", name: "StartupPro", initials: "SP", gradient: "from-emerald-400 to-teal-600", hasNew: true },
+      { id: "s6", name: "CryptoKing", initials: "CK", gradient: "from-blue-500 to-indigo-600", hasNew: false },
+      { id: "s7", name: "NewsDesk", initials: "ND", gradient: "from-red-400 to-pink-600", hasNew: true },
+      { id: "s8", name: "TechBull", initials: "TB", gradient: "from-cyan-400 to-sky-600", hasNew: false },
+    ];
+
+    const minicastCategories = ["All", "Finance", "AI", "Startup", "Crypto", "Global", "Tech", "Banking"];
+
+    const minicastPosts = [
+      {
+        id: "p1", creator: "RaviFinance", handle: "@ravifinance", initials: "RF",
+        gradient: "from-pink-500 to-rose-600", avatarGrad: "from-pink-500 to-rose-600",
+        category: "Finance", categoryColor: "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400",
+        title: "Nifty 50 Breakout Analysis – What to Expect This Week",
+        desc: "Deep dive into the 4-candle breakout pattern on Nifty 50 with key support & resistance levels to watch.",
+        duration: "2:30", listeners: "12.4K", likes: 847, comments: 134, shares: 89,
+        time: "2h ago", trending: true, verified: true,
+        waveHeights: [20, 35, 55, 40, 70, 50, 30, 60, 45, 80, 55, 35, 65, 40, 25, 50, 70, 45, 30, 60],
+      },
+      {
+        id: "p2", creator: "AITrader", handle: "@aitrader", initials: "AT",
+        gradient: "from-violet-500 to-purple-600", avatarGrad: "from-violet-500 to-purple-600",
+        category: "AI", categoryColor: "bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400",
+        title: "How AI is Disrupting Quantitative Trading in 2025",
+        desc: "Machine learning models are outperforming traditional quant strategies. Here's what retail traders need to know.",
+        duration: "1:45", listeners: "8.9K", likes: 623, comments: 97, shares: 156,
+        time: "4h ago", trending: true, verified: false,
+        waveHeights: [30, 50, 40, 65, 35, 75, 55, 25, 60, 45, 70, 40, 55, 30, 65, 50, 35, 70, 45, 60],
+      },
+      {
+        id: "p3", creator: "StartupPro", handle: "@startuppro", initials: "SP",
+        gradient: "from-emerald-400 to-teal-600", avatarGrad: "from-emerald-400 to-teal-600",
+        category: "Startup", categoryColor: "bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400",
+        title: "Indian Startup Funding – Q1 2025 Report Highlights",
+        desc: "FinTech leads the way with $2.3B raised. Deep tech, AgriTech, and HealthTech also showing strong momentum.",
+        duration: "2:55", listeners: "5.2K", likes: 412, comments: 78, shares: 203,
+        time: "6h ago", trending: false, verified: true,
+        waveHeights: [40, 25, 60, 45, 70, 35, 55, 80, 30, 50, 65, 40, 75, 55, 30, 45, 60, 35, 70, 50],
+      },
+      {
+        id: "p4", creator: "NewsDesk", handle: "@newsdesk", initials: "ND",
+        gradient: "from-red-400 to-pink-600", avatarGrad: "from-red-400 to-pink-600",
+        category: "Global", categoryColor: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
+        title: "Fed Rate Decision Impact on Emerging Markets – Live Analysis",
+        desc: "US Federal Reserve holds rates steady. Asian markets react with cautious optimism as rupee strengthens.",
+        duration: "2:10", listeners: "18.7K", likes: 1243, comments: 267, shares: 445,
+        time: "1h ago", trending: true, verified: true,
+        waveHeights: [55, 70, 35, 60, 45, 80, 50, 40, 65, 30, 70, 55, 25, 60, 45, 75, 40, 55, 65, 35],
+      },
+      {
+        id: "p5", creator: "TechBull", handle: "@techbull", initials: "TB",
+        gradient: "from-cyan-400 to-sky-600", avatarGrad: "from-cyan-400 to-sky-600",
+        category: "Tech", categoryColor: "bg-sky-100 text-sky-700 dark:bg-sky-900/30 dark:text-sky-400",
+        title: "Semiconductor Supercycle – Why Tech Stocks Are Surging",
+        desc: "NVIDIA, TSMC & Infosys alignment signals a new tech supercycle. Positioning for the next 18 months.",
+        duration: "2:40", listeners: "9.3K", likes: 567, comments: 112, shares: 134,
+        time: "8h ago", trending: false, verified: false,
+        waveHeights: [35, 60, 45, 70, 30, 55, 75, 40, 60, 50, 35, 65, 45, 70, 30, 55, 80, 40, 60, 45],
+      },
+      {
+        id: "p6", creator: "MarketGuru", handle: "@marketguru", initials: "MG",
+        gradient: "from-amber-400 to-orange-500", avatarGrad: "from-amber-400 to-orange-500",
+        category: "Banking", categoryColor: "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+        title: "HDFC & ICICI Q4 Results – What the Numbers Tell Us",
+        desc: "Banking sector shows resilience with NPA levels at decade lows. Retail credit growth accelerates to 18% YoY.",
+        duration: "1:55", listeners: "6.8K", likes: 389, comments: 67, shares: 92,
+        time: "12h ago", trending: false, verified: true,
+        waveHeights: [50, 35, 65, 45, 70, 30, 55, 40, 75, 50, 35, 65, 45, 60, 30, 55, 70, 40, 60, 45],
+      },
+    ];
+
+    const filteredPosts = minicastCategory === "All"
+      ? minicastPosts
+      : minicastPosts.filter(p => p.category === minicastCategory);
+
+    const suggestedCreators = [
+      { name: "CryptoKing", handle: "@cryptoking", initials: "CK", gradient: "from-blue-500 to-indigo-600", followers: "34.2K" },
+      { name: "BankingPro", handle: "@bankingpro", initials: "BP", gradient: "from-amber-400 to-orange-500", followers: "21.8K" },
+      { name: "GlobalMacro", handle: "@globalmacro", initials: "GM", gradient: "from-green-400 to-emerald-600", followers: "15.6K" },
+    ];
+
+    const trendingTopics = [
+      { tag: "#Nifty50", posts: "2.4K posts", icon: "📈" },
+      { tag: "#AITrading", posts: "1.8K posts", icon: "🤖" },
+      { tag: "#FedRate", posts: "1.2K posts", icon: "🏦" },
+      { tag: "#StartupIndia", posts: "987 posts", icon: "🚀" },
+      { tag: "#Crypto2025", posts: "756 posts", icon: "₿" },
+    ];
+
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-6">
-        {/* Header */}
-        <div className="flex items-center justify-start mb-8">
-          {/* MiniCast Component - Left Side (replacing search bar) */}
-          <div className="flex items-center gap-6">
-            <div className="bg-white dark:bg-slate-800 rounded-xl px-4 py-3 flex items-center gap-3 shadow-lg border border-slate-200 dark:border-slate-700">
-              <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">M</span>
+      <div className="min-h-screen bg-slate-50 dark:bg-[#0f1117] relative">
+
+        {/* ── TOP HEADER ── */}
+        <div className="sticky top-0 z-40 bg-white/80 dark:bg-[#0f1117]/90 backdrop-blur-xl border-b border-slate-100 dark:border-slate-800/60">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+            {/* Logo */}
+            <div className="flex items-center gap-2.5 flex-shrink-0">
+              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/25">
+                <Headphones className="w-5 h-5 text-white" />
               </div>
               <div>
-                <div className="text-slate-900 dark:text-white font-semibold text-sm">MiniCast</div>
-                <div className="text-slate-500 dark:text-slate-400 text-xs">Premium Podcasts</div>
+                <div className="font-bold text-slate-900 dark:text-white text-lg leading-none">MiniCast</div>
+                <div className="text-teal-500 text-xs font-medium">Audio Social</div>
               </div>
             </div>
-          </div>
-          <div className="flex items-center gap-6">
-            {/* Top right navigation items removed as requested */}
-          </div>
-        </div>
 
-        {/* Main Greeting */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-normal text-slate-900 dark:text-white mb-2">
-            <span className="text-slate-900 dark:text-white">{getTimeBasedGreeting()}</span>
-          </h1>
-        </div>
-
-
-        {/* Main Layout Grid - Left Card Content */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 mb-8">
-          {/* Left Section - Stack-based Swipeable Cards */}
-          <div className="lg:col-span-4 space-y-6">
-            <div className="relative h-80 pl-[80px] pr-[56px]">
-              <SwipeableCardStack onSectorChange={handleSectorChange} selectedSector={selectedSector} />
-            </div>
-
-          </div>
-
-          {/* Right Section - Wallet View */}
-          <div className="lg:col-span-8 space-y-6">
-            {/* Wallet View Section */}
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-              
-
-              {/* Swipe Cards Section */}
-              <div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {/* Card 1 - Study */}
-                  <div className="relative h-48 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-600 via-purple-700 to-indigo-800 p-6 cursor-pointer hover:scale-105 transition-transform duration-300">
-                    <div className="absolute inset-0 bg-gradient-to-r from-purple-600/20 to-transparent"></div>
-                    <div className="relative z-10 h-full flex flex-col justify-center items-center text-center">
-                      <div className="text-6xl mb-4">📚</div>
-                      <div className="text-white text-2xl font-bold">Study</div>
-                      <div className="text-white/80 text-sm mt-2">Learning Materials</div>
-                    </div>
-                  </div>
-
-                  {/* Card 2 - Courses */}
-                  <div className="relative h-48 rounded-2xl overflow-hidden bg-gradient-to-br from-emerald-600 via-teal-700 to-cyan-800 p-6 cursor-pointer hover:scale-105 transition-transform duration-300">
-                    <div className="absolute inset-0 bg-gradient-to-r from-emerald-600/20 to-transparent"></div>
-                    <div className="relative z-10 h-full flex flex-col justify-center items-center text-center">
-                      <div className="text-6xl mb-4">💎</div>
-                      <div className="text-white text-2xl font-bold">Exclusive Skills</div>
-                      <div className="text-white/80 text-sm mt-2">Financial Mastery</div>
-                    </div>
-                  </div>
-
-                  {/* Card 3 - Live */}
-                  <div className="relative h-48 rounded-2xl overflow-hidden bg-gradient-to-br from-amber-500 via-yellow-600 to-orange-700 p-6 cursor-pointer hover:scale-105 transition-transform duration-300">
-                    <div className="absolute inset-0 bg-gradient-to-r from-amber-500/20 to-transparent"></div>
-                    <div className="relative z-10 h-full flex flex-col justify-center items-center text-center">
-                      <div className="text-6xl mb-4">🔴</div>
-                      <div className="text-white text-2xl font-bold">Live</div>
-                      <div className="text-white/80 text-sm mt-2">Live Sessions</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Statistics Section - 70% Width with Subscribe Window - 30% Width */}
-        <div className="mb-8 flex gap-6">
-          {/* Statistics Window - 70% */}
-          <div className="w-[70%]">
-            <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 border border-slate-200 dark:border-slate-700">
-              <Tabs value={statisticsTab} onValueChange={setStatisticsTab} className="w-full">
-                <div className="flex items-center justify-start mb-6">
-
-                  {/* Tab Switch Buttons */}
-                  <TabsList className="bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-600">
-                    <TabsTrigger 
-                      value="overview" 
-                      className="text-slate-600 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white flex items-center gap-2"
-                    >
-                      <BarChart3 className="w-4 h-4" />
-                      Podcast
-                    </TabsTrigger>
-                    <TabsTrigger 
-                      value="setup" 
-                      className="text-slate-600 dark:text-slate-300 data-[state=active]:bg-white dark:data-[state=active]:bg-slate-600 data-[state=active]:text-slate-900 dark:data-[state=active]:text-white flex items-center gap-2"
-                    >
-                      <Shield className="w-4 h-4" />
-                      Events
-                    </TabsTrigger>
-                  </TabsList>
-                </div>
-
-                {/* Overview Tab Content - Music-Style Podcast Dashboard */}
-                <TabsContent value="overview" className="mt-0">
-                  <div className="space-y-6">
-                    {/* Header */}
-                    <div className="text-slate-900 dark:text-white text-xl font-bold mb-6">
-                      TRENDING PODCASTS - {selectedSector === 'FINANCE' ? 'FINANCE' : selectedSector === 'IT' ? 'TECH' : selectedSector === 'COMMODITY' ? 'COMMODITY' : selectedSector === 'GLOBAL' ? 'GLOBAL' : selectedSector === 'BANKS' ? 'BANKING' : selectedSector === 'AUTOMOBILE' ? 'AUTO' : 'FINANCE'}
-                    </div>
-
-
-                    {/* Main Layout */}
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                      {/* Featured Podcast - Left Side (2/3 width) */}
-                      <div className="lg:col-span-2">
-                        <div className="bg-gradient-to-br from-pink-500 via-purple-600 to-indigo-700 rounded-3xl p-8 relative overflow-hidden min-h-[280px]">
-                          {/* Background Elements */}
-                          <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -mr-20 -mt-20"></div>
-                          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/5 rounded-full -ml-16 -mb-16"></div>
-
-                          <div className="flex items-center gap-6 relative z-10 h-full">
-                            {/* Podcast Host Image */}
-                            <div className="w-40 h-40 rounded-2xl overflow-hidden bg-gradient-to-br from-purple-400 to-pink-500 flex items-center justify-center">
-                              <Mic className="w-20 h-20 text-white" />
-                            </div>
-
-                            {/* Content */}
-                            <div className="flex-1">
-                              <div className="bg-yellow-400 text-black px-3 py-1 rounded-full text-xs font-medium inline-block mb-4">
-                                PODCAST OF THE WEEK
-                              </div>
-                              <h2 className="text-3xl font-bold mb-2 text-white">Rich Mindset</h2>
-                              <p className="text-white/80 mb-4">Finance Expert</p>
-
-                              {/* Play Button */}
-                              <Button className="bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 w-12 h-12 rounded-full p-0">
-                                <Play className="w-6 h-6 ml-1" />
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Top Charts - Right Side (1/3 width) */}
-                      <div className="lg:col-span-1">
-                        <div className="bg-white dark:bg-slate-800 rounded-2xl p-4">
-                          <h3 className="text-slate-900 dark:text-white text-lg font-bold mb-4">Saved Podcast</h3>
-
-                          <div className="space-y-1">
-                            {/* Podcast Item 1 */}
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-orange-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <DollarSign className="w-6 h-6 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-slate-900 dark:text-white font-medium text-sm">Budget Planning</h4>
-                                <p className="text-slate-500 dark:text-slate-400 text-xs">Money Expert</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-2 bg-blue-500 rounded-full"></div>
-                                <span className="text-slate-500 dark:text-slate-400 text-xs">03:13</span>
-                                <Button size="sm" variant="ghost" className="w-6 h-6 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                                  <Heart className="w-3 h-3" />
-                                </Button>
-                                <Button size="sm" variant="ghost" className="w-6 h-6 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                                  <Play className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-
-                            {/* Podcast Item 2 */}
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-blue-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <Mic className="w-6 h-6 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-slate-900 dark:text-white font-medium text-sm">Psychology of Money</h4>
-                                <p className="text-slate-500 dark:text-slate-400 text-xs">Mind & Money</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-2 bg-green-500 rounded-full"></div>
-                                <span className="text-slate-500 dark:text-slate-400 text-xs">05:26</span>
-                                <Button size="sm" variant="ghost" className="w-6 h-6 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                                  <Heart className="w-3 h-3" />
-                                </Button>
-                                <Button size="sm" variant="ghost" className="w-6 h-6 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                                  <Play className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-
-                            {/* Podcast Item 3 */}
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-purple-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <BookOpen className="w-6 h-6 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-slate-900 dark:text-white font-medium text-sm">Entrepreneur Mindset</h4>
-                                <p className="text-slate-500 dark:text-slate-400 text-xs">Business Weekly</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-2 bg-yellow-500 rounded-full"></div>
-                                <span className="text-slate-500 dark:text-slate-400 text-xs">02:51</span>
-                                <Button size="sm" variant="ghost" className="w-6 h-6 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                                  <Heart className="w-3 h-3" />
-                                </Button>
-                                <Button size="sm" variant="ghost" className="w-6 h-6 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                                  <Play className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-
-                            {/* Podcast Item 4 - Resilience */}
-                            <div className="flex items-center gap-3">
-                              <div className="w-12 h-12 bg-teal-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                                <Shield className="w-6 h-6 text-white" />
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <h4 className="text-slate-900 dark:text-white font-medium text-sm">Building Resilience</h4>
-                                <p className="text-slate-500 dark:text-slate-400 text-xs">Mental Strength</p>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <div className="w-8 h-2 bg-teal-500 rounded-full"></div>
-                                <span className="text-slate-500 dark:text-slate-400 text-xs">04:12</span>
-                                <Button size="sm" variant="ghost" className="w-6 h-6 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                                  <Heart className="w-3 h-3" />
-                                </Button>
-                                <Button size="sm" variant="ghost" className="w-6 h-6 p-0 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                                  <Play className="w-3 h-3" />
-                                </Button>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* AI-Generated Trending Podcasts */}
-                    <div className="mt-8">
-                      <h3 className="text-slate-900 dark:text-white text-lg font-medium mb-4">AI-Generated {selectedSector} Podcasts</h3>
-
-                      {isPodcastsLoading ? (
-                        <div className="text-center py-8">
-                          <div className="animate-spin w-8 h-8 border-2 border-purple-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                          <p className="text-slate-500 dark:text-slate-400 text-sm">Generating trending podcasts...</p>
-                        </div>
-                      ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-96 overflow-y-auto">
-                          {trendingPodcasts.slice(0, 10).map((podcast, index) => (
-                            <div 
-                              key={podcast.id} 
-                              className={`rounded-lg p-4 hover:bg-slate-600/50 transition-colors cursor-pointer group ${
-                                selectedPodcast?.id === podcast.id 
-                                  ? 'bg-purple-600/30 border border-purple-500' 
-                                  : 'bg-slate-100 dark:bg-slate-700/50'
-                              }`}
-                              onClick={() => handlePodcastSelect(podcast)}
-                              data-testid={`podcast-card-${podcast.id}`}
-                            >
-                              <div className="flex items-start gap-3">
-                                <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-600 rounded-lg flex items-center justify-center flex-shrink-0">
-                                  <span className="text-white font-bold text-lg">#{index + 1}</span>
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                  <div className="flex items-start justify-start mb-1">
-                                    <h4 className="text-slate-900 dark:text-white font-medium text-sm leading-tight">{podcast.title}</h4>
-                                    {podcast.trending && <span className="text-orange-400 text-xs bg-orange-400/20 px-2 py-1 rounded-full">TRENDING</span>}
-                                  </div>
-                                  <p className="text-slate-500 dark:text-slate-400 text-xs mb-2 line-clamp-2">{podcast.description}</p>
-                                  <div className="flex items-center gap-4 text-xs text-slate-500">
-                                    <span>🎙️ {podcast.host}</span>
-                                    <span>⏱️ {podcast.duration}</span>
-                                    <span>👥 {podcast.listeners}</span>
-                                  </div>
-                                </div>
-                                <Button size="sm" className="w-8 h-8 bg-purple-500/20 hover:bg-purple-500/30 text-purple-400 border-0 rounded-full p-0 opacity-0 group-hover:opacity-100 transition-opacity">
-                                  <Play className="w-4 h-4 ml-0.5" />
-                                </Button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Weekly Top Tracks */}
-                    <div className="mt-8">
-                      <h3 className="text-slate-900 dark:text-white text-lg font-medium mb-4">Weekly top tracks</h3>
-
-                      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                        {/* Track 1 */}
-                        <div className="group cursor-pointer">
-                          <div className="w-full aspect-square bg-gradient-to-br from-green-600 to-blue-800 rounded-lg mb-3 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black/20"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-4xl">🤖</span>
-                            </div>
-                            <div className="absolute bottom-2 left-2 text-white text-xs font-bold">AI FINANCE</div>
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="sm" className="w-8 h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 rounded-full p-0">
-                                <Play className="w-4 h-4 ml-0.5" />
-                              </Button>
-                            </div>
-                          </div>
-                          <h4 className="text-slate-500 dark:text-slate-400 font-medium text-sm">{selectedPodcast ? selectedPodcast.title : `AI in ${selectedSector === 'FINANCE' ? 'Finance' : selectedSector === 'IT' ? 'Tech' : selectedSector === 'COMMODITY' ? 'Commodity' : selectedSector === 'GLOBAL' ? 'Global' : selectedSector === 'BANKS' ? 'Banking' : selectedSector === 'AUTOMOBILE' ? 'Auto' : 'Finance'}`}</h4>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs">Tech Weekly</p>
-                        </div>
-
-                        {/* Track 2 */}
-                        <div className="group cursor-pointer">
-                          <div className="w-full aspect-square bg-gradient-to-br from-yellow-400 to-orange-600 rounded-lg mb-3 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black/20"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-4xl">📰</span>
-                            </div>
-                            <div className="absolute bottom-2 left-2 text-white text-xs font-bold">MARKET NEWS</div>
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="sm" className="w-8 h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 rounded-full p-0">
-                                <Play className="w-4 h-4 ml-0.5" />
-                              </Button>
-                            </div>
-                          </div>
-                          <h4 className="text-slate-900 dark:text-white font-medium text-sm">Market News</h4>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs">Daily Report</p>
-                        </div>
-
-                        {/* Track 3 */}
-                        <div className="group cursor-pointer">
-                          <div className="w-full aspect-square bg-gradient-to-br from-red-500 to-pink-600 rounded-lg mb-3 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black/20"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-4xl">🛡️</span>
-                            </div>
-                            <div className="absolute bottom-2 left-2 text-white text-xs font-bold">RISK MGMT</div>
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="sm" className="w-8 h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 rounded-full p-0">
-                                <Play className="w-4 h-4 ml-0.5" />
-                              </Button>
-                            </div>
-                          </div>
-                          <h4 className="text-slate-900 dark:text-white font-medium text-sm">Risk Management</h4>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs">Pro Trader</p>
-                        </div>
-
-                        {/* Track 4 */}
-                        <div className="group cursor-pointer">
-                          <div className="w-full aspect-square bg-gradient-to-br from-blue-500 to-cyan-400 rounded-lg mb-3 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black/20"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-4xl">🚀</span>
-                            </div>
-                            <div className="absolute bottom-2 left-2 text-white text-xs font-bold">STARTUP</div>
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="sm" className="w-8 h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 rounded-full p-0">
-                                <Play className="w-4 h-4 ml-0.5" />
-                              </Button>
-                            </div>
-                          </div>
-                          <h4 className="text-slate-900 dark:text-white font-medium text-sm">Building Companies</h4>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs">Startup Stories</p>
-                        </div>
-
-                        {/* Track 5 */}
-                        <div className="group cursor-pointer">
-                          <div className="w-full aspect-square bg-gradient-to-br from-purple-600 to-indigo-800 rounded-lg mb-3 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black/20"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-4xl">🎓</span>
-                            </div>
-                            <div className="absolute bottom-2 left-2 text-white text-xs font-bold">FELLOWSHIP</div>
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="sm" className="w-8 h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 rounded-full p-0">
-                                <Play className="w-4 h-4 ml-0.5" />
-                              </Button>
-                            </div>
-                          </div>
-                          <h4 className="text-slate-900 dark:text-white font-medium text-sm">Fellowship Programs</h4>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs">Career Growth</p>
-                        </div>
-
-                        {/* Track 6 */}
-                        <div className="group cursor-pointer">
-                          <div className="w-full aspect-square bg-gradient-to-br from-orange-500 to-red-600 rounded-lg mb-3 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black/20"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-4xl">💼</span>
-                            </div>
-                            <div className="absolute bottom-2 left-2 text-white text-xs font-bold">BUSINESS</div>
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="sm" className="w-8 h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 rounded-full p-0">
-                                <Play className="w-4 h-4 ml-0.5" />
-                              </Button>
-                            </div>
-                          </div>
-                          <h4 className="text-slate-900 dark:text-white font-medium text-sm">Business Models</h4>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs">Strategy Tips</p>
-                        </div>
-
-                        {/* Track 7 */}
-                        <div className="group cursor-pointer">
-                          <div className="w-full aspect-square bg-gradient-to-br from-emerald-600 to-teal-800 rounded-lg mb-3 relative overflow-hidden">
-                            <div className="absolute inset-0 bg-black/20"></div>
-                            <div className="absolute inset-0 flex items-center justify-center">
-                              <span className="text-4xl">⭐</span>
-                            </div>
-                            <div className="absolute bottom-2 left-2 text-white text-xs font-bold">HERO ZERO</div>
-                            <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button size="sm" className="w-8 h-8 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white border-0 rounded-full p-0">
-                                <Play className="w-4 h-4 ml-0.5" />
-                              </Button>
-                            </div>
-                          </div>
-                          <h4 className="text-slate-900 dark:text-white font-medium text-sm">Hero to Zero Stories</h4>
-                          <p className="text-slate-500 dark:text-slate-400 text-xs">Quick Lessons</p>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-
-                {/* Trading Charts Tab Content */}
-                <TabsContent value="trading-charts" className="mt-0">
-                  <div className="h-full flex flex-col">
-                    {/* Header */}
-                    <div className="flex items-center justify-start mb-4 flex-shrink-0">
-                      <h4 className="text-slate-900 dark:text-white text-lg font-medium">Upcoming Events</h4>
-                      <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 text-sm">
-                        <span>Showing</span>
-                        <span className="text-slate-900 dark:text-white">10</span>
-                        <span>out of 48</span>
-                      </div>
-                    </div>
-
-                    {/* Scrollable Content */}
-                    <div className="flex-1 overflow-y-auto pr-2">
-                      {/* Events Grid */}
-                      <div className="grid grid-cols-3 gap-4 pb-4">
-                      {/* Art & Design Event */}
-                      <div className="relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-blue-400/80 via-cyan-500/60 to-blue-600/80 flex gap-3">
-                        {/* Background Pattern */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-500/30 to-purple-600/40"></div>
-                        <div className="absolute top-0 right-0 w-20 h-20 bg-white/10 rounded-full -mr-10 -mt-10"></div>
-                        <div className="absolute bottom-0 left-0 w-16 h-16 bg-white/10 rounded-full -ml-8 -mb-8"></div>
-
-                        {/* Event Content */}
-                        <div className="relative z-10 flex-1">
-                          <div className="flex items-center justify-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">Startup Summit</span>
-                              <span className="bg-green-500/80 text-white px-2 py-1 rounded-full text-xs">● Active</span>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <h5 className="text-slate-900 dark:text-white font-semibold mb-1">Global Startup Summit | Hyderabad 2025</h5>
-                            <p className="text-white/90 text-xs mb-1">Sat, 06 Sept • 9:00 AM</p>
-                            <p className="text-white/70 text-xs">📍 Deccan Serai Hotel, Hitech City, Hyderabad</p>
-                          </div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex-1 bg-white/30 rounded-full h-1.5 mr-3">
-                              <div className="bg-white h-1.5 rounded-full w-4/5"></div>
-                            </div>
-                            <span className="text-white/90 text-xs font-medium">85%</span>
-                          </div>
-                          <div className="text-slate-900 dark:text-white font-bold text-sm">₹1,299</div>
-                        </div>
-
-                        {/* Event Image */}
-                        <div className="relative z-10 w-20 h-20 flex-shrink-0">
-                          <img 
-                            src={getEventImage("Global Startup Summit | Hyderabad 2025")} 
-                            alt="Global Startup Summit Hyderabad 2025" 
-                            className="w-full h-full object-cover rounded-lg border border-white/20"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Music Event */}
-                      <div className="relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-indigo-600/80 via-blue-700/70 to-purple-800/80 flex gap-3">
-                        {/* Starry Background */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-blue-900/40 to-purple-900/60"></div>
-                        <div className="absolute top-2 right-4 w-1 h-1 bg-white rounded-full opacity-80"></div>
-                        <div className="absolute top-6 right-8 w-0.5 h-0.5 bg-white rounded-full opacity-60"></div>
-                        <div className="absolute top-4 right-12 w-1 h-1 bg-yellow-200 rounded-full opacity-90"></div>
-                        <div className="absolute top-8 right-6 w-0.5 h-0.5 bg-white rounded-full opacity-70"></div>
-
-                        {/* Event Content */}
-                        <div className="relative z-10 flex-1">
-                          <div className="flex items-center justify-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">Music</span>
-                              <span className="bg-green-500/80 text-white px-2 py-1 rounded-full text-xs">● Active</span>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <h5 className="text-slate-900 dark:text-white font-semibold mb-1">TiE Bangalore Founders Summit</h5>
-                            <p className="text-white/90 text-xs mb-1">Feb 10, 2025 • 9:30 AM</p>
-                            <p className="text-white/70 text-xs">📍 TiE Bangalore, Koramangala</p>
-                          </div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex-1 bg-white/30 rounded-full h-1.5 mr-3">
-                              <div className="bg-white h-1.5 rounded-full w-3/4"></div>
-                            </div>
-                            <span className="text-white/90 text-xs font-medium">75%</span>
-                          </div>
-                          <div className="text-slate-900 dark:text-white font-bold text-sm">₹560</div>
-                        </div>
-
-                        {/* Event Image */}
-                        <div className="relative z-10 w-20 h-20 flex-shrink-0">
-                          <img 
-                            src={getEventImage("TiE Bangalore Founders Summit")} 
-                            alt="TiE Bangalore Founders Summit" 
-                            className="w-full h-full object-cover rounded-lg border border-white/20"
-                          />
-                        </div>
-                      </div>
-
-
-                      {/* Health & Wellness Event */}
-                      <div className="relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-sky-400/80 via-blue-500/70 to-cyan-600/80 flex gap-3">
-                        {/* Wellness Background */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-sky-400/30 to-blue-600/40"></div>
-                        <div className="absolute top-2 right-2 w-12 h-12 bg-white/10 rounded-full"></div>
-                        <div className="absolute bottom-2 left-2 w-8 h-8 bg-white/10 rounded-full"></div>
-
-                        {/* Event Content */}
-                        <div className="relative z-10 flex-1">
-                          <div className="flex items-center justify-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">Health & Wellness</span>
-                              <span className="bg-green-500/80 text-white px-2 py-1 rounded-full text-xs">● Active</span>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <h5 className="text-slate-900 dark:text-white font-semibold mb-1">Pharma Bio Summit Hyderabad</h5>
-                            <p className="text-white/90 text-xs mb-1">Jan 28, 2025 • 10:00 AM</p>
-                            <p className="text-white/70 text-xs">📍 HICC, Hyderabad</p>
-                          </div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex-1 bg-white/30 rounded-full h-1.5 mr-3">
-                              <div className="bg-white h-1.5 rounded-full w-2/5"></div>
-                            </div>
-                            <span className="text-white/90 text-xs font-medium">40%</span>
-                          </div>
-                          <div className="text-slate-900 dark:text-white font-bold text-sm">₹580</div>
-                        </div>
-
-                        {/* Event Image */}
-                        <div className="relative z-10 w-20 h-20 flex-shrink-0">
-                          <img 
-                            src={getEventImage("Pharma Bio Summit Hyderabad")} 
-                            alt="Pharma Bio Summit Hyderabad" 
-                            className="w-full h-full object-cover rounded-lg border border-white/20"
-                          />
-                        </div>
-                      </div>
-
-                      {/* Food & Culinary Event */}
-                      <div className="relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-orange-400/80 via-red-500/70 to-pink-500/80 flex gap-3">
-                        {/* Food Background */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-orange-500/30 to-red-600/40"></div>
-                        <div className="absolute top-1 right-1 w-6 h-6 bg-yellow-300/20 rounded-full"></div>
-                        <div className="absolute top-3 right-6 w-4 h-4 bg-orange-300/30 rounded-full"></div>
-                        <div className="absolute bottom-2 left-3 w-5 h-5 bg-red-300/20 rounded-full"></div>
-
-                        {/* Event Content */}
-                        <div className="relative z-10 flex-1">
-                          <div className="flex items-center justify-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">Food & Culinary</span>
-                              <span className="bg-green-500/80 text-white px-2 py-1 rounded-full text-xs">● Active</span>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <h5 className="text-slate-900 dark:text-white font-semibold mb-1">Hyderabad Food Festival</h5>
-                            <p className="text-white/90 text-xs mb-1">Feb 20, 2025 • 6:00 PM</p>
-                            <p className="text-white/70 text-xs">📍 Shilpakala Vedika, Hyderabad</p>
-                          </div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex-1 bg-white/30 rounded-full h-1.5 mr-3">
-                              <div className="bg-white h-1.5 rounded-full w-3/5"></div>
-                            </div>
-                            <span className="text-white/90 text-xs font-medium">60%</span>
-                          </div>
-                          <div className="text-slate-900 dark:text-white font-bold text-sm">₹1,200</div>
-                        </div>
-
-                        {/* Event Image */}
-                        <div className="relative z-10 w-20 h-20 flex-shrink-0">
-                          <img 
-                            src={getEventImage("Hyderabad Food Festival")} 
-                            alt="Hyderabad Food Festival" 
-                            className="w-full h-full object-cover rounded-lg border border-white/20"
-                          />
-                        </div>
-                      </div>
-
-
-                      {/* Technology Event */}
-                      <div className="relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-purple-500/80 via-violet-600/70 to-indigo-700/80 flex gap-3">
-                        {/* Tech Background */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-600/30 to-indigo-800/40"></div>
-                        <div className="absolute top-0 right-0 w-16 h-16 bg-white/5 transform rotate-45 -mr-8 -mt-8"></div>
-                        <div className="absolute bottom-0 left-0 w-12 h-12 bg-white/5 transform rotate-12 -ml-6 -mb-6"></div>
-                        <div className="absolute top-1/2 right-4 w-2 h-2 bg-cyan-400/60 rounded-full"></div>
-                        <div className="absolute top-1/3 right-8 w-1 h-1 bg-pink-400/60 rounded-full"></div>
-
-                        {/* Event Content */}
-                        <div className="relative z-10 flex-1">
-                          <div className="flex items-center justify-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">Technology</span>
-                              <span className="bg-green-500/80 text-white px-2 py-1 rounded-full text-xs">● Active</span>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <h5 className="text-slate-900 dark:text-white font-semibold mb-1">HITEX IT Expo Hyderabad</h5>
-                            <p className="text-white/90 text-xs mb-1">Mar 5, 2025 • 9:00 AM</p>
-                            <p className="text-white/70 text-xs">📍 Hitex Exhibition Centre</p>
-                          </div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex-1 bg-white/30 rounded-full h-1.5 mr-3">
-                              <div className="bg-white h-1.5 rounded-full w-1/2"></div>
-                            </div>
-                            <span className="text-white/90 text-xs font-medium">55%</span>
-                          </div>
-                          <div className="text-slate-900 dark:text-white font-bold text-sm">₹575</div>
-                        </div>
-
-                        {/* Event Image */}
-                        <div className="relative z-10 w-20 h-20 flex-shrink-0">
-                          <div className="w-full h-full bg-gradient-to-br from-purple-500/30 to-indigo-700/30 rounded-lg border border-white/20 flex items-center justify-center relative overflow-hidden">
-                            <div className="absolute inset-0 bg-gradient-to-br from-violet-600/20 to-indigo-800/20"></div>
-                            <div className="absolute top-1 right-1 w-1 h-1 bg-cyan-400/60 rounded-full"></div>
-                            <div className="absolute bottom-1 left-1 w-1 h-1 bg-pink-400/60 rounded-full"></div>
-                            <div className="relative z-10 text-center">
-                              <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center mb-1">
-                                <Zap className="w-4 h-4 text-black" />
-                              </div>
-                              <div className="text-white/70 text-[8px] font-medium">TECH</div>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Outdoor & Adventure Event */}
-                      <div className="relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-purple-400/80 via-indigo-500/70 to-blue-600/80 flex gap-3">
-                        {/* Adventure Background */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-purple-500/30 to-blue-700/40"></div>
-                        <div className="absolute top-0 left-0 w-20 h-20 bg-white/5 rounded-full -ml-10 -mt-10"></div>
-                        <div className="absolute bottom-0 right-0 w-24 h-24 bg-white/5 rounded-full -mr-12 -mb-12"></div>
-                        <div className="absolute top-1/2 left-1/2 w-6 h-6 bg-white/10 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-
-                        {/* Event Content */}
-                        <div className="relative z-10 flex-1">
-                          <div className="flex items-center justify-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">Business</span>
-                              <span className="bg-green-500/80 text-white px-2 py-1 rounded-full text-xs">● Active</span>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <h5 className="text-slate-900 dark:text-white font-semibold mb-1">Mumbai Fintech Festival</h5>
-                            <p className="text-white/90 text-xs mb-1">Jan 15, 2025 • 10:30 AM</p>
-                            <p className="text-white/70 text-xs">📍 Bombay Exhibition Centre</p>
-                          </div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex-1 bg-white/30 rounded-full h-1.5 mr-3">
-                              <div className="bg-white h-1.5 rounded-full w-4/5"></div>
-                            </div>
-                            <span className="text-white/90 text-xs font-medium">65%</span>
-                          </div>
-                          <div className="text-slate-900 dark:text-white font-bold text-sm">₹850</div>
-                        </div>
-
-                        {/* Event Image */}
-                        <div className="relative z-10 w-20 h-20 flex-shrink-0">
-                          {getEventImage("Mumbai Fintech Festival") ? (
-                            <img 
-                              src={getEventImage("Mumbai Fintech Festival")!} 
-                              alt="Mumbai Fintech Festival" 
-                              className="w-full h-full object-cover rounded-lg border border-white/20"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-purple-400/30 to-blue-600/30 rounded-lg border border-white/20 flex items-center justify-center relative overflow-hidden">
-                              <div className="text-white/70 text-[8px] font-medium">BUSINESS</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Startup Innovations Event */}
-                      <div className="relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-emerald-400/80 via-teal-500/70 to-cyan-600/80 flex gap-3">
-                        {/* Innovation Background */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/30 to-cyan-700/40"></div>
-                        <div className="absolute top-2 right-3 w-3 h-3 bg-white/20 rounded-full"></div>
-                        <div className="absolute top-6 right-8 w-2 h-2 bg-white/15 rounded-full"></div>
-                        <div className="absolute bottom-4 left-4 w-4 h-4 bg-white/10 rounded-full"></div>
-                        <div className="absolute top-1/3 left-6 w-1 h-1 bg-yellow-300/60 rounded-full"></div>
-
-                        {/* Event Content */}
-                        <div className="relative z-10 flex-1">
-                          <div className="flex items-center justify-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">Startup Innovations</span>
-                              <span className="bg-green-500/80 text-white px-2 py-1 rounded-full text-xs">● Active</span>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <h5 className="text-slate-900 dark:text-white font-semibold mb-1">Nasscom Product Conclave Bangalore</h5>
-                            <p className="text-white/90 text-xs mb-1">Feb 25, 2025 • 9:00 AM</p>
-                            <p className="text-white/70 text-xs">📍 UB City Mall, Bengaluru</p>
-                          </div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex-1 bg-white/30 rounded-full h-1.5 mr-3">
-                              <div className="bg-white h-1.5 rounded-full w-4/5"></div>
-                            </div>
-                            <span className="text-white/90 text-xs font-medium">80%</span>
-                          </div>
-                          <div className="text-slate-900 dark:text-white font-bold text-sm">₹1,250</div>
-                        </div>
-
-                        {/* Event Image */}
-                        <div className="relative z-10 w-20 h-20 flex-shrink-0">
-                          {getEventImage("Nasscom Product Conclave Bangalore") ? (
-                            <img 
-                              src={getEventImage("Nasscom Product Conclave Bangalore")!} 
-                              alt="Nasscom Product Conclave Bangalore" 
-                              className="w-full h-full object-cover rounded-lg border border-white/20"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-emerald-400/30 to-cyan-600/30 rounded-lg border border-white/20 flex items-center justify-center relative overflow-hidden">
-                              <div className="text-white/70 text-[8px] font-medium">STARTUP</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Promotions Event */}
-                      <div className="relative rounded-xl p-4 overflow-hidden bg-gradient-to-br from-fuchsia-400/80 via-purple-500/70 to-violet-600/80 flex gap-3">
-                        {/* Marketing Background */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-fuchsia-500/30 to-violet-700/40"></div>
-                        <div className="absolute top-0 right-0 w-14 h-14 bg-white/10 transform rotate-12 -mr-7 -mt-7"></div>
-                        <div className="absolute bottom-0 left-0 w-10 h-10 bg-white/10 transform -rotate-12 -ml-5 -mb-5"></div>
-                        <div className="absolute top-1/2 left-1/2 w-8 h-8 bg-white/5 rounded-full transform -translate-x-1/2 -translate-y-1/2"></div>
-
-                        {/* Event Content */}
-                        <div className="relative z-10 flex-1">
-                          <div className="flex items-center justify-start mb-3">
-                            <div className="flex items-center gap-2">
-                              <span className="bg-white/20 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-medium">Technology</span>
-                              <span className="bg-green-500/80 text-white px-2 py-1 rounded-full text-xs">● Active</span>
-                            </div>
-                          </div>
-                          <div className="mb-3">
-                            <h5 className="text-slate-900 dark:text-white font-semibold mb-1">India AI Summit Mumbai</h5>
-                            <p className="text-white/90 text-xs mb-1">Mar 12, 2025 • 10:00 AM</p>
-                            <p className="text-white/70 text-xs">📍 NESCO Goregaon, Mumbai</p>
-                          </div>
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex-1 bg-white/30 rounded-full h-1.5 mr-3">
-                              <div className="bg-white h-1.5 rounded-full w-3/4"></div>
-                            </div>
-                            <span className="text-white/90 text-xs font-medium">70%</span>
-                          </div>
-                          <div className="text-slate-900 dark:text-white font-bold text-sm">₹950</div>
-                        </div>
-
-                        {/* Event Image */}
-                        <div className="relative z-10 w-20 h-20 flex-shrink-0">
-                          {getEventImage("India AI Summit Mumbai") ? (
-                            <img 
-                              src={getEventImage("India AI Summit Mumbai")!} 
-                              alt="India AI Summit Mumbai" 
-                              className="w-full h-full object-cover rounded-lg border border-white/20"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gradient-to-br from-fuchsia-400/30 to-violet-600/30 rounded-lg border border-white/20 flex items-center justify-center relative overflow-hidden">
-                              <div className="text-white/70 text-[8px] font-medium">AI TECH</div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                      </div>
-
-                      {/* Pagination */}
-                      <div className="flex items-center justify-center gap-2 pt-4">
-                        <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                          <ChevronLeft className="w-4 h-4" />
-                        </Button>
-                        <Button variant="ghost" size="sm" className="bg-purple-600 text-white w-8 h-8 p-0">
-                          1
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white w-8 h-8 p-0">
-                          2
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white w-8 h-8 p-0">
-                          3
-                        </Button>
-                        <span className="text-slate-500 dark:text-slate-400 px-2">...</span>
-                        <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white w-8 h-8 p-0">
-                          6
-                        </Button>
-                        <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white">
-                          <ChevronRight className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </div>
-          </div>
-
-          {/* Subscribe Window - 30% */}
-          <div className="w-[30%] flex flex-col gap-3 h-full">
-            {/* Subscribe Card - 30% height */}
-            <div className="h-[40%] bg-gradient-to-br from-blue-500 to-cyan-400 rounded-2xl p-4 text-white relative overflow-hidden">
-              <div className="absolute top-2 right-2">
-                <span className="text-xs font-medium opacity-80">Ad</span>
-              </div>
-
-              <h3 className="text-lg font-bold mb-1">Global Startup Summit | Hyderabad 2025</h3>
-
-              <Button className="bg-white text-blue-600 hover:bg-gray-100 text-sm px-4 py-2">
-                Subscribe
-              </Button>
-
-              {/* Global Startup Summit Image - Bigger */}
-              <div className="absolute bottom-2 right-2 w-20 h-20 opacity-90">
-                <img 
-                  src={getEventImage("Global Startup Summit | Hyderabad 2025")} 
-                  alt="Global Startup Summit Hyderabad 2025" 
-                  className="w-full h-full object-cover rounded-lg border border-white/30"
+            {/* Search Bar */}
+            <div className="flex-1 max-w-md hidden sm:block">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  placeholder="Search creators, topics, podcasts..."
+                  className="w-full h-10 pl-10 pr-4 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-900 dark:text-white text-sm placeholder:text-slate-400 border-0 outline-none focus:ring-2 focus:ring-teal-400/50 transition-all"
+                  data-testid="input-minicast-search"
                 />
               </div>
             </div>
 
-            {/* Community Live Meetings - 50% height */}
-            <div className="h-[50%] bg-white dark:bg-slate-800 rounded-2xl p-4 border border-slate-200 dark:border-slate-700">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="w-6 h-6 bg-gradient-to-r from-green-500 to-emerald-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-xs">🔴</span>
-                </div>
-                <span className="text-slate-900 dark:text-white font-medium text-sm">Live Community</span>
-              </div>
-
-              <h3 className="text-white font-medium mb-2 text-sm">Join Finance AI Meetups</h3>
-              <p className="text-slate-500 dark:text-slate-400 text-xs mb-3">Connect with startups & finance experts. Create avatars, no login required.</p>
-
-              {/* Live Meeting Indicators */}
-              <div className="space-y-2 mb-3">
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                  <span className="text-slate-600 dark:text-slate-300 text-xs">AI Trading Discussion - 12 live</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-orange-500 rounded-full animate-pulse"></div>
-                  <span className="text-slate-600 dark:text-slate-300 text-xs">Startup Pitch Night - 8 live</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
-                  <span className="text-slate-600 dark:text-slate-300 text-xs">DeFi Study Group - 15 live</span>
-                </div>
-              </div>
-
-              <div className="flex -space-x-2 mb-3">
-                <div className="w-6 h-6 bg-blue-500 rounded-full border-2 border-slate-800"></div>
-                <div className="w-6 h-6 bg-green-500 rounded-full border-2 border-slate-800"></div>
-                <div className="w-6 h-6 bg-orange-500 rounded-full border-2 border-slate-800"></div>
-                <div className="w-6 h-6 bg-purple-500 rounded-full border-2 border-slate-800"></div>
-                <div className="w-6 h-6 bg-slate-600 rounded-full border-2 border-slate-800 flex items-center justify-center">
-                  <span className="text-white text-xs">+</span>
-                </div>
-              </div>
-
-              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm py-2">
-                Explore Now
-              </Button>
-            </div>
-
-            {/* Podcast Scroller - 20% height */}
-            <div className="h-[20%] bg-white dark:bg-slate-800/80 backdrop-blur-md rounded-2xl p-4 border border-slate-200 dark:border-slate-700/50">
-              <div className="flex items-center gap-3 h-full">
-                {/* Profile Image */}
-                <div className="w-12 h-12 bg-gradient-to-br from-pink-400 to-purple-500 rounded-xl flex items-center justify-center flex-shrink-0">
-                  <User className="w-6 h-6 text-white" />
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-start mb-1">
-                    <h4 className="text-slate-500 dark:text-slate-400 text-sm font-medium truncate">{selectedPodcast ? selectedPodcast.title : `AI in ${selectedSector === 'FINANCE' ? 'Finance' : selectedSector === 'IT' ? 'Tech' : selectedSector === 'COMMODITY' ? 'Commodity' : selectedSector === 'GLOBAL' ? 'Global' : selectedSector === 'BANKS' ? 'Banking' : selectedSector === 'AUTOMOBILE' ? 'Auto' : 'Finance'}`}</h4>
-                    <Mic className="w-3 h-3 text-slate-500 dark:text-slate-400 flex-shrink-0" />
-                  </div>
-                  <p className="text-slate-500 dark:text-slate-400 text-xs mb-2">19 minutes</p>
-
-                  {/* Progress Bar */}
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="text-slate-500 dark:text-slate-400 text-xs">14:07</span>
-                    <div className="flex-1 bg-slate-600 rounded-full h-1">
-                      <div className="bg-purple-400 h-1 rounded-full w-3/4"></div>
-                    </div>
-                    <span className="text-slate-500 dark:text-slate-400 text-xs">-5:04</span>
-                  </div>
-
-                  {/* Controls */}
-                  <div className="flex items-center justify-center gap-3">
-                    <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white w-6 h-6 p-0">
-                      <SkipBack className="w-3 h-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-slate-900 dark:text-white w-6 h-6 p-0">
-                      <Pause className="w-3 h-3" />
-                    </Button>
-                    <Button variant="ghost" size="sm" className="text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white w-6 h-6 p-0">
-                      <SkipForward className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
+            {/* Right Actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                className="sm:hidden w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300"
+                data-testid="button-minicast-search-mobile"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+              <button className="relative w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 hover:bg-teal-50 dark:hover:bg-slate-700 transition-colors" data-testid="button-minicast-notifications">
+                <Bell className="w-4 h-4" />
+                <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-teal-400 rounded-full ring-2 ring-white dark:ring-slate-900"></span>
+              </button>
+              <div className="w-9 h-9 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-sm font-bold shadow-sm cursor-pointer" data-testid="img-minicast-avatar">
+                ME
               </div>
             </div>
           </div>
         </div>
+
+        {/* ── MAIN LAYOUT ── */}
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+          <div className="flex gap-6">
+
+            {/* ── LEFT: MAIN FEED ── */}
+            <div className="flex-1 min-w-0">
+
+              {/* ── STORIES ROW ── */}
+              <div className="mb-6">
+                <div className="flex gap-3 overflow-x-auto pb-2 scrollbar-none" style={{scrollbarWidth: "none"}}>
+                  {minicastStories.map((story) => (
+                    <button
+                      key={story.id}
+                      className="flex-shrink-0 flex flex-col items-center gap-1.5 group"
+                      data-testid={`button-story-${story.id}`}
+                      onClick={() => setMinicastPlayingId(minicastPlayingId === story.id ? null : story.id)}
+                    >
+                      <div className={`relative w-16 h-16 rounded-full p-0.5 ${story.hasNew ? "bg-gradient-to-br from-teal-400 to-cyan-500" : story.isYou ? "bg-gradient-to-br from-slate-300 to-slate-400 dark:from-slate-600 dark:to-slate-700" : "bg-slate-200 dark:bg-slate-700"}`}>
+                        <div className={`w-full h-full rounded-full bg-gradient-to-br ${story.gradient} flex items-center justify-center text-white font-bold text-sm border-2 border-white dark:border-slate-900 group-hover:scale-105 transition-transform`}>
+                          {story.isYou ? (
+                            <div className="flex flex-col items-center">
+                              <Plus className="w-5 h-5" />
+                            </div>
+                          ) : (
+                            story.initials
+                          )}
+                        </div>
+                        {!story.isYou && (
+                          <div className="absolute -bottom-0.5 -right-0.5 w-5 h-5 bg-teal-400 rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900">
+                            <Volume2 className="w-2.5 h-2.5 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      <span className="text-xs text-slate-600 dark:text-slate-400 font-medium max-w-[64px] truncate text-center">
+                        {story.isYou ? "Your Story" : story.name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* ── DISCOVER / FOLLOWING TABS ── */}
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex gap-1 bg-slate-100 dark:bg-slate-800 rounded-full p-1">
+                  <button
+                    onClick={() => setMinicastFeedTab("discover")}
+                    className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all ${minicastFeedTab === "discover" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                    data-testid="button-tab-discover"
+                  >
+                    Discover
+                  </button>
+                  <button
+                    onClick={() => setMinicastFeedTab("following")}
+                    className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all ${minicastFeedTab === "following" ? "bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-sm" : "text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"}`}
+                    data-testid="button-tab-following"
+                  >
+                    Following
+                  </button>
+                </div>
+                <button className="flex items-center gap-1.5 text-sm text-teal-500 font-medium hover:text-teal-600 transition-colors" data-testid="button-minicast-filter">
+                  <Filter className="w-4 h-4" />
+                  Filter
+                </button>
+              </div>
+
+              {/* ── CATEGORY PILLS ── */}
+              <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-none" style={{scrollbarWidth: "none"}}>
+                {minicastCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    onClick={() => setMinicastCategory(cat)}
+                    className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all ${
+                      minicastCategory === cat
+                        ? "bg-gradient-to-r from-teal-500 to-cyan-500 text-white shadow-md shadow-teal-500/25"
+                        : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:border-teal-300 dark:hover:border-teal-700 hover:text-teal-600 dark:hover:text-teal-400"
+                    }`}
+                    data-testid={`button-category-${cat.toLowerCase()}`}
+                  >
+                    {cat === "Finance" && "📈 "}
+                    {cat === "AI" && "🤖 "}
+                    {cat === "Startup" && "🚀 "}
+                    {cat === "Crypto" && "₿ "}
+                    {cat === "Global" && "🌍 "}
+                    {cat === "Tech" && "💻 "}
+                    {cat === "Banking" && "🏦 "}
+                    {cat}
+                  </button>
+                ))}
+              </div>
+
+              {/* ── AUDIO POST FEED ── */}
+              <div className="space-y-4">
+                {filteredPosts.length === 0 ? (
+                  <div className="text-center py-16">
+                    <div className="w-16 h-16 rounded-full bg-teal-50 dark:bg-teal-900/20 flex items-center justify-center mx-auto mb-4">
+                      <Headphones className="w-8 h-8 text-teal-400" />
+                    </div>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">No posts yet in this category</p>
+                    <p className="text-teal-500 text-xs mt-1">Be the first to post!</p>
+                  </div>
+                ) : (
+                  filteredPosts.map((post) => {
+                    const isPlaying = minicastPlayingId === post.id;
+                    const isLiked = minicastLikes[post.id];
+                    const isBookmarked = minicastBookmarks[post.id];
+                    return (
+                      <div
+                        key={post.id}
+                        className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-700/60 overflow-hidden hover:shadow-lg hover:shadow-slate-900/5 dark:hover:shadow-black/20 transition-all duration-300"
+                        data-testid={`card-minicast-post-${post.id}`}
+                      >
+                        {/* Card Top Gradient Strip */}
+                        <div className={`h-1 bg-gradient-to-r ${post.gradient}`}></div>
+
+                        <div className="p-5">
+                          {/* Creator Row */}
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-3">
+                              <div className={`w-11 h-11 rounded-full bg-gradient-to-br ${post.avatarGrad} flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm`}>
+                                {post.initials}
+                              </div>
+                              <div>
+                                <div className="flex items-center gap-1.5">
+                                  <span className="text-slate-900 dark:text-white font-semibold text-sm">{post.creator}</span>
+                                  {post.verified && (
+                                    <div className="w-4 h-4 rounded-full bg-teal-400 flex items-center justify-center flex-shrink-0">
+                                      <Check className="w-2.5 h-2.5 text-white" />
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="flex items-center gap-2 text-xs text-slate-400 dark:text-slate-500">
+                                  <span>{post.handle}</span>
+                                  <span>·</span>
+                                  <span>{post.time}</span>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {post.trending && (
+                                <span className="flex items-center gap-1 text-xs bg-orange-50 dark:bg-orange-900/20 text-orange-500 font-medium px-2.5 py-1 rounded-full">
+                                  <Flame className="w-3 h-3" />
+                                  Trending
+                                </span>
+                              )}
+                              <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${post.categoryColor}`}>
+                                {post.category}
+                              </span>
+                              <button className="w-7 h-7 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-400 transition-colors" data-testid={`button-more-${post.id}`}>
+                                <MoreVertical className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Content */}
+                          <div className="mb-4">
+                            <h3 className="text-slate-900 dark:text-white font-semibold text-base mb-1.5 leading-snug">{post.title}</h3>
+                            <p className="text-slate-500 dark:text-slate-400 text-sm leading-relaxed line-clamp-2">{post.desc}</p>
+                          </div>
+
+                          {/* Audio Player */}
+                          <div className="bg-slate-50 dark:bg-slate-900/50 rounded-xl p-4 mb-4">
+                            <div className="flex items-center gap-4">
+                              {/* Play Button */}
+                              <button
+                                onClick={() => setMinicastPlayingId(isPlaying ? null : post.id)}
+                                className={`w-12 h-12 rounded-full bg-gradient-to-br ${post.gradient} flex items-center justify-center text-white shadow-lg flex-shrink-0 hover:scale-105 active:scale-95 transition-transform`}
+                                data-testid={`button-play-${post.id}`}
+                              >
+                                {isPlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                              </button>
+
+                              {/* Waveform */}
+                              <div className="flex-1 flex items-center gap-px overflow-hidden">
+                                {post.waveHeights.map((h, i) => (
+                                  <div
+                                    key={i}
+                                    className={`flex-1 rounded-full transition-all duration-150 ${
+                                      isPlaying
+                                        ? i < 8 ? `bg-gradient-to-t ${post.gradient}` : "bg-slate-200 dark:bg-slate-700"
+                                        : "bg-slate-200 dark:bg-slate-700"
+                                    } ${isPlaying && i === 7 ? `bg-gradient-to-t ${post.gradient}` : ""}`}
+                                    style={{
+                                      height: `${isPlaying && i < 8 ? h : Math.max(h * 0.5, 8)}px`,
+                                      maxHeight: "60px",
+                                      minHeight: "4px",
+                                    }}
+                                  />
+                                ))}
+                              </div>
+
+                              {/* Duration + Listeners */}
+                              <div className="flex-shrink-0 text-right">
+                                <div className="text-slate-900 dark:text-white text-sm font-semibold">{post.duration}</div>
+                                <div className="text-slate-400 text-xs flex items-center gap-1 justify-end">
+                                  <Users className="w-3 h-3" />
+                                  {post.listeners}
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Progress Bar */}
+                            {isPlaying && (
+                              <div className="mt-3 h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                <div className={`h-full w-2/5 bg-gradient-to-r ${post.gradient} rounded-full animate-pulse`}></div>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Action Row */}
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => setMinicastLikes(prev => ({...prev, [post.id]: !prev[post.id]}))}
+                                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm transition-all hover:bg-rose-50 dark:hover:bg-rose-900/20 ${isLiked ? "text-rose-500" : "text-slate-400 dark:text-slate-500"}`}
+                                data-testid={`button-like-${post.id}`}
+                              >
+                                <Heart className={`w-4 h-4 ${isLiked ? "fill-rose-500" : ""}`} />
+                                <span className="font-medium">{isLiked ? post.likes + 1 : post.likes}</span>
+                              </button>
+                              <button
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-slate-400 dark:text-slate-500 hover:bg-teal-50 dark:hover:bg-teal-900/20 hover:text-teal-500 transition-all"
+                                data-testid={`button-comment-${post.id}`}
+                              >
+                                <MessageCircle className="w-4 h-4" />
+                                <span className="font-medium">{post.comments}</span>
+                              </button>
+                              <button
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm text-slate-400 dark:text-slate-500 hover:bg-sky-50 dark:hover:bg-sky-900/20 hover:text-sky-500 transition-all"
+                                data-testid={`button-share-${post.id}`}
+                              >
+                                <Share2 className="w-4 h-4" />
+                                <span className="font-medium">{post.shares}</span>
+                              </button>
+                            </div>
+                            <button
+                              onClick={() => setMinicastBookmarks(prev => ({...prev, [post.id]: !prev[post.id]}))}
+                              className={`px-3 py-1.5 rounded-full text-sm transition-all hover:bg-amber-50 dark:hover:bg-amber-900/20 ${isBookmarked ? "text-amber-500" : "text-slate-400 dark:text-slate-500"}`}
+                              data-testid={`button-bookmark-${post.id}`}
+                            >
+                              <Bookmark className={`w-4 h-4 ${isBookmarked ? "fill-amber-500" : ""}`} />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            {/* ── RIGHT SIDEBAR (Desktop only) ── */}
+            <div className="hidden xl:flex flex-col gap-5 w-80 flex-shrink-0">
+
+              {/* Create Post CTA */}
+              <div className="bg-gradient-to-br from-teal-500 via-cyan-500 to-sky-500 rounded-2xl p-5 text-white">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center">
+                    <Mic className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-sm">Share Your Voice</div>
+                    <div className="text-white/70 text-xs">Post a mini audio clip</div>
+                  </div>
+                </div>
+                <p className="text-white/80 text-xs mb-4">Record a 30s–3min audio post on finance, markets, startup news, or anything relevant to the community.</p>
+                <button
+                  onClick={() => setMinicastShowCreate(true)}
+                  className="w-full h-9 bg-white text-teal-600 rounded-xl text-sm font-semibold hover:bg-white/90 transition-colors flex items-center justify-center gap-2"
+                  data-testid="button-create-minicast-post"
+                >
+                  <Plus className="w-4 h-4" />
+                  Start Recording
+                </button>
+              </div>
+
+              {/* Trending Topics */}
+              <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-700/60 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-slate-900 dark:text-white font-bold text-sm">Trending Topics</h3>
+                  <TrendingUp className="w-4 h-4 text-teal-500" />
+                </div>
+                <div className="space-y-3">
+                  {trendingTopics.map((topic, i) => (
+                    <button
+                      key={topic.tag}
+                      className="w-full flex items-center justify-between group hover:bg-slate-50 dark:hover:bg-slate-700/50 -mx-2 px-2 py-1.5 rounded-lg transition-colors"
+                      data-testid={`button-trending-${i}`}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <span className="text-base">{topic.icon}</span>
+                        <div className="text-left">
+                          <div className="text-slate-900 dark:text-white text-sm font-semibold group-hover:text-teal-500 transition-colors">{topic.tag}</div>
+                          <div className="text-slate-400 text-xs">{topic.posts}</div>
+                        </div>
+                      </div>
+                      <ChevronRight className="w-4 h-4 text-slate-300 dark:text-slate-600 group-hover:text-teal-500 transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Suggested Creators */}
+              <div className="bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-100 dark:border-slate-700/60 p-5">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-slate-900 dark:text-white font-bold text-sm">Suggested Creators</h3>
+                  <Users className="w-4 h-4 text-teal-500" />
+                </div>
+                <div className="space-y-4">
+                  {suggestedCreators.map((creator) => (
+                    <div key={creator.handle} className="flex items-center justify-between" data-testid={`row-creator-${creator.handle}`}>
+                      <div className="flex items-center gap-3">
+                        <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${creator.gradient} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}>
+                          {creator.initials}
+                        </div>
+                        <div>
+                          <div className="text-slate-900 dark:text-white text-sm font-semibold">{creator.name}</div>
+                          <div className="text-slate-400 text-xs">{creator.followers} followers</div>
+                        </div>
+                      </div>
+                      <button
+                        className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-teal-50 dark:bg-teal-900/20 text-teal-500 text-xs font-semibold hover:bg-teal-100 dark:hover:bg-teal-900/40 transition-colors"
+                        data-testid={`button-follow-${creator.handle}`}
+                      >
+                        <UserPlus className="w-3 h-3" />
+                        Follow
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* App Info */}
+              <div className="text-xs text-slate-400 dark:text-slate-600 leading-relaxed px-1">
+                MiniCast · Finance · Markets · AI · Startup
+                <br />
+                Short-form audio for the next era of finance content.
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── FLOATING CREATE BUTTON (Mobile) ── */}
+        <button
+          onClick={() => setMinicastShowCreate(true)}
+          className="fixed bottom-24 right-5 xl:hidden w-14 h-14 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-xl shadow-teal-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-30"
+          data-testid="button-minicast-create-mobile"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+
+        {/* ── CREATE POST DIALOG ── */}
+        {minicastShowCreate && (
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => setMinicastShowCreate(false)} />
+            <div className="relative bg-white dark:bg-slate-900 rounded-3xl rounded-b-none sm:rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden" data-testid="dialog-create-post">
+              {/* Dialog Gradient Header */}
+              <div className="h-2 bg-gradient-to-r from-teal-400 via-cyan-500 to-sky-500"></div>
+              <div className="p-6">
+                <div className="flex items-center justify-between mb-6">
+                  <div>
+                    <h2 className="text-slate-900 dark:text-white text-xl font-bold">New MiniCast</h2>
+                    <p className="text-slate-500 dark:text-slate-400 text-sm mt-0.5">Share a short audio post · max 3 min</p>
+                  </div>
+                  <button onClick={() => setMinicastShowCreate(false)} className="w-9 h-9 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors" data-testid="button-close-create">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Category Select */}
+                <div className="mb-4">
+                  <label className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2 block">Category</label>
+                  <div className="flex flex-wrap gap-2">
+                    {["Finance", "AI", "Startup", "Crypto", "Global", "Tech"].map(cat => (
+                      <button
+                        key={cat}
+                        className={`px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                          minicastCategory === cat
+                            ? "bg-teal-500 text-white border-teal-500"
+                            : "bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-teal-400 hover:text-teal-500"
+                        }`}
+                        onClick={() => setMinicastCategory(cat)}
+                        data-testid={`button-create-cat-${cat.toLowerCase()}`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Title */}
+                <div className="mb-4">
+                  <label className="text-slate-700 dark:text-slate-300 text-sm font-medium mb-2 block">Title</label>
+                  <input
+                    type="text"
+                    placeholder="What's your post about?"
+                    className="w-full h-10 px-4 rounded-xl bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm border border-slate-200 dark:border-slate-700 outline-none focus:ring-2 focus:ring-teal-400/50 focus:border-teal-400 transition-all"
+                    data-testid="input-post-title"
+                  />
+                </div>
+
+                {/* Audio Record Area */}
+                <div className="bg-gradient-to-br from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 rounded-2xl p-6 text-center border-2 border-dashed border-teal-200 dark:border-teal-800 mb-5">
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center mx-auto mb-3 shadow-lg shadow-teal-500/30">
+                    <Mic className="w-7 h-7 text-white" />
+                  </div>
+                  <p className="text-slate-700 dark:text-slate-300 font-semibold text-sm mb-1">Tap to Record</p>
+                  <p className="text-slate-400 text-xs">Max duration: 3 minutes · Finance & Markets focus</p>
+                </div>
+
+                {/* Submit */}
+                <button
+                  onClick={() => setMinicastShowCreate(false)}
+                  className="w-full h-12 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl font-semibold text-sm hover:from-teal-600 hover:to-cyan-600 transition-all shadow-lg shadow-teal-500/25 active:scale-95"
+                  data-testid="button-post-minicast"
+                >
+                  Publish MiniCast
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
       </div>
     );
@@ -18488,17 +18137,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         <Button
                           onClick={() => {
                             const userId = localStorage.getItem('currentUserId');
-                            const userEmail = localStorage.getItem('currentUserEmail');
-                            if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
-                              setLocation('/login');
-                              return;
-                            }
-                            const currentEmail = localStorage.getItem("currentUserEmail");
-                            if (currentEmail === "chiranjeevi.perala99@gmail.com") {
-                              setTabWithAuthCheck("tutor");
-                            } else {
-                              setShowComingSoonDialog(true);
-                            }
+                            setTabWithAuthCheck("tutor");
                           }}
                           className="relative w-16 h-16 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-2xl hover:animate-none transition-all duration-300 border-4 border-white/20 pointer-events-auto animate-bounce hover:scale-110"
                         >

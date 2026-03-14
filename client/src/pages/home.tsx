@@ -1604,7 +1604,7 @@ function MicroAnimationsDemoPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="flex items-center justify-center p-6 bg-gray-50 dark:bg-white dark:bg-gray-900 rounded-lg">
+            <div className="flex items-center justify-center p-6 bg-gray-50 dark:bg-gray-900 rounded-lg">
               <PriceChangeAnimation
                 value={demoPrice}
                 previousValue={prevPrice}
@@ -19516,7 +19516,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             )}
 
             {activeTab === "journal" && (
-                <div className="space-y-6 px-0.5 md:px-6 py-0.5 relative pl-[7.7px] pr-[7.7px]">
+                <div className="space-y-4 md:space-y-6 px-3 md:px-6 py-3 md:py-2 relative">
                 {/* Back Button - Mobile Only */}
                 <Button
                   onClick={() => setTabWithAuthCheck("trading-home")}
@@ -19527,11 +19527,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <h2 className="text-2xl font-bold text-foreground">
-                  Trading Journal
+                <div className="flex flex-col gap-0.5">
+                  <h2 className="text-xl md:text-2xl font-bold text-foreground leading-tight">
+                    Trading Journal
+                  </h2>
                   <span className="text-[10px] md:text-xs text-gray-500 font-medium tracking-widest uppercase italic flex items-center gap-1">
-                    Break the Loop, Find Your Edge 
-                    <div className="flex items-center ml-1">
+                    Break the Loop, Find Your Edge
+                    <span className="flex items-center ml-1">
                       <svg 
                         width="24" 
                         height="12" 
@@ -19540,14 +19542,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         xmlns="http://www.w3.org/2000/svg"
                         className="text-purple-500"
                       >
-                        {/* Left loop */}
                         <path 
                           d="M11 5.2C10.2 4 9 3 7.5 3C4.5 3 3 4.5 3 6C3 7.5 4.5 9 7.5 9C10.5 9 12 6 12 6" 
                           stroke="currentColor" 
                           strokeWidth="1.5" 
                           strokeLinecap="round" 
                         />
-                        {/* Right loop with a gap at the top right outer corner */}
                         <path 
                           d="M12 6C12 6 13.5 9 16.5 9C19.5 9 21 7.5 21 6C21 5.6 20.9 5.2 20.7 4.8" 
                           stroke="currentColor" 
@@ -19560,7 +19560,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           strokeWidth="1.5" 
                           strokeLinecap="round" 
                         />
-                        {/* Flying broken piece */}
                         <path 
                           d="M21 2L23 1" 
                           stroke="currentColor" 
@@ -19569,9 +19568,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           className="animate-pulse"
                         />
                       </svg>
-                    </div>
+                    </span>
                   </span>
-                </h2>
+                </div>
                 {/* Main Journal Content - Mobile: Show only in "home" tab | Desktop: Always visible */}
                 <div
                   className={`${mobileBottomTab !== "home" ? "hidden md:block" : "block"}`}
@@ -19583,10 +19582,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* Left Block - Performance Chart */}
                       <div
-                        className={`h-[400px] ${mobileJournalPanel === 0 ? "block" : "hidden"} md:block`}
+                        className={`h-[300px] sm:h-[380px] md:h-[400px] ${mobileJournalPanel === 0 ? "block" : "hidden"} md:block`}
                       >
                         {/* Professional Visual Chart with Fyers Data - Same as Trading Master */}
-                        <div className="h-full relative bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden">
+                        <div className="h-full relative bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-lg overflow-hidden">
                           <div className="h-full flex flex-col">
                             <div className="flex items-center justify-between px-2 py-2">
                               <div className="flex items-center gap-1 md:gap-2 flex-wrap">
@@ -19628,7 +19627,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                           }
                                           value={stockSearchQuery}
                                           onChange={(e) => setStockSearchQuery(e.target.value)}
-                                          className="text-xs flex-1 h-7 bg-white dark:bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-200 dark:border-slate-700"
+                                          className="text-xs flex-1 h-7 bg-white dark:bg-slate-800 border-gray-200 dark:border-slate-700"
                                           data-testid="input-stock-search"
                                         />
                                         <select
@@ -19638,7 +19637,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             setStockSearchQuery('');
                                             setSearchedInstruments([]);
                                           }}
-                                          className="h-7 bg-white dark:bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-gray-200 dark:border-slate-200 dark:border-slate-700 rounded px-2 text-xs font-medium"
+                                          className="h-7 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-gray-200 dark:border-slate-700 rounded px-2 text-xs font-medium"
                                           data-testid="select-journal-type"
                                         >
                                           <option value="STOCK">Stock</option>
@@ -19987,15 +19986,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <ChevronDown className="w-3 h-3 ml-1" />
                                       </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-56 p-2 bg-white dark:bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-200 dark:border-slate-700" align="start">
+                                    <PopoverContent className="w-56 p-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" align="start">
                                       <div className="grid gap-1">
                                         {journalTimeframeOptions.map((tf) => (
                                           <button 
                                             key={tf.value}
                                             className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                                               journalChartTimeframe === tf.value 
-                                                ? 'bg-slate-200 dark:bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-medium' 
-                                                : 'text-slate-900 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-700'
+                                                ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-medium' 
+                                                : 'text-slate-900 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                                             }`}
                                             onClick={() => {
                                               // 🔴 FIX: Update BOTH display AND countdown interval
@@ -20026,15 +20025,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <ChevronDown className="w-3 h-3 ml-1" />
                                       </Button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-56 p-2 bg-white dark:bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-200 dark:border-slate-700" align="start">
+                                    <PopoverContent className="w-56 p-2 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700" align="start">
                                       <div className="grid gap-1">
                                         {journalTimeframeOptions.map((tf) => (
                                           <button 
                                             key={tf.value}
                                             className={`w-full text-left px-2 py-1.5 rounded text-xs transition-colors ${
                                               heatmapChartTimeframe === tf.value 
-                                                ? 'bg-slate-200 dark:bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-medium' 
-                                                : 'text-slate-900 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-100 dark:bg-slate-700'
+                                                ? 'bg-slate-200 dark:bg-slate-700 text-slate-900 dark:text-slate-100 font-medium' 
+                                                : 'text-slate-900 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'
                                             }`}
                                             onClick={() => {
                                               // 🔴 FIX: Update BOTH display AND countdown interval
@@ -20122,7 +20121,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         );
                                       })()}
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-96 p-2" align="start">
+                                    <PopoverContent className="w-[min(24rem,90vw)] p-2" align="start">
                                       <div className="text-xs font-semibold mb-2">Select Date from Heatmap</div>
                                       <div className="grid grid-cols-7 gap-0.5 max-h-64 overflow-y-auto">
                                         {Object.entries(tradingDataByDate)
@@ -20451,7 +20450,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                       {/* Middle Block - Multiple Image Upload */}
                       <div
-                        className={`h-[400px] ${mobileJournalPanel === 1 ? "block" : "hidden"} md:block`}
+                        className={`h-[300px] sm:h-[380px] md:h-[400px] ${mobileJournalPanel === 1 ? "block" : "hidden"} md:block`}
                       >
                         <MultipleImageUpload
                           ref={imageUploadRef}
@@ -20462,7 +20461,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                       {/* Right Block - PERFORMANCE STATS (Split: 30% top, 70% bottom) */}
                       <Card
-                        className={`bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-[400px] flex flex-col ${mobileJournalPanel === 2 ? "block" : "hidden"} md:block`}
+                        className={`bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 h-[300px] sm:h-[380px] md:h-[400px] flex flex-col ${mobileJournalPanel === 2 ? "block" : "hidden"} md:block`}
                       >
                         {/* Top 30% - Performance Insights */}
                         <div className="h-[30%] border-b border-gray-200 dark:border-gray-700">
@@ -21239,7 +21238,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
 
                     {/* Mobile Navigation Arrows - Bottom of panels */}
-                    <div className="md:hidden flex items-center justify-start mt-4 gap-4">
+                    <div className="md:hidden flex items-center justify-between mt-4 gap-3">
                       <Button
                         variant="outline"
                         onClick={() =>
@@ -21247,7 +21246,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             prev === 0 ? 2 : prev - 1,
                           )
                         }
-                        className="flex-1 h-12"
+                        className="flex-1 h-12 rounded-xl"
                         data-testid="button-journal-prev"
                       >
                         <ChevronLeft className="h-5 w-5 mr-2" />
@@ -21259,7 +21258,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               : "Upload"}
                         </span>
                       </Button>
-                      <div className="px-4 py-2 bg-gray-100 dark:bg-gray-800 rounded-md">
+                      <div className="px-3 py-2 bg-gray-100 dark:bg-gray-800 rounded-xl text-center min-w-[80px]">
                         <div className="text-xs text-gray-500 dark:text-gray-400">
                           Current
                         </div>
@@ -21278,7 +21277,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             prev === 2 ? 0 : prev + 1,
                           )
                         }
-                        className="flex-1 h-12"
+                        className="flex-1 h-12 rounded-xl"
                         data-testid="button-journal-next"
                       >
                         <span className="text-sm font-medium">
@@ -21318,7 +21317,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-7 w-7 bg-slate-100 dark:bg-white dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-200 dark:border-slate-600 rounded-full"
+                            className="h-7 w-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-full"
                             onClick={(e) => {
                               e.stopPropagation();
                               setShowJournalInfoModal("manual");
@@ -21384,7 +21383,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                             <div className="max-h-80 overflow-y-auto overflow-x-auto custom-thin-scrollbar">
                               <table className="text-xs w-full" style={{minWidth: "600px"}}>
-                                <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-200 dark:border-slate-700">
+                                <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                                   <tr>
                                     <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[60px]">Time</th>
                                     <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[50px]">Order</th>
@@ -21608,7 +21607,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               variant="ghost"
                               size="icon"
                               onClick={() => setShowJournalInfoModal("manual")}
-                              className="h-7 w-7 bg-slate-100 dark:bg-white dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-100 dark:bg-slate-700 border border-slate-300 dark:border-slate-200 dark:border-slate-600 rounded-full"
+                              className="h-7 w-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-full"
                               data-testid="button-journal-info"
                               title="Journal Information"
                             >
@@ -21624,7 +21623,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                         <div className="max-h-80 overflow-y-auto overflow-x-auto custom-thin-scrollbar">
                           <table className="text-xs" style={{minWidth: "100%"}}>
-                            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-200 dark:border-slate-700">
+                            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                               <tr>
                                 <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[60px]">Time</th>
                                 <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[50px]">Order</th>
@@ -21813,7 +21812,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             <div className="flex items-center gap-2">
                               <Button
                                 variant="outline"
-                                className="flex-1 h-10 bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700 cursor-default"
+                                className="flex-1 h-10 bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 cursor-default"
                                 data-testid="button-zerodha-connected-display"
                               >
                                 <img 
@@ -21843,8 +21842,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               variant="outline"
                               className={`w-full h-10 ${
                                 (upstoxIsConnected || angelOneIsConnected || dhanIsConnected)
-                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'
-                                  : 'bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700'
+                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                  : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                               }`}
                               data-testid="button-zerodha-dialog"
                               disabled={upstoxIsConnected || angelOneIsConnected || dhanIsConnected}
@@ -21861,7 +21860,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             <div className="flex items-center gap-2">
                               <Button
                                 variant="outline"
-                                className="flex-1 h-10 bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700 cursor-default"
+                                className="flex-1 h-10 bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 cursor-default"
                                 data-testid="button-upstox-connected-display"
                               >
                                 <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-4 mr-2" />
@@ -21884,7 +21883,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   variant="outline"
                                   className={`w-full h-10 ${
                                     (zerodhaIsConnected || angelOneIsConnected || dhanIsConnected)
-                                      ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                      ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
                                       : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                                   }`}
                                   data-testid="button-upstox-dialog"
@@ -22056,7 +22055,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             <div className="flex items-center gap-2">
                               <Button
                                 variant="outline"
-                                className="flex-1 h-10 bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700 cursor-default"
+                                className="flex-1 h-10 bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 cursor-default"
                                 data-testid="button-dhan-connected-display"
                               >
                                 <img src="https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701" alt="Dhan" className="h-4 mr-2" />
@@ -22082,8 +22081,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               variant="outline"
                               className={`w-full h-10 ${
                                 (zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected)
-                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'
-                                  : 'bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700'
+                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                  : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                               }`}
                               data-testid="button-dhan-dialog"
                               disabled={zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected}
@@ -22127,8 +22126,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               variant="outline"
                               className={`w-full h-10 ${
                                 (zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected)
-                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'
-                                  : 'bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700 relative'
+                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                  : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative'
                               }`}
                               onClick={() => setIsFyersDialogOpen(true)}
                               disabled={zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected}
@@ -22164,8 +22163,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               variant="outline"
                               className={`w-full h-10 ${
                                 (zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected)
-                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-200 dark:border-slate-700 cursor-not-allowed opacity-50'
-                                  : 'bg-white dark:bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-100 dark:bg-slate-700 border-slate-200 dark:border-slate-200 dark:border-slate-700'
+                                  ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                  : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                               }`}
                               data-testid="button-groww-dialog"
                               disabled={zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected}
@@ -23205,7 +23204,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <MoreVertical className="w-4 h-4" />
                                       </button>
                                     </PopoverTrigger>
-                                    <PopoverContent className="w-56 p-3 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
+                                    <PopoverContent className="w-56 p-3 bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-700 text-slate-900 dark:text-slate-100">
                                       <div className="space-y-2">
                                         <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-start">
                                           <span>Customize Magic Bar</span>
@@ -23478,7 +23477,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                            const min = Math.min(...stats.durations);
                            const max = Math.max(...stats.durations);
                            if (max > min * 5) {
-                             stats.tradingStyle = "Unconsistance Duration";
+                             stats.tradingStyle = "Inconsistent Duration";
                            }
                         }
                       });
@@ -25511,7 +25510,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 </Label>
                 <div className="flex items-center gap-2 mb-2">
                   {activeFormat && detectedFormatLabel && (
-                    <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded font-medium">
+                    <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded font-medium">
                       Format: {detectedFormatLabel}
                     </span>
                   )}
@@ -25523,7 +25522,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   }
                 </p>
 
-                <div className="border border-slate-200 dark:border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900/30 p-3 mb-3">
+                <div className="border border-slate-200 dark:border-slate-700 rounded-md bg-slate-50 dark:bg-slate-900/30 p-3 mb-3">
                   {isBuildMode ? (
                     <div className="space-y-1">
                       <div className="flex items-center justify-between gap-2">
@@ -26510,7 +26509,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
               )}
 
               {parseErrors.length > 0 && (
-                <div className="bg-slate-50 dark:bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-200 dark:border-slate-700 rounded-md p-3 max-h-40 overflow-y-auto custom-thin-scrollbar">
+                <div className="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-md p-3 max-h-40 overflow-y-auto custom-thin-scrollbar">
                   <p className="text-xs font-medium text-slate-700 dark:text-slate-300 mb-2">
                     {parseErrors.length} line(s) could not be parsed
                   </p>
@@ -26537,7 +26536,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 </div>
               )}
 
-              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-200 dark:border-slate-700">
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200 dark:border-slate-700">
                 <Button
                   variant="ghost"
                   size="sm"

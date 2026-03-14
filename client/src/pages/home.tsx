@@ -2607,6 +2607,9 @@ export default function Home() {
   const [minicastReelIndex, setMinicastReelIndex] = useState(0);
   const [minicastShowComments, setMinicastShowComments] = useState(false);
   const [minicastCommentText, setMinicastCommentText] = useState("");
+  const [minicastNavTab, setMinicastNavTab] = useState<"home" | "discover" | "voice" | "profile">("home");
+  const [minicastHomeCardIndex, setMinicastHomeCardIndex] = useState(0);
+  const [minicastDragStartX, setMinicastDragStartX] = useState<number | null>(null);
 
   // Animated greeting stocks state
   const [currentStockIndex, setCurrentStockIndex] = useState(0);
@@ -14031,12 +14034,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         )}
 
         {/* ════════════════════════════════════════
-            MAIN FEED VIEW (grid of mini cards)
+            MAIN FEED — tabs driven by bottom nav
         ════════════════════════════════════════ */}
 
-        {/* ── HEADER ── */}
+        {/* ── STICKY HEADER ── */}
         <div className="sticky top-0 z-30 bg-[#0a0a0f]/90 backdrop-blur-xl border-b border-white/5">
-          <div className="max-w-5xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
+          <div className="px-4 sm:px-6 h-14 flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
               <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
                 <Headphones className="w-4 h-4 text-white" />
@@ -14044,21 +14047,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
               <span className="font-black text-white text-lg tracking-tight">MiniCast</span>
               <span className="text-teal-400 text-xs font-medium px-2 py-0.5 rounded-full bg-teal-400/10 border border-teal-400/20">BETA</span>
             </div>
-            <div className="flex-1 max-w-xs hidden sm:block">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-white/30" />
-                <input
-                  type="text"
-                  placeholder="Search creators, topics..."
-                  className="w-full h-9 pl-9 pr-4 rounded-full bg-white/5 border border-white/10 text-white text-sm placeholder:text-white/25 outline-none focus:ring-1 focus:ring-teal-400/40 transition-all"
-                  data-testid="input-minicast-search"
-                />
-              </div>
-            </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setMinicastShowCreate(true)}
-                className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs font-semibold shadow-lg shadow-teal-500/25 hover:shadow-teal-500/40 hover:scale-105 transition-all"
+                className="flex items-center gap-1.5 h-8 px-3 rounded-full bg-gradient-to-r from-teal-500 to-cyan-500 text-white text-xs font-semibold shadow-lg shadow-teal-500/25 hover:scale-105 transition-all"
                 data-testid="button-create-post-header"
               >
                 <Mic className="w-3.5 h-3.5" />
@@ -14072,228 +14064,483 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           </div>
         </div>
 
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-5">
-
-          {/* ── DISCOVER / FOLLOWING TABS ── */}
-          <div className="flex items-center justify-between mb-5">
-            <div className="flex gap-1 bg-white/5 rounded-full p-1 border border-white/10">
-              <button
-                onClick={() => setMinicastFeedTab("discover")}
-                className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all ${minicastFeedTab === "discover" ? "bg-white/10 text-white shadow-sm" : "text-white/40 hover:text-white/70"}`}
-                data-testid="button-tab-discover"
-              >Discover</button>
-              <button
-                onClick={() => setMinicastFeedTab("following")}
-                className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all ${minicastFeedTab === "following" ? "bg-white/10 text-white shadow-sm" : "text-white/40 hover:text-white/70"}`}
-                data-testid="button-tab-following"
-              >Following</button>
-            </div>
-            <div className="text-white/30 text-xs">{filteredPosts.length} posts</div>
-          </div>
-
-          {/* ── CATEGORY PILLS ── */}
-          <div className="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-none" style={{scrollbarWidth:"none"}}>
-            {minicastCategories.map(cat => (
-              <button
-                key={cat}
-                onClick={() => { setMinicastCategory(cat); setMinicastReelIndex(0); }}
-                className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${
-                  minicastCategory === cat
-                    ? "bg-white text-slate-900 border-white shadow-lg shadow-white/10"
-                    : "bg-white/5 text-white/50 border-white/10 hover:border-white/30 hover:text-white/80"
-                }`}
-                data-testid={`button-category-${cat.toLowerCase()}`}
-              >
-                {cat === "Finance" ? "📈 " : cat === "AI" ? "🤖 " : cat === "Startup" ? "🚀 " : cat === "Crypto" ? "₿ " : cat === "Global" ? "🌍 " : cat === "Tech" ? "💻 " : cat === "Banking" ? "🏦 " : ""}
-                {cat}
-              </button>
-            ))}
-          </div>
-
-          {/* ── TOP STREAMERS ROW ── */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse"></div>
-                <span className="text-white font-bold text-sm tracking-widest uppercase">Top Creators This Week</span>
-              </div>
-              <button className="text-white/40 text-xs hover:text-white/70 transition-colors" data-testid="button-see-all-creators">See all</button>
-            </div>
-            <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none" style={{scrollbarWidth:"none"}}>
-              {filteredPosts.map((post, i) => (
-                <button
-                  key={post.id}
-                  onClick={() => { setMinicastReelIndex(i); setMinicastReelActive(true); setMinicastShowComments(false); }}
-                  className="flex-shrink-0 flex flex-col items-center gap-1.5 group"
-                  data-testid={`button-creator-story-${post.id}`}
-                >
-                  <div className="relative">
-                    <div className="w-14 h-14 rounded-full p-0.5"
-                      style={{background:`linear-gradient(135deg, ${post.bgFrom}, ${post.bgTo})`}}>
-                      <div className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-[#0a0a0f] group-hover:scale-105 transition-transform"
-                        style={{background:`linear-gradient(135deg, ${post.bgFrom}cc, ${post.bgTo}cc)`}}>
-                        {post.initials}
-                      </div>
-                    </div>
-                    <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-teal-400 rounded-full flex items-center justify-center border-2 border-[#0a0a0f]">
-                      <Volume2 className="w-2 h-2 text-white" />
-                    </div>
+        {/* ══════════ HOME TAB — Full-screen swipeable cards ══════════ */}
+        {minicastNavTab === "home" && (() => {
+          const homePost = filteredPosts[minicastHomeCardIndex] || filteredPosts[0];
+          if (!homePost) return null;
+          const isHomePlaying = minicastPlayingId === homePost.id;
+          const isHomeLiked = minicastLikes[homePost.id];
+          const isHomeBookmarked = minicastBookmarks[homePost.id];
+          return (
+            <div className="flex flex-col" style={{height:"calc(100vh - 56px - 64px)", minHeight:0}}>
+              {/* Sub-header: TOP STREAMERS row */}
+              <div className="px-4 pt-3 pb-2">
+                <div className="flex items-center justify-between mb-1">
+                  <div className="flex items-center gap-2">
+                    <Flame className="w-3.5 h-3.5 text-orange-400" />
+                    <span className="text-white/60 text-xs font-bold tracking-widest uppercase">Top Streamers</span>
+                    <span className="text-white/25 text-[10px]">top this week in the category</span>
                   </div>
-                  <span className="text-white/50 text-xs max-w-[56px] truncate">{post.creator}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ── MINI CARD GRID ── */}
-          <div className="mb-4">
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-white font-bold text-sm">
-                {minicastFeedTab === "discover" ? "🔥 Trending Now" : "✨ From People You Follow"}
-              </span>
-              <button
-                onClick={() => { setMinicastReelIndex(0); setMinicastReelActive(true); }}
-                className="flex items-center gap-1.5 text-teal-400 text-xs font-semibold hover:text-teal-300 transition-colors"
-                data-testid="button-enter-reel-mode"
-              >
-                <Play className="w-3.5 h-3.5" />
-                Play All
-              </button>
-            </div>
-          </div>
-
-          {filteredPosts.length === 0 ? (
-            <div className="text-center py-20">
-              <div className="w-16 h-16 rounded-full bg-white/5 flex items-center justify-center mx-auto mb-4">
-                <Headphones className="w-8 h-8 text-white/20" />
-              </div>
-              <p className="text-white/30 text-sm">No posts in this category yet</p>
-            </div>
-          ) : (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-3 gap-3">
-              {filteredPosts.map((post, i) => {
-                const isPlaying = minicastPlayingId === post.id;
-                const isLiked = minicastLikes[post.id];
-                return (
-                  <div
-                    key={post.id}
-                    className="relative rounded-2xl overflow-hidden cursor-pointer group"
-                    style={{
-                      background: `linear-gradient(160deg, ${post.bgFrom}33, ${post.bgTo}55)`,
-                      border: `1px solid ${post.bgFrom}44`,
-                    }}
-                    data-testid={`card-minicast-${post.id}`}
-                  >
-                    {/* Tap to open reel */}
+                  <button className="w-7 h-7 rounded-full bg-white/5 flex items-center justify-center" data-testid="button-home-more">
+                    <MoreVertical className="w-3.5 h-3.5 text-white/40" />
+                  </button>
+                </div>
+                {/* Category tabs */}
+                <div className="flex gap-4 overflow-x-auto scrollbar-none mt-2" style={{scrollbarWidth:"none"}}>
+                  {minicastCategories.map(cat => (
                     <button
-                      className="absolute inset-0 z-10"
-                      onClick={() => { setMinicastReelIndex(i); setMinicastReelActive(true); setMinicastShowComments(false); }}
-                      data-testid={`button-open-reel-${post.id}`}
-                    />
+                      key={cat}
+                      onClick={() => { setMinicastCategory(cat); setMinicastHomeCardIndex(0); }}
+                      className={`flex-shrink-0 text-sm font-semibold pb-1 transition-all border-b-2 ${
+                        minicastCategory === cat
+                          ? "text-white border-white"
+                          : "text-white/35 border-transparent hover:text-white/60"
+                      }`}
+                      data-testid={`button-home-cat-${cat.toLowerCase()}`}
+                    >
+                      {cat}
+                      {cat !== "All" && <span className="text-white/30 text-xs ml-1">{cat === "Finance" ? 10 : cat === "AI" ? 13 : cat === "Startup" ? 16 : cat === "Crypto" ? 8 : cat === "Global" ? 21 : cat === "Tech" ? 11 : cat === "Banking" ? 7 : 0}</span>}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                    <div className="p-4 pb-3">
-                      {/* Top row */}
-                      <div className="flex items-start justify-between mb-3">
-                        {/* Avatar */}
-                        <div className="relative">
-                          <div
-                            className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base shadow-lg"
-                            style={{background:`linear-gradient(135deg, ${post.bgFrom}, ${post.bgTo})`}}
-                          >
-                            {post.initials}
-                          </div>
-                          {post.verified && (
-                            <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-teal-400 flex items-center justify-center border border-[#0a0a0f]">
-                              <Check className="w-2.5 h-2.5 text-white" />
-                            </div>
-                          )}
-                        </div>
-                        {/* Trending badge */}
-                        {post.trending && (
-                          <span className="text-orange-300 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center gap-1">
-                            <Flame className="w-2.5 h-2.5" />
-                            HOT
-                          </span>
+              {/* The main swipeable full-screen card */}
+              <div
+                className="flex-1 px-4 pb-2 relative flex items-center justify-center"
+                onMouseDown={e => setMinicastDragStartX(e.clientX)}
+                onMouseUp={e => {
+                  if (minicastDragStartX !== null) {
+                    const diff = minicastDragStartX - e.clientX;
+                    if (diff > 50 && minicastHomeCardIndex < filteredPosts.length - 1) setMinicastHomeCardIndex(i => i + 1);
+                    if (diff < -50 && minicastHomeCardIndex > 0) setMinicastHomeCardIndex(i => i - 1);
+                    setMinicastDragStartX(null);
+                  }
+                }}
+                onTouchStart={e => setMinicastDragStartX(e.touches[0].clientX)}
+                onTouchEnd={e => {
+                  if (minicastDragStartX !== null) {
+                    const diff = minicastDragStartX - e.changedTouches[0].clientX;
+                    if (diff > 50 && minicastHomeCardIndex < filteredPosts.length - 1) setMinicastHomeCardIndex(i => i + 1);
+                    if (diff < -50 && minicastHomeCardIndex > 0) setMinicastHomeCardIndex(i => i - 1);
+                    setMinicastDragStartX(null);
+                  }
+                }}
+              >
+                {/* Stacked card peek — next card behind */}
+                {filteredPosts[minicastHomeCardIndex + 1] && (
+                  <div
+                    className="absolute rounded-3xl overflow-hidden select-none pointer-events-none"
+                    style={{
+                      width:"calc(100% - 3rem)",
+                      height:"100%",
+                      background:`linear-gradient(160deg, ${filteredPosts[minicastHomeCardIndex + 1].bgFrom}88, ${filteredPosts[minicastHomeCardIndex + 1].bgTo}bb)`,
+                      transform:"translateX(12px) scale(0.93)",
+                      opacity:0.6,
+                      zIndex:1,
+                    }}
+                  />
+                )}
+
+                {/* Main card */}
+                <div
+                  className="relative w-full h-full rounded-3xl overflow-hidden select-none"
+                  style={{
+                    background:`linear-gradient(160deg, ${homePost.bgFrom}22, #0a0a0f 45%, ${homePost.bgTo}44)`,
+                    border:`1px solid ${homePost.bgFrom}55`,
+                    zIndex:2,
+                  }}
+                  data-testid={`card-home-${homePost.id}`}
+                >
+                  {/* Ambient glow */}
+                  <div className="absolute inset-0 pointer-events-none"
+                    style={{background:`radial-gradient(ellipse 70% 60% at 50% 20%, ${homePost.bgFrom}44, transparent)`}} />
+
+                  {/* TOP: LIVE/TRENDING badge + options */}
+                  <div className="absolute top-4 left-4 right-4 flex items-start justify-between z-10">
+                    <div className="flex flex-col gap-2">
+                      {homePost.trending ? (
+                        <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-orange-500/30 border border-orange-500/50 text-orange-300 w-fit">
+                          <div className="w-1.5 h-1.5 bg-orange-400 rounded-full animate-pulse" />
+                          LIVE
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full bg-teal-500/20 border border-teal-500/40 text-teal-300 w-fit">
+                          <Volume2 className="w-3 h-3" />
+                          AUDIO
+                        </span>
+                      )}
+                    </div>
+                    <button className="w-8 h-8 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center" data-testid={`button-home-card-more-${homePost.id}`}>
+                      <MoreVertical className="w-4 h-4 text-white/70" />
+                    </button>
+                  </div>
+
+                  {/* CENTER: Large avatar */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="relative">
+                      <div
+                        className="absolute inset-0 rounded-full blur-3xl opacity-30 scale-150"
+                        style={{background:`radial-gradient(circle, ${homePost.bgFrom}, ${homePost.bgTo})`}}
+                      />
+                      <div
+                        className="relative w-40 h-40 rounded-full flex items-center justify-center text-white text-5xl font-black shadow-2xl border-4 border-white/15"
+                        style={{background:`linear-gradient(135deg, ${homePost.bgFrom}, ${homePost.bgTo})`}}
+                      >
+                        {homePost.initials}
+                        {isHomePlaying && (
+                          <>
+                            <div className="absolute inset-0 rounded-full border-4 border-white/20 animate-ping" />
+                            <div className="absolute -inset-4 rounded-full border border-white/10 animate-pulse" />
+                          </>
                         )}
                       </div>
+                    </div>
+                  </div>
 
-                      {/* Creator name */}
-                      <div className="text-white font-bold text-sm mb-0.5 leading-tight">{post.creator}</div>
-                      <div className="text-white/40 text-xs mb-3">{post.handle}</div>
+                  {/* RIGHT: Action buttons */}
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 flex flex-col gap-4 items-center z-10">
+                    <button
+                      onClick={() => setMinicastLikes(prev => ({...prev, [homePost.id]: !prev[homePost.id]}))}
+                      className={`w-11 h-11 rounded-full flex items-center justify-center transition-all ${isHomeLiked ? "bg-rose-500 shadow-lg shadow-rose-500/40" : "bg-black/30 backdrop-blur-sm"}`}
+                      data-testid={`button-home-like-${homePost.id}`}
+                    >
+                      <Heart className={`w-5 h-5 text-white ${isHomeLiked ? "fill-white" : ""}`} />
+                    </button>
+                    <button
+                      onClick={() => { setMinicastReelIndex(minicastHomeCardIndex); setMinicastReelActive(true); setMinicastShowComments(true); }}
+                      className="w-11 h-11 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center"
+                      data-testid={`button-home-comment-${homePost.id}`}
+                    >
+                      <X className="w-5 h-5 text-white" />
+                    </button>
+                  </div>
 
-                      {/* Title */}
-                      <p className="text-white/70 text-xs leading-relaxed line-clamp-2 mb-3">{post.title}</p>
+                  {/* BOTTOM: Creator info + waveform + stats */}
+                  <div className="absolute bottom-0 left-0 right-0 p-5 z-10"
+                    style={{background:`linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0.6) 60%, transparent 100%)`}}>
 
-                      {/* Mini waveform */}
-                      <div className="flex items-end gap-0.5 h-8 mb-3">
-                        {post.waveHeights.slice(0, 18).map((h, wi) => (
-                          <div
-                            key={wi}
-                            className="flex-1 rounded-full"
+                    {/* Creator row */}
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                        style={{background:`linear-gradient(135deg, ${homePost.bgFrom}, ${homePost.bgTo})`}}>
+                        {homePost.initials}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-white font-bold text-sm">{homePost.handle}</span>
+                          {homePost.verified && <div className="w-3.5 h-3.5 rounded-full bg-teal-400 flex items-center justify-center"><Check className="w-2 h-2 text-white" /></div>}
+                        </div>
+                        <span className="text-white/50 text-xs">{homePost.title}</span>
+                      </div>
+                    </div>
+
+                    {/* Title */}
+                    <h2 className="text-white font-black text-2xl mb-1 leading-tight">{homePost.creator}</h2>
+                    <p className="text-white/60 text-sm mb-3 line-clamp-1">{homePost.desc}</p>
+
+                    {/* Waveform + play */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <button
+                        onClick={() => setMinicastPlayingId(isHomePlaying ? null : homePost.id)}
+                        className="w-11 h-11 rounded-full flex items-center justify-center text-white shadow-xl flex-shrink-0"
+                        style={{background:`linear-gradient(135deg, ${homePost.bgFrom}, ${homePost.bgTo})`}}
+                        data-testid={`button-home-play-${homePost.id}`}
+                      >
+                        {isHomePlaying ? <Pause className="w-5 h-5" /> : <Play className="w-5 h-5 ml-0.5" />}
+                      </button>
+                      <div className="flex-1 flex items-end gap-0.5 h-10">
+                        {homePost.waveHeights.map((h, wi) => (
+                          <div key={wi} className="flex-1 rounded-full transition-all"
                             style={{
-                              height: `${Math.max(h * 0.4, 15)}%`,
-                              background: `rgba(255,255,255,0.2)`,
+                              height: isHomePlaying ? `${h}%` : `${Math.max(h*0.35, 10)}%`,
+                              background: isHomePlaying && wi < 10
+                                ? `linear-gradient(to top, ${homePost.bgFrom}, ${homePost.bgTo})`
+                                : `rgba(255,255,255,0.2)`,
                             }}
                           />
                         ))}
                       </div>
-
-                      {/* Bottom row */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-white/40 text-[11px]">
-                          <span className="flex items-center gap-1">
-                            <Users className="w-3 h-3" />
-                            {post.listeners}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Heart className={`w-3 h-3 ${isLiked ? "text-rose-400 fill-rose-400" : ""}`} />
-                            {isLiked ? post.likes + 1 : post.likes}
-                          </span>
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-white/40 text-[10px] font-medium">{post.duration}</span>
-                          <div
-                            className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-md relative z-20"
-                            style={{background:`linear-gradient(135deg, ${post.bgFrom}, ${post.bgTo})`}}
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setMinicastPlayingId(isPlaying ? null : post.id);
-                            }}
-                            data-testid={`button-card-play-${post.id}`}
-                          >
-                            {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
-                          </div>
-                        </div>
-                      </div>
+                      <span className="text-white/50 text-xs flex-shrink-0">{homePost.duration}</span>
                     </div>
 
-                    {/* Category ribbon at bottom */}
-                    <div
-                      className="h-0.5 w-full"
-                      style={{background:`linear-gradient(to right, ${post.bgFrom}, ${post.bgTo})`}}
-                    />
-
-                    {/* Hover overlay hint */}
-                    <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-all rounded-2xl pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100">
-                      <div className="w-12 h-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
-                        <Play className="w-5 h-5 text-white ml-0.5" />
+                    {/* Stats */}
+                    <div className="flex items-center gap-5">
+                      <div className="flex items-center gap-1.5 text-white/60 text-sm">
+                        <Users className="w-4 h-4" />
+                        <span className="font-semibold text-white">{homePost.listeners}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-white/60 text-sm">
+                        <Headphones className="w-4 h-4" />
+                        <span className="font-semibold text-white">{homePost.likes}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-white/60 text-sm">
+                        <Heart className="w-4 h-4" />
+                        <span className="font-semibold text-white">{isHomeLiked ? homePost.likes + 1 : homePost.likes}</span>
                       </div>
                     </div>
                   </div>
-                );
-              })}
-            </div>
-          )}
-        </div>
+                </div>
+              </div>
 
-        {/* ── FLOATING CREATE BUTTON ── */}
-        <button
-          onClick={() => setMinicastShowCreate(true)}
-          className="fixed bottom-24 right-5 w-14 h-14 rounded-full bg-gradient-to-br from-teal-500 to-cyan-500 text-white shadow-xl shadow-teal-500/40 flex items-center justify-center hover:scale-110 active:scale-95 transition-transform z-30"
-          data-testid="button-minicast-create-mobile"
-        >
-          <Plus className="w-6 h-6" />
-        </button>
+              {/* Card pagination dots */}
+              <div className="flex justify-center gap-1.5 pb-2">
+                {filteredPosts.map((_, i) => (
+                  <div
+                    key={i}
+                    onClick={() => setMinicastHomeCardIndex(i)}
+                    className={`rounded-full cursor-pointer transition-all ${i === minicastHomeCardIndex ? "w-5 h-1.5 bg-white" : "w-1.5 h-1.5 bg-white/25"}`}
+                  />
+                ))}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* ══════════ DISCOVER TAB — grid of mini cards ══════════ */}
+        {minicastNavTab === "discover" && (
+          <div className="px-4 sm:px-6 py-4 pb-24">
+            {/* Discover/Following tabs */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex gap-1 bg-white/5 rounded-full p-1 border border-white/10">
+                <button onClick={() => setMinicastFeedTab("discover")} className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all ${minicastFeedTab === "discover" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"}`} data-testid="button-tab-discover">Discover</button>
+                <button onClick={() => setMinicastFeedTab("following")} className={`px-5 py-1.5 rounded-full text-sm font-semibold transition-all ${minicastFeedTab === "following" ? "bg-white/10 text-white" : "text-white/40 hover:text-white/70"}`} data-testid="button-tab-following">Following</button>
+              </div>
+              <div className="text-white/30 text-xs">{filteredPosts.length} posts</div>
+            </div>
+            {/* Category pills */}
+            <div className="flex gap-2 overflow-x-auto pb-2 mb-5 scrollbar-none" style={{scrollbarWidth:"none"}}>
+              {minicastCategories.map(cat => (
+                <button key={cat} onClick={() => { setMinicastCategory(cat); setMinicastReelIndex(0); }}
+                  className={`flex-shrink-0 px-4 py-1.5 rounded-full text-sm font-medium transition-all border ${minicastCategory === cat ? "bg-white text-slate-900 border-white" : "bg-white/5 text-white/50 border-white/10 hover:border-white/30 hover:text-white/80"}`}
+                  data-testid={`button-category-${cat.toLowerCase()}`}>
+                  {cat === "Finance" ? "📈 " : cat === "AI" ? "🤖 " : cat === "Startup" ? "🚀 " : cat === "Crypto" ? "₿ " : cat === "Global" ? "🌍 " : cat === "Tech" ? "💻 " : cat === "Banking" ? "🏦 " : ""}
+                  {cat}
+                </button>
+              ))}
+            </div>
+            {/* Creator story row */}
+            <div className="mb-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-teal-400 rounded-full animate-pulse" />
+                  <span className="text-white font-bold text-xs tracking-widest uppercase">Top Creators</span>
+                </div>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-none" style={{scrollbarWidth:"none"}}>
+                {filteredPosts.map((post, i) => (
+                  <button key={post.id} onClick={() => { setMinicastReelIndex(i); setMinicastReelActive(true); setMinicastShowComments(false); }}
+                    className="flex-shrink-0 flex flex-col items-center gap-1.5 group" data-testid={`button-creator-story-${post.id}`}>
+                    <div className="relative">
+                      <div className="w-14 h-14 rounded-full p-0.5" style={{background:`linear-gradient(135deg, ${post.bgFrom}, ${post.bgTo})`}}>
+                        <div className="w-full h-full rounded-full flex items-center justify-center text-white font-bold text-sm border-2 border-[#0a0a0f] group-hover:scale-105 transition-transform"
+                          style={{background:`linear-gradient(135deg, ${post.bgFrom}cc, ${post.bgTo}cc)`}}>
+                          {post.initials}
+                        </div>
+                      </div>
+                      <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 bg-teal-400 rounded-full flex items-center justify-center border-2 border-[#0a0a0f]">
+                        <Volume2 className="w-2 h-2 text-white" />
+                      </div>
+                    </div>
+                    <span className="text-white/50 text-xs max-w-[56px] truncate">{post.creator}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            {/* Grid */}
+            <div className="flex items-center justify-between mb-3">
+              <span className="text-white font-bold text-sm">🔥 Trending Now</span>
+              <button onClick={() => { setMinicastReelIndex(0); setMinicastReelActive(true); }}
+                className="flex items-center gap-1.5 text-teal-400 text-xs font-semibold" data-testid="button-enter-reel-mode">
+                <Play className="w-3.5 h-3.5" /> Play All
+              </button>
+            </div>
+            {filteredPosts.length === 0 ? (
+              <div className="text-center py-20"><Headphones className="w-8 h-8 text-white/20 mx-auto mb-3" /><p className="text-white/30 text-sm">No posts yet</p></div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {filteredPosts.map((post, i) => {
+                  const isPlaying = minicastPlayingId === post.id;
+                  const isLiked = minicastLikes[post.id];
+                  return (
+                    <div key={post.id} className="relative rounded-2xl overflow-hidden cursor-pointer group"
+                      style={{background:`linear-gradient(160deg, ${post.bgFrom}33, ${post.bgTo}55)`, border:`1px solid ${post.bgFrom}44`}}
+                      data-testid={`card-minicast-${post.id}`}>
+                      <button className="absolute inset-0 z-10"
+                        onClick={() => { setMinicastReelIndex(i); setMinicastReelActive(true); setMinicastShowComments(false); }}
+                        data-testid={`button-open-reel-${post.id}`} />
+                      <div className="p-4 pb-3">
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="relative">
+                            <div className="w-12 h-12 rounded-full flex items-center justify-center text-white font-bold text-base shadow-lg"
+                              style={{background:`linear-gradient(135deg, ${post.bgFrom}, ${post.bgTo})`}}>
+                              {post.initials}
+                            </div>
+                            {post.verified && (
+                              <div className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-teal-400 flex items-center justify-center border border-[#0a0a0f]">
+                                <Check className="w-2.5 h-2.5 text-white" />
+                              </div>
+                            )}
+                          </div>
+                          {post.trending && (
+                            <span className="text-orange-300 text-[10px] font-semibold px-2 py-0.5 rounded-full bg-orange-500/20 border border-orange-500/30 flex items-center gap-1">
+                              <Flame className="w-2.5 h-2.5" />HOT
+                            </span>
+                          )}
+                        </div>
+                        <div className="text-white font-bold text-sm mb-0.5">{post.creator}</div>
+                        <div className="text-white/40 text-xs mb-2">{post.handle}</div>
+                        <p className="text-white/70 text-xs leading-relaxed line-clamp-2 mb-3">{post.title}</p>
+                        <div className="flex items-end gap-0.5 h-8 mb-3">
+                          {post.waveHeights.slice(0, 18).map((h, wi) => (
+                            <div key={wi} className="flex-1 rounded-full" style={{height:`${Math.max(h*0.4,15)}%`, background:`rgba(255,255,255,0.2)`}} />
+                          ))}
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2 text-white/40 text-[11px]">
+                            <span className="flex items-center gap-1"><Users className="w-3 h-3" />{post.listeners}</span>
+                            <span className="flex items-center gap-1"><Heart className={`w-3 h-3 ${isLiked ? "text-rose-400 fill-rose-400" : ""}`} />{isLiked ? post.likes + 1 : post.likes}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-white/40 text-[10px]">{post.duration}</span>
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-white shadow-md relative z-20"
+                              style={{background:`linear-gradient(135deg, ${post.bgFrom}, ${post.bgTo})`}}
+                              onClick={e => { e.stopPropagation(); setMinicastPlayingId(isPlaying ? null : post.id); }}
+                              data-testid={`button-card-play-${post.id}`}>
+                              {isPlaying ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5 ml-0.5" />}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="h-0.5 w-full" style={{background:`linear-gradient(to right, ${post.bgFrom}, ${post.bgTo})`}} />
+                      <div className="absolute inset-0 bg-white/0 group-hover:bg-white/5 transition-all rounded-2xl pointer-events-none flex items-center justify-center opacity-0 group-hover:opacity-100">
+                        <div className="w-12 h-12 rounded-full bg-black/30 backdrop-blur-sm flex items-center justify-center">
+                          <Play className="w-5 h-5 text-white ml-0.5" />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══════════ VOICE TAB ══════════ */}
+        {minicastNavTab === "voice" && (
+          <div className="flex flex-col items-center justify-center" style={{height:"calc(100vh - 56px - 64px)"}}>
+            <div className="text-center px-8">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-teal-500/40">
+                <Mic className="w-10 h-10 text-white" />
+              </div>
+              <h2 className="text-white font-black text-2xl mb-2">Share Your Voice</h2>
+              <p className="text-white/50 text-sm mb-8 leading-relaxed">Record a short audio post about finance, markets, AI, startups, or anything relevant to the community.</p>
+              <button
+                onClick={() => setMinicastShowCreate(true)}
+                className="w-full h-14 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-2xl font-bold text-base shadow-xl shadow-teal-500/30 hover:from-teal-600 hover:to-cyan-600 transition-all active:scale-95 flex items-center justify-center gap-3"
+                data-testid="button-start-recording"
+              >
+                <Mic className="w-5 h-5" />
+                Start Recording
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* ══════════ PROFILE TAB ══════════ */}
+        {minicastNavTab === "profile" && (
+          <div className="px-4 py-6 pb-24">
+            <div className="flex flex-col items-center mb-6">
+              <div className="w-24 h-24 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center text-white text-3xl font-black mb-3 shadow-xl shadow-teal-500/30">ME</div>
+              <div className="text-white font-black text-xl">Your Profile</div>
+              <div className="text-white/40 text-sm">@youhandle · Finance Creator</div>
+              <div className="flex gap-6 mt-4">
+                <div className="text-center"><div className="text-white font-black text-lg">0</div><div className="text-white/40 text-xs">Posts</div></div>
+                <div className="text-center"><div className="text-white font-black text-lg">0</div><div className="text-white/40 text-xs">Followers</div></div>
+                <div className="text-center"><div className="text-white font-black text-lg">0</div><div className="text-white/40 text-xs">Following</div></div>
+              </div>
+            </div>
+            <button
+              onClick={() => setMinicastShowCreate(true)}
+              className="w-full h-12 bg-gradient-to-r from-teal-500 to-cyan-500 text-white rounded-xl font-bold text-sm flex items-center justify-center gap-2 mb-3"
+              data-testid="button-profile-record"
+            >
+              <Mic className="w-4 h-4" /> Record Your First MiniCast
+            </button>
+            <div className="text-center py-12">
+              <Headphones className="w-8 h-8 text-white/15 mx-auto mb-3" />
+              <p className="text-white/30 text-sm">No posts yet. Start sharing your voice!</p>
+            </div>
+          </div>
+        )}
+
+        {/* ── FLOATING BOTTOM NAV ── */}
+        <div className="fixed bottom-0 inset-x-0 z-40 flex items-center justify-around px-2"
+          style={{
+            height:64,
+            background:"rgba(10,10,15,0.95)",
+            backdropFilter:"blur(20px)",
+            borderTop:"1px solid rgba(255,255,255,0.07)",
+          }}>
+          <button
+            onClick={() => setMinicastNavTab("home")}
+            className={`flex flex-col items-center gap-1 px-5 py-2 rounded-2xl transition-all ${minicastNavTab === "home" ? "text-white" : "text-white/35 hover:text-white/60"}`}
+            data-testid="button-nav-home"
+          >
+            <div className={`w-6 h-6 flex items-center justify-center transition-all ${minicastNavTab === "home" ? "scale-110" : ""}`}>
+              <svg viewBox="0 0 24 24" fill={minicastNavTab === "home" ? "white" : "none"} stroke={minicastNavTab === "home" ? "white" : "rgba(255,255,255,0.4)"} strokeWidth="2" className="w-5 h-5">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H4a1 1 0 01-1-1V9.5z" />
+                <path d="M9 21V12h6v9" />
+              </svg>
+            </div>
+            <span className="text-[10px] font-semibold">Home</span>
+          </button>
+
+          <button
+            onClick={() => setMinicastNavTab("discover")}
+            className={`flex flex-col items-center gap-1 px-5 py-2 rounded-2xl transition-all ${minicastNavTab === "discover" ? "text-white" : "text-white/35 hover:text-white/60"}`}
+            data-testid="button-nav-discover"
+          >
+            <div className={`w-6 h-6 flex items-center justify-center transition-all ${minicastNavTab === "discover" ? "scale-110" : ""}`}>
+              <Globe className={`w-5 h-5 ${minicastNavTab === "discover" ? "text-teal-400" : ""}`} />
+            </div>
+            <span className="text-[10px] font-semibold">Discover</span>
+          </button>
+
+          {/* Center Record button */}
+          <button
+            onClick={() => { setMinicastNavTab("voice"); setMinicastShowCreate(true); }}
+            className="flex flex-col items-center gap-1 -mt-6"
+            data-testid="button-nav-voice"
+          >
+            <div className="w-14 h-14 rounded-full bg-gradient-to-br from-teal-400 to-cyan-500 flex items-center justify-center shadow-xl shadow-teal-500/40 hover:scale-105 active:scale-95 transition-transform border-4 border-[#0a0a0f]">
+              <Mic className="w-6 h-6 text-white" />
+            </div>
+            <span className="text-[10px] font-semibold text-white/35">Record</span>
+          </button>
+
+          <button
+            onClick={() => setMinicastNavTab("discover")}
+            className={`flex flex-col items-center gap-1 px-5 py-2 rounded-2xl transition-all text-white/35 hover:text-white/60`}
+            data-testid="button-nav-search"
+          >
+            <div className="w-6 h-6 flex items-center justify-center">
+              <Search className="w-5 h-5" />
+            </div>
+            <span className="text-[10px] font-semibold">Search</span>
+          </button>
+
+          <button
+            onClick={() => setMinicastNavTab("profile")}
+            className={`flex flex-col items-center gap-1 px-5 py-2 rounded-2xl transition-all ${minicastNavTab === "profile" ? "text-white" : "text-white/35 hover:text-white/60"}`}
+            data-testid="button-nav-profile"
+          >
+            <div className={`w-6 h-6 flex items-center justify-center transition-all ${minicastNavTab === "profile" ? "scale-110" : ""}`}>
+              <div className={`w-5 h-5 rounded-full flex items-center justify-center text-[9px] font-black text-white ${minicastNavTab === "profile" ? "bg-gradient-to-br from-teal-400 to-cyan-500" : "bg-white/20"}`}>ME</div>
+            </div>
+            <span className="text-[10px] font-semibold">Profile</span>
+          </button>
+        </div>
 
         {/* ── CREATE POST DIALOG ── */}
         {minicastShowCreate && (

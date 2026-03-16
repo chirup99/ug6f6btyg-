@@ -16311,16 +16311,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                               <span className="text-[11px] text-gray-600 flex-1 line-clamp-1">{s.keyTheme}</span>
                                                               <span className="shrink-0 flex items-center">
                                                                 {s.investmentSignal === 'BUY' ? (
-                                                                  <svg width="20" height="14" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500">
-                                                                    <path d="M1 13 C1 11 2 10 3 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-                                                                    <path d="M3 10 C4 8 6 7 7 6 C7 5 8 4 9 3 L11 2 C11.5 1.5 12.5 1.5 12 2.5 L13 3 C14 3 15 4 16 4 C18 4 21 5 24 7 C27 9 28 11 27 14 C26 16 24 17 22 17 L21 19 L19 19 L19 17 L16 17 L16 19 L14 19 L14 17 L11 17 L11 19 L9 19 L8 17 L6 17 L5 16 L4 15 L3 14 Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                                                                    <path d="M28 14 C29 13 30 11 29 10 C28.5 9 28 9 27 9" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
+                                                                  <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500">
+                                                                    <path d="M2 10 C2 10 1 8 2 6 C2 6 1 4 3 3 C3 3 2.5 1.5 4 1.5 C4 1.5 4.5 0.5 6 1 L10 1 C11.5 0.5 12 1.5 12 1.5 C13.5 1.5 13 3 13 3 C15 4 14 6 14 6 C15 8 14 10 14 10 L13 12 C13 12 12 13 10 13 L6 13 C4 13 3 12 3 12 Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" fill="none"/>
+                                                                    <path d="M2 6 C1 5 0.5 3.5 1.5 3 C2 2.5 3 3 3 3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" fill="none"/>
+                                                                    <path d="M14 6 C15 5 15.5 3.5 14.5 3 C14 2.5 13 3 13 3" stroke="currentColor" strokeWidth="1" strokeLinecap="round" fill="none"/>
+                                                                    <circle cx="5.5" cy="6" r="0.8" fill="currentColor"/>
+                                                                    <circle cx="10.5" cy="6" r="0.8" fill="currentColor"/>
+                                                                    <path d="M6.5 9 C7 9.5 9 9.5 9.5 9" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" fill="none"/>
                                                                   </svg>
                                                                 ) : s.investmentSignal === 'SELL' ? (
-                                                                  <svg width="20" height="14" viewBox="0 0 32 20" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-red-500">
-                                                                    <path d="M1 13 C1 11 2 10 3 10" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round"/>
-                                                                    <path d="M3 10 C4 9 5 9 6 9 C6 8 7 7 9 6 C11 5.5 14 5.5 18 6 C22 7 26 8.5 28 10 C30 12 29 14 27 15 C25 16 23 16 22 16 L21 18 L19 18 L19 16 L16 16 L16 18 L14 18 L14 16 L11 16 L11 18 L9 18 L9 16 L7 16 L6 15 L4 14 L3 13 Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                                                                    <path d="M25 6 C26 4 28 4 28 5.5 C28 7 26 7.5 25 6 Z" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                                                                  <svg width="16" height="14" viewBox="0 0 16 14" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-red-500">
+                                                                    <path d="M3 5 C3 5 3 2.5 5 2 L5 1 C5 0.5 5.5 0.5 6 1 L6 1.5 C6.7 1.2 7.3 1 8 1 C8.7 1 9.3 1.2 10 1.5 L10 1 C10.5 0.5 11 0.5 11 1 L11 2 C13 2.5 13 5 13 5 L14 7 C14 9 12.5 10.5 11 11 L11 12.5 C11 13 10 13 10 12.5 L10 11.5 C9.4 11.7 8.7 11.8 8 11.8 C7.3 11.8 6.6 11.7 6 11.5 L6 12.5 C6 13 5 13 5 12.5 L5 11 C3.5 10.5 2 9 2 7 Z" stroke="currentColor" strokeWidth="1" strokeLinejoin="round" fill="none"/>
+                                                                    <circle cx="6" cy="6" r="0.8" fill="currentColor"/>
+                                                                    <circle cx="10" cy="6" r="0.8" fill="currentColor"/>
+                                                                    <path d="M6.5 8.5 C7 8 9 8 9.5 8.5" stroke="currentColor" strokeWidth="0.9" strokeLinecap="round" fill="none"/>
                                                                   </svg>
                                                                 ) : (
                                                                   <span className="text-[9px] font-semibold text-yellow-600 tracking-wide">watch</span>

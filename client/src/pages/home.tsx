@@ -16262,54 +16262,55 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                                             {/* AI Analysis Panel */}
                                             {(isAllMode || isNifty50Mode) && showNewsAiPanel && (
-                                              <div className="mb-4 rounded-xl border border-violet-500/30 bg-gradient-to-b from-violet-950/40 to-gray-900/60 overflow-hidden">
-                                                <div className="flex items-center justify-between px-4 py-3 border-b border-violet-500/20">
+                                              <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+                                                {/* Header */}
+                                                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800">
                                                   <div className="flex items-center gap-2">
-                                                    <Brain className="h-4 w-4 text-violet-400" />
-                                                    <span className="text-sm font-semibold text-violet-300">AI Market Intelligence</span>
-                                                    {newsAiAnalysis && <span className="text-xs text-gray-500">· {newsAiAnalysis.totalArticles} articles analysed</span>}
+                                                    <Brain className="h-3.5 w-3.5 text-gray-400" />
+                                                    <span className="text-xs font-medium text-gray-300">AI Market Intelligence</span>
+                                                    {newsAiAnalysis && <span className="text-[11px] text-gray-600">· {newsAiAnalysis.totalArticles} articles</span>}
                                                   </div>
-                                                  <button onClick={() => setShowNewsAiPanel(false)} className="text-gray-500 hover:text-gray-300 text-xs">✕</button>
+                                                  <button onClick={() => setShowNewsAiPanel(false)} className="text-gray-600 hover:text-gray-400 transition-colors p-0.5 rounded">
+                                                    <X className="h-3.5 w-3.5" />
+                                                  </button>
                                                 </div>
+
                                                 {isNewsAiAnalysisLoading ? (
-                                                  <div className="flex items-center justify-center py-10 gap-3">
-                                                    <Loader2 className="h-5 w-5 animate-spin text-violet-400" />
-                                                    <span className="text-sm text-gray-400">Analysing {rawNewsItems.length} articles across all sectors…</span>
+                                                  <div className="flex items-center justify-center py-8 gap-2.5">
+                                                    <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                                                    <span className="text-xs text-gray-500">Analysing {rawNewsItems.length} articles…</span>
                                                   </div>
                                                 ) : newsAiAnalysisError ? (
-                                                  <div className="flex flex-col items-center justify-center py-8 gap-2 px-4">
-                                                    <span className="text-2xl">⚠️</span>
-                                                    <p className="text-sm text-red-400 text-center">{newsAiAnalysisError}</p>
-                                                    <button onClick={handleAiAnalysis} className="mt-2 text-xs text-violet-400 hover:text-violet-300 underline">Try again</button>
+                                                  <div className="flex flex-col items-center justify-center py-7 gap-2 px-4">
+                                                    <p className="text-xs text-red-400 text-center">{newsAiAnalysisError}</p>
+                                                    <button onClick={handleAiAnalysis} className="text-xs text-gray-500 hover:text-gray-300 underline underline-offset-2 transition-colors">Try again</button>
                                                   </div>
                                                 ) : newsAiAnalysis ? (
-                                                  <div className="p-4 space-y-4">
+                                                  <div className="divide-y divide-gray-800/70">
+
                                                     {/* Overall Sentiment */}
-                                                    <div className="flex items-center gap-3">
-                                                      <div className={`px-3 py-1.5 rounded-lg text-sm font-bold tracking-wide ${newsAiAnalysis.overallSentiment === 'BULLISH' ? 'bg-green-500/20 text-green-400' : newsAiAnalysis.overallSentiment === 'BEARISH' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                                                    <div className="px-4 py-3 flex items-center gap-3">
+                                                      <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md tabular-nums ${newsAiAnalysis.overallSentiment === 'BULLISH' ? 'bg-green-500/10 text-green-400' : newsAiAnalysis.overallSentiment === 'BEARISH' ? 'bg-red-500/10 text-red-400' : 'bg-yellow-500/10 text-yellow-400'}`}>
                                                         {newsAiAnalysis.overallSentiment === 'BULLISH' ? '▲' : newsAiAnalysis.overallSentiment === 'BEARISH' ? '▼' : '●'} {newsAiAnalysis.overallSentiment}
-                                                      </div>
-                                                      <p className="text-sm text-gray-300 flex-1">{newsAiAnalysis.marketMood}</p>
+                                                      </span>
+                                                      <p className="text-xs text-gray-400 flex-1 leading-relaxed">{newsAiAnalysis.marketMood}</p>
                                                     </div>
 
                                                     {/* Trending Sectors */}
                                                     {newsAiAnalysis.trendingSectors?.length > 0 && (
-                                                      <div>
-                                                        <div className="flex items-center gap-1.5 mb-2">
-                                                          <TrendingUp className="h-3.5 w-3.5 text-violet-400" />
-                                                          <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Trending Sectors</span>
-                                                        </div>
-                                                        <div className="grid grid-cols-1 gap-2">
+                                                      <div className="px-4 py-3">
+                                                        <p className="text-[10px] font-medium text-gray-600 uppercase tracking-widest mb-2">Sectors</p>
+                                                        <div className="space-y-1">
                                                           {newsAiAnalysis.trendingSectors.map((s: any, i: number) => (
-                                                            <div key={i} className="flex items-center gap-3 bg-gray-800/50 rounded-lg px-3 py-2 border border-gray-700/50">
-                                                              <span className="text-gray-500 text-xs font-mono w-4">#{s.rank || i+1}</span>
-                                                              <span className="text-sm font-medium text-gray-200 w-24 shrink-0">{s.sector}</span>
-                                                              <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${s.sentiment === 'positive' ? 'bg-green-500/20 text-green-400' : s.sentiment === 'negative' ? 'bg-red-500/20 text-red-400' : 'bg-yellow-500/20 text-yellow-400'}`}>
+                                                            <div key={i} className="flex items-center gap-2.5 py-1">
+                                                              <span className="text-[10px] text-gray-700 font-mono w-4 shrink-0">{s.rank || i+1}</span>
+                                                              <span className="text-xs text-gray-300 w-20 shrink-0">{s.sector}</span>
+                                                              <span className={`text-[10px] font-medium shrink-0 ${s.sentiment === 'positive' ? 'text-green-500' : s.sentiment === 'negative' ? 'text-red-500' : 'text-yellow-500'}`}>
                                                                 {s.sentiment === 'positive' ? '▲' : s.sentiment === 'negative' ? '▼' : '●'}
                                                               </span>
-                                                              <span className="text-xs text-gray-400 flex-1 line-clamp-1">{s.keyTheme}</span>
-                                                              <span className={`text-sm px-1.5 py-0.5 rounded shrink-0 ${s.investmentSignal === 'BUY' ? 'bg-green-500/20' : s.investmentSignal === 'SELL' ? 'bg-red-500/20' : 'bg-yellow-500/20'}`} title={s.investmentSignal}>
-                                                                {s.investmentSignal === 'BUY' ? '🐂' : s.investmentSignal === 'SELL' ? '🐻' : <span className="text-[9px] font-semibold text-yellow-400 tracking-wide">watch</span>}
+                                                              <span className="text-[11px] text-gray-600 flex-1 line-clamp-1">{s.keyTheme}</span>
+                                                              <span className={`text-[10px] font-semibold shrink-0 ${s.investmentSignal === 'BUY' ? 'text-green-500' : s.investmentSignal === 'SELL' ? 'text-red-500' : 'text-yellow-600'}`}>
+                                                                {s.investmentSignal}
                                                               </span>
                                                             </div>
                                                           ))}
@@ -16317,65 +16318,50 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                       </div>
                                                     )}
 
-                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                                                      {/* Key Events */}
-                                                      {newsAiAnalysis.keyEvents?.length > 0 && (
-                                                        <div>
-                                                          <div className="flex items-center gap-1.5 mb-2">
-                                                            <Zap className="h-3.5 w-3.5 text-yellow-400" />
-                                                            <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Key Events</span>
-                                                          </div>
-                                                          <div className="space-y-1.5">
-                                                            {newsAiAnalysis.keyEvents.slice(0, 4).map((e: any, i: number) => (
-                                                              <div key={i} className="bg-gray-800/50 rounded-lg px-3 py-2 border border-gray-700/50">
-                                                                <div className="flex items-center gap-1.5 mb-1">
-                                                                  <span className={`text-xs px-1 py-0.5 rounded font-medium ${e.impact === 'HIGH' ? 'bg-red-500/20 text-red-400' : e.impact === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-500/20 text-gray-400'}`}>{e.impact}</span>
+                                                    {/* Key Events + Opportunities - two column */}
+                                                    {(newsAiAnalysis.keyEvents?.length > 0 || newsAiAnalysis.opportunities?.length > 0) && (
+                                                      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-800/70">
+                                                        {newsAiAnalysis.keyEvents?.length > 0 && (
+                                                          <div className="px-4 py-3">
+                                                            <p className="text-[10px] font-medium text-gray-600 uppercase tracking-widest mb-2">Key Events</p>
+                                                            <div className="space-y-2">
+                                                              {newsAiAnalysis.keyEvents.slice(0, 3).map((e: any, i: number) => (
+                                                                <div key={i} className="flex items-start gap-2">
+                                                                  <span className={`text-[9px] font-semibold px-1 py-0.5 rounded shrink-0 mt-0.5 ${e.impact === 'HIGH' ? 'bg-red-500/10 text-red-500' : e.impact === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-gray-700 text-gray-500'}`}>{e.impact}</span>
+                                                                  <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed">{e.event}</p>
                                                                 </div>
-                                                                <p className="text-xs text-gray-200 line-clamp-2">{e.event}</p>
-                                                                <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{e.implication}</p>
-                                                              </div>
-                                                            ))}
+                                                              ))}
+                                                            </div>
                                                           </div>
-                                                        </div>
-                                                      )}
-
-                                                      {/* Opportunities */}
-                                                      {newsAiAnalysis.opportunities?.length > 0 && (
-                                                        <div>
-                                                          <div className="flex items-center gap-1.5 mb-2">
-                                                            <Sparkles className="h-3.5 w-3.5 text-green-400" />
-                                                            <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Opportunities</span>
-                                                          </div>
-                                                          <div className="space-y-1.5">
-                                                            {newsAiAnalysis.opportunities.map((o: any, i: number) => (
-                                                              <div key={i} className="bg-gray-800/50 rounded-lg px-3 py-2 border border-gray-700/50">
-                                                                <div className="flex items-center justify-between mb-1">
-                                                                  <span className="text-xs text-green-400 font-medium">{o.sector}</span>
-                                                                  <span className="text-xs text-gray-500">{o.confidence}% conf</span>
+                                                        )}
+                                                        {newsAiAnalysis.opportunities?.length > 0 && (
+                                                          <div className="px-4 py-3">
+                                                            <p className="text-[10px] font-medium text-gray-600 uppercase tracking-widest mb-2">Opportunities</p>
+                                                            <div className="space-y-2">
+                                                              {newsAiAnalysis.opportunities.map((o: any, i: number) => (
+                                                                <div key={i} className="flex items-start gap-2">
+                                                                  <span className="text-[10px] font-medium text-green-600 shrink-0 pt-0.5">{o.sector}</span>
+                                                                  <p className="text-[11px] text-gray-400 line-clamp-2 leading-relaxed flex-1">{o.opportunity}</p>
+                                                                  <span className="text-[10px] text-gray-600 shrink-0 pt-0.5">{o.confidence}%</span>
                                                                 </div>
-                                                                <p className="text-xs text-gray-200 line-clamp-2">{o.opportunity}</p>
-                                                                <p className="text-xs text-gray-500 mt-0.5">{o.timeframe}-term</p>
-                                                              </div>
-                                                            ))}
+                                                              ))}
+                                                            </div>
                                                           </div>
-                                                        </div>
-                                                      )}
-                                                    </div>
+                                                        )}
+                                                      </div>
+                                                    )}
 
                                                     {/* Risk Alerts */}
                                                     {newsAiAnalysis.riskAlerts?.length > 0 && (
-                                                      <div>
-                                                        <div className="flex items-center gap-1.5 mb-2">
-                                                          <Activity className="h-3.5 w-3.5 text-red-400" />
-                                                          <span className="text-xs font-semibold text-gray-300 uppercase tracking-wider">Risk Alerts</span>
-                                                        </div>
+                                                      <div className="px-4 py-3">
+                                                        <p className="text-[10px] font-medium text-gray-600 uppercase tracking-widest mb-2">Risks</p>
                                                         <div className="space-y-1.5">
                                                           {newsAiAnalysis.riskAlerts.map((r: any, i: number) => (
-                                                            <div key={i} className={`flex items-start gap-2 rounded-lg px-3 py-2 border ${r.severity === 'HIGH' ? 'bg-red-950/30 border-red-500/30' : r.severity === 'MEDIUM' ? 'bg-yellow-950/30 border-yellow-500/30' : 'bg-gray-800/50 border-gray-700/50'}`}>
-                                                              <span className={`text-xs px-1 py-0.5 rounded font-medium shrink-0 mt-0.5 ${r.severity === 'HIGH' ? 'bg-red-500/20 text-red-400' : r.severity === 'MEDIUM' ? 'bg-yellow-500/20 text-yellow-400' : 'bg-gray-500/20 text-gray-400'}`}>{r.severity}</span>
+                                                            <div key={i} className="flex items-start gap-2">
+                                                              <span className={`text-[9px] font-semibold px-1 py-0.5 rounded shrink-0 mt-0.5 ${r.severity === 'HIGH' ? 'bg-red-500/10 text-red-500' : r.severity === 'MEDIUM' ? 'bg-yellow-500/10 text-yellow-500' : 'bg-gray-700 text-gray-500'}`}>{r.severity}</span>
                                                               <div>
-                                                                <p className="text-xs text-gray-200">{r.risk}</p>
-                                                                <p className="text-xs text-gray-500 mt-0.5">{r.mitigation}</p>
+                                                                <p className="text-[11px] text-gray-300">{r.risk}</p>
+                                                                <p className="text-[10px] text-gray-600 mt-0.5 leading-relaxed">{r.mitigation}</p>
                                                               </div>
                                                             </div>
                                                           ))}
@@ -16385,14 +16371,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                                                     {/* Weekly Outlook */}
                                                     {newsAiAnalysis.weeklyOutlook && (
-                                                      <div className="bg-indigo-950/30 border border-indigo-500/20 rounded-lg px-3 py-2.5">
-                                                        <div className="flex items-center gap-1.5 mb-1.5">
-                                                          <BarChart3 className="h-3.5 w-3.5 text-indigo-400" />
-                                                          <span className="text-xs font-semibold text-indigo-300 uppercase tracking-wider">Weekly Outlook</span>
-                                                        </div>
-                                                        <p className="text-xs text-gray-300 leading-relaxed">{newsAiAnalysis.weeklyOutlook}</p>
+                                                      <div className="px-4 py-3">
+                                                        <p className="text-[10px] font-medium text-gray-600 uppercase tracking-widest mb-1.5">Outlook</p>
+                                                        <p className="text-[11px] text-gray-400 leading-relaxed">{newsAiAnalysis.weeklyOutlook}</p>
                                                       </div>
                                                     )}
+
                                                   </div>
                                                 ) : null}
                                               </div>

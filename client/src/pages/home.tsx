@@ -1,5 +1,7 @@
 import { Countdown } from '@/components/countdown';
 ﻿import { motion, AnimatePresence } from "framer-motion";
+import bullIcon from "@assets/image_1773643674246.png";
+import bearIcon from "@assets/image_1773643692058.png";
 
 import { BrokerData } from "@/components/broker-data";
 
@@ -16311,18 +16313,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                               <span className="text-[11px] text-gray-600 flex-1 line-clamp-1">{s.keyTheme}</span>
                                                               <span className="shrink-0 flex items-center">
                                                                 {s.investmentSignal === 'BUY' ? (
-                                                                  <svg width="22" height="14" viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-green-500">
-                                                                    <path d="M4 17 C3 15 2 13 3 11 C4 10 5 9 6 8 L8 7 C8.5 6.5 9 7 9 7.5 L10 7.5 C11.5 7.5 14 8 17 9 C21 10 26 12 27 15 C28 17 27 19 26 19.5 L25 21 L23 21 L22 19.5 L19 19.5 L19 21 L17 21 L17 19.5 L13 19.5 L13 21 L11 21 L10 19.5 L8 18.5 L6 18 L5 17 Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                                                                    <path d="M4 17 C3 16 2 14 3 12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                                                                    <path d="M8 7 L7 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                                                                    <path d="M9 7.5 L10 5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                                                                  </svg>
+                                                                  <img src={bullIcon} alt="BUY" style={{ width: 22, height: 16, objectFit: 'contain', filter: 'invert(48%) sepia(79%) saturate(476%) hue-rotate(86deg) brightness(118%) contrast(119%)' }} />
                                                                 ) : s.investmentSignal === 'SELL' ? (
-                                                                  <svg width="22" height="14" viewBox="0 0 32 22" fill="none" xmlns="http://www.w3.org/2000/svg" className="text-red-500">
-                                                                    <path d="M3 16 C2 14 2 12 3 11" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/>
-                                                                    <path d="M3 11 C4 10 6 9.5 7 9.5 C7 8.5 8 7.5 10 7 C13 6.5 18 7 23 8.5 C28 10 30 13 30 15 C30 17 28 18 26 18 L25 20 L23 20 L23 18 L20 18 L20 20 L18 20 L18 18 L13 18 L13 20 L11 20 L11 18 L9 18 L8 19 L7 18 L6 17 L5 16 L4 15 Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                                                                    <path d="M26 8.5 C27 6.5 29 6.5 29 8.5 C29 10 27 10.5 26 8.5 Z" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/>
-                                                                  </svg>
+                                                                  <img src={bearIcon} alt="SELL" style={{ width: 22, height: 16, objectFit: 'contain', filter: 'invert(27%) sepia(98%) saturate(1234%) hue-rotate(336deg) brightness(97%) contrast(97%)' }} />
                                                                 ) : (
                                                                   <span className="text-[9px] font-semibold text-yellow-600 tracking-wide">watch</span>
                                                                 )}

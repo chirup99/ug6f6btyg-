@@ -16155,62 +16155,71 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         };
 
                                         return (
-                                          <div className="w-full">
-                                            {/* Header row */}
-                                            <div className="flex items-center justify-between mb-3 gap-2">
-                                              {/* Pill-style tab switcher */}
-                                              <div
-                                                className="flex items-center p-0.5 rounded-full shrink-0"
-                                                style={{ background: '#1a1a1a' }}
-                                                data-testid="market-news-tab-switcher"
-                                              >
-                                                {[
-                                                  { key: 'all', label: 'All', labelFull: 'All News' },
-                                                  { key: 'watchlist', label: 'Watch', labelFull: 'Watchlist' },
-                                                  { key: 'nifty50', label: 'N50', labelFull: 'Nifty 50' },
-                                                ].map((tab) => (
-                                                  <button
-                                                    key={tab.key}
-                                                    onClick={() => {
-                                                      setMarketNewsMode(tab.key as 'all' | 'watchlist' | 'nifty50');
-                                                      setNewsSelectedSector(null);
-                                                      setShowNewsAiPanel(false);
-                                                      setNewsAiAnalysis(null);
-                                                      setNewsAiAnalysisError(null);
-                                                      if (tab.key === 'watchlist' && marketNewsItems.length === 0) fetchMarketNews();
-                                                      if (tab.key === 'all' && allMarketNewsItems.length === 0) fetchAllMarketNews();
-                                                      if (tab.key === 'nifty50' && nifty50NewsItems.length === 0) fetchNifty50News();
-                                                    }}
-                                                    data-testid={`tab-market-news-${tab.key}`}
-                                                    className="relative px-2.5 py-1 md:px-4 md:py-1.5 text-xs md:text-sm font-medium rounded-full transition-all duration-200"
-                                                    style={
-                                                      marketNewsMode === tab.key
-                                                        ? {
-                                                            background: 'linear-gradient(135deg, #d4d4d4 0%, #a8a8a8 40%, #c8c8c8 100%)',
-                                                            color: '#111',
-                                                            boxShadow: '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3)',
-                                                          }
-                                                        : { color: '#9ca3af' }
-                                                    }
-                                                  >
-                                                    <span className="md:hidden">{tab.label}</span>
-                                                    <span className="hidden md:inline">{tab.labelFull}</span>
-                                                  </button>
-                                                ))}
+                                          <div className="w-full rounded-xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+                                            {/* Header — matches AI Analysis window style */}
+                                            <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800">
+                                              <div className="flex items-center gap-2.5">
+                                                <Newspaper className="h-3.5 w-3.5 text-gray-400" />
+                                                <span className="text-xs font-medium text-gray-300">Market News</span>
+                                                {rawNewsItems.length > 0 && (
+                                                  <span className="text-[11px] text-gray-600">
+                                                    · {newsSelectedSector
+                                                        ? `${newsItems.length} articles · ${newsSelectedSector}`
+                                                        : isAllMode
+                                                          ? `${rawNewsItems.length} articles · last 7 days`
+                                                          : isNifty50Mode
+                                                            ? `${rawNewsItems.length} articles · 50 stocks`
+                                                            : `${watchlistSymbols.length} stocks · last 7 days`}
+                                                  </span>
+                                                )}
                                               </div>
-                                              <div className="flex items-center gap-1.5 md:gap-2 min-w-0">
-                                                <span className="hidden md:block text-xs text-gray-500 truncate">
-                                                  {newsSelectedSector
-                                                    ? `${newsItems.length} articles · ${newsSelectedSector}`
-                                                    : isAllMode
-                                                      ? `${rawNewsItems.length} articles · last 7 days`
-                                                      : isNifty50Mode ? `${rawNewsItems.length} articles · 50 stocks` : `${watchlistSymbols.length} stocks · last 7 days`}
-                                                </span>
+                                              <div className="flex items-center gap-1.5">
+                                                {/* Pill tab switcher */}
+                                                <div
+                                                  className="flex items-center p-0.5 rounded-full"
+                                                  style={{ background: '#111' }}
+                                                  data-testid="market-news-tab-switcher"
+                                                >
+                                                  {[
+                                                    { key: 'all', label: 'All', labelFull: 'All News' },
+                                                    { key: 'watchlist', label: 'Watch', labelFull: 'Watchlist' },
+                                                    { key: 'nifty50', label: 'N50', labelFull: 'Nifty 50' },
+                                                  ].map((tab) => (
+                                                    <button
+                                                      key={tab.key}
+                                                      onClick={() => {
+                                                        setMarketNewsMode(tab.key as 'all' | 'watchlist' | 'nifty50');
+                                                        setNewsSelectedSector(null);
+                                                        setShowNewsAiPanel(false);
+                                                        setNewsAiAnalysis(null);
+                                                        setNewsAiAnalysisError(null);
+                                                        if (tab.key === 'watchlist' && marketNewsItems.length === 0) fetchMarketNews();
+                                                        if (tab.key === 'all' && allMarketNewsItems.length === 0) fetchAllMarketNews();
+                                                        if (tab.key === 'nifty50' && nifty50NewsItems.length === 0) fetchNifty50News();
+                                                      }}
+                                                      data-testid={`tab-market-news-${tab.key}`}
+                                                      className="relative px-2.5 py-1 md:px-3 text-xs font-medium rounded-full transition-all duration-200"
+                                                      style={
+                                                        marketNewsMode === tab.key
+                                                          ? {
+                                                              background: 'linear-gradient(135deg, #d4d4d4 0%, #a8a8a8 40%, #c8c8c8 100%)',
+                                                              color: '#111',
+                                                              boxShadow: '0 1px 4px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.3)',
+                                                            }
+                                                          : { color: '#6b7280' }
+                                                      }
+                                                    >
+                                                      <span className="md:hidden">{tab.label}</span>
+                                                      <span className="hidden md:inline">{tab.labelFull}</span>
+                                                    </button>
+                                                  ))}
+                                                </div>
+                                                {/* AI Analysis button */}
                                                 {(isAllMode || isNifty50Mode) && rawNewsItems.length > 0 && (
                                                   <button
                                                     onClick={handleAiAnalysis}
                                                     disabled={isNewsAiAnalysisLoading}
-                                                    className="flex items-center gap-1 px-2 py-1.5 md:px-3 rounded-lg text-xs font-medium transition-all shrink-0"
+                                                    className="flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium transition-all"
                                                     style={{ background: 'linear-gradient(135deg, #7c3aed, #4f46e5)', color: '#fff', opacity: isNewsAiAnalysisLoading ? 0.7 : 1 }}
                                                     data-testid="button-news-ai-analysis"
                                                   >
@@ -16220,9 +16229,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                     <span className="hidden md:inline">AI Analysis</span>
                                                   </button>
                                                 )}
+                                                {/* Refresh button */}
                                                 <button
                                                   onClick={handleRefresh}
-                                                  className="flex items-center gap-1 px-2 py-1.5 md:px-3 bg-gray-700 hover:bg-gray-600 rounded-lg text-xs text-gray-300 transition-colors shrink-0"
+                                                  className="flex items-center gap-1 px-2 py-1 rounded-md text-xs text-gray-500 hover:text-gray-300 transition-colors"
                                                   data-testid="button-refresh-market-news"
                                                 >
                                                   <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
@@ -16231,12 +16241,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               </div>
                                             </div>
 
-                                            {/* Sector filter pills (All News + Nifty 50 modes) */}
+                                            {/* Sector filter pills */}
                                             {(isAllMode || isNifty50Mode) && rawNewsItems.length > 0 && (
-                                              <div className="flex flex-wrap gap-1.5 mb-3">
+                                              <div className="flex flex-wrap gap-1.5 px-4 py-2.5 border-b border-gray-800">
                                                 <button
                                                   onClick={() => setNewsSelectedSector(null)}
-                                                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${newsSelectedSector === null ? 'bg-gray-200 text-gray-900 border-gray-200' : 'bg-gray-800/60 text-gray-400 border-gray-700/60 hover:border-gray-500'}`}
+                                                  className={`px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${newsSelectedSector === null ? 'bg-gray-200 text-gray-900 border-gray-200' : 'bg-gray-800/60 text-gray-500 border-gray-700/60 hover:border-gray-500 hover:text-gray-300'}`}
                                                   data-testid="filter-sector-all"
                                                 >All</button>
                                                 {(isAllMode ? allSectors : nifty50Sectors).map(sector => {
@@ -16253,20 +16263,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                       className={`px-2.5 py-0.5 rounded-full text-xs font-medium border transition-all ${active ? sectorColors[sector] || 'bg-blue-500/20 text-blue-400 border-blue-500/30' : 'bg-gray-800/60 text-gray-500 border-gray-700/60 hover:text-gray-300 hover:border-gray-500'}`}
                                                       data-testid={`filter-sector-${sector.toLowerCase().replace(/\s+/g, '-')}`}
                                                     >
-                                                      {sector} <span className="opacity-60 ml-0.5">{count}</span>
+                                                      {sector} <span className="opacity-50 ml-0.5">{count}</span>
                                                     </button>
                                                   );
                                                 })}
                                               </div>
                                             )}
 
-                                            {/* AI Analysis Panel */}
+                                            {/* AI Analysis Panel — same card style */}
                                             {(isAllMode || isNifty50Mode) && showNewsAiPanel && (
-                                              <div className="mb-4 rounded-xl border border-gray-800 bg-gray-900/80 overflow-hidden">
-                                                {/* Header */}
-                                                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800">
+                                              <div className="border-b border-gray-800">
+                                                {/* Panel header */}
+                                                <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800/60">
                                                   <div className="flex items-center gap-2">
-                                                    <Brain className="h-3.5 w-3.5 text-gray-400" />
+                                                    <Brain className="h-3.5 w-3.5 text-violet-400" />
                                                     <span className="text-xs font-medium text-gray-300">AI Market Intelligence</span>
                                                     {newsAiAnalysis && <span className="text-[11px] text-gray-600">· {newsAiAnalysis.totalArticles} articles</span>}
                                                   </div>
@@ -16287,7 +16297,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                   </div>
                                                 ) : newsAiAnalysis ? (
                                                   <div className="divide-y divide-gray-800/70">
-
                                                     {/* Overall Sentiment */}
                                                     <div className="px-4 py-3 flex items-center gap-3">
                                                       <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-md tabular-nums ${newsAiAnalysis.overallSentiment === 'BULLISH' ? 'bg-green-500/10 text-green-400' : newsAiAnalysis.overallSentiment === 'BEARISH' ? 'bg-red-500/10 text-red-400' : 'bg-yellow-500/10 text-yellow-400'}`}>
@@ -16295,7 +16304,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                       </span>
                                                       <p className="text-xs text-gray-400 flex-1 leading-relaxed">{newsAiAnalysis.marketMood}</p>
                                                     </div>
-
                                                     {/* Trending Sectors */}
                                                     {newsAiAnalysis.trendingSectors?.length > 0 && (
                                                       <div className="px-4 py-3">
@@ -16314,8 +16322,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         </div>
                                                       </div>
                                                     )}
-
-                                                    {/* Key Events + Opportunities - two column */}
+                                                    {/* Key Events + Opportunities */}
                                                     {(newsAiAnalysis.keyEvents?.length > 0 || newsAiAnalysis.opportunities?.length > 0) && (
                                                       <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-gray-800/70">
                                                         {newsAiAnalysis.keyEvents?.length > 0 && (
@@ -16347,7 +16354,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         )}
                                                       </div>
                                                     )}
-
                                                     {/* Risk Alerts */}
                                                     {newsAiAnalysis.riskAlerts?.length > 0 && (
                                                       <div className="px-4 py-3">
@@ -16365,15 +16371,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         </div>
                                                       </div>
                                                     )}
-
-                                                    {/* Weekly Outlook */}
+                                                    {/* Outlook */}
                                                     {newsAiAnalysis.weeklyOutlook && (
                                                       <div className="px-4 py-3">
                                                         <p className="text-[10px] font-medium text-gray-600 uppercase tracking-widest mb-1.5">Outlook</p>
                                                         <p className="text-[11px] text-gray-400 leading-relaxed">{newsAiAnalysis.weeklyOutlook}</p>
                                                       </div>
                                                     )}
-
                                                   </div>
                                                 ) : null}
                                               </div>
@@ -16386,12 +16390,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               </div>
                                             ) : newsItems.length === 0 ? (
                                               <div className="flex flex-col items-center justify-center py-16 gap-3">
-                                                <Newspaper className="h-10 w-10 text-gray-600" />
+                                                <Newspaper className="h-10 w-10 text-gray-700" />
                                                 <p className="text-sm text-gray-400">No recent news found in the last 7 days</p>
-                                                <p className="text-xs text-gray-500">{emptyMsg}</p>
+                                                <p className="text-xs text-gray-600">{emptyMsg}</p>
                                               </div>
                                             ) : (
-                                              <div className="space-y-2 max-h-[50vh] md:max-h-[680px] overflow-y-auto pr-1">
+                                              <div className="divide-y divide-gray-800/60 max-h-[50vh] md:max-h-[640px] overflow-y-auto">
                                                 {newsItems.map((item, index) => {
                                                   const stockData = !isAllMode ? newsStockPrices[(item as any).symbol] : null;
                                                   const isUp = stockData ? stockData.change >= 0 : null;
@@ -16412,17 +16416,17 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                   return (
                                                     <div
                                                       key={`${item.url}-${index}`}
-                                                      className="px-3 py-2.5 bg-gray-800/40 rounded-lg hover:bg-gray-700/50 transition-colors cursor-pointer border border-gray-700/60"
+                                                      className="px-4 py-3 hover:bg-gray-800/40 transition-colors cursor-pointer group"
                                                       onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
                                                       data-testid={`market-news-item-${index}`}
                                                     >
                                                       <div className={`flex items-center gap-2 ${!isAllMode ? 'mb-1.5' : ''}`}>
-                                                        <span className={`text-xs px-1.5 py-0.5 rounded font-medium shrink-0 ${tagColor}`}>{item.displayName}</span>
-                                                        <span className="text-gray-200 text-xs line-clamp-1 flex-1 leading-tight font-medium">
+                                                        <span className={`text-[10px] px-1.5 py-0.5 rounded font-medium shrink-0 ${tagColor}`}>{item.displayName}</span>
+                                                        <span className="text-gray-200 text-xs line-clamp-1 flex-1 leading-tight font-medium group-hover:text-white transition-colors">
                                                           {item.title}
-                                                          <ExternalLink className="h-2.5 w-2.5 inline ml-1 opacity-50" />
+                                                          <ExternalLink className="h-2.5 w-2.5 inline ml-1 opacity-0 group-hover:opacity-40 transition-opacity" />
                                                         </span>
-                                                        <span className="text-gray-500 text-xs shrink-0">{getWatchlistNewsRelativeTime(item.publishedAt)}</span>
+                                                        <span className="text-gray-600 text-[10px] shrink-0">{getWatchlistNewsRelativeTime(item.publishedAt)}</span>
                                                       </div>
                                                       {!isAllMode && (
                                                         <div className="flex items-center gap-2 pl-0.5">

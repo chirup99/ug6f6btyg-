@@ -9,11 +9,9 @@ import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-char
 import { EnhancedTradingViewWidget } from "@/components/enhanced-tradingview-widget";
 import { TradingViewStyleChart } from "@/components/tradingview-style-chart";
 import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
-import { BattuScanSimulation } from "@/components/battu-scan-simulation";
 import { FourCandleRuleScanner } from "@/components/four-candle-rule-scanner";
 import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
 import SimpleCompleteScanner from "@/components/simple-complete-scanner";
-import { BattuDocumentationDisplay } from "@/components/battu-documentation-display";
 import { StrategyBuilder } from "@/components/strategy-builder";
 import { TradingMaster } from "@/components/trading-master";
 import { useTheme } from "@/components/theme-provider";

@@ -1,6 +1,6 @@
 # Overview
 
-This project is a full-stack trading platform providing real-time market data analysis, AI-powered trading insights, and a social feed. It utilizes the "BATTU API" for pattern recognition and trading signal generation based on a 4-candle rule methodology across multiple timeframes. The platform also integrates an AI agent with web search for financial queries and a unified sharing system for trading journal reports, allowing users to preview and share performance metrics. The business vision is to empower traders with sophisticated analytical tools, AI-driven insights, and a collaborative community to enhance decision-making.
+This project is a full-stack trading platform providing real-time market data analysis, AI-powered trading insights, and a social feed. It integrates an AI agent with web search for financial queries, live market data from Angel One WebSockets, and a unified sharing system for trading journal reports, allowing users to preview and share performance metrics. The business vision is to empower traders with sophisticated analytical tools, AI-driven insights, and a collaborative community to enhance decision-making.
 
 # User Preferences
 
@@ -20,10 +20,8 @@ Preferred communication style: Simple, everyday language.
 **Runtime**: Node.js with Express.js (TypeScript)
 **API Pattern**: RESTful endpoints.
 **Core Services**:
-- **BATTU Analysis Engine**: Implements the 4-candle rule with recursive C2 block drilling for multi-timeframe pattern detection.
-- **Market Data Service**: Fetches real-time and historical data.
+- **Market Data Service**: Fetches real-time and historical data from Angel One API and Yahoo Finance.
 - **Pattern Recognition**: Identifies uptrend/downtrend using Point A/B analysis.
-- **Slope Calculator**: Provides precise slope calculations.
 - **Trade Validation**: Applies timing rules for breakout detection.
 **System Design**: Stateless API, separation of concerns, comprehensive error handling, and caching strategies for performance.
 

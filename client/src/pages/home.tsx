@@ -49,13 +49,11 @@ import {
 } from "@/components/multiple-image-upload";
 import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
 
-// import { BattuScanSimulation } from "@/components/battu-scan-simulation";
 
 // import { FourCandleRuleScanner } from "@/components/four-candle-rule-scanner";
 
 import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
 import SimpleCompleteScanner from "@/components/simple-complete-scanner";
-// import { BattuDocumentationDisplay } from "@/components/battu-documentation-display";
 
 import { StrategyBuilder } from "@/components/strategy-builder";
 
@@ -13558,7 +13556,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         "dashboard",
         "cb",
         "chart",
-        "check",
         "4candle",
         "scanner",
         "complete-flexible",
@@ -19568,21 +19565,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 </Button>
                 <AdvancedCandlestickChart />
                 <IndicatorCrossingsDisplay />
-              </div>
-            )}
-
-            {activeTab === "check" && (
-              <div className="h-full relative">
-                <Button
-                  onClick={() => setTabWithAuthCheck("trading-home")}
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden absolute top-4 right-4 z-50 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-                  data-testid="button-back-to-home-check"
-                >
-                  <ArrowLeft className="h-6 w-6" />
-                </Button>
-                <BattuScanSimulation />
               </div>
             )}
 

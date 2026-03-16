@@ -10,7 +10,6 @@
 
 import fs from 'fs/promises';
 import path from 'path';
-import { BattuIntradayBase, type OneMinuteBaseData, type BattuIntradayRequest } from './battu-intraday-base';
 import type { CandleData } from './intraday-patterns';
 
 export interface OneMinuteCandleData {

@@ -29,23 +29,6 @@ import { desc, sql, eq } from "drizzle-orm";
 // import { intradayAnalyzer } from "./intraday-market-session";
 import { awsDynamoDBService } from './aws-dynamodb-service';
 import { googleCloudService, googleCloudSigninBackupService } from './google-cloud-service';
-// import { IntradayPatternDetector } from "./intraday-patterns";
-// import { Enhanced4CandleProcessor } from "./enhanced-four-candle-processor";
-// import { oneMinuteAnalyzer } from "./one-minute-timestamp-analyzer";
-// import { CorrectedSlopeCalculator } from "./corrected-slope-calculator";
-// import { CorrectedFourCandleProcessor } from "./corrected-four-candle-processor";
-// import { BreakoutTradingEngine } from "./breakout-trading-engine";
-// import { ExactBreakoutDetector } from "./exact-breakout-detector";
-// import { ProgressiveTimeframeDoubler } from "./progressive-timeframe-doubler";
-// import { DynamicBlockRotator } from "./dynamic-block-rotator";
-// import { ProgressiveThreeStepProcessor } from "./progressive-three-step-processor";
-// import { RealTimeMonitoring } from "./real-time-monitoring";
-// import { AdvancedPatternAnalyzer } from "./lib/advanced-pattern-analyzer";
-// import { AdvancedMarketScanner } from "./market-scanner";
-// import { TRuleProcessor } from "./t-rule-processor";
-// import { FlexibleTimeframeDoubler } from "./flexible-timeframe-doubler";
-// import { CorrectedFlexibleTimeframeSystem } from "./corrected-flexible-timeframe-system";
-// import { RecursiveDrillingPredictor } from "./recursive-drilling-predictor";
 // import livePriceRoutes from "./live-price-routes";
 // import hybridDataRoutes from "./hybrid-data-routes";
 // import candleProgressionApi from "./candle-progression-api";
@@ -54,7 +37,6 @@ import { liveWebSocketStreamer } from './live-websocket-streamer';
 // import { CandleProgressionManager } from "./candle-progression-manager";
 // import { candleProgressionIntegration } from "./candle-progression-integration";
 // import { StrategyBacktestEngine } from './strategy-backtest-engine';
-import { Cycle3TradingExecutionEngine } from './cycle3-trading-execution-engine';
 import eventImageRoutes from "./routes/generate-event-images.js";
 import geminiRoutes from "./gemini-routes";
 import { sentimentAnalyzer, type SentimentAnalysisRequest } from './sentiment-analysis';
@@ -182,9 +164,6 @@ const ANGEL_ONE_STOCK_TOKENS: { [key: string]: { token: string; exchange: string
 // const flexibleTimeframeDoubler = new FlexibleTimeframeDoubler(angelOneApi);
 // const recursiveDrillingPredictor = new RecursiveDrillingPredictor();
 // let realtimeMonitoring: RealTimeMonitoring | null = null;
-
-// Initialize Cycle 3 Trading Execution Engine for strategy testing
-const cycle3TradingEngine = new Cycle3TradingExecutionEngine(angelOneApi);
 
 // Corrected Flexible Timeframe System (with proper timeframe doubling)
 // let correctedFlexibleSystem: CorrectedFlexibleTimeframeSystem | null = null;
@@ -14510,7 +14489,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           riskManagement: `Risk: ₹${stopLimitOrder.calculatedRisk} (${quantity} qty × ${stopLossDistance.toFixed(2)} points)`,
           exitStrategy: `Target: ${stopLimitOrder.targetPrice.toFixed(2)}, 80% exit, Emergency exit at 98% candle close`,
           breakoutLogic: `${isDowntrend ? 'Downtrend: Price below breakout = SELL' : 'Uptrend: Price above breakout = BUY'}`,
-          patternSupport: `Supports all Battu patterns (1-3, 1-4, 2-3, 2-4) with correct directional logic`,
+          patternSupport: `Supports multiple breakout patterns with correct directional logic`,
           timeoutRule: `Orders cancelled at 98% of ${timeframe}-minute candle duration (${(timeframe * 0.98).toFixed(1)} min) if no breakout occurs - Prevents failed pattern exposure`
         },
 
@@ -17376,7 +17355,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         metadata: {
           timestamp: new Date().toISOString(),
           scanDuration: `Market open to close (${timeframe} timeframe)`,
-          apiIntegration: 'Fyers API + BATTU Pattern Detection',
+          apiIntegration: 'Fyers API + Pattern Detection',
           realData: true
         }
       };
@@ -17393,8 +17372,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: "Strategy test failed",
         message: error instanceof Error ? error.message : 'Unknown error occurred',
         fallback: {
-          note: "Using existing indicator calculations and BATTU API patterns",
-          availableIndicators: ['BATTU', 'RSI', 'Moving Average', 'MACD'],
+          note: "Using existing indicator calculations and pattern detection",
+          availableIndicators: ['RSI', 'Moving Average', 'MACD'],
           scanModes: ['market_open_to_close', 'last_session', 'intraday']
         }
       });

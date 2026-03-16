@@ -9,15 +9,10 @@ import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-char
 import { EnhancedTradingViewWidget } from "@/components/enhanced-tradingview-widget";
 import { TradingViewStyleChart } from "@/components/tradingview-style-chart";
 import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
-import { FourCandleRuleScanner } from "@/components/four-candle-rule-scanner";
 import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
-import SimpleCompleteScanner from "@/components/simple-complete-scanner";
 import { StrategyBuilder } from "@/components/strategy-builder";
 import { TradingMaster } from "@/components/trading-master";
 import { useTheme } from "@/components/theme-provider";
-
-import ThreeCycleScanner from "@/components/three-cycle-scanner";
-import HistoricalTradeSimulator from "@/components/historical-trade-simulator";
 import { 
   PriceChangeAnimation, 
   TradeExecutionAnimation, 

@@ -1369,7 +1369,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
           importedAt: new Date().toISOString()
         };
       } else {
-        throw new Error('Invalid strategy code format. Please use only base64 encoded strategy codes from BATTU AI or Top Traders.');
+        throw new Error('Invalid strategy code format. Please use only base64 encoded strategy codes from Trading AI or Top Traders.');
       }
     } catch (error) {
       console.error('❌ Decode error:', error);
@@ -2190,7 +2190,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
 
         await saveStrategyToCloud(importedStrategy);
         
-        // Generate strategy code (same as BATTU AI logic)
+        // Generate strategy code (same as Trading AI logic)
         const strategyForCode = {
           name: template.name,
           indicator: template.indicators[0], // Use first indicator
@@ -2250,8 +2250,8 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
     return [
       {
         id: 1,
-        name: 'BATTU Scanner',
-        indicator: 'BATTU',
+        name: 'Pattern Scanner',
+        indicator: 'Trading Pattern',
         period: 'pattern',
         entryCondition: 'breakout',
         slCondition: 'prev_low',
@@ -4651,7 +4651,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
     }
   };
 
-  // EXACT COPY OF WORKING MAIN TAB BATTU AI CODE - Handle Gemini AI responses for Build Patterns
+  // EXACT COPY OF WORKING MAIN TAB Trading AI CODE - Handle Gemini AI responses for Build Patterns
   const handleGeminiAIResponse = async (input: string) => {
     // Add loading message with thinking animation
     setChatMessages(prev => [...prev, { 
@@ -5490,7 +5490,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
     if (lowerMessage.includes('nifty') || lowerMessage.includes('market')) {
       return 'Based on current market data, NIFTY 50 is showing ' + (Math.random() > 0.5 ? 'bullish' : 'bearish') + ' sentiment. The futures contracts are actively traded with good liquidity.';
     } else if (lowerMessage.includes('strategy') || lowerMessage.includes('trading')) {
-      return 'For effective trading strategies, consider using the BATTU scanner which has shown 85% performance. Monitor breakout patterns and momentum indicators for best results.';
+      return 'For effective trading strategies, consider using the pattern scanner which has shown 85% performance. Monitor breakout patterns and momentum indicators for best results.';
     } else if (lowerMessage.includes('timeframe')) {
       return 'Different timeframes serve different purposes: 1-5min for scalping, 15-30min for intraday, 1hr+ for swing trading. Choose based on your trading style.';
     } else {
@@ -6922,7 +6922,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
                                     <div className="w-2.5 h-2.5 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full animate-pulse" style={{animationDelay: '200ms'}}></div>
                                     <div className="w-2.5 h-2.5 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full animate-pulse" style={{animationDelay: '400ms'}}></div>
                                   </div>
-                                  <span className="text-xs text-slate-300 font-medium animate-pulse">BATTU AI is thinking...</span>
+                                  <span className="text-xs text-slate-300 font-medium animate-pulse">Trading AI is thinking...</span>
                                 </div>
                               ) : message.isStockMessage && message.stocks ? (
                                 <div className="space-y-2">
@@ -7116,7 +7116,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
                                         );
                                       })}
                                       
-                                      {/* ADD ALL BUTTON - Very important for BATTU AI */}
+                                      {/* ADD ALL BUTTON - Very important for Trading AI */}
                                       <div className="mt-2 pt-2 border-t border-slate-600">
                                         <Button
                                           onClick={() => {
@@ -8244,7 +8244,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
                                               <div className="w-2.5 h-2.5 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full animate-pulse" style={{animationDelay: '200ms'}}></div>
                                               <div className="w-2.5 h-2.5 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full animate-pulse" style={{animationDelay: '400ms'}}></div>
                                             </div>
-                                            <span className="text-xs text-slate-300 font-medium animate-pulse">BATTU AI is thinking...</span>
+                                            <span className="text-xs text-slate-300 font-medium animate-pulse">Trading AI is thinking...</span>
                                           </div>
                                         ) : message.isStockMessage && message.stocks ? (
                                           <div className="space-y-2">
@@ -8438,7 +8438,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
                                                   );
                                                 })}
 
-                                                {/* ADD ALL BUTTON - Very important for BATTU AI */}
+                                                {/* ADD ALL BUTTON - Very important for Trading AI */}
                                                 <div className="mt-2 pt-2 border-t border-slate-600">
                                                   <Button
                                                     onClick={() => {
@@ -9717,7 +9717,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
                                             );
                                           })}
                                           
-                                          {/* ADD ALL BUTTON for Sidebar - Very important for BATTU AI */}
+                                          {/* ADD ALL BUTTON for Sidebar - Very important for Trading AI */}
                                           <div className="mt-2 pt-2 border-t border-slate-600">
                                             <Button
                                               onClick={() => {
@@ -9742,7 +9742,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
                                         <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full animate-pulse" style={{animationDelay: '200ms'}}></div>
                                         <div className="w-2 h-2 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full animate-pulse" style={{animationDelay: '400ms'}}></div>
                                       </div>
-                                      <span className="text-xs text-slate-300 font-medium animate-pulse">BATTU AI is thinking...</span>
+                                      <span className="text-xs text-slate-300 font-medium animate-pulse">Trading AI is thinking...</span>
                                     </div>
                                   )}
                                 </div>
@@ -9757,7 +9757,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
                                       <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full animate-pulse" style={{animationDelay: '200ms'}}></div>
                                       <div className="w-2 h-2 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full animate-pulse" style={{animationDelay: '400ms'}}></div>
                                     </div>
-                                    <span className="text-xs text-slate-300 font-medium animate-pulse">BATTU AI is thinking...</span>
+                                    <span className="text-xs text-slate-300 font-medium animate-pulse">Trading AI is thinking...</span>
                                   </div>
                                 </div>
                               </div>

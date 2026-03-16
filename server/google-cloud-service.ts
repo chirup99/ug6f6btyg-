@@ -9,15 +9,15 @@ export const googleCloudService = {
   initializeBucket: async () => { },
   healthCheck: async () => ({ dynamodb: false, s3: false }),
   getTodaysFyersToken: async () => null,
-  storeBattuScannerSession: async () => ({ success: false }),
-  storeBattuPattern: async () => ({ success: false }),
-  getBattuPatterns: async () => [],
-  storeBattuTrade: async () => ({ success: false }),
-  getBattuTrades: async () => [],
-  storeBattuHistoricalData: async () => ({ success: false }),
-  getBattuHistoricalData: async () => [],
-  getCachedBattuScannerStatus: async () => null,
-  cacheBattuScannerStatus: async () => { },
+  
+  
+  
+  
+  
+  
+  
+  
+  
   getAllCollectionData: async () => [],
   getData: async () => null,
   getCachedData: async () => ({ success: false, data: null }),

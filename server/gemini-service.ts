@@ -100,9 +100,9 @@ function formatPatternMatchResults(context: any): string {
   
   let formattedResults = '';
   
-  // Format BATTU pattern matches if available
+  // Format chart pattern matches if available
   if (context.patternMatches && Array.isArray(context.patternMatches)) {
-    formattedResults += "🔍 **BATTU Pattern Analysis Results:**\n";
+    formattedResults += "🔍 **Chart Pattern Analysis Results:**\n";
     formattedResults += "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n";
     
     context.patternMatches.forEach((pattern: any, index: number) => {
@@ -399,7 +399,7 @@ export async function generateAIChat(message: string, context?: any): Promise<st
   
   if (isStockRequest && stockSymbol) {
     try {
-      console.log(`🔍 BATTU AI: Fetching stock data for ${stockSymbol}`);
+      console.log(`🔍 Trading AI: Fetching stock data for ${stockSymbol}`);
       
       // Fetch both price and fundamental data
       const [priceData, fundamentalData] = await Promise.all([
@@ -420,7 +420,7 @@ export async function generateAIChat(message: string, context?: any): Promise<st
   const isPatternMatchQuery = message.toLowerCase().includes('pattern') || 
                               message.toLowerCase().includes('chart') || 
                               message.toLowerCase().includes('50%') ||
-                              message.toLowerCase().includes('battu');
+                              message.toLowerCase().includes('pattern');
 
   let patternAnalysisSection = '';
   
@@ -436,7 +436,7 @@ Platform Features:
 - Social Feed: Community discussions about stocks, trading strategies, and market insights  
 - Journal: Personal trading history, performance tracking, and trade analysis
 - AI Strategies: Strategy generation, backtesting, and market recommendations
-- BATTU Scanner: Advanced chart pattern recognition with 4-candle rule methodology
+- Pattern Scanner: Advanced chart pattern recognition with 4-candle rule methodology
 - Real-time Stock Data: Live prices, fundamental analysis, and market sentiment
 
 Your capabilities:
@@ -446,7 +446,7 @@ Your capabilities:
    - Present data in conversational, easy-to-understand format
 2. **Market News**: Latest financial news, IPO updates, market movements
 3. **Trading Advice**: Options strategies, risk management, entry/exit points
-4. **Chart Patterns**: Analyze BATTU patterns, breakout levels, confidence scores
+4. **Chart Patterns**: Analyze chart patterns, breakout levels, confidence scores
 5. **Platform Help**: Guide users through Trading Master, Journal, Social Feed features
 6. **Educational**: Explain trading concepts, market terminology, financial instruments
 7. **Real-time Data**: Access live stock quotes and comprehensive fundamental analysis

@@ -342,7 +342,7 @@ export type VerifiedReport = typeof verifiedReports.$inferSelect;
 export type InsertVerifiedReport = z.infer<typeof insertVerifiedReportSchema>;
 
 // ==========================================
-// BATTU SCANNER SCHEMA - Integrated for DB Migration
+// Scanner Schema
 // ==========================================
 
 // Scanner Sessions
@@ -559,8 +559,8 @@ export const tradeHistory = pgTable("trade_history", {
   netAmount: decimal("net_amount", { precision: 15, scale: 2 }).notNull(),
   pnlRealized: decimal("pnl_realized", { precision: 15, scale: 2 }), // For SELL orders
   pnlPercent: real("pnl_percent"), // For SELL orders
-  tradeStrategy: text("trade_strategy"), // BATTU Pattern, Manual, AI Signal
-  patternId: text("pattern_id"), // Link to BATTU pattern
+  tradeStrategy: text("trade_strategy"), // Pattern, Manual, AI Signal
+  patternId: text("pattern_id"), // Link to pattern
   notes: text("notes"),
   executedAt: timestamp("executed_at").notNull().defaultNow(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
@@ -631,7 +631,7 @@ export const algorithmicSignals = pgTable("algorithmic_signals", {
   signalId: text("signal_id").notNull().unique(),
   symbol: text("symbol").notNull(),
   signalType: text("signal_type").notNull(), // BUY, SELL, HOLD
-  strategy: text("strategy").notNull(), // Technical, Momentum, Mean_Reversion, BATTU
+  strategy: text("strategy").notNull(), // Technical, Momentum, Mean_Reversion
   
   // Signal Details
   entryPrice: decimal("entry_price", { precision: 12, scale: 2 }).notNull(),
@@ -670,7 +670,7 @@ export const insertPortfolioRiskAnalyticsSchema = createInsertSchema(portfolioRi
 export const insertAiResearchReportSchema = createInsertSchema(aiResearchReports);
 export const insertAlgorithmicSignalSchema = createInsertSchema(algorithmicSignals);
 
-// Type exports for BATTU schema
+// Type exports
 export type ScannerSession = typeof scannerSessions.$inferSelect;
 export type InsertScannerSession = z.infer<typeof insertScannerSessionSchema>;
 export type Symbol = typeof symbols.$inferSelect;

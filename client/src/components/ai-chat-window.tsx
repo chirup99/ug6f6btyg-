@@ -57,7 +57,7 @@ export function AIChatWindow({ isOpen, onClose, initialQuery }: AIChatWindowProp
     }
   }, [isOpen, initialQuery]);
 
-  // EXACT SAME parseAIMessage function as working main tab BATTU AI
+  // EXACT SAME parseAIMessage function as working main tab Trading AI
   const parseAIMessage = (content: string) => {
     const parts = content.split(/(```[\s\S]*?```)/g);
     return parts.map((part, index) => {
@@ -69,7 +69,7 @@ export function AIChatWindow({ isOpen, onClose, initialQuery }: AIChatWindowProp
     }).filter(part => part.content.trim());
   };
 
-  // EXACT SAME copyToClipboard function as working main tab BATTU AI
+  // EXACT SAME copyToClipboard function as working main tab Trading AI
   const copyToClipboard = (text: string, index: number) => {
     navigator.clipboard.writeText(text).then(() => {
       setCopiedCodeIndex(index);
@@ -101,7 +101,7 @@ export function AIChatWindow({ isOpen, onClose, initialQuery }: AIChatWindowProp
     setIsLoading(true);
 
     try {
-      // Use EXACT same API call as working main tab BATTU AI
+      // Use EXACT same API call as working main tab Trading AI
       const response = await apiRequest('/api/gemini/chat', 'POST', {
         message: text,
         context: 'trading'
@@ -150,7 +150,7 @@ export function AIChatWindow({ isOpen, onClose, initialQuery }: AIChatWindowProp
             <CardTitle className="flex items-center gap-2 text-lg">
               <Bot className="w-6 h-6 text-indigo-500" />
               <span className="bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">
-                #1 BATTU AI
+                #1 Trading AI
               </span>
               <span className="text-xs bg-gradient-to-r from-yellow-400 to-orange-500 text-white px-2 py-1 rounded-full font-semibold animate-pulse">
                 ULTRA-SMART
@@ -191,7 +191,7 @@ export function AIChatWindow({ isOpen, onClose, initialQuery }: AIChatWindowProp
                       </div>
                     </div>
                     <h3 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
-                      Welcome to #1 BATTU AI! 
+                      Welcome to #1 Trading AI! 
                     </h3>
                     <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">
                       The world's smartest trading assistant with 50% text match intelligence
@@ -254,7 +254,7 @@ export function AIChatWindow({ isOpen, onClose, initialQuery }: AIChatWindowProp
                       }`}
                     >
                       <div className="whitespace-pre-wrap leading-relaxed">
-                        {/* EXACT SAME parseAIMessage display logic as working main tab BATTU AI */}
+                        {/* EXACT SAME parseAIMessage display logic as working main tab Trading AI */}
                         {message.role === 'assistant' ? (
                           <div className="space-y-2">
                             {parseAIMessage(message.content).map((part, partIndex) => (
@@ -325,7 +325,7 @@ export function AIChatWindow({ isOpen, onClose, initialQuery }: AIChatWindowProp
                         <div className="w-2.5 h-2.5 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full animate-pulse" style={{animationDelay: '200ms'}}></div>
                         <div className="w-2.5 h-2.5 bg-gradient-to-r from-indigo-400 to-purple-400 rounded-full animate-pulse" style={{animationDelay: '400ms'}}></div>
                       </div>
-                      <span className="text-xs text-slate-300 font-medium animate-pulse">BATTU AI is thinking...</span>
+                      <span className="text-xs text-slate-300 font-medium animate-pulse">Trading AI is thinking...</span>
                     </div>
                   </div>
                 )}

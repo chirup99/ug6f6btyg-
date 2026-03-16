@@ -17338,8 +17338,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                                 onClick={() => {
                                                                   const symbol = searchResultsNewsSymbol || selectedWatchlistSymbol;
                                                                   if (symbol) {
-                                                                    // Simply set the query which triggers the existing search handler
-                                                                    handleSearch(symbol);
+                                                                    // Clean to bare stock name and build a query that
+                                                                    // explicitly triggers the AI agent's company
+                                                                    // fundamentals tool for a full report
+                                                                    const cleanSymbol = symbol
+                                                                      .replace(/^[A-Z]+:/i, '')
+                                                                      .replace(/-EQ$|-BE$|-SM$/i, '')
+                                                                      .toLowerCase();
+                                                                    handleSearch(`${cleanSymbol} full company report quarterly results and financial analysis`);
                                                                   }
                                                                 }}
                                                                 className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer"

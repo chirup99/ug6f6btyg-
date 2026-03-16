@@ -50,10 +50,7 @@ import {
 import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
 
 
-// import { FourCandleRuleScanner } from "@/components/four-candle-rule-scanner";
-
 import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
-import SimpleCompleteScanner from "@/components/simple-complete-scanner";
 
 import { StrategyBuilder } from "@/components/strategy-builder";
 
@@ -13554,10 +13551,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       [
         "strategy-build",
         "dashboard",
-        "cb",
         "chart",
-        "4candle",
-        "scanner",
         "complete-flexible",
         "backtest",
         "simulator",
@@ -19565,36 +19559,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 </Button>
                 <AdvancedCandlestickChart />
                 <IndicatorCrossingsDisplay />
-              </div>
-            )}
-
-            {activeTab === "4candle" && (
-              <div className="h-full relative">
-                <Button
-                  onClick={() => setTabWithAuthCheck("trading-home")}
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden absolute top-4 right-4 z-50 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-                  data-testid="button-back-to-home-4candle"
-                >
-                  <ArrowLeft className="h-6 w-6" />
-                </Button>
-                <FourCandleRuleScanner />
-              </div>
-            )}
-
-            {activeTab === "scanner" && (
-              <div className="h-full relative">
-                <Button
-                  onClick={() => setTabWithAuthCheck("trading-home")}
-                  variant="ghost"
-                  size="icon"
-                  className="lg:hidden absolute top-4 right-4 z-50 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full"
-                  data-testid="button-back-to-home-scanner"
-                >
-                  <ArrowLeft className="h-6 w-6" />
-                </Button>
-                <SimpleCompleteScanner />
               </div>
             )}
 

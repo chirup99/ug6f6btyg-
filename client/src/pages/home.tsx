@@ -16313,9 +16313,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                               <span className="text-[11px] text-gray-600 flex-1 line-clamp-1">{s.keyTheme}</span>
                                                               <span className="shrink-0 flex items-center">
                                                                 {s.investmentSignal === 'BUY' ? (
-                                                                  <img src={bullIcon} alt="BUY" style={{ width: 22, height: 16, objectFit: 'contain', filter: 'invert(48%) sepia(79%) saturate(476%) hue-rotate(86deg) brightness(118%) contrast(119%)' }} />
+                                                                  <img src={bullIcon} alt="BUY" style={{ width: 22, height: 16, objectFit: 'contain' }} />
                                                                 ) : s.investmentSignal === 'SELL' ? (
-                                                                  <img src={bearIcon} alt="SELL" style={{ width: 22, height: 16, objectFit: 'contain', filter: 'invert(27%) sepia(98%) saturate(1234%) hue-rotate(336deg) brightness(97%) contrast(97%)' }} />
+                                                                  <img src={bearIcon} alt="SELL" style={{ width: 22, height: 16, objectFit: 'contain' }} />
                                                                 ) : (
                                                                   <span className="text-[9px] font-semibold text-yellow-600 tracking-wide">watch</span>
                                                                 )}

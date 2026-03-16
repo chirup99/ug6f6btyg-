@@ -1,7 +1,5 @@
 import { Countdown } from '@/components/countdown';
 ﻿import { motion, AnimatePresence } from "framer-motion";
-import bullIcon from "@assets/image_1773644341941.png";
-import bearIcon from "@assets/image_1773644437547.png";
 
 import { BrokerData } from "@/components/broker-data";
 
@@ -16311,15 +16309,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                                 {s.sentiment === 'positive' ? '▲' : s.sentiment === 'negative' ? '▼' : '●'}
                                                               </span>
                                                               <span className="text-[11px] text-gray-600 flex-1 line-clamp-1">{s.keyTheme}</span>
-                                                              <span className="shrink-0 flex items-center">
-                                                                {s.investmentSignal === 'BUY' ? (
-                                                                  <img src={bullIcon} alt="BUY" style={{ width: 22, height: 16, objectFit: 'contain' }} />
-                                                                ) : s.investmentSignal === 'SELL' ? (
-                                                                  <img src={bearIcon} alt="SELL" style={{ width: 22, height: 16, objectFit: 'contain' }} />
-                                                                ) : (
-                                                                  <span className="text-[9px] font-semibold text-yellow-600 tracking-wide">watch</span>
-                                                                )}
-                                                              </span>
                                                             </div>
                                                           ))}
                                                         </div>

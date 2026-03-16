@@ -5985,8 +5985,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Fetch orders immediately when dialog opens
       fetchOrders();
 
-      // Set up polling to refresh every 1 second while dialog is open
-      const pollInterval = setInterval(fetchOrders, 1000);
+      // Set up polling to refresh every 5 seconds while dialog is open
+      const pollInterval = setInterval(fetchOrders, 5000);
 
       // Cleanup: clear interval when dialog closes
       return () => clearInterval(pollInterval);

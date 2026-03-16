@@ -16,6 +16,23 @@ export default defineConfig({
         ]
       : []),
   ],
+  optimizeDeps: {
+    include: [
+      "react",
+      "react-dom",
+      "react-dom/client",
+      "wouter",
+      "@tanstack/react-query",
+      "framer-motion",
+      "lucide-react",
+      "recharts",
+      "date-fns",
+      "zod",
+      "clsx",
+      "tailwind-merge",
+      "class-variance-authority",
+    ],
+  },
   resolve: {
     alias: {
       "@": path.resolve(import.meta.dirname, "client", "src"),

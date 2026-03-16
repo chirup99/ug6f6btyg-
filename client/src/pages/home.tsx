@@ -1,7 +1,7 @@
 import { Countdown } from '@/components/countdown';
 ﻿import { motion, AnimatePresence } from "framer-motion";
 import bullIcon from "@assets/image_1773644341941.png";
-import bearIcon from "@assets/image_1773643692058.png";
+import bearIcon from "@assets/image_1773644437547.png";
 
 import { BrokerData } from "@/components/broker-data";
 

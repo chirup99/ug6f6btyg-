@@ -17822,6 +17822,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
 
 
+                                      // Strip raw stock-data dump blocks that the AI agent inlines
+                                      // before chart markers — these are already shown visually
+                                      // by the chart components so the raw text is redundant.
+                                      // Pattern: "## Company (SYM)\n\n**Current Price:**…\n---\n*Data from:…*"
+                                      if (processedResults && typeof processedResults === 'string') {
+                                        processedResults = processedResults
+                                          // Remove full stock data blocks (## header → *Data from:* line)
+                                          .replace(/##\s[^\n]+\n[\s\S]*?\*Data from:[^\n]*\*[^\n]*/g, '')
+                                          // Remove any orphaned *Data from:* attribution lines
+                                          .replace(/\*Data from:[^\n]*\*/g, '')
+                                          // Remove lines containing only commas / whitespace
+                                          .replace(/^[,\s]+$/gm, '')
+                                          // Collapse 3+ consecutive blank lines to max 2
+                                          .replace(/\n{3,}/g, '\n\n')
+                                          .trim();
+                                      }
+
                                       return renderedContent || processedResults || searchResults;
                                     })()}
 

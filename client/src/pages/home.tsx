@@ -16163,7 +16163,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 <span className="text-xs font-medium text-gray-300">Market News</span>
                                                 {rawNewsItems.length > 0 && (
                                                   <span className="text-[11px] text-gray-600">
-                                                    · {newsSelectedSector
+                                                    {newsSelectedSector
                                                         ? `${newsItems.length} articles · ${newsSelectedSector}`
                                                         : isAllMode
                                                           ? `${rawNewsItems.length} articles · last 7 days`

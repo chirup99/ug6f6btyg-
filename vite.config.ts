@@ -57,5 +57,15 @@ export default defineConfig({
       deny: ["**/.*"],
     },
     allowedHosts: true,
+    warmup: {
+      clientFiles: [
+        "./client/src/main.tsx",
+        "./client/src/App.tsx",
+        "./client/src/pages/home.tsx",
+        "./client/src/pages/dashboard.tsx",
+        "./client/src/lib/queryClient.ts",
+        "./client/src/lib/utils.ts",
+      ],
+    },
   },
 });

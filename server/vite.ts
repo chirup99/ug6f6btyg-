@@ -4,7 +4,9 @@ import path from "path";
 import { createServer as createViteServer, createLogger } from "vite";
 import { type Server } from "http";
 import viteConfig from "../vite.config";
-import { nanoid } from "nanoid";
+
+// Fixed once at server startup — lets Vite cache compiled modules across requests
+const BUILD_ID = Date.now().toString(36);
 
 const viteLogger = createLogger();
 
@@ -44,6 +46,23 @@ export async function setupVite(app: Express, server: Server) {
   });
 
   app.use(vite.middlewares);
+
+  // Pre-compile the heaviest client files in the background right after startup
+  // so the browser gets instant responses on first visit instead of waiting
+  // for on-demand compilation of the 30k-line home.tsx
+  setTimeout(() => {
+    const filesToWarm = [
+      "/src/main.tsx",
+      "/src/App.tsx",
+      "/src/pages/home.tsx",
+      "/src/lib/queryClient.ts",
+      "/src/lib/utils.ts",
+    ];
+    filesToWarm.forEach((file) => {
+      vite.warmupRequest(file).catch(() => {});
+    });
+  }, 1500);
+
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;
 
@@ -59,7 +78,7 @@ export async function setupVite(app: Express, server: Server) {
       let template = await fs.promises.readFile(clientTemplate, "utf-8");
       template = template.replace(
         `src="/src/main.tsx"`,
-        `src="/src/main.tsx?v=${nanoid()}"`,
+        `src="/src/main.tsx?v=${BUILD_ID}"`,
       );
       const page = await vite.transformIndexHtml(url, template);
       res.status(200).set({ "Content-Type": "text/html" }).end(page);

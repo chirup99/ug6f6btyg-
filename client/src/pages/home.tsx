@@ -15905,6 +15905,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   const pts = prices.length > 1
                                     ? prices.map((p: number, i: number) => `${(i / (prices.length - 1)) * W},${H - ((p - minP) / range) * H}`).join(' ')
                                     : null;
+                                  const newsSource = nifty50NewsItems.length > 0 ? nifty50NewsItems : marketNewsItems;
+                                  const latestNews = newsSource.find((n: any) => n.symbol === item.symbol)?.title || null;
                                   return (
                                     <>
                                       <span className="text-sm font-semibold text-gray-100 flex-shrink-0">{item.text}</span>
@@ -15918,6 +15920,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <svg width={W} height={H} className="flex-shrink-0" style={{ overflow: 'visible' }}>
                                           <polyline points={pts} fill="none" stroke={isUp ? '#4ade80' : '#f87171'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                                         </svg>
+                                      )}
+                                      {latestNews && (
+                                        <>
+                                          <span className="flex-shrink-0 w-px h-3 bg-gray-600 mx-0.5" />
+                                          <span className="text-[11px] text-gray-400 truncate min-w-0">{latestNews}</span>
+                                        </>
                                       )}
                                     </>
                                   );

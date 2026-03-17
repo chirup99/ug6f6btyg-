@@ -7535,6 +7535,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Region market data: real chart + real news for world map dialog
+  app.get('/api/region-market-data', async (req, res) => {
+    const region = (req.query.region as string || '').toUpperCase();
+
+    const REGION_CONFIG: Record<string, { yahooSymbol: string; newsQuery: string }> = {
+      INDIA:       { yahooSymbol: '^NSEI',    newsQuery: 'Nifty 50 India stock market NSE' },
+      USA:         { yahooSymbol: '^GSPC',    newsQuery: 'S&P 500 US stock market Wall Street' },
+      CANADA:      { yahooSymbol: '^GSPTSE',  newsQuery: 'TSX Toronto stock market Canada economy' },
+      'HONG KONG': { yahooSymbol: '^HSI',     newsQuery: 'Hang Seng Hong Kong stock market' },
+      TOKYO:       { yahooSymbol: '^N225',    newsQuery: 'Nikkei 225 Japan Tokyo stock market' },
+    };
+
+    const cfg = REGION_CONFIG[region];
+    if (!cfg) return res.status(400).json({ error: 'Unknown region' });
+
+    try {
+      // --- Chart data (intraday 5-minute candles via Yahoo Finance) ---
+      const now = new Date();
+      const todayStart = new Date(now);
+      todayStart.setHours(0, 0, 0, 0);
+      let chartPoints: { time: string; price: number }[] = [];
+
+      try {
+        const chartResult = await yfGlobal.chart(cfg.yahooSymbol, {
+          interval: '5m',
+          period1: todayStart,
+          period2: now,
+        });
+        const quotes = chartResult?.quotes ?? [];
+        chartPoints = quotes
+          .filter((q: any) => q.close != null)
+          .map((q: any) => {
+            const d = new Date(q.date);
+            return {
+              time: `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`,
+              price: parseFloat(q.close.toFixed(2)),
+            };
+          });
+        // If today's intraday empty (weekend/holiday), fall back to 5-day daily
+        if (chartPoints.length < 3) {
+          const fallback = await yfGlobal.chart(cfg.yahooSymbol, {
+            interval: '1d',
+            period1: new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000),
+            period2: now,
+          });
+          const fq = fallback?.quotes ?? [];
+          chartPoints = fq
+            .filter((q: any) => q.close != null)
+            .slice(-20)
+            .map((q: any) => {
+              const d = new Date(q.date);
+              return {
+                time: `${d.getMonth() + 1}/${d.getDate()}`,
+                price: parseFloat(q.close.toFixed(2)),
+              };
+            });
+        }
+      } catch (chartErr) {
+        console.warn(`[REGION-CHART] Chart fetch failed for ${cfg.yahooSymbol}:`, chartErr);
+      }
+
+      // --- News (Google News RSS) ---
+      let news: { title: string; source: string; url: string; publishedAt: string }[] = [];
+      try {
+        const gnUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(cfg.newsQuery + ' when:3d')}&hl=en&gl=US&ceid=US:en`;
+        const gnRes = await fetch(gnUrl, {
+          headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/rss+xml' },
+          signal: AbortSignal.timeout(7000),
+        });
+        if (gnRes.ok) {
+          const xml = await gnRes.text();
+          const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
+          for (const itemXml of items.slice(0, 6)) {
+            const titleMatch = itemXml.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || itemXml.match(/<title>([\s\S]*?)<\/title>/);
+            const linkMatch = itemXml.match(/<link>([\s\S]*?)<\/link>/);
+            const pubMatch = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
+            const rawTitle = (titleMatch?.[1] || '').replace(/&amp;/g, '&').replace(/&#39;/g, "'").trim();
+            const titleParts = rawTitle.match(/^([\s\S]+?)\s+-\s+([^-]+)$/);
+            const title = titleParts ? titleParts[1].trim() : rawTitle;
+            const source = titleParts ? titleParts[2].trim() : 'News';
+            if (title) {
+              news.push({ title, source, url: linkMatch?.[1]?.trim() || '', publishedAt: pubMatch?.[1]?.trim() || '' });
+            }
+          }
+        }
+      } catch (newsErr) {
+        console.warn(`[REGION-NEWS] News fetch failed for ${region}:`, newsErr);
+      }
+
+      res.json({ chart: chartPoints, news });
+    } catch (err) {
+      console.error('[REGION-MARKET-DATA] Error:', err);
+      res.status(500).json({ error: 'Failed to fetch region data' });
+    }
+  });
+
   app.get('/api/stock-news/:symbol', async (req, res) => {
     const { symbol } = req.params;
 

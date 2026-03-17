@@ -1705,22 +1705,24 @@ async function fetchYahooFinanceChartData(symbol: string, timeframe: string) {
 
 function formatYahooChartQuotes(quotes: any[], timeframe: string) {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
   return quotes
     .filter((q: any) => q.close && q.close > 0)
     .map((q: any) => {
       const d = new Date(q.date);
+      const ist = new Date(d.getTime() + IST_OFFSET_MS);
       let timeLabel: string;
       if (['1D', '1d'].includes(timeframe)) {
-        const hh = d.getHours().toString().padStart(2, '0');
-        const mm = d.getMinutes().toString().padStart(2, '0');
+        const hh = ist.getUTCHours().toString().padStart(2, '0');
+        const mm = ist.getUTCMinutes().toString().padStart(2, '0');
         timeLabel = `${hh}:${mm}`;
       } else if (['5D', '5d'].includes(timeframe)) {
         const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        timeLabel = `${days[d.getDay()]} ${d.getHours().toString().padStart(2, '0')}:00`;
+        timeLabel = `${days[ist.getUTCDay()]} ${ist.getUTCHours().toString().padStart(2, '0')}:00`;
       } else if (timeframe === '1M') {
-        timeLabel = `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}`;
+        timeLabel = `${ist.getUTCDate().toString().padStart(2, '0')}/${(ist.getUTCMonth() + 1).toString().padStart(2, '0')}`;
       } else {
-        timeLabel = `${months[d.getMonth()]} ${d.getDate()}`;
+        timeLabel = `${months[ist.getUTCMonth()]} ${ist.getUTCDate()}`;
       }
       return {
         time: timeLabel,
@@ -6326,14 +6328,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
             return prev;
           };
 
+          const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
           const buildChartData = (quotes: any[]): Array<{ price: number; time: string }> => {
             const step = Math.max(1, Math.floor(quotes.length / 20));
             return quotes
               .filter((_: any, i: number) => i % step === 0)
               .map((q: any) => {
                 const d = new Date(q.date);
-                const hh = d.getHours().toString().padStart(2, '0');
-                const mm = d.getMinutes().toString().padStart(2, '0');
+                const ist = new Date(d.getTime() + IST_OFFSET_MS);
+                const hh = ist.getUTCHours().toString().padStart(2, '0');
+                const mm = ist.getUTCMinutes().toString().padStart(2, '0');
                 return { price: q.close ?? q.open ?? 0, time: `${hh}:${mm}` };
               })
               .filter((p: any) => p.price > 0)

@@ -8212,10 +8212,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Transform chart data to match LineChart format - uses price field consistently
   const transformChartData = (data: any[]) => {
     if (!Array.isArray(data)) return [];
-    return data.map((candle: any) => ({
-      time: candle.time || new Date(candle.timestamp * 1000).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
-      price: Number(candle.price) || Number(candle.close) || 0
-    }));
+    const IST_OFFSET_MS = 5.5 * 60 * 60 * 1000;
+    return data.map((candle: any) => {
+      let time = candle.time;
+      if (!time && candle.timestamp) {
+        const ist = new Date(candle.timestamp * 1000 + IST_OFFSET_MS);
+        const hh = ist.getUTCHours().toString().padStart(2, '0');
+        const mm = ist.getUTCMinutes().toString().padStart(2, '0');
+        time = `${hh}:${mm}`;
+      }
+      return {
+        time: time || '',
+        price: Number(candle.price) || Number(candle.close) || 0
+      };
+    });
   };
 
   const nifty50FormattedData = transformChartData(nifty50ChartData);

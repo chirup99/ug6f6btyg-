@@ -25482,7 +25482,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         </div>
       </div>
     </DialogContent>
-  </Dialog>\n        <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+  </Dialog>
+        <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
           <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto custom-thin-scrollbar p-0">
             {/* Compact Header */}
             <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3">

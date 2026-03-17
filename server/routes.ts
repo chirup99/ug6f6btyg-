@@ -28,6 +28,7 @@ import { desc, sql, eq } from "drizzle-orm";
 // REMOVED: Fyers API dependent imports - commented out to fix startup
 // import { intradayAnalyzer } from "./intraday-market-session";
 import { awsDynamoDBService } from './aws-dynamodb-service';
+import { enhancedFinancialScraper } from './enhanced-financial-scraper';
 import { googleCloudService, googleCloudSigninBackupService } from './google-cloud-service';
 // import livePriceRoutes from "./live-price-routes";
 // import hybridDataRoutes from "./hybrid-data-routes";
@@ -6227,6 +6228,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('Error fetching stock analysis:', error);
       res.status(500).json({ error: 'Failed to fetch stock analysis' });
+    }
+  });
+
+  // Annual P&L and Balance Sheet for the Compare Analysis tabs
+  app.get('/api/company-financials/:symbol', async (req, res) => {
+    const symbol = req.params.symbol.toUpperCase();
+    try {
+      const insights = await enhancedFinancialScraper.getCompanyInsights(symbol);
+      res.json({
+        symbol,
+        annualFinancials: insights?.annualFinancials || null
+      });
+    } catch (err) {
+      console.error(`[company-financials] Error for ${symbol}:`, err);
+      res.json({ symbol, annualFinancials: null });
     }
   });
 

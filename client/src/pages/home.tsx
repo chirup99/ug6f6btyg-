@@ -8656,9 +8656,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           else { console.warn(`News fetch failed for ${sym}: ${nRes.status}`); }
         } catch (e) { console.warn(`News fetch error for ${sym}:`, e); }
         try {
-          const aRes = await fetch(`/api/stock-analysis/${sym}`);
-          if (aRes.ok) { const d = await aRes.json(); aData[sym] = d; }
-          else { console.warn(`Analysis fetch failed for ${sym}: ${aRes.status}`); }
+          const [aRes, finRes] = await Promise.all([
+            fetch(`/api/stock-analysis/${sym}`),
+            fetch(`/api/company-financials/${sym}`)
+          ]);
+          const d: any = aRes.ok ? await aRes.json() : {};
+          if (finRes.ok) {
+            const fin = await finRes.json();
+            if (fin?.annualFinancials) d.annualFinancials = fin.annualFinancials;
+          }
+          aData[sym] = d;
         } catch (e) { console.warn(`Analysis fetch error for ${sym}:`, e); }
       }));
       setCompareQuarterlyData(qData);

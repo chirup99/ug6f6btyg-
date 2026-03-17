@@ -8695,6 +8695,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const journalVolumeSeriesRef = useRef<ISeriesApi<'Histogram'> | null>(null);
   const journalPriceLineRef = useRef<IPriceLine | null>(null);
   const journalChartDataRef = useRef<Array<{ time: number; open: number; high: number; low: number; close: number; volume?: number }>>([]);
+  const journalRafRef = useRef<number | null>(null);
+  const journalFetchIdRef = useRef<number>(0);
 
   // EMA values for display in header
   const [journalEmaValues, setJournalEmaValues] = useState<{ ema12: number | null; ema26: number | null }>({ ema12: null, ema26: null });
@@ -8975,9 +8977,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // ✅ MANUAL SEARCH CHART: Standalone - NO dependency on heatmap date selection
   const fetchJournalChartData = useCallback(async () => {
+    // Increment fetch ID - any older in-flight fetches will be ignored when they complete
+    const thisFetchId = ++journalFetchIdRef.current;
+
     try {
-      // STEP 1: Destroy old chart IMMEDIATELY
-      console.log(`🔄 [SEARCH CHART] Destroying old chart...`);
+      // STEP 1: Cancel pending rAF and destroy old chart IMMEDIATELY
+      console.log(`🔄 [SEARCH CHART] Destroying old chart... (fetch #${thisFetchId})`);
+      if (journalRafRef.current !== null) {
+        cancelAnimationFrame(journalRafRef.current);
+        journalRafRef.current = null;
+      }
       if (journalChartRef.current) {
         try { journalChartRef.current.remove(); } catch (e) {}
         journalChartRef.current = null;
@@ -9081,16 +9090,24 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         });
       }
 
+      // Guard: Ignore stale fetch results if a newer fetch has started
+      if (thisFetchId !== journalFetchIdRef.current) {
+        console.log(`⚠️ [SEARCH CHART] Stale fetch #${thisFetchId} ignored (current: #${journalFetchIdRef.current})`);
+        return;
+      }
+
       console.log(`✅ [SEARCH CHART] Chart ready: ${candleData.length} candles for ${cleanSymbol}`);
       setJournalChartData(candleData);
 
-      // Ensure we're on journal tab only (don't change mode here - let auto-fetch handle mode detection)
-
     } catch (error) {
-      console.error("❌ [SEARCH CHART] Error:", error);
-      setJournalChartData([]);
+      if (thisFetchId === journalFetchIdRef.current) {
+        console.error("❌ [SEARCH CHART] Error:", error);
+        setJournalChartData([]);
+      }
     } finally {
-      setJournalChartLoading(false);
+      if (thisFetchId === journalFetchIdRef.current) {
+        setJournalChartLoading(false);
+      }
     }
   }, [selectedJournalSymbol, journalChartTimeframe]);
 
@@ -9121,12 +9138,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // ========== HEATMAP CHART FETCH FUNCTION (Completely Separate) ==========
 
-  // ✅ INSTANT REFETCH when Angel One token refreshes (next day or new session)
+  // ✅ REFETCH when Angel One token refreshes (next day or new session)
+  // Uses a delay to prevent racing with the auto-fetch effect
   useEffect(() => {
     if (!selectedJournalSymbol || !angelOneAccessToken || activeTab !== 'journal') return;
     
-    console.log(`🔄 [TOKEN-REFRESH] Journal chart refetching with new Angel One token`);
-    fetchJournalChartData();
+    const timer = setTimeout(() => {
+      console.log(`🔄 [TOKEN-REFRESH] Journal chart refetching with refreshed Angel One token`);
+      fetchJournalChartData();
+    }, 500);
+    return () => clearTimeout(timer);
   }, [angelOneAccessToken, selectedJournalSymbol, activeTab, fetchJournalChartData]);
   const fetchHeatmapChartData = useCallback(async (symbol: string, date: string) => {
     try {
@@ -9752,6 +9773,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Initialize and render TradingView-style chart for Journal
   useEffect(() => {
     if (activeTab !== 'journal') {
+      if (journalRafRef.current !== null) {
+        cancelAnimationFrame(journalRafRef.current);
+        journalRafRef.current = null;
+      }
       if (journalChartRef.current) {
         try {
           journalChartRef.current.remove();
@@ -9771,14 +9796,30 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       return;
     }
 
-    // ✅ ALWAYS recreate chart when data changes (master effect already destroyed old one)
+    // Cancel any pending rAF from a previous render cycle
+    if (journalRafRef.current !== null) {
+      cancelAnimationFrame(journalRafRef.current);
+      journalRafRef.current = null;
+    }
+
+    // Properly destroy old chart object before clearing DOM
+    if (journalChartRef.current) {
+      try { journalChartRef.current.remove(); } catch (e) {}
+      journalChartRef.current = null;
+      journalCandlestickSeriesRef.current = null;
+      journalEma12SeriesRef.current = null;
+      journalEma26SeriesRef.current = null;
+      journalVolumeSeriesRef.current = null;
+    }
+
     console.log(`📊 Rendering chart with ${journalChartData.length} candles`);
 
-    // Clear container first to remove any placeholder or old content
+    // Clear container DOM content
     journalChartContainerRef.current.innerHTML = '';
 
     // Defer chart creation until layout is ready
-    requestAnimationFrame(() => {
+    journalRafRef.current = requestAnimationFrame(() => {
+      journalRafRef.current = null;
       if (!journalChartContainerRef.current) return;
 
       try {
@@ -10030,9 +10071,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     });
 
     return () => {
-      if (journalChartContainerRef.current && journalChartRef.current) {
-        window.removeEventListener('resize', () => {});
+      if (journalRafRef.current !== null) {
+        cancelAnimationFrame(journalRafRef.current);
+        journalRafRef.current = null;
       }
+      window.removeEventListener('resize', () => {});
     };
   }, [activeTab, selectedJournalSymbol, journalChartTimeframe, journalChartData]);
 

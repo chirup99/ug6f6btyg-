@@ -806,25 +806,25 @@ function SwipeableCardStack({
             }}
           >
             <div
-              className={`bg-gradient-to-br ${card.gradient} rounded-2xl p-5 md:p-6 h-full relative overflow-hidden shadow-xl border-2 border-white/10 flex flex-col`}
+              className={`bg-gradient-to-br ${card.gradient} rounded-2xl p-3 md:p-4 h-full relative overflow-hidden shadow-xl border-2 border-white/10 flex flex-col`}
             >
               {/* Character illustration area */}
-              <div className="absolute bottom-0 right-0 w-20 h-20 md:w-24 md:h-24 opacity-20">
+              <div className="absolute bottom-0 right-0 w-14 h-14 md:w-16 md:h-16 opacity-20">
                 <div className="w-full h-full bg-gradient-to-br from-white/20 to-white/10 rounded-full"></div>
               </div>
 
               {/* Card content */}
               <div className="relative z-10 flex flex-col h-full">
-                <div className="text-[10px] md:text-[9px] text-white/90 mb-1 md:mb-1.5 uppercase tracking-wider font-semibold">
+                <div className="text-[9px] md:text-[8px] text-white/90 mb-0.5 md:mb-1 uppercase tracking-wider font-semibold">
                   {card.title}
                 </div>
-                <h3 className="text-lg md:text-base font-bold text-white mb-3 md:mb-3 leading-snug flex-grow">
+                <h3 className="text-sm md:text-xs font-bold text-white mb-1.5 md:mb-2 leading-snug flex-grow">
                   {card.subtitle.split("\n").map((line, i) => (
                     <div key={i} className="hidden md:block">{line}</div>
                   ))}
                 </h3>
                 <Button
-                  className={`bg-white ${card.buttonColor} hover:bg-gray-100 px-3 py-1.5 md:px-3 md:py-1 rounded-full text-xs md:text-[11px] font-semibold shadow-lg w-fit`}
+                  className={`bg-white ${card.buttonColor} hover:bg-gray-100 px-2.5 py-1 md:px-2.5 md:py-0.5 rounded-full text-[11px] md:text-[10px] font-semibold shadow-lg w-fit`}
                   onClick={() => {
                     if (isTop) {
                       const userId = localStorage.getItem('currentUserId');
@@ -15919,9 +15919,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   {/* World Map Section - At top of main content */}
                   {!searchResults && (
-                    <div className="w-full flex items-center justify-center py-3" style={{ background: theme === 'dark' ? '#1a1a1a' : '#e3f2fd' }}>
+                    <div className="w-full flex items-center justify-center py-1" style={{ background: theme === 'dark' ? '#1a1a1a' : '#e3f2fd' }}>
                       {/* Container for WorldMap - full width on mobile, constrained on desktop */}
-                      <div className="w-full md:max-w-lg flex items-center justify-center">
+                      <div className="w-full md:max-w-md flex items-center justify-center">
                         <WorldMap />
                       </div>
                     </div>
@@ -15960,10 +15960,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   </div>
 
                   {/* Blue Section: Expands to 100% when search results show, fixed height otherwise */}
-                  <div className={`w-full bg-blue-900 flex flex-col items-center justify-start md:py-6 py-0 relative overflow-y-auto ${
-                    searchResults ? "h-screen px-3 md:px-4" : "h-[75vh] md:h-[69vh] px-0 md:px-4"
+                  <div className={`w-full bg-blue-900 flex flex-col items-center justify-start md:py-3 py-0 relative overflow-y-auto ${
+                    searchResults ? "h-screen px-3 md:px-4" : "h-[62vh] md:h-[58vh] px-0 md:px-4"
                   }`}>
-                    <div className="max-w-4xl w-full md:space-y-4">
+                    <div className="max-w-4xl w-full md:space-y-2">
                       {/* Dynamic Greeting - Hidden on mobile */}
                     
 
@@ -15998,7 +15998,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   generateJournalAIReport();
                                 }
                               }}
-                              className="w-full h-12 rounded-2xl bg-gray-800/70 border border-gray-700/60 hover:border-gray-500 hover:bg-gray-800 transition-all duration-200 flex items-center gap-3 px-4 text-left group"
+                              className="w-full h-9 rounded-2xl bg-gray-800/70 border border-gray-700/60 hover:border-gray-500 hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 px-3 text-left group"
                             >
                               {/* Live dot */}
                               <span className="relative flex-shrink-0 flex h-2 w-2">
@@ -19601,7 +19601,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       )}
 
                       {/* Enhanced AI Suggestion Buttons - Desktop only */}
-                      <div className="md:flex hidden flex-wrap items-center justify-center gap-3 max-w-6xl mx-auto md:mt-6">
+                      <div className="md:flex hidden flex-wrap items-center justify-center gap-2 max-w-6xl mx-auto md:mt-3">
                         {/* <Button
                         variant="secondary"
                         className="bg-blue-600 hover:bg-blue-700 text-white border-0 h-11 px-4 rounded-full font-medium transition-all duration-200"
@@ -19757,7 +19757,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
 
                       {/* Trading Tools Section - White container with centered cards */}
-                      <div className={`${searchResults ? 'bg-transparent hidden md:block' : 'bg-white'} md:pt-4 md:pb-4 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mt-[21px] mb-[21px] pt-[32px] pb-[16px] ml-[0px] mr-[0px] pl-[0px] pr-[0px]`}>
+                      <div className={`${searchResults ? 'bg-transparent hidden md:block' : 'bg-white'} md:pt-3 md:pb-3 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mt-[14px] mb-[14px] pt-[22px] pb-[10px] ml-[0px] mr-[0px] pl-[0px] pr-[0px]`}>
                         {/* Mobile Search Bar - Fully visible at top */}
                         <div className="md:hidden absolute -top-3 left-4 right-4 z-50">
                           <div className="relative">
@@ -20123,60 +20123,60 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         </div>
                         {/* Trading Tools Grid - Desktop: 4 columns centered, Mobile: 3 horizontal cards + swipeable below */}
                         {!searchResults && (
-                        <div className="mx-auto max-w-6xl hidden md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-4 md:px-6 md:items-center">
+                        <div className="mx-auto max-w-6xl hidden md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-3 md:px-4 md:items-center">
                           {/* Social Feed Card */}
                           <div
-                            className="bg-blue-500 rounded-2xl overflow-hidden h-36 w-full relative cursor-pointer hover:scale-105 transition-transform"
+                            className="bg-blue-500 rounded-2xl overflow-hidden h-28 w-full relative cursor-pointer hover:scale-105 transition-transform"
                             onClick={() => checkAuthAndNavigate("voice")}
                           >
-                            <div className="absolute top-3 left-3">
-                              <span className="bg-white bg-opacity-90 text-blue-600 px-2.5 py-1 rounded-full text-xs font-medium">
+                            <div className="absolute top-2 left-2">
+                              <span className="bg-white bg-opacity-90 text-blue-600 px-2 py-0.5 rounded-full text-xs font-medium">
                                 Social Feed
                               </span>
                             </div>
-                            <div className="absolute bottom-3 right-3">
-                              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                                <MessageCircle className="h-6 w-6 text-white" />
+                            <div className="absolute bottom-2 right-2">
+                              <div className="w-9 h-9 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <MessageCircle className="h-4 w-4 text-white" />
                               </div>
                             </div>
                           </div>
 
                           {/* Trading Master Card */}
                           <div
-                            className="bg-indigo-500 rounded-2xl overflow-hidden h-36 w-full relative cursor-pointer hover:scale-105 transition-transform"
+                            className="bg-indigo-500 rounded-2xl overflow-hidden h-28 w-full relative cursor-pointer hover:scale-105 transition-transform"
                             onClick={handleTradingMasterAccess}
                           >
-                            <div className="absolute top-3 left-3">
-                              <span className="bg-white bg-opacity-90 text-indigo-600 px-2.5 py-1 rounded-full text-xs font-medium">
+                            <div className="absolute top-2 left-2">
+                              <span className="bg-white bg-opacity-90 text-indigo-600 px-2 py-0.5 rounded-full text-xs font-medium">
                                 Trading Master
                               </span>
                             </div>
-                            <div className="absolute bottom-3 right-3">
-                              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-                                <Activity className="h-6 w-6 text-white" />
+                            <div className="absolute bottom-2 right-2">
+                              <div className="w-9 h-9 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <Activity className="h-4 w-4 text-white" />
                               </div>
                             </div>
                           </div>
 
                           {/* Trading Charts Card */}
                           <div
-                            className="bg-emerald-500 rounded-2xl overflow-hidden h-36 w-full relative cursor-pointer hover:scale-105 transition-transform"
+                            className="bg-emerald-500 rounded-2xl overflow-hidden h-28 w-full relative cursor-pointer hover:scale-105 transition-transform"
                             onClick={() => checkAuthAndNavigate("journal")}
                           >
-                            <div className="absolute top-3 left-3">
-                              <span className="bg-white bg-opacity-90 text-emerald-600 px-2.5 py-1 rounded-full text-xs font-medium">
+                            <div className="absolute top-2 left-2">
+                              <span className="bg-white bg-opacity-90 text-emerald-600 px-2 py-0.5 rounded-full text-xs font-medium">
                                 Journal
                               </span>
                             </div>
-                            <div className="absolute bottom-3 right-3">
-                              <div className="w-12 h-12 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
-                                <Pencil className="h-5 w-5 text-white" />
+                            <div className="absolute bottom-2 right-2">
+                              <div className="w-9 h-9 bg-white bg-opacity-20 rounded-full flex items-center justify-center overflow-hidden">
+                                <Pencil className="h-4 w-4 text-white" />
                               </div>
                             </div>
                           </div>
 
                           {/* Tutor Daily News Swipeable Cards - Portrait orientation with proper spacing */}
-                          <div className="relative h-36 w-full flex items-center justify-center">
+                          <div className="relative h-28 w-full flex items-center justify-center">
                             <SwipeableCardStack
                               onSectorChange={handleSectorChange}
                               selectedSector={selectedSector}

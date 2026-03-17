@@ -8139,9 +8139,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
   const [compareQuarterlyData, setCompareQuarterlyData] = useState<{[symbol: string]: any[]}>({});
   const [compareNewsData, setCompareNewsData] = useState<{[symbol: string]: any[]}>({});
+  const [compareAnalysisData, setCompareAnalysisData] = useState<{[symbol: string]: any}>({});
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareAiInsights, setCompareAiInsights] = useState<string | null>(null);
   const [showCompareResults, setShowCompareResults] = useState(false);
+  const [compareActiveTab, setCompareActiveTab] = useState<'overview'|'pnl'|'balance'|'metrics'>('overview');
   const [nifty50Timeframe, setNifty50Timeframe] = useState('1D');
   const [niftyBankTimeframe, setNiftyBankTimeframe] = useState('1D');
 
@@ -8636,9 +8638,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     setCompareAiInsights(null);
     setCompareQuarterlyData({});
     setCompareNewsData({});
+    setCompareAnalysisData({});
+    setCompareActiveTab('overview');
     try {
       const qData: {[k: string]: any[]} = {};
       const nData: {[k: string]: any[]} = {};
+      const aData: {[k: string]: any} = {};
       await Promise.all(compareSymbols.map(async sym => {
         try {
           const qRes = await fetch(`/api/quarterly-results/${sym}`);
@@ -8650,9 +8655,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           if (nRes.ok) { const d = await nRes.json(); nData[sym] = (Array.isArray(d) ? d : (d.news || [])).slice(0, 3); }
           else { console.warn(`News fetch failed for ${sym}: ${nRes.status}`); }
         } catch (e) { console.warn(`News fetch error for ${sym}:`, e); }
+        try {
+          const aRes = await fetch(`/api/stock-analysis/${sym}`);
+          if (aRes.ok) { const d = await aRes.json(); aData[sym] = d; }
+          else { console.warn(`Analysis fetch failed for ${sym}: ${aRes.status}`); }
+        } catch (e) { console.warn(`Analysis fetch error for ${sym}:`, e); }
       }));
       setCompareQuarterlyData(qData);
       setCompareNewsData(nData);
+      setCompareAnalysisData(aData);
       setCompareAiInsights('ready');
     } catch (e) {
       console.error('Compare analysis error:', e);
@@ -17587,163 +17598,520 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               const best = [...metrics].sort((a,b) => b.growth - a.growth)[0];
                                               const improvingCount = metrics.filter(m => m.trend === 'improving').length;
 
+                                              // Helper: collect all row labels for a financial section across all stocks
+                                              const getFinancialRows = (section: 'profitLoss' | 'balanceSheet') => {
+                                                const labelSet = new Set<string>();
+                                                compareSymbols.forEach(sym => {
+                                                  const rows = compareAnalysisData[sym]?.annualFinancials?.[section] || [];
+                                                  rows.forEach((r: any) => labelSet.add(r.label));
+                                                });
+                                                return Array.from(labelSet);
+                                              };
+
+                                              // Helper: get value for a label/year/stock from financials
+                                              const getFinancialValue = (sym: string, section: 'profitLoss' | 'balanceSheet', label: string, yearIdx: number) => {
+                                                const rows = compareAnalysisData[sym]?.annualFinancials?.[section] || [];
+                                                const row = rows.find((r: any) => r.label === label);
+                                                if (!row) return null;
+                                                const val = row.values?.[yearIdx]?.value;
+                                                if (val === undefined || val === null) return null;
+                                                const num = typeof val === 'string' ? parseFloat(val.replace(/,/g,'')) : Number(val);
+                                                return isNaN(num) ? val : num;
+                                              };
+
+                                              // Merged years across all stocks for a section
+                                              const getMergedYears = (_section: 'profitLoss' | 'balanceSheet') => {
+                                                const yearSets = compareSymbols.map(sym => compareAnalysisData[sym]?.annualFinancials?.years || []);
+                                                return yearSets.reduce((a: string[], b: string[]) => a.length >= b.length ? a : b, []).slice(0, 5);
+                                              };
+
+                                              const tabs = [
+                                                { id: 'overview', label: 'Overview' },
+                                                { id: 'pnl', label: 'P&L Statement' },
+                                                { id: 'balance', label: 'Balance Sheet' },
+                                                { id: 'metrics', label: 'Key Metrics' },
+                                              ] as const;
+
                                               return (
-                                                <div className="px-4 pb-4 space-y-4">
-
-                                                  {/* Bar chart */}
-                                                  <div className="border-t border-gray-700/50 pt-4">
-                                                    <div className="flex items-center gap-2 mb-3 flex-wrap">
-                                                      <TrendingUp className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                                                      <span className="text-xs font-semibold text-gray-300">Quarterly Net Profit (₹ Cr)</span>
-                                                      <div className="flex items-center gap-3 ml-auto flex-wrap">
-                                                        {compareSymbols.map((sym, i) => (
-                                                          <span key={sym} className="flex items-center gap-1 text-[11px]" style={{ color: COLORS[i] }}>
-                                                            <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ background: COLORS[i] }} />
-                                                            {sym}
-                                                          </span>
-                                                        ))}
-                                                      </div>
-                                                    </div>
-                                                    {chartRows.length > 0 ? (
-                                                      <div className="h-44 w-full">
-                                                        <ResponsiveContainer width="100%" height="100%">
-                                                          <BarChart data={chartRows} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
-                                                            <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
-                                                            <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v: number) => `₹${(v/1000).toFixed(0)}K`} axisLine={false} tickLine={false} width={40} />
-                                                            <Tooltip
-                                                              contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: '8px', fontSize: '11px' }}
-                                                              formatter={(v: any, name: any) => [`₹${Number(v).toLocaleString()} Cr`, name]}
-                                                            />
-                                                            {compareSymbols.map((sym, i) => (
-                                                              <Bar key={sym} dataKey={sym} fill={COLORS[i]} radius={[3,3,0,0]} maxBarSize={30} />
-                                                            ))}
-                                                          </BarChart>
-                                                        </ResponsiveContainer>
-                                                      </div>
-                                                    ) : (
-                                                      <p className="text-xs text-gray-500 text-center py-6">No quarterly data available for selected stocks</p>
-                                                    )}
+                                                <div className="pb-4">
+                                                  {/* Tab bar */}
+                                                  <div className="flex border-b border-gray-700/60 px-4 pt-3 gap-1 overflow-x-auto">
+                                                    {tabs.map(tab => (
+                                                      <button
+                                                        key={tab.id}
+                                                        onClick={() => setCompareActiveTab(tab.id)}
+                                                        className={`px-3 py-1.5 text-xs font-medium rounded-t-lg whitespace-nowrap transition-colors ${
+                                                          compareActiveTab === tab.id
+                                                            ? 'bg-purple-600/20 text-purple-300 border-b-2 border-purple-500'
+                                                            : 'text-gray-500 hover:text-gray-300'
+                                                        }`}
+                                                      >
+                                                        {tab.label}
+                                                      </button>
+                                                    ))}
                                                   </div>
 
-                                                  {/* P&L table */}
-                                                  {chartRows.length > 0 && (
-                                                    <div className="border-t border-gray-700/50 pt-3">
-                                                      <span className="text-xs font-semibold text-gray-300 block mb-2">P&amp;L Summary — Net Profit (₹ Cr)</span>
-                                                      <div className="overflow-x-auto rounded-lg border border-gray-700/40">
-                                                        <table className="w-full text-xs min-w-full">
-                                                          <thead>
-                                                            <tr className="bg-gray-800/50">
-                                                              <th className="text-left py-2 px-3 font-medium text-gray-400">Quarter</th>
+                                                  <div className="px-4 space-y-4 pt-4">
+
+                                                    {/* ── OVERVIEW TAB ── */}
+                                                    {compareActiveTab === 'overview' && (
+                                                      <>
+                                                        {/* Bar chart */}
+                                                        <div>
+                                                          <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                                            <TrendingUp className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                                                            <span className="text-xs font-semibold text-gray-300">Quarterly Net Profit (₹ Cr)</span>
+                                                            <div className="flex items-center gap-3 ml-auto flex-wrap">
                                                               {compareSymbols.map((sym, i) => (
-                                                                <th key={sym} className="text-right py-2 px-3 font-medium" style={{ color: COLORS[i] }}>{sym}</th>
-                                                              ))}
-                                                            </tr>
-                                                          </thead>
-                                                          <tbody>
-                                                            {chartRows.slice(-5).map((row, i) => (
-                                                              <tr key={i} className="border-t border-gray-800/60 hover:bg-gray-800/30 transition-colors">
-                                                                <td className="py-2 px-3 text-gray-400">{row.quarter}</td>
-                                                                {compareSymbols.map((sym) => (
-                                                                  <td key={sym} className="text-right py-2 px-3 font-mono" style={{ color: row[sym] != null ? (row[sym] >= 0 ? '#d1fae5' : '#fca5a5') : '#6b7280' }}>
-                                                                    {row[sym] != null ? `₹${Number(row[sym]).toLocaleString()}` : '—'}
-                                                                  </td>
-                                                                ))}
-                                                              </tr>
-                                                            ))}
-                                                          </tbody>
-                                                        </table>
-                                                      </div>
-                                                    </div>
-                                                  )}
-
-                                                  {/* PDF links */}
-                                                  {compareSymbols.some(sym => (compareQuarterlyData[sym] || []).some((q: any) => q.pdf_url)) && (
-                                                    <div className="border-t border-gray-700/50 pt-3">
-                                                      <span className="text-xs font-semibold text-gray-300 block mb-2">Quarterly Result PDFs</span>
-                                                      <div className="space-y-2">
-                                                        {compareSymbols.map((sym, si) => {
-                                                          const pdfs = (compareQuarterlyData[sym] || []).filter((q: any) => q.pdf_url).slice(-4);
-                                                          if (!pdfs.length) return null;
-                                                          return (
-                                                            <div key={sym} className="flex items-center gap-2 flex-wrap">
-                                                              <span className="text-[11px] font-semibold w-16 shrink-0" style={{ color: COLORS[si] }}>{sym}</span>
-                                                              {pdfs.map((q: any, idx: number) => (
-                                                                <a key={idx} href={q.pdf_url} target="_blank" rel="noopener noreferrer"
-                                                                  className="flex items-center gap-1 px-2 py-0.5 bg-gray-800 hover:bg-gray-700 rounded text-[11px] text-gray-300 border border-gray-700/60 hover:border-gray-500 transition-colors">
-                                                                  <FileText className="h-2.5 w-2.5 shrink-0" />{q.quarter}
-                                                                </a>
-                                                              ))}
-                                                            </div>
-                                                          );
-                                                        })}
-                                                      </div>
-                                                    </div>
-                                                  )}
-
-                                                  {/* Latest news per stock */}
-                                                  <div className="border-t border-gray-700/50 pt-3">
-                                                    <span className="text-xs font-semibold text-gray-300 block mb-2">Latest News</span>
-                                                    <div className="space-y-3">
-                                                      {compareSymbols.map((sym, si) => {
-                                                        const news = compareNewsData[sym] || [];
-                                                        if (!news.length) return (
-                                                          <div key={sym}>
-                                                            <span className="text-[11px] font-semibold" style={{ color: COLORS[si] }}>{sym}</span>
-                                                            <p className="text-[11px] text-gray-600 mt-1">No news available</p>
-                                                          </div>
-                                                        );
-                                                        return (
-                                                          <div key={sym}>
-                                                            <span className="text-[11px] font-semibold block mb-1" style={{ color: COLORS[si] }}>{sym}</span>
-                                                            <div className="space-y-1.5">
-                                                              {news.slice(0,2).map((n: any, ni: number) => (
-                                                                <a key={ni} href={n.url} target="_blank" rel="noopener noreferrer"
-                                                                  className="flex items-start gap-1.5 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 border border-gray-700/40 hover:border-gray-600 group transition-colors">
-                                                                  <ExternalLink className="h-3 w-3 text-gray-600 group-hover:text-gray-400 shrink-0 mt-0.5" />
-                                                                  <span className="text-[11px] text-gray-400 group-hover:text-gray-200 line-clamp-2 transition-colors">{n.title}</span>
-                                                                </a>
+                                                                <span key={sym} className="flex items-center gap-1 text-[11px]" style={{ color: COLORS[i] }}>
+                                                                  <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ background: COLORS[i] }} />
+                                                                  {sym}
+                                                                </span>
                                                               ))}
                                                             </div>
                                                           </div>
-                                                        );
-                                                      })}
-                                                    </div>
-                                                  </div>
+                                                          {chartRows.length > 0 ? (
+                                                            <div className="h-44 w-full">
+                                                              <ResponsiveContainer width="100%" height="100%">
+                                                                <BarChart data={chartRows} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                                                                  <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                                                                  <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v: number) => `₹${(v/1000).toFixed(0)}K`} axisLine={false} tickLine={false} width={40} />
+                                                                  <Tooltip
+                                                                    contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: '8px', fontSize: '11px' }}
+                                                                    formatter={(v: any, name: any) => [`₹${Number(v).toLocaleString()} Cr`, name]}
+                                                                  />
+                                                                  {compareSymbols.map((sym, i) => (
+                                                                    <Bar key={sym} dataKey={sym} fill={COLORS[i]} radius={[3,3,0,0]} maxBarSize={30} />
+                                                                  ))}
+                                                                </BarChart>
+                                                              </ResponsiveContainer>
+                                                            </div>
+                                                          ) : (
+                                                            <p className="text-xs text-gray-500 text-center py-6">No quarterly data available for selected stocks</p>
+                                                          )}
+                                                        </div>
 
-                                                  {/* AI Insights */}
-                                                  {compareAiInsights && (
-                                                    <div className="border-t border-gray-700/50 pt-3">
-                                                      <div className="flex items-center gap-2 mb-2">
-                                                        <Sparkles className="h-3.5 w-3.5 text-purple-400" />
-                                                        <span className="text-xs font-semibold text-gray-300">AI Insights</span>
-                                                      </div>
-                                                      <div className="p-3 bg-purple-900/20 rounded-lg border border-purple-700/30 space-y-1.5">
-                                                        {metrics.map((m, i) => (
-                                                          <p key={m.sym} className="text-xs text-gray-300">
-                                                            <span className="font-semibold" style={{ color: m.color }}>• {m.sym}:</span>{' '}
-                                                            Net profit {m.growth >= 0 ? 'growth' : 'decline'} of{' '}
-                                                            <span className={m.growth >= 0 ? 'text-green-400' : 'text-red-400'}>
-                                                              {m.growth >= 0 ? '+' : ''}{m.growth.toFixed(1)}%
-                                                            </span>{' '}
-                                                            over {m.quarters} quarters — <span className={m.trend === 'improving' ? 'text-green-400' : 'text-red-400'}>{m.trend}</span> trend
-                                                          </p>
-                                                        ))}
-                                                        {best && (
-                                                          <p className="text-xs text-gray-300 mt-2 pt-2 border-t border-purple-700/20">
-                                                            📊 <span className="font-semibold text-purple-300">Best performer:</span> {best.sym} with {best.growth >= 0 ? '+' : ''}{best.growth.toFixed(1)}% profit growth
-                                                          </p>
+                                                        {/* Quarterly net profit table */}
+                                                        {chartRows.length > 0 && (
+                                                          <div className="border-t border-gray-700/50 pt-3">
+                                                            <span className="text-xs font-semibold text-gray-300 block mb-2">Quarterly Net Profit Summary (₹ Cr)</span>
+                                                            <div className="overflow-x-auto rounded-lg border border-gray-700/40">
+                                                              <table className="w-full text-xs min-w-full">
+                                                                <thead>
+                                                                  <tr className="bg-gray-800/50">
+                                                                    <th className="text-left py-2 px-3 font-medium text-gray-400">Quarter</th>
+                                                                    {compareSymbols.map((sym, i) => (
+                                                                      <th key={sym} className="text-right py-2 px-3 font-medium" style={{ color: COLORS[i] }}>{sym}</th>
+                                                                    ))}
+                                                                  </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                  {chartRows.slice(-5).map((row, i) => (
+                                                                    <tr key={i} className="border-t border-gray-800/60 hover:bg-gray-800/30 transition-colors">
+                                                                      <td className="py-2 px-3 text-gray-400">{row.quarter}</td>
+                                                                      {compareSymbols.map((sym) => (
+                                                                        <td key={sym} className="text-right py-2 px-3 font-mono" style={{ color: row[sym] != null ? (row[sym] >= 0 ? '#d1fae5' : '#fca5a5') : '#6b7280' }}>
+                                                                          {row[sym] != null ? `₹${Number(row[sym]).toLocaleString()}` : '—'}
+                                                                        </td>
+                                                                      ))}
+                                                                    </tr>
+                                                                  ))}
+                                                                </tbody>
+                                                              </table>
+                                                            </div>
+                                                          </div>
                                                         )}
-                                                        <p className="text-xs text-gray-400">
-                                                          🎯 {improvingCount === compareSymbols.length
-                                                            ? 'All selected stocks show improving trends — broadly positive outlook.'
-                                                            : improvingCount === 0
-                                                              ? 'All stocks show declining recent quarters — exercise caution.'
-                                                              : `${improvingCount}/${compareSymbols.length} stocks improving. Selective approach advised.`}
-                                                        </p>
-                                                      </div>
-                                                    </div>
-                                                  )}
 
+                                                        {/* PDF links */}
+                                                        {compareSymbols.some(sym => (compareQuarterlyData[sym] || []).some((q: any) => q.pdf_url)) && (
+                                                          <div className="border-t border-gray-700/50 pt-3">
+                                                            <span className="text-xs font-semibold text-gray-300 block mb-2">Quarterly Result PDFs</span>
+                                                            <div className="space-y-2">
+                                                              {compareSymbols.map((sym, si) => {
+                                                                const pdfs = (compareQuarterlyData[sym] || []).filter((q: any) => q.pdf_url).slice(-4);
+                                                                if (!pdfs.length) return null;
+                                                                return (
+                                                                  <div key={sym} className="flex items-center gap-2 flex-wrap">
+                                                                    <span className="text-[11px] font-semibold w-16 shrink-0" style={{ color: COLORS[si] }}>{sym}</span>
+                                                                    {pdfs.map((q: any, idx: number) => (
+                                                                      <a key={idx} href={q.pdf_url} target="_blank" rel="noopener noreferrer"
+                                                                        className="flex items-center gap-1 px-2 py-0.5 bg-gray-800 hover:bg-gray-700 rounded text-[11px] text-gray-300 border border-gray-700/60 hover:border-gray-500 transition-colors">
+                                                                        <FileText className="h-2.5 w-2.5 shrink-0" />{q.quarter}
+                                                                      </a>
+                                                                    ))}
+                                                                  </div>
+                                                                );
+                                                              })}
+                                                            </div>
+                                                          </div>
+                                                        )}
+
+                                                        {/* Latest news */}
+                                                        <div className="border-t border-gray-700/50 pt-3">
+                                                          <span className="text-xs font-semibold text-gray-300 block mb-2">Latest News</span>
+                                                          <div className="space-y-3">
+                                                            {compareSymbols.map((sym, si) => {
+                                                              const news = compareNewsData[sym] || [];
+                                                              if (!news.length) return (
+                                                                <div key={sym}>
+                                                                  <span className="text-[11px] font-semibold" style={{ color: COLORS[si] }}>{sym}</span>
+                                                                  <p className="text-[11px] text-gray-600 mt-1">No news available</p>
+                                                                </div>
+                                                              );
+                                                              return (
+                                                                <div key={sym}>
+                                                                  <span className="text-[11px] font-semibold block mb-1" style={{ color: COLORS[si] }}>{sym}</span>
+                                                                  <div className="space-y-1.5">
+                                                                    {news.slice(0,2).map((n: any, ni: number) => (
+                                                                      <a key={ni} href={n.url} target="_blank" rel="noopener noreferrer"
+                                                                        className="flex items-start gap-1.5 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 border border-gray-700/40 hover:border-gray-600 group transition-colors">
+                                                                        <ExternalLink className="h-3 w-3 text-gray-600 group-hover:text-gray-400 shrink-0 mt-0.5" />
+                                                                        <span className="text-[11px] text-gray-400 group-hover:text-gray-200 line-clamp-2 transition-colors">{n.title}</span>
+                                                                      </a>
+                                                                    ))}
+                                                                  </div>
+                                                                </div>
+                                                              );
+                                                            })}
+                                                          </div>
+                                                        </div>
+
+                                                        {/* AI Insights */}
+                                                        {compareAiInsights && (
+                                                          <div className="border-t border-gray-700/50 pt-3">
+                                                            <div className="flex items-center gap-2 mb-2">
+                                                              <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+                                                              <span className="text-xs font-semibold text-gray-300">AI Insights</span>
+                                                            </div>
+                                                            <div className="p-3 bg-purple-900/20 rounded-lg border border-purple-700/30 space-y-1.5">
+                                                              {metrics.map((m) => (
+                                                                <p key={m.sym} className="text-xs text-gray-300">
+                                                                  <span className="font-semibold" style={{ color: m.color }}>• {m.sym}:</span>{' '}
+                                                                  Net profit {m.growth >= 0 ? 'growth' : 'decline'} of{' '}
+                                                                  <span className={m.growth >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                                                    {m.growth >= 0 ? '+' : ''}{m.growth.toFixed(1)}%
+                                                                  </span>{' '}
+                                                                  over {m.quarters} quarters — <span className={m.trend === 'improving' ? 'text-green-400' : 'text-red-400'}>{m.trend}</span> trend
+                                                                </p>
+                                                              ))}
+                                                              {best && (
+                                                                <p className="text-xs text-gray-300 mt-2 pt-2 border-t border-purple-700/20">
+                                                                  📊 <span className="font-semibold text-purple-300">Best performer:</span> {best.sym} with {best.growth >= 0 ? '+' : ''}{best.growth.toFixed(1)}% profit growth
+                                                                </p>
+                                                              )}
+                                                              <p className="text-xs text-gray-400">
+                                                                🎯 {improvingCount === compareSymbols.length
+                                                                  ? 'All selected stocks show improving trends — broadly positive outlook.'
+                                                                  : improvingCount === 0
+                                                                    ? 'All stocks show declining recent quarters — exercise caution.'
+                                                                    : `${improvingCount}/${compareSymbols.length} stocks improving. Selective approach advised.`}
+                                                              </p>
+                                                            </div>
+                                                          </div>
+                                                        )}
+                                                      </>
+                                                    )}
+
+                                                    {/* ── P&L STATEMENT TAB ── */}
+                                                    {compareActiveTab === 'pnl' && (() => {
+                                                      const pnlLabels = getFinancialRows('profitLoss');
+                                                      const years = getMergedYears('profitLoss');
+                                                      const hasPnl = compareSymbols.some(sym => (compareAnalysisData[sym]?.annualFinancials?.profitLoss || []).length > 0);
+                                                      if (!hasPnl) return (
+                                                        <div className="text-center py-8">
+                                                          <p className="text-xs text-gray-500">Annual P&amp;L data not available for selected stocks</p>
+                                                          <p className="text-[11px] text-gray-600 mt-1">Try stocks like RELIANCE, TCS, HDFCBANK</p>
+                                                        </div>
+                                                      );
+                                                      return (
+                                                        <div className="space-y-4">
+                                                          {/* Per-stock annual P&L tables */}
+                                                          {compareSymbols.map((sym, si) => {
+                                                            const symPnl = compareAnalysisData[sym]?.annualFinancials?.profitLoss || [];
+                                                            const symYears = (compareAnalysisData[sym]?.annualFinancials?.years || []).slice(0, 5);
+                                                            if (!symPnl.length) return (
+                                                              <div key={sym} className="rounded-lg border border-gray-700/40 p-3">
+                                                                <span className="text-xs font-semibold" style={{ color: COLORS[si] }}>{sym}</span>
+                                                                <p className="text-[11px] text-gray-600 mt-1">No P&amp;L data available</p>
+                                                              </div>
+                                                            );
+                                                            return (
+                                                              <div key={sym} className="rounded-lg border border-gray-700/40 overflow-hidden">
+                                                                <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 border-b border-gray-700/40">
+                                                                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[si] }} />
+                                                                  <span className="text-xs font-semibold" style={{ color: COLORS[si] }}>{sym}</span>
+                                                                  <span className="text-[11px] text-gray-500 ml-auto">Profit & Loss Statement (₹ Cr)</span>
+                                                                </div>
+                                                                <div className="overflow-x-auto">
+                                                                  <table className="w-full text-xs min-w-full">
+                                                                    <thead>
+                                                                      <tr className="bg-gray-800/30">
+                                                                        <th className="text-left py-2 px-3 font-medium text-gray-400 min-w-[140px]">Particulars</th>
+                                                                        {symYears.map((y: string) => (
+                                                                          <th key={y} className="text-right py-2 px-3 font-medium text-gray-400 whitespace-nowrap">{y}</th>
+                                                                        ))}
+                                                                      </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                      {symPnl.map((row: any, idx: number) => {
+                                                                        const isHighlight = row.label?.toLowerCase().includes('net profit') || row.label?.toLowerCase().includes('total revenue') || row.label?.toLowerCase().includes('ebitda') || row.label?.toLowerCase().includes('pat');
+                                                                        return (
+                                                                          <tr key={idx} className={`border-t border-gray-800/60 hover:bg-gray-800/20 transition-colors ${isHighlight ? 'bg-gray-800/30 font-semibold' : ''}`}>
+                                                                            <td className="py-2 px-3 text-gray-300 min-w-[140px]">{row.label}</td>
+                                                                            {(row.values || []).slice(0, 5).map((v: any, vIdx: number) => {
+                                                                              const numVal = typeof v?.value === 'string' ? parseFloat(v.value.replace(/,/g,'')) : Number(v?.value ?? 0);
+                                                                              return (
+                                                                                <td key={vIdx} className={`text-right py-2 px-3 font-mono whitespace-nowrap ${isNaN(numVal) ? 'text-gray-400' : numVal >= 0 ? 'text-gray-200' : 'text-red-400'}`}>
+                                                                                  {isNaN(numVal) ? (v?.value || '—') : numVal.toLocaleString()}
+                                                                                </td>
+                                                                              );
+                                                                            })}
+                                                                          </tr>
+                                                                        );
+                                                                      })}
+                                                                    </tbody>
+                                                                  </table>
+                                                                </div>
+                                                              </div>
+                                                            );
+                                                          })}
+
+                                                          {/* Side-by-side comparison for common rows */}
+                                                          {pnlLabels.length > 0 && compareSymbols.length >= 2 && (
+                                                            <div className="border-t border-gray-700/50 pt-3">
+                                                              <div className="flex items-center gap-2 mb-2">
+                                                                <Sparkles className="h-3 w-3 text-purple-400" />
+                                                                <span className="text-xs font-semibold text-gray-300">Side-by-Side P&amp;L Comparison (Latest Year)</span>
+                                                              </div>
+                                                              <div className="overflow-x-auto rounded-lg border border-gray-700/40">
+                                                                <table className="w-full text-xs min-w-full">
+                                                                  <thead>
+                                                                    <tr className="bg-gray-800/50">
+                                                                      <th className="text-left py-2 px-3 font-medium text-gray-400 min-w-[140px]">Particulars</th>
+                                                                      {compareSymbols.map((sym, i) => (
+                                                                        <th key={sym} className="text-right py-2 px-3 font-medium whitespace-nowrap" style={{ color: COLORS[i] }}>{sym}</th>
+                                                                      ))}
+                                                                    </tr>
+                                                                  </thead>
+                                                                  <tbody>
+                                                                    {pnlLabels.map((label, idx) => {
+                                                                      const isHighlight = label?.toLowerCase().includes('net profit') || label?.toLowerCase().includes('total revenue') || label?.toLowerCase().includes('ebitda') || label?.toLowerCase().includes('pat');
+                                                                      return (
+                                                                        <tr key={idx} className={`border-t border-gray-800/60 hover:bg-gray-800/20 transition-colors ${isHighlight ? 'bg-gray-800/30 font-semibold' : ''}`}>
+                                                                          <td className="py-2 px-3 text-gray-300 min-w-[140px]">{label}</td>
+                                                                          {compareSymbols.map((sym) => {
+                                                                            const val = getFinancialValue(sym, 'profitLoss', label, 0);
+                                                                            const numVal = typeof val === 'number' ? val : parseFloat(String(val || '').replace(/,/g,''));
+                                                                            return (
+                                                                              <td key={sym} className={`text-right py-2 px-3 font-mono whitespace-nowrap ${val === null ? 'text-gray-600' : isNaN(numVal) ? 'text-gray-300' : numVal >= 0 ? 'text-gray-200' : 'text-red-400'}`}>
+                                                                                {val === null ? '—' : isNaN(numVal) ? String(val) : numVal.toLocaleString()}
+                                                                              </td>
+                                                                            );
+                                                                          })}
+                                                                        </tr>
+                                                                      );
+                                                                    })}
+                                                                  </tbody>
+                                                                </table>
+                                                              </div>
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                      );
+                                                    })()}
+
+                                                    {/* ── BALANCE SHEET TAB ── */}
+                                                    {compareActiveTab === 'balance' && (() => {
+                                                      const bsLabels = getFinancialRows('balanceSheet');
+                                                      const hasBS = compareSymbols.some(sym => (compareAnalysisData[sym]?.annualFinancials?.balanceSheet || []).length > 0);
+                                                      if (!hasBS) return (
+                                                        <div className="text-center py-8">
+                                                          <p className="text-xs text-gray-500">Balance sheet data not available for selected stocks</p>
+                                                          <p className="text-[11px] text-gray-600 mt-1">Try stocks like RELIANCE, TCS, HDFCBANK</p>
+                                                        </div>
+                                                      );
+                                                      return (
+                                                        <div className="space-y-4">
+                                                          {/* Per-stock balance sheets */}
+                                                          {compareSymbols.map((sym, si) => {
+                                                            const symBS = compareAnalysisData[sym]?.annualFinancials?.balanceSheet || [];
+                                                            const symYears = (compareAnalysisData[sym]?.annualFinancials?.years || []).slice(0, 5);
+                                                            if (!symBS.length) return (
+                                                              <div key={sym} className="rounded-lg border border-gray-700/40 p-3">
+                                                                <span className="text-xs font-semibold" style={{ color: COLORS[si] }}>{sym}</span>
+                                                                <p className="text-[11px] text-gray-600 mt-1">No balance sheet data available</p>
+                                                              </div>
+                                                            );
+                                                            return (
+                                                              <div key={sym} className="rounded-lg border border-gray-700/40 overflow-hidden">
+                                                                <div className="flex items-center gap-2 px-3 py-2 bg-gray-800/50 border-b border-gray-700/40">
+                                                                  <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: COLORS[si] }} />
+                                                                  <span className="text-xs font-semibold" style={{ color: COLORS[si] }}>{sym}</span>
+                                                                  <span className="text-[11px] text-gray-500 ml-auto">Balance Sheet (₹ Cr)</span>
+                                                                </div>
+                                                                <div className="overflow-x-auto">
+                                                                  <table className="w-full text-xs min-w-full">
+                                                                    <thead>
+                                                                      <tr className="bg-gray-800/30">
+                                                                        <th className="text-left py-2 px-3 font-medium text-gray-400 min-w-[140px]">Particulars</th>
+                                                                        {symYears.map((y: string) => (
+                                                                          <th key={y} className="text-right py-2 px-3 font-medium text-gray-400 whitespace-nowrap">{y}</th>
+                                                                        ))}
+                                                                      </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                      {symBS.map((row: any, idx: number) => {
+                                                                        const isHighlight = row.label?.toLowerCase().includes('total assets') || row.label?.toLowerCase().includes('total liabilities') || row.label?.toLowerCase().includes('equity') || row.label?.toLowerCase().includes('net worth');
+                                                                        return (
+                                                                          <tr key={idx} className={`border-t border-gray-800/60 hover:bg-gray-800/20 transition-colors ${isHighlight ? 'bg-gray-800/30 font-semibold' : ''}`}>
+                                                                            <td className="py-2 px-3 text-gray-300 min-w-[140px]">{row.label}</td>
+                                                                            {(row.values || []).slice(0, 5).map((v: any, vIdx: number) => {
+                                                                              const numVal = typeof v?.value === 'string' ? parseFloat(v.value.replace(/,/g,'')) : Number(v?.value ?? 0);
+                                                                              return (
+                                                                                <td key={vIdx} className={`text-right py-2 px-3 font-mono whitespace-nowrap ${isNaN(numVal) ? 'text-gray-400' : numVal >= 0 ? 'text-gray-200' : 'text-red-400'}`}>
+                                                                                  {isNaN(numVal) ? (v?.value || '—') : numVal.toLocaleString()}
+                                                                                </td>
+                                                                              );
+                                                                            })}
+                                                                          </tr>
+                                                                        );
+                                                                      })}
+                                                                    </tbody>
+                                                                  </table>
+                                                                </div>
+                                                              </div>
+                                                            );
+                                                          })}
+
+                                                          {/* Side-by-side comparison */}
+                                                          {bsLabels.length > 0 && compareSymbols.length >= 2 && (
+                                                            <div className="border-t border-gray-700/50 pt-3">
+                                                              <div className="flex items-center gap-2 mb-2">
+                                                                <Sparkles className="h-3 w-3 text-purple-400" />
+                                                                <span className="text-xs font-semibold text-gray-300">Side-by-Side Balance Sheet (Latest Year)</span>
+                                                              </div>
+                                                              <div className="overflow-x-auto rounded-lg border border-gray-700/40">
+                                                                <table className="w-full text-xs min-w-full">
+                                                                  <thead>
+                                                                    <tr className="bg-gray-800/50">
+                                                                      <th className="text-left py-2 px-3 font-medium text-gray-400 min-w-[140px]">Particulars</th>
+                                                                      {compareSymbols.map((sym, i) => (
+                                                                        <th key={sym} className="text-right py-2 px-3 font-medium whitespace-nowrap" style={{ color: COLORS[i] }}>{sym}</th>
+                                                                      ))}
+                                                                    </tr>
+                                                                  </thead>
+                                                                  <tbody>
+                                                                    {bsLabels.map((label, idx) => {
+                                                                      const isHighlight = label?.toLowerCase().includes('total assets') || label?.toLowerCase().includes('total liabilities') || label?.toLowerCase().includes('equity') || label?.toLowerCase().includes('net worth');
+                                                                      return (
+                                                                        <tr key={idx} className={`border-t border-gray-800/60 hover:bg-gray-800/20 transition-colors ${isHighlight ? 'bg-gray-800/30 font-semibold' : ''}`}>
+                                                                          <td className="py-2 px-3 text-gray-300 min-w-[140px]">{label}</td>
+                                                                          {compareSymbols.map((sym) => {
+                                                                            const val = getFinancialValue(sym, 'balanceSheet', label, 0);
+                                                                            const numVal = typeof val === 'number' ? val : parseFloat(String(val || '').replace(/,/g,''));
+                                                                            return (
+                                                                              <td key={sym} className={`text-right py-2 px-3 font-mono whitespace-nowrap ${val === null ? 'text-gray-600' : isNaN(numVal) ? 'text-gray-300' : numVal >= 0 ? 'text-gray-200' : 'text-red-400'}`}>
+                                                                                {val === null ? '—' : isNaN(numVal) ? String(val) : numVal.toLocaleString()}
+                                                                              </td>
+                                                                            );
+                                                                          })}
+                                                                        </tr>
+                                                                      );
+                                                                    })}
+                                                                  </tbody>
+                                                                </table>
+                                                              </div>
+                                                            </div>
+                                                          )}
+                                                        </div>
+                                                      );
+                                                    })()}
+
+                                                    {/* ── KEY METRICS TAB ── */}
+                                                    {compareActiveTab === 'metrics' && (() => {
+                                                      const metricDefs = [
+                                                        { label: 'Current Price (₹)', key: (d: any) => d?.priceData?.close || d?.priceData?.price },
+                                                        { label: 'Open (₹)', key: (d: any) => d?.priceData?.open },
+                                                        { label: 'High (₹)', key: (d: any) => d?.priceData?.high },
+                                                        { label: 'Low (₹)', key: (d: any) => d?.priceData?.low },
+                                                        { label: '52W High (₹)', key: (d: any) => d?.priceData?.week52High },
+                                                        { label: '52W Low (₹)', key: (d: any) => d?.priceData?.week52Low },
+                                                        { label: 'P/E Ratio', key: (d: any) => d?.priceData?.pe || d?.fundamentals?.pe },
+                                                        { label: 'P/B Ratio', key: (d: any) => d?.priceData?.pb || d?.fundamentals?.pb },
+                                                        { label: 'EPS (₹)', key: (d: any) => d?.priceData?.eps || d?.fundamentals?.eps },
+                                                        { label: 'Market Cap (₹ Cr)', key: (d: any) => d?.priceData?.marketCap || d?.fundamentals?.marketCap },
+                                                        { label: 'Book Value (₹)', key: (d: any) => d?.priceData?.bookValue || d?.fundamentals?.bookValue },
+                                                        { label: 'Dividend Yield (%)', key: (d: any) => d?.priceData?.dividendYield || d?.fundamentals?.dividendYield },
+                                                        { label: 'ROE (%)', key: (d: any) => d?.fundamentals?.roe || d?.moneycontrolData?.roe },
+                                                        { label: 'ROCE (%)', key: (d: any) => d?.fundamentals?.roce || d?.moneycontrolData?.roce },
+                                                        { label: 'Debt-to-Equity', key: (d: any) => d?.fundamentals?.debtToEquity || d?.moneycontrolData?.deRatio },
+                                                        { label: 'Current Ratio', key: (d: any) => d?.fundamentals?.currentRatio || d?.moneycontrolData?.currentRatio },
+                                                        { label: 'Profit Margin (%)', key: (d: any) => d?.moneycontrolData?.profitMargin },
+                                                        { label: 'Revenue Growth (%)', key: (d: any) => d?.moneycontrolData?.revenueGrowth },
+                                                        { label: 'Beta', key: (d: any) => d?.fundamentals?.beta || d?.moneycontrolData?.beta },
+                                                      ];
+
+                                                      const hasMetrics = compareSymbols.some(sym => compareAnalysisData[sym]);
+                                                      if (!hasMetrics) return (
+                                                        <div className="text-center py-8">
+                                                          <p className="text-xs text-gray-500">Key metrics data not available</p>
+                                                        </div>
+                                                      );
+
+                                                      return (
+                                                        <div className="space-y-3">
+                                                          <div className="overflow-x-auto rounded-lg border border-gray-700/40">
+                                                            <table className="w-full text-xs min-w-full">
+                                                              <thead>
+                                                                <tr className="bg-gray-800/50">
+                                                                  <th className="text-left py-2 px-3 font-medium text-gray-400 min-w-[140px]">Metric</th>
+                                                                  {compareSymbols.map((sym, i) => (
+                                                                    <th key={sym} className="text-right py-2 px-3 font-medium whitespace-nowrap" style={{ color: COLORS[i] }}>{sym}</th>
+                                                                  ))}
+                                                                </tr>
+                                                              </thead>
+                                                              <tbody>
+                                                                {metricDefs.map(({ label, key }, idx) => {
+                                                                  const vals = compareSymbols.map(sym => {
+                                                                    const raw = key(compareAnalysisData[sym]);
+                                                                    if (raw === undefined || raw === null || raw === '' || raw === 'N/A') return null;
+                                                                    const num = parseFloat(String(raw).replace(/[,%]/g,''));
+                                                                    return isNaN(num) ? String(raw) : num;
+                                                                  });
+                                                                  const numericVals = vals.filter(v => typeof v === 'number') as number[];
+                                                                  const maxVal = numericVals.length > 1 ? Math.max(...numericVals) : null;
+                                                                  const minVal = numericVals.length > 1 ? Math.min(...numericVals) : null;
+
+                                                                  return (
+                                                                    <tr key={idx} className="border-t border-gray-800/60 hover:bg-gray-800/20 transition-colors">
+                                                                      <td className="py-2 px-3 text-gray-400">{label}</td>
+                                                                      {compareSymbols.map((sym, si) => {
+                                                                        const val = vals[si];
+                                                                        const isMax = typeof val === 'number' && val === maxVal && numericVals.length > 1;
+                                                                        const isMin = typeof val === 'number' && val === minVal && numericVals.length > 1 && minVal !== maxVal;
+                                                                        const lowerIsBetter = label.includes('Debt') || label.includes('Beta') || label.includes('P/E') || label.includes('P/B');
+                                                                        const showGreen = lowerIsBetter ? isMin : isMax;
+                                                                        const showRed = lowerIsBetter ? isMax : isMin;
+                                                                        return (
+                                                                          <td key={sym} className={`text-right py-2 px-3 font-mono whitespace-nowrap ${val === null ? 'text-gray-600' : showGreen ? 'text-green-400 font-semibold' : showRed ? 'text-red-400' : 'text-gray-200'}`}>
+                                                                            {val === null ? '—' : typeof val === 'number' ? val.toLocaleString(undefined, { maximumFractionDigits: 2 }) : val}
+                                                                            {showGreen && <span className="ml-1 text-[9px] text-green-500">▲</span>}
+                                                                            {showRed && <span className="ml-1 text-[9px] text-red-500">▼</span>}
+                                                                          </td>
+                                                                        );
+                                                                      })}
+                                                                    </tr>
+                                                                  );
+                                                                })}
+                                                              </tbody>
+                                                            </table>
+                                                          </div>
+                                                          <p className="text-[11px] text-gray-600 italic">Green ▲ = better value. Red ▼ = weaker value relative to peers.</p>
+                                                        </div>
+                                                      );
+                                                    })()}
+
+                                                  </div>
                                                 </div>
                                               );
                                             })()}

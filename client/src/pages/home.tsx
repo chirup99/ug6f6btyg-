@@ -15982,11 +15982,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 } else if (item.tab === 'market-news') {
                                   setSearchResults("[CHART:MARKET_NEWS]");
                                   setIsSearchActive(true);
+                                  fetchNifty50News();
                                 } else if (item.tab === 'trade-challenge') {
                                   setSearchResults("[CHART:TRADE]");
                                   setIsSearchActive(true);
-                                } else {
-                                  setActiveTab(item.tab);
+                                } else if (item.tab === 'social') {
+                                  handleSuggestionClick("Social feed community discussions and trending topics");
+                                } else if (item.tab === 'journal') {
+                                  const userId = localStorage.getItem('currentUserId');
+                                  const userEmail = localStorage.getItem('currentUserEmail');
+                                  if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
+                                    setLocation('/login');
+                                    return;
+                                  }
+                                  generateJournalAIReport();
                                 }
                               }}
                               className="w-full h-12 rounded-2xl bg-gray-800/70 border border-gray-700/60 hover:border-gray-500 hover:bg-gray-800 transition-all duration-200 flex items-center gap-3 px-4 text-left group"

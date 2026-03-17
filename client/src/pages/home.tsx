@@ -9149,6 +9149,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     }, 500);
     return () => clearTimeout(timer);
   }, [angelOneAccessToken, selectedJournalSymbol, activeTab, fetchJournalChartData]);
+
+  // ✅ RECOVERY: Re-fetch when Angel One server connects/reconnects and chart has no data.
+  // Handles the case where the initial fetch failed because the server wasn't ready yet
+  // (e.g. startup auto-connect was still in progress when the user first selected a symbol).
+  useEffect(() => {
+    if (!angelOneServerConnected || !selectedJournalSymbol || activeTab !== 'journal') return;
+    // Use ref to check for missing data without adding journalChartData to deps
+    // (which would cause the effect to re-run on every candle update)
+    if (journalChartDataRef.current && journalChartDataRef.current.length > 0) return;
+
+    const timer = setTimeout(() => {
+      console.log(`🔄 [RECOVERY] Angel One connected — retrying chart fetch for ${selectedJournalSymbol}`);
+      fetchJournalChartData();
+    }, 800);
+    return () => clearTimeout(timer);
+  }, [angelOneServerConnected, selectedJournalSymbol, activeTab, fetchJournalChartData]);
+
   const fetchHeatmapChartData = useCallback(async (symbol: string, date: string) => {
     try {
       console.log(`🗓️ [HEATMAP FETCH] Starting fetch for ${symbol} on ${date}`);

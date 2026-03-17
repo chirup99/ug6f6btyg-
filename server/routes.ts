@@ -7536,31 +7536,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Region market data: real chart + real news for world map dialog
-  // YouTube live video ID resolver — uses YouTube Data API v3 if YOUTUBE_API_KEY is set
-  app.get('/api/youtube-live-video', async (req, res) => {
-    const channelId = (req.query.channelId as string || '').trim();
-    if (!channelId) return res.status(400).json({ error: 'channelId required' });
-
-    const apiKey = process.env.YOUTUBE_API_KEY;
-    if (!apiKey) {
-      return res.json({ videoId: null, source: 'no-api-key' });
-    }
-
-    try {
-      // Search for live broadcasts on the channel
-      const searchUrl = `https://www.googleapis.com/youtube/v3/search?part=id&channelId=${channelId}&eventType=live&type=video&key=${apiKey}&maxResults=1`;
-      const response = await axios.get(searchUrl, { timeout: 5000 });
-      const items = response.data?.items;
-      if (items && items.length > 0) {
-        return res.json({ videoId: items[0].id.videoId, source: 'youtube-api' });
-      }
-      return res.json({ videoId: null, source: 'youtube-api-no-live' });
-    } catch (err: any) {
-      console.error('YouTube API error:', err.message);
-      return res.json({ videoId: null, source: 'error' });
-    }
-  });
-
   app.get('/api/region-market-data', async (req, res) => {
     const region = (req.query.region as string || '').toUpperCase();
 

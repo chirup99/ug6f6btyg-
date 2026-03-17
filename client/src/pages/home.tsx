@@ -220,7 +220,6 @@ import {
   Twitter,
   Bug, Settings,
   Filter,
-  Radar,
   RefreshCcw,
   MoreVertical,
   ChevronsUpDown,
@@ -901,6 +900,12 @@ import {
   Pie,
   Cell,
   ReferenceLine,
+  RadarChart,
+  Radar,
+  PolarGrid,
+  PolarAngleAxis,
+  PolarRadiusAxis,
+  Legend,
 } from "recharts";
 
 function NiftyIndex() {
@@ -17726,6 +17731,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 { id: 'pnl', label: 'P&L Statement' },
                                                 { id: 'balance', label: 'Balance Sheet' },
                                                 { id: 'metrics', label: 'Key Metrics' },
+                                                { id: 'insights', label: '✦ Insights' },
                                               ] as const;
 
                                               return (
@@ -18203,6 +18209,305 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                             </table>
                                                           </div>
                                                           <p className="text-[11px] text-gray-600 italic">Green ▲ = better value. Red ▼ = weaker value relative to peers.</p>
+                                                        </div>
+                                                      );
+                                                    })()}
+
+                                                    {/* ── INSIGHTS TAB ── */}
+                                                    {compareActiveTab === 'insights' && (() => {
+                                                      const getPnLValue = (sym: string, hint: string, yi = 0): number | null => {
+                                                        const rows: any[] = compareAnalysisData[sym]?.annualFinancials?.profitLoss || [];
+                                                        const row = rows.find((r: any) => r.label?.toLowerCase().includes(hint.toLowerCase()));
+                                                        if (!row) return null;
+                                                        const v = row.values?.[yi]?.value;
+                                                        if (v === undefined || v === null) return null;
+                                                        const n = parseFloat(String(v).replace(/,/g, ''));
+                                                        return isNaN(n) ? null : n;
+                                                      };
+                                                      const getSymYears = (sym: string) => (compareAnalysisData[sym]?.annualFinancials?.years || []).slice(0, 5).reverse();
+                                                      const allYearsI = (() => {
+                                                        const sets = compareSymbols.map(s => getSymYears(s));
+                                                        return sets.reduce((a: string[], b: string[]) => a.length >= b.length ? a : b, []);
+                                                      })();
+                                                      const revTrend = allYearsI.map(yr => {
+                                                        const row: any = { year: yr };
+                                                        compareSymbols.forEach(sym => {
+                                                          const sy = getSymYears(sym); const idx = sy.indexOf(yr);
+                                                          if (idx !== -1) { const v = getPnLValue(sym,'revenue',idx) ?? getPnLValue(sym,'net sales',idx) ?? getPnLValue(sym,'total income',idx); row[sym] = v; }
+                                                        }); return row;
+                                                      });
+                                                      const npTrend = allYearsI.map(yr => {
+                                                        const row: any = { year: yr };
+                                                        compareSymbols.forEach(sym => {
+                                                          const sy = getSymYears(sym); const idx = sy.indexOf(yr);
+                                                          if (idx !== -1) { const v = getPnLValue(sym,'net profit',idx) ?? getPnLValue(sym,'pat',idx); row[sym] = v; }
+                                                        }); return row;
+                                                      });
+                                                      const marginTrend = allYearsI.map(yr => {
+                                                        const row: any = { year: yr };
+                                                        compareSymbols.forEach(sym => {
+                                                          const sy = getSymYears(sym); const idx = sy.indexOf(yr);
+                                                          if (idx !== -1) {
+                                                            const rev = getPnLValue(sym,'revenue',idx) ?? getPnLValue(sym,'net sales',idx) ?? getPnLValue(sym,'total income',idx);
+                                                            const np = getPnLValue(sym,'net profit',idx) ?? getPnLValue(sym,'pat',idx);
+                                                            row[sym] = (rev && np && rev > 0) ? parseFloat(((np/rev)*100).toFixed(2)) : null;
+                                                          }
+                                                        }); return row;
+                                                      });
+                                                      const scoreCards = compareSymbols.map((sym, si) => {
+                                                        const d = compareAnalysisData[sym];
+                                                        let score = 0, total = 0;
+                                                        const flags: {label:string;value:string;good:boolean}[] = [];
+                                                        const parse = (s: any) => parseFloat(String(s||'').replace(/[%,]/g,''));
+                                                        const roe = parse(d?.keyMetrics?.roe || d?.fundamentals?.roe);
+                                                        if (!isNaN(roe)) { total++; const g = roe>=15; if(g) score++; flags.push({label:'ROE',value:`${roe.toFixed(1)}%`,good:g}); }
+                                                        const roce = parse(d?.keyMetrics?.roce || d?.fundamentals?.roce);
+                                                        if (!isNaN(roce)) { total++; const g = roce>=15; if(g) score++; flags.push({label:'ROCE',value:`${roce.toFixed(1)}%`,good:g}); }
+                                                        const de = parse(d?.keyMetrics?.debtToEquity || d?.fundamentals?.debtToEquity);
+                                                        if (!isNaN(de)) { total++; const g = de<1; if(g) score++; flags.push({label:'D/E',value:de.toFixed(2),good:g}); }
+                                                        const cr = parse(d?.keyMetrics?.currentRatio || d?.fundamentals?.currentRatio);
+                                                        if (!isNaN(cr)) { total++; const g = cr>=1.5; if(g) score++; flags.push({label:'Curr.Ratio',value:cr.toFixed(2),good:g}); }
+                                                        const pe = parse(d?.keyMetrics?.pe || d?.fundamentals?.pe);
+                                                        if (!isNaN(pe) && pe>0) { total++; const g = pe<30; if(g) score++; flags.push({label:'P/E',value:pe.toFixed(1),good:g}); }
+                                                        const qd = compareQuarterlyData[sym] || [];
+                                                        const ps = qd.map((q:any)=>parseFloat((q.net_profit||'0').toString().replace(/,/g,''))).filter(Boolean);
+                                                        if (ps.length>=2) { total++; const g = ps[ps.length-1]>ps[0]; if(g) score++; const gr = ((ps[ps.length-1]-ps[0])/Math.abs(ps[0]))*100; flags.push({label:'Profit Growth',value:`${gr>=0?'+':''}${gr.toFixed(1)}%`,good:g}); }
+                                                        const dy = parse(d?.keyMetrics?.dividendYield || d?.fundamentals?.dividendYield);
+                                                        if (!isNaN(dy) && dy>0) { total++; const g = dy>=1; if(g) score++; flags.push({label:'Div Yield',value:`${dy.toFixed(2)}%`,good:g}); }
+                                                        const pm = parse(d?.keyMetrics?.profitMargin);
+                                                        if (!isNaN(pm)) { total++; const g = pm>=10; if(g) score++; flags.push({label:'Margin',value:`${pm.toFixed(1)}%`,good:g}); }
+                                                        const pct = total>0 ? Math.round((score/total)*100) : 0;
+                                                        const verdict = pct>=70 ? 'Strong Buy' : pct>=50 ? 'Moderate Buy' : pct>=35 ? 'Hold' : 'Caution';
+                                                        const vc = pct>=70 ? '#34d399' : pct>=50 ? '#60a5fa' : pct>=35 ? '#fbbf24' : '#f87171';
+                                                        return {sym, score, total, pct, flags, verdict, vc, color: COLORS[si]};
+                                                      });
+                                                      const norm = (v: number|null, mn: number, mx: number) => v===null||isNaN(v) ? 0 : Math.min(100,Math.max(0,((v-mn)/(mx-mn))*100));
+                                                      const radarData = ['ROE','ROCE','Low D/E','Net Margin','Div Yield'].map(metric => {
+                                                        const row: any = {metric};
+                                                        compareSymbols.forEach(sym => {
+                                                          const d = compareAnalysisData[sym];
+                                                          const p = (s:any) => parseFloat(String(s||'').replace(/[%,]/g,''));
+                                                          if (metric==='ROE') row[sym] = norm(p(d?.keyMetrics?.roe||d?.fundamentals?.roe),0,40);
+                                                          else if (metric==='ROCE') row[sym] = norm(p(d?.keyMetrics?.roce||d?.fundamentals?.roce),0,40);
+                                                          else if (metric==='Low D/E') { const v=p(d?.keyMetrics?.debtToEquity||d?.fundamentals?.debtToEquity); row[sym]=norm(isNaN(v)?null:Math.max(0,3-v),0,3); }
+                                                          else if (metric==='Net Margin') row[sym] = norm(p(d?.keyMetrics?.profitMargin),0,40);
+                                                          else if (metric==='Div Yield') row[sym] = norm(p(d?.keyMetrics?.dividendYield||d?.fundamentals?.dividendYield),0,5);
+                                                        }); return row;
+                                                      });
+                                                      if (!compareSymbols.some(s => compareAnalysisData[s])) return (
+                                                        <div className="text-center py-8"><p className="text-xs text-gray-500">Run Compare Analysis first to see Insights</p></div>
+                                                      );
+                                                      return (
+                                                        <div className="space-y-5">
+                                                          {/* Score cards */}
+                                                          <div>
+                                                            <div className="flex items-center gap-2 mb-3">
+                                                              <Sparkles className="h-3.5 w-3.5 text-yellow-400" />
+                                                              <span className="text-xs font-bold text-gray-200 uppercase tracking-wide">Fundamental Score Cards</span>
+                                                              <span className="text-[10px] text-gray-600 ml-1">— rules-based · real data only</span>
+                                                            </div>
+                                                            <div className={`grid gap-3 ${compareSymbols.length > 2 ? 'grid-cols-2' : 'grid-cols-2'}`}>
+                                                              {scoreCards.map(sc => (
+                                                                <div key={sc.sym} className="rounded-xl border border-gray-700/50 p-3 bg-gray-800/40 space-y-2">
+                                                                  <div className="flex items-center justify-between">
+                                                                    <span className="text-sm font-bold" style={{color:sc.color}}>{sc.sym}</span>
+                                                                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full" style={{background:sc.vc+'22',color:sc.vc}}>{sc.verdict}</span>
+                                                                  </div>
+                                                                  <div>
+                                                                    <div className="flex justify-between text-[10px] text-gray-500 mb-1">
+                                                                      <span>Score</span>
+                                                                      <span className="font-mono" style={{color:sc.vc}}>{sc.score}/{sc.total} ({sc.pct}%)</span>
+                                                                    </div>
+                                                                    <div className="h-1.5 w-full bg-gray-700 rounded-full overflow-hidden">
+                                                                      <div className="h-full rounded-full transition-all duration-700" style={{width:`${sc.pct}%`,background:sc.vc}} />
+                                                                    </div>
+                                                                  </div>
+                                                                  <div className="flex flex-wrap gap-1">
+                                                                    {sc.flags.map((f,fi) => (
+                                                                      <span key={fi} className={`text-[9px] px-1.5 py-0.5 rounded font-medium ${f.good ? 'bg-green-900/40 text-green-400 border border-green-800/40' : 'bg-red-900/30 text-red-400 border border-red-900/30'}`}>
+                                                                        {f.label}: {f.value}
+                                                                      </span>
+                                                                    ))}
+                                                                  </div>
+                                                                </div>
+                                                              ))}
+                                                            </div>
+                                                          </div>
+
+                                                          {/* Radar chart */}
+                                                          <div className="rounded-xl border border-gray-700/50 p-3 bg-gray-800/30">
+                                                            <span className="text-xs font-semibold text-gray-300 block mb-2">Fundamental Radar — Normalised 0–100 (higher = better)</span>
+                                                            <div className="h-52 w-full">
+                                                              <ResponsiveContainer width="100%" height="100%">
+                                                                <RadarChart data={radarData} cx="50%" cy="50%" outerRadius="70%">
+                                                                  <PolarGrid stroke="#374151" />
+                                                                  <PolarAngleAxis dataKey="metric" tick={{fill:'#9ca3af',fontSize:10}} />
+                                                                  <PolarRadiusAxis angle={90} domain={[0,100]} tick={{fill:'#6b7280',fontSize:8}} tickCount={4} />
+                                                                  {compareSymbols.map((sym,i) => (
+                                                                    <Radar key={sym} name={sym} dataKey={sym} stroke={COLORS[i]} fill={COLORS[i]} fillOpacity={0.18} strokeWidth={2} dot={{r:3,fill:COLORS[i]}} />
+                                                                  ))}
+                                                                  <Tooltip contentStyle={{background:'#1f2937',border:'1px solid #374151',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any)=>[`${Number(v).toFixed(0)}/100`]} />
+                                                                  <Legend iconType="circle" iconSize={8} wrapperStyle={{fontSize:'11px',paddingTop:'4px'}} />
+                                                                </RadarChart>
+                                                              </ResponsiveContainer>
+                                                            </div>
+                                                            <p className="text-[10px] text-gray-600 text-center mt-1">D/E axis inverted — lower debt scores higher. Based on scraped data.</p>
+                                                          </div>
+
+                                                          {/* Revenue trend */}
+                                                          {revTrend.some(r => compareSymbols.some(s => r[s] != null)) && (
+                                                            <div className="rounded-xl border border-gray-700/50 p-3 bg-gray-800/30">
+                                                              <span className="text-xs font-semibold text-gray-300 block mb-2">Revenue Trend — Annual (₹ Cr)</span>
+                                                              <div className="h-40 w-full">
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                  <LineChart data={revTrend} margin={{top:5,right:10,left:0,bottom:5}}>
+                                                                    <XAxis dataKey="year" tick={{fontSize:9,fill:'#9ca3af'}} axisLine={false} tickLine={false} />
+                                                                    <YAxis tick={{fontSize:8,fill:'#6b7280'}} tickFormatter={(v:number)=>v>=1000?`₹${(v/1000).toFixed(0)}K`:`₹${v}`} axisLine={false} tickLine={false} width={44} />
+                                                                    <Tooltip contentStyle={{background:'#1f2937',border:'1px solid #374151',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any,n:any)=>[`₹${Number(v).toLocaleString()} Cr`,n]} />
+                                                                    <Legend iconType="circle" iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                                                                    {compareSymbols.map((sym,i) => (
+                                                                      <Line key={sym} type="monotone" dataKey={sym} stroke={COLORS[i]} strokeWidth={2} dot={{r:3,fill:COLORS[i]}} connectNulls />
+                                                                    ))}
+                                                                  </LineChart>
+                                                                </ResponsiveContainer>
+                                                              </div>
+                                                            </div>
+                                                          )}
+
+                                                          {/* Net Profit trend */}
+                                                          {npTrend.some(r => compareSymbols.some(s => r[s] != null)) && (
+                                                            <div className="rounded-xl border border-gray-700/50 p-3 bg-gray-800/30">
+                                                              <span className="text-xs font-semibold text-gray-300 block mb-2">Net Profit Trend — Annual (₹ Cr)</span>
+                                                              <div className="h-40 w-full">
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                  <LineChart data={npTrend} margin={{top:5,right:10,left:0,bottom:5}}>
+                                                                    <XAxis dataKey="year" tick={{fontSize:9,fill:'#9ca3af'}} axisLine={false} tickLine={false} />
+                                                                    <YAxis tick={{fontSize:8,fill:'#6b7280'}} tickFormatter={(v:number)=>v>=1000?`₹${(v/1000).toFixed(0)}K`:`₹${v}`} axisLine={false} tickLine={false} width={44} />
+                                                                    <Tooltip contentStyle={{background:'#1f2937',border:'1px solid #374151',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any,n:any)=>[`₹${Number(v).toLocaleString()} Cr`,n]} />
+                                                                    <Legend iconType="circle" iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                                                                    {compareSymbols.map((sym,i) => (
+                                                                      <Line key={sym} type="monotone" dataKey={sym} stroke={COLORS[i]} strokeWidth={2} dot={{r:3,fill:COLORS[i]}} connectNulls />
+                                                                    ))}
+                                                                  </LineChart>
+                                                                </ResponsiveContainer>
+                                                              </div>
+                                                            </div>
+                                                          )}
+
+                                                          {/* Net Profit Margin trend */}
+                                                          {marginTrend.some(r => compareSymbols.some(s => r[s] != null)) && (
+                                                            <div className="rounded-xl border border-gray-700/50 p-3 bg-gray-800/30">
+                                                              <span className="text-xs font-semibold text-gray-300 block mb-2">Net Profit Margin Trend (%)</span>
+                                                              <div className="h-36 w-full">
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                  <AreaChart data={marginTrend} margin={{top:5,right:10,left:0,bottom:5}}>
+                                                                    <defs>
+                                                                      {compareSymbols.map((sym,i) => (
+                                                                        <linearGradient key={sym} id={`mgGrad${i}`} x1="0" y1="0" x2="0" y2="1">
+                                                                          <stop offset="5%" stopColor={COLORS[i]} stopOpacity={0.3} />
+                                                                          <stop offset="95%" stopColor={COLORS[i]} stopOpacity={0} />
+                                                                        </linearGradient>
+                                                                      ))}
+                                                                    </defs>
+                                                                    <XAxis dataKey="year" tick={{fontSize:9,fill:'#9ca3af'}} axisLine={false} tickLine={false} />
+                                                                    <YAxis tick={{fontSize:8,fill:'#6b7280'}} tickFormatter={(v:number)=>`${v.toFixed(0)}%`} axisLine={false} tickLine={false} width={36} />
+                                                                    <Tooltip contentStyle={{background:'#1f2937',border:'1px solid #374151',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any,n:any)=>[`${Number(v).toFixed(2)}%`,n]} />
+                                                                    <Legend iconType="circle" iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                                                                    {compareSymbols.map((sym,i) => (
+                                                                      <Area key={sym} type="monotone" dataKey={sym} stroke={COLORS[i]} fill={`url(#mgGrad${i})`} strokeWidth={2} dot={{r:2.5,fill:COLORS[i]}} connectNulls />
+                                                                    ))}
+                                                                  </AreaChart>
+                                                                </ResponsiveContainer>
+                                                              </div>
+                                                            </div>
+                                                          )}
+
+                                                          {/* Quarterly net profit bar */}
+                                                          {chartRows.length > 0 && (
+                                                            <div className="rounded-xl border border-gray-700/50 p-3 bg-gray-800/30">
+                                                              <span className="text-xs font-semibold text-gray-300 block mb-2">Quarterly Net Profit (₹ Cr) — Last 6 Quarters</span>
+                                                              <div className="h-40 w-full">
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                  <BarChart data={chartRows.slice(-6)} margin={{top:5,right:10,left:0,bottom:5}}>
+                                                                    <XAxis dataKey="quarter" tick={{fontSize:9,fill:'#9ca3af'}} axisLine={false} tickLine={false} />
+                                                                    <YAxis tick={{fontSize:8,fill:'#6b7280'}} tickFormatter={(v:number)=>`₹${(v/1000).toFixed(0)}K`} axisLine={false} tickLine={false} width={40} />
+                                                                    <Tooltip contentStyle={{background:'#1f2937',border:'1px solid #374151',borderRadius:'8px',fontSize:'11px'}} formatter={(v:any,n:any)=>[`₹${Number(v).toLocaleString()} Cr`,n]} />
+                                                                    <Legend iconType="circle" iconSize={8} wrapperStyle={{fontSize:'11px'}} />
+                                                                    {compareSymbols.map((sym,i) => (
+                                                                      <Bar key={sym} dataKey={sym} fill={COLORS[i]} radius={[3,3,0,0]} maxBarSize={28} />
+                                                                    ))}
+                                                                  </BarChart>
+                                                                </ResponsiveContainer>
+                                                              </div>
+                                                            </div>
+                                                          )}
+
+                                                          {/* Deep AI Insights panel */}
+                                                          <div className="rounded-xl border border-purple-800/40 bg-purple-900/10 p-4 space-y-4">
+                                                            <div className="flex items-center gap-2">
+                                                              <Sparkles className="h-4 w-4 text-purple-400" />
+                                                              <span className="text-xs font-bold text-purple-300 uppercase tracking-wide">Advanced Analysis — Deep Insights</span>
+                                                              <span className="ml-auto text-[9px] text-gray-600 italic">Rules-based · No AI hallucinations · Real data only</span>
+                                                            </div>
+                                                            {scoreCards.map(sc => {
+                                                              const d = compareAnalysisData[sc.sym];
+                                                              const p = (s:any) => parseFloat(String(s||'').replace(/[%,]/g,''));
+                                                              const qd = compareQuarterlyData[sc.sym] || [];
+                                                              const ps = qd.map((q:any)=>parseFloat((q.net_profit||'0').toString().replace(/,/g,''))).filter(Boolean);
+                                                              const qtdGrowth = ps.length>=2 ? ((ps[ps.length-1]-ps[0])/Math.abs(ps[0]))*100 : null;
+                                                              const roe = p(d?.keyMetrics?.roe||d?.fundamentals?.roe);
+                                                              const roce = p(d?.keyMetrics?.roce||d?.fundamentals?.roce);
+                                                              const de = p(d?.keyMetrics?.debtToEquity||d?.fundamentals?.debtToEquity);
+                                                              const pe = p(d?.keyMetrics?.pe||d?.fundamentals?.pe);
+                                                              const pm = p(d?.keyMetrics?.profitMargin);
+                                                              const bv = p(d?.keyMetrics?.bookValue||d?.fundamentals?.bookValue);
+                                                              const pb = p(d?.keyMetrics?.pb||d?.fundamentals?.pb);
+                                                              const lines: string[] = [];
+                                                              if (!isNaN(roe)) lines.push(roe>=20 ? `✅ Excellent ROE of ${roe.toFixed(1)}% — top-tier capital efficiency` : roe>=15 ? `✅ Healthy ROE of ${roe.toFixed(1)}% — good shareholder returns` : `⚠️ ROE of ${roe.toFixed(1)}% is below 15% threshold — moderate returns`);
+                                                              if (!isNaN(roce)) lines.push(roce>=20 ? `✅ Strong ROCE ${roce.toFixed(1)}% — efficient capital deployment` : roce>=15 ? `✅ Decent ROCE ${roce.toFixed(1)}%` : `⚠️ ROCE ${roce.toFixed(1)}% below benchmark — room to improve`);
+                                                              if (!isNaN(de)) lines.push(de<0.3 ? `✅ Nearly debt-free (D/E: ${de.toFixed(2)}) — very strong balance sheet` : de<1 ? `✅ Conservative leverage (D/E: ${de.toFixed(2)}) — well managed` : de<2 ? `📊 Moderate debt (D/E: ${de.toFixed(2)}) — acceptable for the sector` : `⚠️ High D/E ratio of ${de.toFixed(2)} — elevated financial risk`);
+                                                              if (!isNaN(pe) && pe>0) lines.push(pe<12 ? `💎 P/E of ${pe.toFixed(1)}x — potentially deeply undervalued` : pe<20 ? `✅ Reasonable P/E ${pe.toFixed(1)}x — value zone` : pe<35 ? `📊 P/E of ${pe.toFixed(1)}x — growth premium priced in` : `⚠️ Elevated P/E ${pe.toFixed(1)}x — high expectations; limited margin of safety`);
+                                                              if (!isNaN(pb) && pb>0 && !isNaN(bv)) lines.push(pb<1.5 ? `💎 P/B of ${pb.toFixed(2)}x — trading near book value` : pb<3 ? `📊 P/B of ${pb.toFixed(2)}x — moderate premium to book` : `📊 P/B of ${pb.toFixed(2)}x — market values strong intangibles/franchise`);
+                                                              if (!isNaN(pm)) lines.push(pm>=25 ? `✅ Exceptional margin of ${pm.toFixed(1)}% — pricing power & cost discipline` : pm>=15 ? `✅ Strong net margin ${pm.toFixed(1)}%` : pm>=8 ? `📊 Decent margin ${pm.toFixed(1)}%` : `⚠️ Thin net margin ${pm.toFixed(1)}% — watch for cost pressures`);
+                                                              if (qtdGrowth!==null) lines.push(qtdGrowth>=20 ? `📈 Strong profit momentum: +${qtdGrowth.toFixed(1)}% over ${qd.length} quarters` : qtdGrowth>=5 ? `📈 Steady profit growth of +${qtdGrowth.toFixed(1)}%` : qtdGrowth>=0 ? `📊 Modest profit growth of +${qtdGrowth.toFixed(1)}% — stable` : `📉 Profit contracted ${Math.abs(qtdGrowth).toFixed(1)}% over ${qd.length} quarters — monitor closely`);
+                                                              if (!lines.length) return null;
+                                                              return (
+                                                                <div key={sc.sym} className="space-y-1.5 pt-3 border-t border-purple-800/20 first:border-t-0 first:pt-0">
+                                                                  <div className="flex items-center gap-2">
+                                                                    <span className="w-2.5 h-2.5 rounded-full" style={{background:sc.color}} />
+                                                                    <span className="text-xs font-bold" style={{color:sc.color}}>{sc.sym}</span>
+                                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{background:sc.vc+'22',color:sc.vc}}>{sc.verdict}</span>
+                                                                    <span className="ml-auto text-[10px] text-gray-500">{sc.score}/{sc.total} criteria met</span>
+                                                                  </div>
+                                                                  <div className="space-y-1 pl-4">
+                                                                    {lines.map((line,li)=>(
+                                                                      <p key={li} className="text-[11px] text-gray-300 leading-relaxed">{line}</p>
+                                                                    ))}
+                                                                  </div>
+                                                                </div>
+                                                              );
+                                                            })}
+                                                            {scoreCards.length >= 2 && (() => {
+                                                              const ranked = [...scoreCards].sort((a,b)=>b.pct-a.pct);
+                                                              const w = ranked[0]; const l = ranked[ranked.length-1];
+                                                              const gap = w.pct - l.pct;
+                                                              return (
+                                                                <div className="pt-3 border-t border-purple-800/30 space-y-1">
+                                                                  <p className="text-[11px] text-gray-200">
+                                                                    🏆 <span className="font-semibold" style={{color:w.color}}>{w.sym}</span> leads with a fundamental score of <span style={{color:w.vc}}>{w.pct}%</span>
+                                                                    {l.sym !== w.sym && <> vs <span className="font-semibold" style={{color:l.color}}>{l.sym}</span>'s <span style={{color:l.vc}}>{l.pct}%</span></>}.
+                                                                  </p>
+                                                                  {gap >= 20 && (
+                                                                    <p className="text-[11px] text-yellow-400">⚡ Significant gap of {gap}% — fundamentals strongly favour <span className="font-semibold">{w.sym}</span>.</p>
+                                                                  )}
+                                                                  {gap < 10 && gap > 0 && (
+                                                                    <p className="text-[11px] text-blue-400">⚖️ Close contest — both stocks show comparable fundamentals. Sector & valuation timing matters.</p>
+                                                                  )}
+                                                                  <p className="text-[10px] text-gray-600 mt-1 italic">ℹ️ Analysis uses only real scraped financial data (Screener.in · Yahoo Finance · NSE). Not investment advice.</p>
+                                                                </div>
+                                                              );
+                                                            })()}
+                                                          </div>
                                                         </div>
                                                       );
                                                     })()}

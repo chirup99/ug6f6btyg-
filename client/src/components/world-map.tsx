@@ -1282,7 +1282,7 @@ export function WorldMap() {
 
       {/* Trading hours indicator with live market data */}
       <div
-        className={`flex justify-center gap-3 mt-3 flex-wrap transition-opacity duration-300 ${isDrawing ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+        className={`flex justify-center items-center gap-4 mt-3 w-full transition-opacity duration-300 ${isDrawing ? "opacity-0 pointer-events-none" : "opacity-100"}`}
       >
         {marketRegions.map((region) => {
           const market = marketData?.[region.name as keyof typeof marketData];
@@ -1295,18 +1295,16 @@ export function WorldMap() {
                 ? "#ef4444"
                 : "#ef233c"
             : "#64748b";
-          const meta = REGION_META[region.name];
 
           return (
             <button
               key={region.name}
-              className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity rounded-full px-2 py-0.5 hover:bg-white/10 active:scale-95"
+              className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity rounded-full px-2 py-0.5 hover:bg-white/10 active:scale-95 whitespace-nowrap"
               onClick={() => setSelectedRegion(region.name)}
               data-testid={`button-region-${region.name.toLowerCase().replace(" ", "-")}`}
             >
-              <span className="text-[10px]">{meta?.flag}</span>
               <div
-                className="w-1.5 h-1.5 rounded-full"
+                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
                 style={{ backgroundColor: color }}
               />
               <span className="text-gray-600 text-[10px] tracking-wide">

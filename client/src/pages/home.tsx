@@ -20176,7 +20176,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           </div>
 
                           {/* Tutor Daily News Swipeable Cards - Portrait orientation with proper spacing */}
-                          <div className="relative h-28 w-full flex items-start justify-center overflow-visible">
+                          <div className="relative h-28 w-full flex items-start justify-center overflow-visible md:-mt-[22px]">
                             <SwipeableCardStack
                               onSectorChange={handleSectorChange}
                               selectedSector={selectedSector}

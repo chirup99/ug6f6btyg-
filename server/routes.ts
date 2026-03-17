@@ -3,6 +3,11 @@ import { createServer, type Server } from "http";
 import { WebSocketServer, WebSocket } from "ws";
 import axios from "axios";
 import multer from "multer";
+import {
+  fetchQuarterlyResultsMultiSource,
+  fetchAnnualFinancialsMultiSource,
+  fetchKeyMetricsMultiSource,
+} from "./multi-source-financial-scraper";
 import YahooFinance from "yahoo-finance2";
 
 // Module-level yahoo-finance2 instance for use across all helper functions
@@ -6233,18 +6238,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Annual P&L and Balance Sheet for the Compare Analysis tabs
+  // Annual P&L, Balance Sheet and Key Metrics for the Compare Analysis tabs
   app.get('/api/company-financials/:symbol', async (req, res) => {
     const symbol = req.params.symbol.toUpperCase();
     try {
-      const insights = await enhancedFinancialScraper.getCompanyInsights(symbol);
+      const [annualFinancials, keyMetrics] = await Promise.allSettled([
+        fetchAnnualFinancialsMultiSource(symbol),
+        fetchKeyMetricsMultiSource(symbol),
+      ]);
       res.json({
         symbol,
-        annualFinancials: insights?.annualFinancials || null
+        annualFinancials: annualFinancials.status === 'fulfilled' ? annualFinancials.value : null,
+        keyMetrics: keyMetrics.status === 'fulfilled' ? keyMetrics.value : null,
       });
     } catch (err) {
       console.error(`[company-financials] Error for ${symbol}:`, err);
-      res.json({ symbol, annualFinancials: null });
+      res.json({ symbol, annualFinancials: null, keyMetrics: null });
     }
   });
 
@@ -7614,15 +7623,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const { symbol } = req.params;
 
     try {
-      console.log(`📊 Fetching quarterly results for ${symbol} from screener.in...`);
-      
-      // Scrape quarterly results from screener.in
-      const quarterlyData = await scrapeQuarterlyResults(symbol.toUpperCase());
-      
+      console.log(`📊 Fetching quarterly results for ${symbol} from all sources...`);
+      const quarterlyData = await fetchQuarterlyResultsMultiSource(symbol.toUpperCase());
       res.json({
         success: true,
         symbol: symbol.toUpperCase(),
-        results: quarterlyData
+        results: quarterlyData,
+        source: quarterlyData.length > 0 ? (quarterlyData[0] as any).source : 'none',
       });
     } catch (error) {
       console.error(`Error fetching quarterly results for ${symbol}:`, error);

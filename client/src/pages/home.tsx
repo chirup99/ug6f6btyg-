@@ -8671,6 +8671,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           if (finRes.ok) {
             const fin = await finRes.json();
             if (fin?.annualFinancials) d.annualFinancials = fin.annualFinancials;
+            if (fin?.keyMetrics) d.keyMetrics = fin.keyMetrics;
           }
           aData[sym] = d;
         } catch (e) { console.warn(`Analysis fetch error for ${sym}:`, e); }
@@ -18129,21 +18130,21 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         { label: 'Open (₹)', key: (d: any) => d?.priceData?.open },
                                                         { label: 'High (₹)', key: (d: any) => d?.priceData?.high },
                                                         { label: 'Low (₹)', key: (d: any) => d?.priceData?.low },
-                                                        { label: '52W High (₹)', key: (d: any) => d?.priceData?.week52High },
-                                                        { label: '52W Low (₹)', key: (d: any) => d?.priceData?.week52Low },
-                                                        { label: 'P/E Ratio', key: (d: any) => d?.priceData?.pe || d?.fundamentals?.pe },
-                                                        { label: 'P/B Ratio', key: (d: any) => d?.priceData?.pb || d?.fundamentals?.pb },
-                                                        { label: 'EPS (₹)', key: (d: any) => d?.priceData?.eps || d?.fundamentals?.eps },
-                                                        { label: 'Market Cap (₹ Cr)', key: (d: any) => d?.priceData?.marketCap || d?.fundamentals?.marketCap },
-                                                        { label: 'Book Value (₹)', key: (d: any) => d?.priceData?.bookValue || d?.fundamentals?.bookValue },
-                                                        { label: 'Dividend Yield (%)', key: (d: any) => d?.priceData?.dividendYield || d?.fundamentals?.dividendYield },
-                                                        { label: 'ROE (%)', key: (d: any) => d?.fundamentals?.roe || d?.moneycontrolData?.roe },
-                                                        { label: 'ROCE (%)', key: (d: any) => d?.fundamentals?.roce || d?.moneycontrolData?.roce },
-                                                        { label: 'Debt-to-Equity', key: (d: any) => d?.fundamentals?.debtToEquity || d?.moneycontrolData?.deRatio },
-                                                        { label: 'Current Ratio', key: (d: any) => d?.fundamentals?.currentRatio || d?.moneycontrolData?.currentRatio },
-                                                        { label: 'Profit Margin (%)', key: (d: any) => d?.moneycontrolData?.profitMargin },
-                                                        { label: 'Revenue Growth (%)', key: (d: any) => d?.moneycontrolData?.revenueGrowth },
-                                                        { label: 'Beta', key: (d: any) => d?.fundamentals?.beta || d?.moneycontrolData?.beta },
+                                                        { label: '52W High (₹)', key: (d: any) => d?.keyMetrics?.high52w || d?.priceData?.week52High || d?.priceData?.high52W },
+                                                        { label: '52W Low (₹)', key: (d: any) => d?.keyMetrics?.low52w || d?.priceData?.week52Low || d?.priceData?.low52W },
+                                                        { label: 'P/E Ratio', key: (d: any) => d?.keyMetrics?.pe || d?.valuation?.peRatio || d?.priceData?.pe || d?.fundamentals?.pe },
+                                                        { label: 'P/B Ratio', key: (d: any) => d?.keyMetrics?.pb || d?.valuation?.pbRatio || d?.priceData?.pb || d?.fundamentals?.pb },
+                                                        { label: 'EPS (₹)', key: (d: any) => d?.keyMetrics?.eps || d?.financialHealth?.eps || d?.priceData?.eps || d?.fundamentals?.eps },
+                                                        { label: 'Market Cap', key: (d: any) => d?.keyMetrics?.marketCap || d?.valuation?.marketCap || d?.priceData?.marketCap || d?.fundamentals?.marketCap },
+                                                        { label: 'Book Value (₹)', key: (d: any) => d?.keyMetrics?.bookValue || d?.financialHealth?.bookValue || d?.priceData?.bookValue || d?.fundamentals?.bookValue },
+                                                        { label: 'Dividend Yield', key: (d: any) => d?.keyMetrics?.dividendYield || d?.financialHealth?.dividendYield || d?.priceData?.dividendYield || d?.fundamentals?.dividendYield },
+                                                        { label: 'ROE (%)', key: (d: any) => d?.keyMetrics?.roe || d?.financialHealth?.roe || d?.fundamentals?.roe || d?.moneycontrolData?.roe },
+                                                        { label: 'ROCE (%)', key: (d: any) => d?.keyMetrics?.roce || d?.fundamentals?.roce || d?.moneycontrolData?.roce },
+                                                        { label: 'Debt-to-Equity', key: (d: any) => d?.keyMetrics?.debtToEquity || d?.financialHealth?.deRatio || d?.fundamentals?.debtToEquity || d?.moneycontrolData?.deRatio },
+                                                        { label: 'Current Ratio', key: (d: any) => d?.keyMetrics?.currentRatio || d?.additionalIndicators?.currentRatio || d?.fundamentals?.currentRatio || d?.moneycontrolData?.currentRatio },
+                                                        { label: 'Profit Margin', key: (d: any) => d?.keyMetrics?.profitMargin || d?.growthMetrics?.profitMargin || d?.moneycontrolData?.profitMargin },
+                                                        { label: 'Revenue Growth', key: (d: any) => d?.keyMetrics?.revenueGrowth || d?.growthMetrics?.revenueGrowth || d?.moneycontrolData?.revenueGrowth },
+                                                        { label: 'Beta', key: (d: any) => d?.keyMetrics?.beta || d?.additionalIndicators?.beta || d?.fundamentals?.beta || d?.moneycontrolData?.beta },
                                                       ];
 
                                                       const hasMetrics = compareSymbols.some(sym => compareAnalysisData[sym]);

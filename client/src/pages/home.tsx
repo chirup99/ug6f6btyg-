@@ -8632,8 +8632,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const handleCompareAnalysis = async () => {
     if (compareSymbols.length < 2) return;
     setCompareLoading(true);
-    setShowCompareResults(false);
+    setShowCompareResults(true);
     setCompareAiInsights(null);
+    setCompareQuarterlyData({});
+    setCompareNewsData({});
     try {
       const qData: {[k: string]: any[]} = {};
       const nData: {[k: string]: any[]} = {};
@@ -8641,16 +8643,17 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         try {
           const qRes = await fetch(`/api/quarterly-results/${sym}`);
           if (qRes.ok) { const d = await qRes.json(); qData[sym] = d.results || []; }
-        } catch {}
+          else { console.warn(`Quarterly fetch failed for ${sym}: ${qRes.status}`); }
+        } catch (e) { console.warn(`Quarterly fetch error for ${sym}:`, e); }
         try {
           const nRes = await fetch(`/api/stock-news/${sym}`);
           if (nRes.ok) { const d = await nRes.json(); nData[sym] = (Array.isArray(d) ? d : (d.news || [])).slice(0, 3); }
-        } catch {}
+          else { console.warn(`News fetch failed for ${sym}: ${nRes.status}`); }
+        } catch (e) { console.warn(`News fetch error for ${sym}:`, e); }
       }));
       setCompareQuarterlyData(qData);
       setCompareNewsData(nData);
       setCompareAiInsights('ready');
-      setShowCompareResults(true);
     } catch (e) {
       console.error('Compare analysis error:', e);
     } finally {

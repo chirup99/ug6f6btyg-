@@ -18824,7 +18824,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         const pm = parse(d?.keyMetrics?.profitMargin);
                                                         if (!isNaN(pm)) { total++; const g = pm>=10; if(g) score++; flags.push({label:'Margin',value:`${pm.toFixed(1)}%`,good:g}); }
                                                         const pct = total>0 ? Math.round((score/total)*100) : 0;
-                                                        const verdict = total===0 ? 'Awaiting Data' : pct>=70 ? 'Strong Buy' : pct>=50 ? 'Moderate Buy' : pct>=35 ? 'Hold' : 'Caution';
+                                                        const verdict = total===0 ? 'Awaiting Data' : pct>=70 ? 'Strongly +ve' : pct>=50 ? 'Moderately +ve' : pct>=35 ? 'Neutral' : '-ve';
                                                         const vc = total===0 ? '#6b7280' : pct>=70 ? '#34d399' : pct>=50 ? '#60a5fa' : pct>=35 ? '#fbbf24' : '#f87171';
                                                         return {sym, score, total, pct, flags, verdict, vc, color: COLORS[si]};
                                                       });

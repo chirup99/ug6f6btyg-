@@ -11,9 +11,26 @@ import {
   Trash2,
   Eye,
   EyeOff,
+  TrendingUp,
+  TrendingDown,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 
 interface MarketRegion {
   name: string;
@@ -29,6 +46,82 @@ const marketRegions: MarketRegion[] = [
   { name: "HONG KONG", x: 68, y: 46, pulseDelay: 1.3 },
   { name: "TOKYO", x: 75, y: 38, pulseDelay: 1.6 },
 ];
+
+const REGION_META: Record<string, { flag: string; index: string; indexCode: string; news: string[] }> = {
+  USA: {
+    flag: "🇺🇸",
+    index: "S&P 500",
+    indexCode: "SPX",
+    news: [
+      "Fed holds rates steady amid mixed economic signals",
+      "S&P 500 tech sector leads gains on AI spending outlook",
+      "US jobs report beats expectations with 200K new hires",
+      "Treasury yields dip as inflation data cools slightly",
+    ],
+  },
+  CANADA: {
+    flag: "🇨🇦",
+    index: "TSX Composite",
+    indexCode: "TSX",
+    news: [
+      "Bank of Canada signals potential rate cut in Q2",
+      "Energy stocks lift TSX as crude oil prices firm up",
+      "Canadian dollar strengthens on positive trade data",
+      "TSX financials post steady gains amid global rally",
+    ],
+  },
+  INDIA: {
+    flag: "🇮🇳",
+    index: "NIFTY 50",
+    indexCode: "NIFTY",
+    news: [
+      "RBI maintains repo rate; markets await policy cues",
+      "IT sector stocks surge on strong Q4 earnings outlook",
+      "FII inflows boost Nifty 50 to new monthly high",
+      "SEBI introduces new derivative risk framework",
+    ],
+  },
+  "HONG KONG": {
+    flag: "🇭🇰",
+    index: "Hang Seng",
+    indexCode: "HSI",
+    news: [
+      "Hang Seng rebounds on China stimulus optimism",
+      "Tech stocks rally as regulators ease restrictions",
+      "Property sector faces pressure amid rate outlook",
+      "HK IPO pipeline strengthens for second half of year",
+    ],
+  },
+  TOKYO: {
+    flag: "🇯🇵",
+    index: "Nikkei 225",
+    indexCode: "NKY",
+    news: [
+      "Nikkei hits multi-week high on weak yen tailwinds",
+      "Bank of Japan maintains ultra-loose monetary policy",
+      "Japan exports surge boosting manufacturing stocks",
+      "Auto sector leads Nikkei gains on strong US demand",
+    ],
+  },
+};
+
+function generateSparklineData(change: number, points = 24): { time: string; price: number }[] {
+  const seed = Math.abs(change * 100);
+  const base = 1000;
+  const data: { time: string; price: number }[] = [];
+  let price = base;
+  const target = base * (1 + change / 100);
+  for (let i = 0; i < points; i++) {
+    const progress = i / (points - 1);
+    const trend = (target - base) * progress;
+    const noise = (((seed * (i + 1) * 9301 + 49297) % 233280) / 233280 - 0.5) * base * 0.008;
+    price = base + trend + noise;
+    const hour = Math.floor(9 + (i / points) * 6.5);
+    const min = Math.floor((i / points) * 60) % 60;
+    data.push({ time: `${hour}:${min.toString().padStart(2, "0")}`, price: parseFloat(price.toFixed(2)) });
+  }
+  return data;
+}
 
 // World map dot coordinates extracted from the SVG
 const worldMapDots =
@@ -90,6 +183,7 @@ export function WorldMap() {
   const isDarkMode = theme === "dark";
   const [isMobile, setIsMobile] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
+  const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(
     null,
   );
@@ -945,9 +1039,16 @@ export function WorldMap() {
                 ? "#ef4444"
                 : "#ef233c"
             : "#64748b";
+          const meta = REGION_META[region.name];
 
           return (
-            <div key={region.name} className="flex items-center gap-1.5">
+            <button
+              key={region.name}
+              className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity rounded-full px-2 py-0.5 hover:bg-white/10 active:scale-95"
+              onClick={() => setSelectedRegion(region.name)}
+              data-testid={`button-region-${region.name.toLowerCase().replace(" ", "-")}`}
+            >
+              <span className="text-[10px]">{meta?.flag}</span>
               <div
                 className="w-1.5 h-1.5 rounded-full"
                 style={{ backgroundColor: color }}
@@ -956,18 +1057,119 @@ export function WorldMap() {
                 {region.name}
               </span>
               {market && market.change !== undefined && (
-                <span className="text-[9px]" style={{ color }}>
+                <span className="text-[9px] font-medium" style={{ color }}>
                   {market.isUp ? "+" : ""}
                   {market.change.toFixed(2)}%
                 </span>
               )}
-            </div>
+            </button>
           );
         })}
         {loading && (
           <span className="text-gray-400 text-[9px]">Updating...</span>
         )}
       </div>
+
+      {/* Region Detail Dialog */}
+      <Dialog open={!!selectedRegion} onOpenChange={(open) => { if (!open) setSelectedRegion(null); }}>
+        <DialogContent className="sm:max-w-[480px] bg-gray-950 border-gray-800 text-white p-0 overflow-hidden rounded-2xl">
+          {selectedRegion && (() => {
+            const meta = REGION_META[selectedRegion];
+            const market = marketData?.[selectedRegion as keyof typeof marketData];
+            const isUp = market?.isUp ?? true;
+            const change = market?.change ?? 0;
+            const chartColor = isUp ? "#10b981" : "#ef4444";
+            const sparkData = generateSparklineData(change);
+            const minPrice = Math.min(...sparkData.map(d => d.price));
+            const maxPrice = Math.max(...sparkData.map(d => d.price));
+
+            return (
+              <div>
+                {/* Header */}
+                <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-800">
+                  <div className="flex items-center gap-3">
+                    <span className="text-3xl">{meta?.flag}</span>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <h2 className="text-lg font-bold text-white">{meta?.index}</h2>
+                        <span className="text-xs text-gray-500 bg-gray-800 px-2 py-0.5 rounded-full">{meta?.indexCode}</span>
+                      </div>
+                      <p className="text-xs text-gray-400">{selectedRegion}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className={`flex items-center gap-1 px-3 py-1.5 rounded-xl text-sm font-bold ${isUp ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"}`}>
+                      {isUp ? <TrendingUp className="h-4 w-4" /> : <TrendingDown className="h-4 w-4" />}
+                      {isUp ? "+" : ""}{change.toFixed(2)}%
+                    </div>
+                  </div>
+                </div>
+
+                {/* Chart */}
+                <div className="px-5 pt-4 pb-2">
+                  <div className="flex items-center gap-1.5 mb-3">
+                    <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: chartColor }} />
+                    <span className="text-[11px] text-gray-400">Intraday Performance</span>
+                  </div>
+                  <div className="h-[140px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={sparkData} margin={{ top: 4, right: 4, left: -30, bottom: 0 }}>
+                        <XAxis
+                          dataKey="time"
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 9, fill: "#4b5563" }}
+                          interval={5}
+                        />
+                        <YAxis
+                          domain={[minPrice * 0.999, maxPrice * 1.001]}
+                          axisLine={false}
+                          tickLine={false}
+                          tick={{ fontSize: 9, fill: "#4b5563" }}
+                          tickCount={4}
+                        />
+                        <Tooltip
+                          contentStyle={{ background: "#111827", border: "1px solid #374151", borderRadius: "8px", fontSize: "11px", color: "#e5e7eb" }}
+                          formatter={(val: any) => [Number(val).toFixed(2), meta?.indexCode]}
+                          labelStyle={{ color: "#9ca3af", marginBottom: 2 }}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="price"
+                          stroke={chartColor}
+                          strokeWidth={2}
+                          dot={false}
+                          activeDot={{ r: 3, fill: chartColor }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="flex justify-between text-[10px] text-gray-500 mt-1">
+                    <span>Open</span>
+                    <span>Close</span>
+                  </div>
+                </div>
+
+                {/* News */}
+                <div className="px-5 pb-5 pt-1">
+                  <div className="flex items-center gap-2 mb-2.5">
+                    <Globe className="h-3.5 w-3.5 text-blue-400" />
+                    <span className="text-xs font-semibold text-gray-300">Market News</span>
+                  </div>
+                  <div className="space-y-2">
+                    {meta?.news.map((headline, i) => (
+                      <div key={i} className="flex items-start gap-2.5 p-2.5 rounded-xl bg-gray-900/70 border border-gray-800/60 hover:border-gray-700 transition-colors">
+                        <div className="w-1 h-1 rounded-full mt-1.5 flex-shrink-0" style={{ backgroundColor: chartColor }} />
+                        <p className="text-[11px] text-gray-300 leading-relaxed">{headline}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -8146,6 +8146,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [compareAiInsights, setCompareAiInsights] = useState<string | null>(null);
   const [showCompareResults, setShowCompareResults] = useState(false);
   const [compareActiveTab, setCompareActiveTab] = useState<'overview'|'pnl'|'balance'|'metrics'>('overview');
+  const [showFullReport, setShowFullReport] = useState(false);
+  const [fullReportLoading, setFullReportLoading] = useState(false);
+  const [fullReportData, setFullReportData] = useState<{quarterly: any[]; annualFinancials: any; keyMetrics: any} | null>(null);
+  const [fullReportActiveTab, setFullReportActiveTab] = useState<'quarterly'|'pnl'|'balance'|'metrics'|'insights'>('quarterly');
+  const [fullReportSymbol, setFullReportSymbol] = useState<string | null>(null);
   const [nifty50Timeframe, setNifty50Timeframe] = useState('1D');
   const [niftyBankTimeframe, setNiftyBankTimeframe] = useState('1D');
 
@@ -8689,6 +8694,32 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       console.error('Compare analysis error:', e);
     } finally {
       setCompareLoading(false);
+    }
+  };
+
+  const handleViewFullReport = async (symbol: string) => {
+    const cleanSymbol = symbol.replace(/^[A-Z]+:/i, '').replace(/-EQ$|-BE$|-SM$/i, '');
+    setShowFullReport(true);
+    setFullReportLoading(true);
+    setFullReportData(null);
+    setFullReportActiveTab('quarterly');
+    setFullReportSymbol(cleanSymbol);
+    try {
+      const [qRes, finRes] = await Promise.all([
+        fetch(`/api/quarterly-results/${cleanSymbol}`),
+        fetch(`/api/company-financials/${cleanSymbol}`)
+      ]);
+      const qData = qRes.ok ? await qRes.json() : {};
+      const finData = finRes.ok ? await finRes.json() : {};
+      setFullReportData({
+        quarterly: qData.results || [],
+        annualFinancials: finData.annualFinancials || null,
+        keyMetrics: finData.keyMetrics || null,
+      });
+    } catch (e) {
+      console.error('Full report fetch error:', e);
+    } finally {
+      setFullReportLoading(false);
     }
   };
 
@@ -17507,8 +17538,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                                                     const chartData = quarterlyData.map((q: any) => ({
                                                       quarter: q.quarter,
-                                                      value: parseFloat(q.revenue.replace(/,/g, '')) || 0,
-                                                      changePercent: parseFloat(q.change_percent) || 0
+                                                      value: parseFloat((q.net_profit || q.revenue || '0').toString().replace(/,/g, '')) || 0,
+                                                      changePercent: parseFloat((q.change_percent || '0').toString()) || 0,
+                                                      isPositive: parseFloat((q.net_profit || q.revenue || '0').toString().replace(/,/g, '')) >= 0
                                                     }));
 
                                                     const trendColor = hasTrendingUp ? '#22c55e' : '#ef4444';
@@ -17528,7 +17560,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                               <YAxis tick={{ fontSize: 10, fill: '#6b7280' }} tickFormatter={(value) => `₹${(value / 1000).toFixed(0)}K Cr`} axisLine={false} tickLine={false} />
                                                               <Tooltip 
                                                                 contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: '6px', fontSize: '11px' }}
-                                                                formatter={(value: any, name: any, props: any) => [`₹${Number(value).toLocaleString()} Cr`, 'Revenue']}
+                                                                formatter={(value: any) => [`₹${Number(value).toLocaleString()} Cr`, 'Net Profit']}
                                                               />
                                                               <Area 
                                                                 type="monotone" 
@@ -17542,13 +17574,27 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                             </AreaChart>
                                                           </ResponsiveContainer>
                                                         </div>
-                                                        <div className="flex justify-center gap-4 text-xs text-gray-400">
+                                                        <div className="flex justify-center gap-4 text-xs text-gray-400 mb-2">
                                                           <span className="flex items-center gap-1">
                                                             <span className="w-2 h-2 rounded-full bg-green-500"></span> Positive Quarter
                                                           </span>
                                                           <span className="flex items-center gap-1">
                                                             <span className="w-2 h-2 rounded-full bg-red-500"></span> Negative Quarter
                                                           </span>
+                                                        </div>
+                                                        {/* View Full Report — always visible */}
+                                                        <div className="mt-2 flex justify-end">
+                                                          <button
+                                                            onClick={() => {
+                                                              const symbol = searchResultsNewsSymbol || selectedWatchlistSymbol;
+                                                              if (symbol) handleViewFullReport(symbol);
+                                                            }}
+                                                            className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-colors"
+                                                            data-testid="button-view-full-report"
+                                                          >
+                                                            <FileText className="h-3 w-3" />
+                                                            View Full Report
+                                                          </button>
                                                         </div>
                                                         {/* PDF Links for Deep Analysis */}
                                                         {quarterlyData.some((q: any) => q.pdf_url) && (
@@ -17559,14 +17605,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                                 onClick={() => {
                                                                   const symbol = searchResultsNewsSymbol || selectedWatchlistSymbol;
                                                                   if (symbol) {
-                                                                    // Clean to bare stock name and build a query that
-                                                                    // explicitly triggers the AI agent's company
-                                                                    // fundamentals tool for a full report
-                                                                    const cleanSymbol = symbol
-                                                                      .replace(/^[A-Z]+:/i, '')
-                                                                      .replace(/-EQ$|-BE$|-SM$/i, '')
-                                                                      .toLowerCase();
-                                                                    handleSearch(`${cleanSymbol} full company report quarterly results and financial analysis`);
+                                                                    handleViewFullReport(symbol);
                                                                   }
                                                                 }}
                                                                 className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer"
@@ -17610,6 +17649,408 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               </div>
                                             </div>
                                           </div>
+
+                                          {/* ── Full Report Panel ── */}
+                                          {showFullReport && (
+                                            <div className="w-full rounded-xl border border-blue-700/40 bg-gray-900/80 overflow-hidden">
+                                              {/* Header */}
+                                              <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
+                                                <div className="flex items-center gap-2">
+                                                  <FileText className="h-4 w-4 text-blue-400" />
+                                                  <span className="text-sm font-semibold text-gray-200">
+                                                    Full Report{fullReportSymbol ? ` — ${fullReportSymbol}` : ''}
+                                                  </span>
+                                                  {fullReportData && (
+                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">
+                                                      Multi-source
+                                                    </span>
+                                                  )}
+                                                </div>
+                                                <button
+                                                  onClick={() => setShowFullReport(false)}
+                                                  className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
+                                                  data-testid="button-close-full-report"
+                                                >Close</button>
+                                              </div>
+
+                                              {fullReportLoading ? (
+                                                <div className="flex flex-col items-center justify-center py-12">
+                                                  <Loader2 className="h-6 w-6 animate-spin text-blue-400 mb-3" />
+                                                  <p className="text-xs text-gray-400">Fetching data from multiple sources…</p>
+                                                  <p className="text-[10px] text-gray-600 mt-1">Screener.in → Yahoo Finance → NSE India → Trendlyne → Moneycontrol</p>
+                                                </div>
+                                              ) : fullReportData ? (() => {
+                                                const frTabs = [
+                                                  { id: 'quarterly', label: 'Quarterly' },
+                                                  { id: 'pnl',       label: 'P&L Statement' },
+                                                  { id: 'balance',   label: 'Balance Sheet' },
+                                                  { id: 'metrics',   label: 'Key Metrics' },
+                                                  { id: 'insights',  label: '✦ Insights' },
+                                                ] as const;
+
+                                                const km = fullReportData.keyMetrics;
+                                                const af = fullReportData.annualFinancials;
+                                                const qd = fullReportData.quarterly;
+
+                                                // Quarterly chart data
+                                                const frChartData = qd.map((q: any) => ({
+                                                  quarter: q.quarter,
+                                                  value: parseFloat((q.net_profit || q.revenue || '0').toString().replace(/,/g, '')) || 0,
+                                                  isPositive: parseFloat((q.net_profit || q.revenue || '0').toString().replace(/,/g, '')) >= 0,
+                                                }));
+
+                                                const frHasTrend = frChartData.length > 1;
+                                                const frLatest  = frHasTrend ? frChartData[frChartData.length - 1].value : 0;
+                                                const frPrev    = frHasTrend ? frChartData[frChartData.length - 2].value : 0;
+                                                const frTrendUp = frLatest >= frPrev;
+                                                const frColor   = frTrendUp ? '#22c55e' : '#ef4444';
+
+                                                // AI insight calculations
+                                                const profits = qd.map((q: any) => parseFloat((q.net_profit || '0').toString().replace(/,/g, ''))).filter(Boolean);
+                                                const profitGrowth = profits.length > 1
+                                                  ? ((profits[profits.length - 1] - profits[0]) / Math.abs(profits[0])) * 100
+                                                  : null;
+                                                const recentTrend = profits.length > 1
+                                                  ? profits[profits.length - 1] > profits[profits.length - 2] ? 'improving' : 'declining'
+                                                  : null;
+
+                                                return (
+                                                  <div>
+                                                    {/* Tab bar */}
+                                                    <div className="flex border-b border-gray-700/60 px-4 pt-3 gap-1 overflow-x-auto">
+                                                      {frTabs.map(tab => (
+                                                        <button
+                                                          key={tab.id}
+                                                          onClick={() => setFullReportActiveTab(tab.id)}
+                                                          className={`px-3 py-1.5 text-xs font-medium rounded-t-lg whitespace-nowrap transition-colors ${
+                                                            fullReportActiveTab === tab.id
+                                                              ? 'bg-blue-600/20 text-blue-300 border-b-2 border-blue-500'
+                                                              : 'text-gray-500 hover:text-gray-300'
+                                                          }`}
+                                                        >{tab.label}</button>
+                                                      ))}
+                                                    </div>
+
+                                                    <div className="px-4 pt-4 pb-5 space-y-4">
+
+                                                      {/* QUARTERLY TAB */}
+                                                      {fullReportActiveTab === 'quarterly' && (
+                                                        <div>
+                                                          <div className="flex items-center gap-2 mb-3">
+                                                            <TrendingUp className="h-3.5 w-3.5 text-gray-400" />
+                                                            <span className="text-xs font-semibold text-gray-300">Quarterly Net Profit (₹ Cr)</span>
+                                                            {frHasTrend && (
+                                                              <span className={`text-[10px] px-1.5 py-0.5 rounded ${frTrendUp ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                                                                {frTrendUp ? '↑ Uptrend' : '↓ Downtrend'}
+                                                              </span>
+                                                            )}
+                                                            {qd.length > 0 && (
+                                                              <span className="ml-auto text-[10px] text-gray-600">
+                                                                Source: {(qd[0] as any).source || 'multi-source'}
+                                                              </span>
+                                                            )}
+                                                          </div>
+                                                          {frChartData.length > 0 ? (
+                                                            <>
+                                                              <div className="h-44 w-full mb-3">
+                                                                <ResponsiveContainer width="100%" height="100%">
+                                                                  <AreaChart data={frChartData} margin={{ top: 10, right: 10, left: 10, bottom: 20 }}>
+                                                                    <defs>
+                                                                      <linearGradient id="fr-grad" x1="0" y1="0" x2="0" y2="1">
+                                                                        <stop offset="0%" stopColor={frColor} stopOpacity={0.4} />
+                                                                        <stop offset="100%" stopColor={frColor} stopOpacity={0.05} />
+                                                                      </linearGradient>
+                                                                    </defs>
+                                                                    <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                                                                    <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v: number) => `₹${(v/1000).toFixed(0)}K`} axisLine={false} tickLine={false} />
+                                                                    <Tooltip
+                                                                      contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: '6px', fontSize: '11px' }}
+                                                                      formatter={(v: any) => [`₹${Number(v).toLocaleString()} Cr`, 'Net Profit']}
+                                                                    />
+                                                                    <Area type="monotone" dataKey="value" stroke={frColor} strokeWidth={2} fill="url(#fr-grad)" dot={{ r: 4, stroke: frColor, strokeWidth: 2, fill: '#1f2937' }} activeDot={{ r: 6, stroke: frColor, strokeWidth: 2, fill: '#fff' }} />
+                                                                  </AreaChart>
+                                                                </ResponsiveContainer>
+                                                              </div>
+                                                              {/* Quarterly table */}
+                                                              <div className="overflow-x-auto rounded-lg border border-gray-700/40">
+                                                                <table className="w-full text-xs">
+                                                                  <thead>
+                                                                    <tr className="bg-gray-800/50">
+                                                                      <th className="text-left py-2 px-3 font-medium text-gray-400">Quarter</th>
+                                                                      <th className="text-right py-2 px-3 font-medium text-gray-400">Net Profit (Cr)</th>
+                                                                      <th className="text-right py-2 px-3 font-medium text-gray-400">Revenue (Cr)</th>
+                                                                      <th className="text-right py-2 px-3 font-medium text-gray-400">EPS</th>
+                                                                      <th className="text-right py-2 px-3 font-medium text-gray-400">Chg %</th>
+                                                                    </tr>
+                                                                  </thead>
+                                                                  <tbody>
+                                                                    {qd.map((q: any, i: number) => {
+                                                                      const chg = parseFloat(q.change_percent || '0');
+                                                                      return (
+                                                                        <tr key={i} className="border-t border-gray-700/30 hover:bg-gray-800/30">
+                                                                          <td className="py-2 px-3 text-gray-300 font-medium">{q.quarter}</td>
+                                                                          <td className="py-2 px-3 text-right text-gray-300">{q.net_profit ? `₹${Number(q.net_profit).toLocaleString()}` : '—'}</td>
+                                                                          <td className="py-2 px-3 text-right text-gray-400">{q.revenue ? `₹${Number(q.revenue).toLocaleString()}` : '—'}</td>
+                                                                          <td className="py-2 px-3 text-right text-gray-400">{q.eps || '—'}</td>
+                                                                          <td className={`py-2 px-3 text-right font-medium ${chg >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                                            {q.change_percent ? `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%` : '—'}
+                                                                          </td>
+                                                                        </tr>
+                                                                      );
+                                                                    })}
+                                                                  </tbody>
+                                                                </table>
+                                                              </div>
+                                                              {/* PDF links */}
+                                                              {qd.some((q: any) => q.pdf_url) && (
+                                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                                  {qd.filter((q: any) => q.pdf_url).slice(-4).map((q: any, i: number) => (
+                                                                    <a key={i} href={q.pdf_url} target="_blank" rel="noopener noreferrer"
+                                                                      className="flex items-center gap-1 px-2 py-1 bg-gray-800 hover:bg-gray-700 rounded text-xs text-gray-300"
+                                                                      data-testid={`link-fr-pdf-${i}`}>
+                                                                      <FileText className="h-3 w-3" />{q.quarter} PDF
+                                                                    </a>
+                                                                  ))}
+                                                                </div>
+                                                              )}
+                                                            </>
+                                                          ) : (
+                                                            <p className="text-xs text-gray-500 text-center py-6">No quarterly data available</p>
+                                                          )}
+                                                        </div>
+                                                      )}
+
+                                                      {/* P&L TAB */}
+                                                      {fullReportActiveTab === 'pnl' && (
+                                                        <div>
+                                                          <div className="flex items-center gap-2 mb-3">
+                                                            <TrendingUp className="h-3.5 w-3.5 text-gray-400" />
+                                                            <span className="text-xs font-semibold text-gray-300">Annual Profit & Loss</span>
+                                                            {af && <span className="ml-auto text-[10px] text-gray-600">Source: {af.source}</span>}
+                                                          </div>
+                                                          {af?.profitLoss?.length > 0 ? (
+                                                            <div className="overflow-x-auto rounded-lg border border-gray-700/40">
+                                                              <table className="w-full text-xs min-w-full">
+                                                                <thead>
+                                                                  <tr className="bg-gray-800/50">
+                                                                    <th className="text-left py-2 px-3 font-medium text-gray-400 w-40">Item</th>
+                                                                    {(af.years || []).slice(0, 5).map((y: string, i: number) => (
+                                                                      <th key={i} className="text-right py-2 px-3 font-medium text-gray-400 whitespace-nowrap">{y}</th>
+                                                                    ))}
+                                                                  </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                  {af.profitLoss.map((row: any, i: number) => (
+                                                                    <tr key={i} className="border-t border-gray-700/30 hover:bg-gray-800/30">
+                                                                      <td className="py-2 px-3 text-gray-400 font-medium">{row.label}</td>
+                                                                      {(af.years || []).slice(0, 5).map((_: string, yi: number) => {
+                                                                        const v = row.values?.[yi]?.value;
+                                                                        const n = typeof v === 'string' ? parseFloat(v.replace(/,/g, '')) : Number(v);
+                                                                        return (
+                                                                          <td key={yi} className={`py-2 px-3 text-right ${!isNaN(n) && n < 0 ? 'text-red-400' : 'text-gray-300'}`}>
+                                                                            {v != null ? (isNaN(n) ? v : n.toLocaleString()) : '—'}
+                                                                          </td>
+                                                                        );
+                                                                      })}
+                                                                    </tr>
+                                                                  ))}
+                                                                </tbody>
+                                                              </table>
+                                                            </div>
+                                                          ) : (
+                                                            <p className="text-xs text-gray-500 text-center py-6">No P&L data available</p>
+                                                          )}
+                                                        </div>
+                                                      )}
+
+                                                      {/* BALANCE SHEET TAB */}
+                                                      {fullReportActiveTab === 'balance' && (
+                                                        <div>
+                                                          <div className="flex items-center gap-2 mb-3">
+                                                            <BarChart className="h-3.5 w-3.5 text-gray-400" />
+                                                            <span className="text-xs font-semibold text-gray-300">Annual Balance Sheet</span>
+                                                            {af && <span className="ml-auto text-[10px] text-gray-600">Source: {af.source}</span>}
+                                                          </div>
+                                                          {af?.balanceSheet?.length > 0 ? (
+                                                            <div className="overflow-x-auto rounded-lg border border-gray-700/40">
+                                                              <table className="w-full text-xs min-w-full">
+                                                                <thead>
+                                                                  <tr className="bg-gray-800/50">
+                                                                    <th className="text-left py-2 px-3 font-medium text-gray-400 w-40">Item</th>
+                                                                    {(af.years || []).slice(0, 5).map((y: string, i: number) => (
+                                                                      <th key={i} className="text-right py-2 px-3 font-medium text-gray-400 whitespace-nowrap">{y}</th>
+                                                                    ))}
+                                                                  </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                  {af.balanceSheet.map((row: any, i: number) => (
+                                                                    <tr key={i} className="border-t border-gray-700/30 hover:bg-gray-800/30">
+                                                                      <td className="py-2 px-3 text-gray-400 font-medium">{row.label}</td>
+                                                                      {(af.years || []).slice(0, 5).map((_: string, yi: number) => {
+                                                                        const v = row.values?.[yi]?.value;
+                                                                        const n = typeof v === 'string' ? parseFloat(v.replace(/,/g, '')) : Number(v);
+                                                                        return (
+                                                                          <td key={yi} className={`py-2 px-3 text-right ${!isNaN(n) && n < 0 ? 'text-red-400' : 'text-gray-300'}`}>
+                                                                            {v != null ? (isNaN(n) ? v : n.toLocaleString()) : '—'}
+                                                                          </td>
+                                                                        );
+                                                                      })}
+                                                                    </tr>
+                                                                  ))}
+                                                                </tbody>
+                                                              </table>
+                                                            </div>
+                                                          ) : (
+                                                            <p className="text-xs text-gray-500 text-center py-6">No balance sheet data available</p>
+                                                          )}
+                                                        </div>
+                                                      )}
+
+                                                      {/* KEY METRICS TAB */}
+                                                      {fullReportActiveTab === 'metrics' && (
+                                                        <div>
+                                                          <div className="flex items-center gap-2 mb-3">
+                                                            <Sparkles className="h-3.5 w-3.5 text-yellow-400" />
+                                                            <span className="text-xs font-semibold text-gray-300">Key Metrics</span>
+                                                            {km && <span className="ml-auto text-[10px] text-gray-600">Source: {km.source}</span>}
+                                                          </div>
+                                                          {km ? (
+                                                            <div className="grid grid-cols-2 gap-2">
+                                                              {[
+                                                                { label: 'P/E Ratio', value: km.pe != null ? km.pe.toFixed(2) : null },
+                                                                { label: 'P/B Ratio', value: km.pb != null ? km.pb.toFixed(2) : null },
+                                                                { label: 'EPS (TTM)', value: km.eps != null ? `₹${km.eps.toFixed(2)}` : null },
+                                                                { label: 'Market Cap', value: km.marketCap },
+                                                                { label: 'ROE', value: km.roe },
+                                                                { label: 'ROCE', value: km.roce },
+                                                                { label: 'Debt / Equity', value: km.debtToEquity != null ? km.debtToEquity.toFixed(2) : null },
+                                                                { label: 'Current Ratio', value: km.currentRatio != null ? km.currentRatio.toFixed(2) : null },
+                                                                { label: 'Beta', value: km.beta != null ? km.beta.toFixed(2) : null },
+                                                                { label: 'Profit Margin', value: km.profitMargin },
+                                                                { label: 'Revenue Growth', value: km.revenueGrowth },
+                                                                { label: 'Dividend Yield', value: km.dividendYield },
+                                                                { label: '52W High', value: km.high52w != null ? `₹${km.high52w.toLocaleString()}` : null },
+                                                                { label: '52W Low', value: km.low52w != null ? `₹${km.low52w.toLocaleString()}` : null },
+                                                                { label: 'Book Value', value: km.bookValue != null ? `₹${km.bookValue.toFixed(2)}` : null },
+                                                              ].map(({ label, value }) => (
+                                                                <div key={label} className="flex justify-between items-center px-3 py-2 rounded-lg bg-gray-800/40 border border-gray-700/30">
+                                                                  <span className="text-[11px] text-gray-500">{label}</span>
+                                                                  <span className="text-[11px] font-medium text-gray-200">{value ?? '—'}</span>
+                                                                </div>
+                                                              ))}
+                                                            </div>
+                                                          ) : (
+                                                            <p className="text-xs text-gray-500 text-center py-6">No key metrics data available</p>
+                                                          )}
+                                                        </div>
+                                                      )}
+
+                                                      {/* INSIGHTS TAB */}
+                                                      {fullReportActiveTab === 'insights' && (
+                                                        <div className="space-y-3">
+                                                          <div className="flex items-center gap-2 mb-1">
+                                                            <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+                                                            <span className="text-xs font-semibold text-gray-300">Advanced Insights — {fullReportSymbol}</span>
+                                                          </div>
+
+                                                          {/* Trend summary */}
+                                                          <div className="p-3 bg-purple-900/20 rounded-lg border border-purple-700/30 space-y-2">
+                                                            {profitGrowth !== null && (
+                                                              <p className="text-xs text-gray-300">
+                                                                <span className="font-semibold text-purple-300">• Profit Trend:</span>{' '}
+                                                                Net profit {profitGrowth >= 0 ? 'grew' : 'declined'} by{' '}
+                                                                <span className={profitGrowth >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+                                                                  {profitGrowth >= 0 ? '+' : ''}{profitGrowth.toFixed(1)}%
+                                                                </span>{' '}
+                                                                over the last {qd.length} reported quarters.
+                                                              </p>
+                                                            )}
+                                                            {recentTrend && (
+                                                              <p className="text-xs text-gray-300">
+                                                                <span className="font-semibold text-purple-300">• Recent Momentum:</span>{' '}
+                                                                Latest quarter shows a{' '}
+                                                                <span className={recentTrend === 'improving' ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
+                                                                  {recentTrend}
+                                                                </span>{' '}
+                                                                trend compared to the previous quarter.
+                                                              </p>
+                                                            )}
+                                                            {km?.pe != null && (
+                                                              <p className="text-xs text-gray-300">
+                                                                <span className="font-semibold text-purple-300">• Valuation:</span>{' '}
+                                                                P/E of <span className="text-yellow-300 font-semibold">{km.pe.toFixed(1)}x</span>
+                                                                {km.pe < 15 ? ' — trading at a discount vs market average.' : km.pe > 30 ? ' — premium valued; growth expectations are high.' : ' — fairly valued relative to market.'}
+                                                              </p>
+                                                            )}
+                                                            {km?.roe && (
+                                                              <p className="text-xs text-gray-300">
+                                                                <span className="font-semibold text-purple-300">• Return on Equity:</span>{' '}
+                                                                ROE of <span className="text-yellow-300 font-semibold">{km.roe}</span>
+                                                                {parseFloat(km.roe) >= 20 ? ' — strong capital efficiency.' : parseFloat(km.roe) >= 10 ? ' — moderate returns on equity.' : ' — below-average returns.'}
+                                                              </p>
+                                                            )}
+                                                            {km?.roce && (
+                                                              <p className="text-xs text-gray-300">
+                                                                <span className="font-semibold text-purple-300">• ROCE:</span>{' '}
+                                                                <span className="text-yellow-300 font-semibold">{km.roce}</span>
+                                                                {parseFloat(km.roce) >= 15 ? ' — efficiently deploying total capital.' : ' — scope for improving capital deployment.'}
+                                                              </p>
+                                                            )}
+                                                            {km?.debtToEquity != null && (
+                                                              <p className="text-xs text-gray-300">
+                                                                <span className="font-semibold text-purple-300">• Leverage:</span>{' '}
+                                                                D/E of <span className="text-yellow-300 font-semibold">{km.debtToEquity.toFixed(2)}</span>
+                                                                {km.debtToEquity < 0.5 ? ' — low leverage, strong balance sheet.' : km.debtToEquity < 1.5 ? ' — manageable debt levels.' : ' — high leverage, watch debt servicing.'}
+                                                              </p>
+                                                            )}
+                                                            {km?.profitMargin && (
+                                                              <p className="text-xs text-gray-300">
+                                                                <span className="font-semibold text-purple-300">• Profit Margin:</span>{' '}
+                                                                <span className="text-yellow-300 font-semibold">{km.profitMargin}</span>
+                                                                {parseFloat(km.profitMargin) >= 20 ? ' — high margin business.' : parseFloat(km.profitMargin) >= 10 ? ' — healthy margins.' : ' — thin margins, monitor cost pressures.'}
+                                                              </p>
+                                                            )}
+                                                            {/* Overall summary */}
+                                                            <p className="text-xs text-gray-400 pt-2 border-t border-purple-700/20">
+                                                              🎯 <span className="font-semibold text-purple-300">Overall:</span>{' '}
+                                                              {profitGrowth !== null && profitGrowth >= 10 && recentTrend === 'improving'
+                                                                ? 'Strong fundamentals with consistent profit growth and improving recent momentum.'
+                                                                : profitGrowth !== null && profitGrowth < 0
+                                                                  ? 'Revenue or profit decline observed — review upcoming quarterly triggers.'
+                                                                  : 'Mixed signals. Track next 1–2 quarter results for clearer directional conviction.'}
+                                                            </p>
+                                                          </div>
+
+                                                          {/* 52-week range */}
+                                                          {km?.high52w != null && km?.low52w != null && (
+                                                            <div className="p-3 bg-gray-800/40 rounded-lg border border-gray-700/30">
+                                                              <p className="text-[11px] text-gray-400 mb-2">52-Week Price Range</p>
+                                                              <div className="flex items-center gap-2">
+                                                                <span className="text-[11px] text-red-400">₹{km.low52w.toLocaleString()}</span>
+                                                                <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
+                                                                  <div className="h-full bg-gradient-to-r from-red-500 to-green-500 rounded-full" style={{ width: '100%' }} />
+                                                                </div>
+                                                                <span className="text-[11px] text-green-400">₹{km.high52w.toLocaleString()}</span>
+                                                              </div>
+                                                            </div>
+                                                          )}
+
+                                                          <p className="text-[10px] text-gray-600">
+                                                            Data sourced via: Screener.in → Yahoo Finance2 → NSE India API → Trendlyne → Moneycontrol (priority chain)
+                                                          </p>
+                                                        </div>
+                                                      )}
+
+                                                    </div>
+                                                  </div>
+                                                );
+                                              })() : (
+                                                <div className="flex items-center justify-center py-8 text-gray-500 text-xs">
+                                                  No data available from any source.
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
 
                                           {/* ── Stock Compare Window ── */}
                                           <div className="w-full rounded-xl border border-gray-700/60 bg-gray-900/70 overflow-hidden">

@@ -41,9 +41,9 @@ interface MarketRegion {
 const marketRegions: MarketRegion[] = [
   { name: "USA", x: 18, y: 40, pulseDelay: 0 },
   { name: "CANADA", x: 16, y: 26, pulseDelay: 0.3 },
-  { name: "INDIA", x: 58, y: 48, pulseDelay: 1.0 },
-  { name: "HONG KONG", x: 68, y: 46, pulseDelay: 1.3 },
-  { name: "TOKYO", x: 75, y: 38, pulseDelay: 1.6 },
+  { name: "INDIA", x: 55.5, y: 48, pulseDelay: 1.0 },
+  { name: "HONG KONG", x: 65.5, y: 44, pulseDelay: 1.3 },
+  { name: "TOKYO", x: 72.5, y: 37, pulseDelay: 1.6 },
 ];
 
 const REGION_META: Record<string, { flag: string; index: string; indexCode: string; news: string[] }> = {

@@ -8140,7 +8140,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [niftyBankTimeframe, setNiftyBankTimeframe] = useState('1D');
 
   const flashBarItems = useMemo(() => {
-    const items: Array<{ category: string; text: string; colorClass: string; tab: string }> = [];
+    const items: Array<{ category: string; text: string; colorClass: string; tab: string; symbol?: string }> = [];
 
     items.push({ category: 'LIVE', text: 'BANKNIFTY · SENSEX · GOLD — real-time prices streaming', colorClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30', tab: 'watchlist' });
 
@@ -8150,7 +8150,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     });
 
     watchlistSymbols.slice(0, 4).forEach(s => {
-      items.push({ category: 'Watchlist', text: `${s.displayName || s.symbol.replace('-EQ','').replace('NSE:','').replace('BSE:','')} — tap to view chart & analysis`, colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', tab: 'watchlist' });
+      const cleanSym = s.symbol.replace(/^[A-Z]+:/i, '').replace('-EQ', '').replace('-BE', '');
+      items.push({ category: 'Watchlist', text: s.displayName || cleanSym, colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', tab: 'watchlist', symbol: cleanSym });
     });
 
     if (watchlistSymbols.length === 0) {
@@ -8607,6 +8608,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       } catch {}
     }
   };
+
+  // Auto-fetch news on mount so flashbar shows real news immediately
+  useEffect(() => {
+    fetchNifty50News();
+  }, []);
+
+  // Fetch prices for watchlist symbols so sparklines show on flashbar
+  useEffect(() => {
+    if (watchlistSymbols.length === 0) return;
+    const symbols = watchlistSymbols.map(s =>
+      s.symbol.replace(/^[A-Z]+:/i, '').replace('-EQ', '').replace('-BE', '')
+    );
+    fetchNewsStockPrices(symbols);
+  }, [watchlistSymbols]);
 
   const getWatchlistNewsRelativeTime = (publishedAt: string) => {
     const now = new Date();
@@ -15874,12 +15889,41 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 {item.category}
                               </span>
 
-                              {/* Cycling text */}
+                              {/* Cycling content — sparkline for watchlist, text otherwise */}
                               <span
-                                className="flex-1 min-w-0 text-sm text-gray-300 truncate transition-opacity duration-200"
+                                className="flex-1 min-w-0 flex items-center gap-2 transition-opacity duration-200 overflow-hidden"
                                 style={{ opacity: flashBarVisible ? 1 : 0 }}
                               >
-                                {item.text}
+                                {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
+                                  const sd = newsStockPrices[item.symbol];
+                                  const isUp = sd.changePercent >= 0;
+                                  const prices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
+                                  const minP = prices.length > 1 ? Math.min(...prices) : 0;
+                                  const maxP = prices.length > 1 ? Math.max(...prices) : 1;
+                                  const range = maxP - minP || 1;
+                                  const W = 52, H = 18;
+                                  const pts = prices.length > 1
+                                    ? prices.map((p: number, i: number) => `${(i / (prices.length - 1)) * W},${H - ((p - minP) / range) * H}`).join(' ')
+                                    : null;
+                                  return (
+                                    <>
+                                      <span className="text-sm font-semibold text-gray-100 flex-shrink-0">{item.text}</span>
+                                      <span className={`text-sm font-bold flex-shrink-0 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                                        ₹{sd.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                                      </span>
+                                      <span className={`text-[11px] flex-shrink-0 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                                        {isUp ? '▲' : '▼'}{Math.abs(sd.changePercent).toFixed(2)}%
+                                      </span>
+                                      {pts && (
+                                        <svg width={W} height={H} className="flex-shrink-0" style={{ overflow: 'visible' }}>
+                                          <polyline points={pts} fill="none" stroke={isUp ? '#4ade80' : '#f87171'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                      )}
+                                    </>
+                                  );
+                                })() : (
+                                  <span className="text-sm text-gray-300 truncate">{item.text}</span>
+                                )}
                               </span>
 
                               {/* Progress dots */}

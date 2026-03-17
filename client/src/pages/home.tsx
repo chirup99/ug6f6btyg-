@@ -8136,6 +8136,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     change_percent: string;
   }>}>({});
   const [isWatchlistQuarterlyLoading, setIsWatchlistQuarterlyLoading] = useState(false);
+  const [compareSymbols, setCompareSymbols] = useState<string[]>([]);
+  const [compareQuarterlyData, setCompareQuarterlyData] = useState<{[symbol: string]: any[]}>({});
+  const [compareNewsData, setCompareNewsData] = useState<{[symbol: string]: any[]}>({});
+  const [compareLoading, setCompareLoading] = useState(false);
+  const [compareAiInsights, setCompareAiInsights] = useState<string | null>(null);
+  const [showCompareResults, setShowCompareResults] = useState(false);
   const [nifty50Timeframe, setNifty50Timeframe] = useState('1D');
   const [niftyBankTimeframe, setNiftyBankTimeframe] = useState('1D');
 
@@ -8622,6 +8628,35 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     );
     fetchNewsStockPrices(symbols);
   }, [watchlistSymbols]);
+
+  const handleCompareAnalysis = async () => {
+    if (compareSymbols.length < 2) return;
+    setCompareLoading(true);
+    setShowCompareResults(false);
+    setCompareAiInsights(null);
+    try {
+      const qData: {[k: string]: any[]} = {};
+      const nData: {[k: string]: any[]} = {};
+      await Promise.all(compareSymbols.map(async sym => {
+        try {
+          const qRes = await fetch(`/api/quarterly-results/${sym}`);
+          if (qRes.ok) { const d = await qRes.json(); qData[sym] = d.results || []; }
+        } catch {}
+        try {
+          const nRes = await fetch(`/api/stock-news/${sym}`);
+          if (nRes.ok) { const d = await nRes.json(); nData[sym] = (Array.isArray(d) ? d : (d.news || [])).slice(0, 3); }
+        } catch {}
+      }));
+      setCompareQuarterlyData(qData);
+      setCompareNewsData(nData);
+      setCompareAiInsights('ready');
+      setShowCompareResults(true);
+    } catch (e) {
+      console.error('Compare analysis error:', e);
+    } finally {
+      setCompareLoading(false);
+    }
+  };
 
   const getWatchlistNewsRelativeTime = (publishedAt: string) => {
     const now = new Date();
@@ -16794,7 +16829,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         const cleanSymbolForNews = selectedWatchlistSymbol.replace(/^[A-Z]+:/i, '').replace('-EQ', '').replace('-BE', '');
 
                                         renderedContent = (
-                                          <div className="flex gap-4 w-full">
+                                          <div className="w-full space-y-4">
+                                            <div className="flex gap-4 w-full">
                                             {/* Left Column - Index Charts + Watchlist */}
                                             <div className="flex-1 space-y-4">
                                               {/* NIFTY 50 Chart */}
@@ -17458,6 +17494,258 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 </div>
                                               </div>
                                             </div>
+                                          </div>
+
+                                          {/* ── Stock Compare Window ── */}
+                                          <div className="w-full rounded-xl border border-gray-700/60 bg-gray-900/70 overflow-hidden">
+                                            {/* Header */}
+                                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
+                                              <div className="flex items-center gap-2">
+                                                <BarChart className="h-4 w-4 text-purple-400" />
+                                                <span className="text-sm font-semibold text-gray-200">Compare Stocks</span>
+                                                <span className="text-[11px] text-gray-500 ml-1">Select up to 3 from watchlist</span>
+                                              </div>
+                                              {showCompareResults && (
+                                                <button
+                                                  onClick={() => { setShowCompareResults(false); setCompareAiInsights(null); setCompareSymbols([]); }}
+                                                  className="text-xs text-gray-500 hover:text-gray-300 px-2 py-1 rounded hover:bg-gray-700/50 transition-colors"
+                                                  data-testid="button-compare-reset"
+                                                >Reset</button>
+                                              )}
+                                            </div>
+
+                                            {/* Stock selector chips + Analyse button */}
+                                            <div className="px-4 pt-3 pb-3">
+                                              <div className="flex flex-wrap gap-2 mb-3">
+                                                {watchlistSymbols.length === 0 ? (
+                                                  <span className="text-xs text-gray-500">No stocks in watchlist. Add stocks first.</span>
+                                                ) : watchlistSymbols.map(s => {
+                                                  const cs = s.symbol.replace(/^[A-Z]+:/i,'').replace('-EQ','').replace('-BE','');
+                                                  const isSel = compareSymbols.includes(cs);
+                                                  const isDisabled = !isSel && compareSymbols.length >= 3;
+                                                  return (
+                                                    <button
+                                                      key={s.symbol}
+                                                      data-testid={`chip-compare-${cs}`}
+                                                      onClick={() => {
+                                                        if (isSel) setCompareSymbols(p => p.filter(x => x !== cs));
+                                                        else if (!isDisabled) setCompareSymbols(p => [...p, cs]);
+                                                      }}
+                                                      className={`flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-medium border transition-all ${
+                                                        isSel
+                                                          ? 'bg-purple-500/20 text-purple-300 border-purple-500/50'
+                                                          : isDisabled
+                                                            ? 'bg-gray-800/30 text-gray-600 border-gray-700/30 cursor-not-allowed'
+                                                            : 'bg-gray-800/60 text-gray-400 border-gray-700 hover:border-purple-500/40 hover:text-gray-200'
+                                                      }`}
+                                                    >
+                                                      {s.displayName || cs}
+                                                      {isSel && <X className="h-2.5 w-2.5 ml-0.5" />}
+                                                    </button>
+                                                  );
+                                                })}
+                                              </div>
+                                              <button
+                                                onClick={handleCompareAnalysis}
+                                                disabled={compareSymbols.length < 2 || compareLoading}
+                                                data-testid="button-compare-analyze"
+                                                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                                                  compareSymbols.length >= 2 ? 'bg-purple-600 hover:bg-purple-500 text-white' : 'bg-gray-800 text-gray-500 border border-gray-700'
+                                                }`}
+                                              >
+                                                {compareLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                                                {compareLoading ? 'Analysing…' : `Analyse${compareSymbols.length >= 2 ? ` ${compareSymbols.length} Stocks` : ''}`}
+                                              </button>
+                                            </div>
+
+                                            {/* Results panel */}
+                                            {showCompareResults && compareSymbols.length >= 2 && (() => {
+                                              const COLORS = ['#a78bfa', '#34d399', '#f87171', '#60a5fa'];
+
+                                              // Build merged chart data (net profit per quarter)
+                                              const allQs = [...new Set(compareSymbols.flatMap(sym => (compareQuarterlyData[sym] || []).map((q: any) => q.quarter)))];
+                                              const chartRows = allQs.slice(-6).map(quarter => {
+                                                const row: any = { quarter };
+                                                compareSymbols.forEach(sym => {
+                                                  const q = (compareQuarterlyData[sym] || []).find((x: any) => x.quarter === quarter);
+                                                  if (q) row[sym] = parseFloat((q.net_profit || q.revenue || '0').toString().replace(/,/g,'')) || 0;
+                                                });
+                                                return row;
+                                              });
+
+                                              // Compute growth metrics for AI insights
+                                              const metrics = compareSymbols.map((sym, si) => {
+                                                const q = compareQuarterlyData[sym] || [];
+                                                const profits = q.map((x: any) => parseFloat((x.net_profit||'0').toString().replace(/,/g,''))).filter(Boolean);
+                                                const growth = profits.length > 1 ? ((profits[profits.length-1]-profits[0])/Math.abs(profits[0]))*100 : 0;
+                                                const trend = profits.length > 1 && profits[profits.length-1] > profits[profits.length-2] ? 'improving' : 'declining';
+                                                return { sym, growth, trend, color: COLORS[si], quarters: q.length };
+                                              });
+                                              const best = [...metrics].sort((a,b) => b.growth - a.growth)[0];
+                                              const improvingCount = metrics.filter(m => m.trend === 'improving').length;
+
+                                              return (
+                                                <div className="px-4 pb-4 space-y-4">
+
+                                                  {/* Bar chart */}
+                                                  <div className="border-t border-gray-700/50 pt-4">
+                                                    <div className="flex items-center gap-2 mb-3 flex-wrap">
+                                                      <TrendingUp className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                                                      <span className="text-xs font-semibold text-gray-300">Quarterly Net Profit (₹ Cr)</span>
+                                                      <div className="flex items-center gap-3 ml-auto flex-wrap">
+                                                        {compareSymbols.map((sym, i) => (
+                                                          <span key={sym} className="flex items-center gap-1 text-[11px]" style={{ color: COLORS[i] }}>
+                                                            <span className="w-2 h-2 rounded-full inline-block shrink-0" style={{ background: COLORS[i] }} />
+                                                            {sym}
+                                                          </span>
+                                                        ))}
+                                                      </div>
+                                                    </div>
+                                                    {chartRows.length > 0 ? (
+                                                      <div className="h-44 w-full">
+                                                        <ResponsiveContainer width="100%" height="100%">
+                                                          <BarChart data={chartRows} margin={{ top: 5, right: 10, left: 0, bottom: 5 }}>
+                                                            <XAxis dataKey="quarter" tick={{ fontSize: 10, fill: '#9ca3af' }} axisLine={false} tickLine={false} />
+                                                            <YAxis tick={{ fontSize: 9, fill: '#6b7280' }} tickFormatter={(v: number) => `₹${(v/1000).toFixed(0)}K`} axisLine={false} tickLine={false} width={40} />
+                                                            <Tooltip
+                                                              contentStyle={{ background: '#1f2937', border: '1px solid #374151', borderRadius: '8px', fontSize: '11px' }}
+                                                              formatter={(v: any, name: any) => [`₹${Number(v).toLocaleString()} Cr`, name]}
+                                                            />
+                                                            {compareSymbols.map((sym, i) => (
+                                                              <Bar key={sym} dataKey={sym} fill={COLORS[i]} radius={[3,3,0,0]} maxBarSize={30} />
+                                                            ))}
+                                                          </BarChart>
+                                                        </ResponsiveContainer>
+                                                      </div>
+                                                    ) : (
+                                                      <p className="text-xs text-gray-500 text-center py-6">No quarterly data available for selected stocks</p>
+                                                    )}
+                                                  </div>
+
+                                                  {/* P&L table */}
+                                                  {chartRows.length > 0 && (
+                                                    <div className="border-t border-gray-700/50 pt-3">
+                                                      <span className="text-xs font-semibold text-gray-300 block mb-2">P&amp;L Summary — Net Profit (₹ Cr)</span>
+                                                      <div className="overflow-x-auto rounded-lg border border-gray-700/40">
+                                                        <table className="w-full text-xs min-w-full">
+                                                          <thead>
+                                                            <tr className="bg-gray-800/50">
+                                                              <th className="text-left py-2 px-3 font-medium text-gray-400">Quarter</th>
+                                                              {compareSymbols.map((sym, i) => (
+                                                                <th key={sym} className="text-right py-2 px-3 font-medium" style={{ color: COLORS[i] }}>{sym}</th>
+                                                              ))}
+                                                            </tr>
+                                                          </thead>
+                                                          <tbody>
+                                                            {chartRows.slice(-5).map((row, i) => (
+                                                              <tr key={i} className="border-t border-gray-800/60 hover:bg-gray-800/30 transition-colors">
+                                                                <td className="py-2 px-3 text-gray-400">{row.quarter}</td>
+                                                                {compareSymbols.map((sym) => (
+                                                                  <td key={sym} className="text-right py-2 px-3 font-mono" style={{ color: row[sym] != null ? (row[sym] >= 0 ? '#d1fae5' : '#fca5a5') : '#6b7280' }}>
+                                                                    {row[sym] != null ? `₹${Number(row[sym]).toLocaleString()}` : '—'}
+                                                                  </td>
+                                                                ))}
+                                                              </tr>
+                                                            ))}
+                                                          </tbody>
+                                                        </table>
+                                                      </div>
+                                                    </div>
+                                                  )}
+
+                                                  {/* PDF links */}
+                                                  {compareSymbols.some(sym => (compareQuarterlyData[sym] || []).some((q: any) => q.pdf_url)) && (
+                                                    <div className="border-t border-gray-700/50 pt-3">
+                                                      <span className="text-xs font-semibold text-gray-300 block mb-2">Quarterly Result PDFs</span>
+                                                      <div className="space-y-2">
+                                                        {compareSymbols.map((sym, si) => {
+                                                          const pdfs = (compareQuarterlyData[sym] || []).filter((q: any) => q.pdf_url).slice(-4);
+                                                          if (!pdfs.length) return null;
+                                                          return (
+                                                            <div key={sym} className="flex items-center gap-2 flex-wrap">
+                                                              <span className="text-[11px] font-semibold w-16 shrink-0" style={{ color: COLORS[si] }}>{sym}</span>
+                                                              {pdfs.map((q: any, idx: number) => (
+                                                                <a key={idx} href={q.pdf_url} target="_blank" rel="noopener noreferrer"
+                                                                  className="flex items-center gap-1 px-2 py-0.5 bg-gray-800 hover:bg-gray-700 rounded text-[11px] text-gray-300 border border-gray-700/60 hover:border-gray-500 transition-colors">
+                                                                  <FileText className="h-2.5 w-2.5 shrink-0" />{q.quarter}
+                                                                </a>
+                                                              ))}
+                                                            </div>
+                                                          );
+                                                        })}
+                                                      </div>
+                                                    </div>
+                                                  )}
+
+                                                  {/* Latest news per stock */}
+                                                  <div className="border-t border-gray-700/50 pt-3">
+                                                    <span className="text-xs font-semibold text-gray-300 block mb-2">Latest News</span>
+                                                    <div className="space-y-3">
+                                                      {compareSymbols.map((sym, si) => {
+                                                        const news = compareNewsData[sym] || [];
+                                                        if (!news.length) return (
+                                                          <div key={sym}>
+                                                            <span className="text-[11px] font-semibold" style={{ color: COLORS[si] }}>{sym}</span>
+                                                            <p className="text-[11px] text-gray-600 mt-1">No news available</p>
+                                                          </div>
+                                                        );
+                                                        return (
+                                                          <div key={sym}>
+                                                            <span className="text-[11px] font-semibold block mb-1" style={{ color: COLORS[si] }}>{sym}</span>
+                                                            <div className="space-y-1.5">
+                                                              {news.slice(0,2).map((n: any, ni: number) => (
+                                                                <a key={ni} href={n.url} target="_blank" rel="noopener noreferrer"
+                                                                  className="flex items-start gap-1.5 p-2 bg-gray-800/50 rounded-lg hover:bg-gray-700/50 border border-gray-700/40 hover:border-gray-600 group transition-colors">
+                                                                  <ExternalLink className="h-3 w-3 text-gray-600 group-hover:text-gray-400 shrink-0 mt-0.5" />
+                                                                  <span className="text-[11px] text-gray-400 group-hover:text-gray-200 line-clamp-2 transition-colors">{n.title}</span>
+                                                                </a>
+                                                              ))}
+                                                            </div>
+                                                          </div>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                  </div>
+
+                                                  {/* AI Insights */}
+                                                  {compareAiInsights && (
+                                                    <div className="border-t border-gray-700/50 pt-3">
+                                                      <div className="flex items-center gap-2 mb-2">
+                                                        <Sparkles className="h-3.5 w-3.5 text-purple-400" />
+                                                        <span className="text-xs font-semibold text-gray-300">AI Insights</span>
+                                                      </div>
+                                                      <div className="p-3 bg-purple-900/20 rounded-lg border border-purple-700/30 space-y-1.5">
+                                                        {metrics.map((m, i) => (
+                                                          <p key={m.sym} className="text-xs text-gray-300">
+                                                            <span className="font-semibold" style={{ color: m.color }}>• {m.sym}:</span>{' '}
+                                                            Net profit {m.growth >= 0 ? 'growth' : 'decline'} of{' '}
+                                                            <span className={m.growth >= 0 ? 'text-green-400' : 'text-red-400'}>
+                                                              {m.growth >= 0 ? '+' : ''}{m.growth.toFixed(1)}%
+                                                            </span>{' '}
+                                                            over {m.quarters} quarters — <span className={m.trend === 'improving' ? 'text-green-400' : 'text-red-400'}>{m.trend}</span> trend
+                                                          </p>
+                                                        ))}
+                                                        {best && (
+                                                          <p className="text-xs text-gray-300 mt-2 pt-2 border-t border-purple-700/20">
+                                                            📊 <span className="font-semibold text-purple-300">Best performer:</span> {best.sym} with {best.growth >= 0 ? '+' : ''}{best.growth.toFixed(1)}% profit growth
+                                                          </p>
+                                                        )}
+                                                        <p className="text-xs text-gray-400">
+                                                          🎯 {improvingCount === compareSymbols.length
+                                                            ? 'All selected stocks show improving trends — broadly positive outlook.'
+                                                            : improvingCount === 0
+                                                              ? 'All stocks show declining recent quarters — exercise caution.'
+                                                              : `${improvingCount}/${compareSymbols.length} stocks improving. Selective approach advised.`}
+                                                        </p>
+                                                      </div>
+                                                    </div>
+                                                  )}
+
+                                                </div>
+                                              );
+                                            })()}
+                                          </div>
+
                                           </div>
                                         );
 

@@ -16102,7 +16102,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       {isSearchActive && (
                         <div className={`max-w-5xl mx-auto mt-4 animate-in slide-in-from-top-4 duration-300 ${(searchResults || isSearchLoading) ? 'block pb-20' : 'hidden md:block'}`}>
                           <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
-                            {isSearchLoading && !searchResults ? (
+                            {isSearchLoading ? (
                               <div className="flex flex-col items-center justify-center py-20 gap-4">
                                 <div className="relative flex items-center justify-center">
                                   <div className="w-10 h-10 rounded-full border-2 border-gray-700 border-t-blue-500 animate-spin" />

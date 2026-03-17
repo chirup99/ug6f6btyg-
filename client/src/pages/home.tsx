@@ -20123,7 +20123,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         </div>
                         {/* Trading Tools Grid - Desktop: 4 columns centered, Mobile: 3 horizontal cards + swipeable below */}
                         {!searchResults && (
-                        <div className="mx-auto max-w-6xl hidden md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-3 md:px-4 md:items-center">
+                        <div className="mx-auto max-w-6xl hidden md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-3 md:px-4 md:items-start">
                           {/* Social Feed Card */}
                           <div
                             className="bg-blue-500 rounded-2xl overflow-hidden h-28 w-full relative cursor-pointer hover:scale-105 transition-transform"
@@ -20176,7 +20176,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           </div>
 
                           {/* Tutor Daily News Swipeable Cards - Portrait orientation with proper spacing */}
-                          <div className="relative h-28 w-full flex items-center justify-center">
+                          <div className="relative h-52 w-full flex items-center justify-center">
                             <SwipeableCardStack
                               onSectorChange={handleSectorChange}
                               selectedSector={selectedSector}

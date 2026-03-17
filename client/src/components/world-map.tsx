@@ -154,85 +154,85 @@ function RegionDialog({
   const maxPrice = chartPoints.length ? Math.max(...chartPoints.map((d) => d.price)) : 1;
 
   return (
-    <div className="flex flex-col max-h-[80vh]">
+    <div>
       {/* Header */}
-      <div className="flex items-center justify-between px-4 pt-4 pb-2.5 border-b border-gray-800 flex-shrink-0">
+      <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5 border-b border-gray-800">
         <div className="flex items-center gap-2">
-          <span className="text-2xl">{meta?.flag}</span>
+          <span className="text-xl leading-none">{meta?.flag}</span>
           <div>
             <div className="flex items-center gap-1.5">
-              <h2 className="text-sm font-bold text-white">{meta?.index}</h2>
-              <span className="text-[10px] text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded-full">
+              <h2 className="text-[13px] font-bold text-white leading-tight">{meta?.index}</h2>
+              <span className="text-[9px] text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded-full leading-tight">
                 {meta?.indexCode}
               </span>
             </div>
-            <p className="text-[10px] text-gray-500">{region}</p>
+            <p className="text-[9px] text-gray-600 mt-0.5">{region}</p>
           </div>
         </div>
         <div
-          className={`flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold ${
+          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold ${
             isUp ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"
           }`}
         >
           {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-          {isUp ? "+" : ""}
-          {change.toFixed(2)}%
+          {isUp ? "+" : ""}{change.toFixed(2)}%
         </div>
       </div>
 
-      {/* Chart */}
-      <div className="px-4 pt-2.5 pb-1.5 flex-shrink-0">
-        <div className="flex items-center justify-between mb-1.5">
+      {/* Chart — fixed height */}
+      <div className="px-4 pt-2.5 pb-2 border-b border-gray-800/60">
+        <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-1">
-            <div className="w-1 h-1 rounded-full animate-pulse" style={{ backgroundColor: chartColor }} />
-            <span className="text-[10px] text-gray-500">Intraday</span>
+            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: chartColor }} />
+            <span className="text-[9px] text-gray-500 uppercase tracking-wide">Intraday</span>
           </div>
-          <div className="flex gap-3 text-[9px] text-gray-600">
+          <div className="flex gap-2 text-[8px] text-gray-600">
             <span>Open</span>
+            <span>→</span>
             <span>Now</span>
           </div>
         </div>
-        <div className="h-[90px] w-full">
+        <div style={{ height: 96 }}>
           {isLoading ? (
             <div className="h-full flex items-center justify-center">
               <div className="flex gap-1 items-end">
-                {[...Array(6)].map((_, i) => (
+                {[...Array(8)].map((_, i) => (
                   <div
                     key={i}
                     className="w-1 rounded-sm animate-pulse"
-                    style={{ backgroundColor: chartColor, height: `${14 + i * 8}px`, animationDelay: `${i * 0.1}s` }}
+                    style={{ backgroundColor: chartColor, height: `${10 + (i % 4) * 8}px`, animationDelay: `${i * 0.08}s` }}
                   />
                 ))}
               </div>
             </div>
           ) : chartPoints.length > 1 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartPoints} margin={{ top: 2, right: 2, left: -36, bottom: 0 }}>
+              <LineChart data={chartPoints} margin={{ top: 4, right: 4, left: -38, bottom: 0 }}>
                 <XAxis
                   dataKey="time"
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 8, fill: "#374151" }}
+                  tick={{ fontSize: 7, fill: "#4b5563" }}
                   interval={Math.floor(chartPoints.length / 4)}
                 />
                 <YAxis
-                  domain={[minPrice * 0.999, maxPrice * 1.001]}
+                  domain={[minPrice * 0.9995, maxPrice * 1.0005]}
                   axisLine={false}
                   tickLine={false}
-                  tick={{ fontSize: 8, fill: "#374151" }}
+                  tick={{ fontSize: 7, fill: "#4b5563" }}
                   tickCount={3}
                 />
                 <Tooltip
                   contentStyle={{
-                    background: "#111827",
-                    border: "1px solid #374151",
+                    background: "#0f172a",
+                    border: "1px solid #1e293b",
                     borderRadius: "6px",
                     fontSize: "10px",
-                    color: "#e5e7eb",
-                    padding: "4px 8px",
+                    color: "#e2e8f0",
+                    padding: "3px 7px",
                   }}
                   formatter={(val: any) => [Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 }), meta?.indexCode]}
-                  labelStyle={{ color: "#6b7280", fontSize: "9px" }}
+                  labelStyle={{ color: "#64748b", fontSize: "8px" }}
                 />
                 <Line
                   type="monotone"
@@ -245,44 +245,47 @@ function RegionDialog({
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="h-full flex items-center justify-center text-gray-700 text-[10px]">
+            <div className="h-full flex items-center justify-center text-gray-700 text-[9px]">
               Chart unavailable
             </div>
           )}
         </div>
       </div>
 
-      {/* News — scrollable */}
-      <div className="px-4 pb-3 pt-1 flex flex-col min-h-0 flex-1 overflow-hidden">
-        <div className="flex items-center gap-1.5 mb-1.5 flex-shrink-0">
+      {/* News — fixed max-height scroll */}
+      <div className="px-4 pt-2 pb-3">
+        <div className="flex items-center gap-1.5 mb-2">
           <Globe className="h-3 w-3 text-blue-400" />
-          <span className="text-[10px] font-semibold text-gray-400 uppercase tracking-wide">Market News</span>
+          <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">Market News</span>
         </div>
         {isLoading ? (
           <div className="space-y-1.5">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-7 rounded-lg bg-gray-800/60 animate-pulse" />
+              <div key={i} className="h-9 rounded-lg bg-gray-800/50 animate-pulse" />
             ))}
           </div>
         ) : newsItems.length > 0 ? (
-          <div className="overflow-y-auto flex-1 space-y-1.5 pr-0.5" style={{ scrollbarWidth: "thin", scrollbarColor: "#374151 transparent" }}>
+          <div
+            className="space-y-1.5 overflow-y-auto"
+            style={{ maxHeight: 192, scrollbarWidth: "thin", scrollbarColor: "#1e293b transparent" }}
+          >
             {newsItems.map((item, i) => (
               <a
                 key={i}
                 href={item.url || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-start gap-2 px-2.5 py-1.5 rounded-lg bg-gray-900/70 border border-gray-800/50 hover:border-gray-700 hover:bg-gray-900 transition-colors"
+                className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-gray-900/60 border border-gray-800/40 hover:border-gray-700/60 hover:bg-gray-900 transition-colors block"
               >
-                <div className="w-1 h-1 rounded-full flex-shrink-0 mt-[5px]" style={{ backgroundColor: chartColor }} />
+                <div className="w-1 h-1 rounded-full flex-shrink-0 mt-[4px]" style={{ backgroundColor: chartColor }} />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-gray-300 truncate leading-tight">{item.title}</p>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <p className="text-[8px] text-gray-600">{item.source}</p>
+                  <p className="text-[10px] text-gray-200 leading-snug line-clamp-2">{item.title}</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="text-[8px] text-gray-600 truncate">{item.source}</span>
                     {item.publishedAt && (
                       <>
                         <span className="text-[8px] text-gray-700">·</span>
-                        <span className="text-[8px] text-gray-600">{relativeTime(item.publishedAt)}</span>
+                        <span className="text-[8px] text-gray-600 flex-shrink-0">{relativeTime(item.publishedAt)}</span>
                       </>
                     )}
                   </div>
@@ -291,7 +294,7 @@ function RegionDialog({
             ))}
           </div>
         ) : (
-          <div className="text-gray-700 text-[10px] text-center py-3">No news available</div>
+          <div className="text-gray-700 text-[9px] text-center py-4">No news available</div>
         )}
       </div>
     </div>

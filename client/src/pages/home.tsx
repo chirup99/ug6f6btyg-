@@ -17779,22 +17779,29 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                                       <th className="text-left py-2 px-3 font-medium text-gray-400">Quarter</th>
                                                                       <th className="text-right py-2 px-3 font-medium text-gray-400">Net Profit (Cr)</th>
                                                                       <th className="text-right py-2 px-3 font-medium text-gray-400">Revenue (Cr)</th>
-                                                                      <th className="text-right py-2 px-3 font-medium text-gray-400">EPS</th>
-                                                                      <th className="text-right py-2 px-3 font-medium text-gray-400">Chg %</th>
+                                                                      <th className="text-right py-2 px-3 font-medium text-gray-400">EPS (₹)</th>
                                                                     </tr>
                                                                   </thead>
                                                                   <tbody>
                                                                     {qd.map((q: any, i: number) => {
-                                                                      const chg = parseFloat(q.change_percent || '0');
+                                                                      const np = parseFloat((q.net_profit || '0').toString().replace(/,/g,''));
+                                                                      const prevNp = i > 0 ? parseFloat((qd[i-1].net_profit || '0').toString().replace(/,/g,'')) : null;
+                                                                      const npTrend = prevNp !== null && prevNp !== 0 ? ((np - prevNp) / Math.abs(prevNp)) * 100 : null;
                                                                       return (
                                                                         <tr key={i} className="border-t border-gray-700/30 hover:bg-gray-800/30">
                                                                           <td className="py-2 px-3 text-gray-300 font-medium">{q.quarter}</td>
-                                                                          <td className="py-2 px-3 text-right text-gray-300">{q.net_profit ? `₹${Number(q.net_profit).toLocaleString()}` : '—'}</td>
-                                                                          <td className="py-2 px-3 text-right text-gray-400">{q.revenue ? `₹${Number(q.revenue).toLocaleString()}` : '—'}</td>
-                                                                          <td className="py-2 px-3 text-right text-gray-400">{q.eps || '—'}</td>
-                                                                          <td className={`py-2 px-3 text-right font-medium ${chg >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                                                                            {q.change_percent ? `${chg >= 0 ? '+' : ''}${chg.toFixed(2)}%` : '—'}
+                                                                          <td className="py-2 px-3 text-right">
+                                                                            <div className="flex items-center justify-end gap-1.5">
+                                                                              {npTrend !== null && (
+                                                                                <span className={`text-[10px] font-medium ${npTrend >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                                                                  {npTrend >= 0 ? '▲' : '▼'}{Math.abs(npTrend).toFixed(1)}%
+                                                                                </span>
+                                                                              )}
+                                                                              <span className="text-gray-300">{q.net_profit ? `₹${Number(q.net_profit).toLocaleString()}` : '—'}</span>
+                                                                            </div>
                                                                           </td>
+                                                                          <td className="py-2 px-3 text-right text-gray-400">{q.revenue ? `₹${Number(q.revenue).toLocaleString()}` : '—'}</td>
+                                                                          <td className="py-2 px-3 text-right text-gray-400">{q.eps ? `₹${q.eps}` : '—'}</td>
                                                                         </tr>
                                                                       );
                                                                     })}
@@ -17946,100 +17953,206 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                       )}
 
                                                       {/* INSIGHTS TAB */}
-                                                      {fullReportActiveTab === 'insights' && (
-                                                        <div className="space-y-3">
-                                                          <div className="flex items-center gap-2 mb-1">
-                                                            <Sparkles className="h-3.5 w-3.5 text-purple-400" />
-                                                            <span className="text-xs font-semibold text-gray-300">Advanced Insights — {fullReportSymbol}</span>
-                                                          </div>
+                                                      {fullReportActiveTab === 'insights' && (() => {
+                                                        // ── Computed signals ──────────────────────────────────
+                                                        const peVal    = km?.pe ?? null;
+                                                        const roeVal   = km?.roe ? parseFloat(km.roe) : null;
+                                                        const roceVal  = km?.roce ? parseFloat(km.roce) : null;
+                                                        const deVal    = km?.debtToEquity ?? null;
+                                                        const pmVal    = km?.profitMargin ? parseFloat(km.profitMargin) : null;
+                                                        const rgVal    = km?.revenueGrowth ? parseFloat(km.revenueGrowth) : null;
+                                                        const betaVal  = km?.beta ?? null;
+                                                        const dyVal    = km?.dividendYield ? parseFloat(km.dividendYield) : null;
 
-                                                          {/* Trend summary */}
-                                                          <div className="p-3 bg-purple-900/20 rounded-lg border border-purple-700/30 space-y-2">
-                                                            {profitGrowth !== null && (
-                                                              <p className="text-xs text-gray-300">
-                                                                <span className="font-semibold text-purple-300">• Profit Trend:</span>{' '}
-                                                                Net profit {profitGrowth >= 0 ? 'grew' : 'declined'} by{' '}
-                                                                <span className={profitGrowth >= 0 ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                                                                  {profitGrowth >= 0 ? '+' : ''}{profitGrowth.toFixed(1)}%
-                                                                </span>{' '}
-                                                                over the last {qd.length} reported quarters.
-                                                              </p>
-                                                            )}
-                                                            {recentTrend && (
-                                                              <p className="text-xs text-gray-300">
-                                                                <span className="font-semibold text-purple-300">• Recent Momentum:</span>{' '}
-                                                                Latest quarter shows a{' '}
-                                                                <span className={recentTrend === 'improving' ? 'text-green-400 font-semibold' : 'text-red-400 font-semibold'}>
-                                                                  {recentTrend}
-                                                                </span>{' '}
-                                                                trend compared to the previous quarter.
-                                                              </p>
-                                                            )}
-                                                            {km?.pe != null && (
-                                                              <p className="text-xs text-gray-300">
-                                                                <span className="font-semibold text-purple-300">• Valuation:</span>{' '}
-                                                                P/E of <span className="text-yellow-300 font-semibold">{km.pe.toFixed(1)}x</span>
-                                                                {km.pe < 15 ? ' — trading at a discount vs market average.' : km.pe > 30 ? ' — premium valued; growth expectations are high.' : ' — fairly valued relative to market.'}
-                                                              </p>
-                                                            )}
-                                                            {km?.roe && (
-                                                              <p className="text-xs text-gray-300">
-                                                                <span className="font-semibold text-purple-300">• Return on Equity:</span>{' '}
-                                                                ROE of <span className="text-yellow-300 font-semibold">{km.roe}</span>
-                                                                {parseFloat(km.roe) >= 20 ? ' — strong capital efficiency.' : parseFloat(km.roe) >= 10 ? ' — moderate returns on equity.' : ' — below-average returns.'}
-                                                              </p>
-                                                            )}
-                                                            {km?.roce && (
-                                                              <p className="text-xs text-gray-300">
-                                                                <span className="font-semibold text-purple-300">• ROCE:</span>{' '}
-                                                                <span className="text-yellow-300 font-semibold">{km.roce}</span>
-                                                                {parseFloat(km.roce) >= 15 ? ' — efficiently deploying total capital.' : ' — scope for improving capital deployment.'}
-                                                              </p>
-                                                            )}
-                                                            {km?.debtToEquity != null && (
-                                                              <p className="text-xs text-gray-300">
-                                                                <span className="font-semibold text-purple-300">• Leverage:</span>{' '}
-                                                                D/E of <span className="text-yellow-300 font-semibold">{km.debtToEquity.toFixed(2)}</span>
-                                                                {km.debtToEquity < 0.5 ? ' — low leverage, strong balance sheet.' : km.debtToEquity < 1.5 ? ' — manageable debt levels.' : ' — high leverage, watch debt servicing.'}
-                                                              </p>
-                                                            )}
-                                                            {km?.profitMargin && (
-                                                              <p className="text-xs text-gray-300">
-                                                                <span className="font-semibold text-purple-300">• Profit Margin:</span>{' '}
-                                                                <span className="text-yellow-300 font-semibold">{km.profitMargin}</span>
-                                                                {parseFloat(km.profitMargin) >= 20 ? ' — high margin business.' : parseFloat(km.profitMargin) >= 10 ? ' — healthy margins.' : ' — thin margins, monitor cost pressures.'}
-                                                              </p>
-                                                            )}
-                                                            {/* Overall summary */}
-                                                            <p className="text-xs text-gray-400 pt-2 border-t border-purple-700/20">
-                                                              🎯 <span className="font-semibold text-purple-300">Overall:</span>{' '}
-                                                              {profitGrowth !== null && profitGrowth >= 10 && recentTrend === 'improving'
-                                                                ? 'Strong fundamentals with consistent profit growth and improving recent momentum.'
-                                                                : profitGrowth !== null && profitGrowth < 0
-                                                                  ? 'Revenue or profit decline observed — review upcoming quarterly triggers.'
-                                                                  : 'Mixed signals. Track next 1–2 quarter results for clearer directional conviction.'}
-                                                            </p>
-                                                          </div>
+                                                        // Fundamental score (0-100)
+                                                        let fscore = 0; let fmax = 0;
+                                                        if (profitGrowth !== null) { fmax += 25; if (profitGrowth > 15) fscore += 25; else if (profitGrowth > 0) fscore += 15; }
+                                                        if (roeVal !== null) { fmax += 20; if (roeVal >= 20) fscore += 20; else if (roeVal >= 12) fscore += 13; else if (roeVal >= 6) fscore += 7; }
+                                                        if (deVal !== null) { fmax += 15; if (deVal < 0.3) fscore += 15; else if (deVal < 1) fscore += 10; else if (deVal < 2) fscore += 5; }
+                                                        if (pmVal !== null) { fmax += 20; if (pmVal >= 20) fscore += 20; else if (pmVal >= 10) fscore += 13; else if (pmVal >= 5) fscore += 7; }
+                                                        if (roceVal !== null) { fmax += 20; if (roceVal >= 20) fscore += 20; else if (roceVal >= 12) fscore += 13; else if (roceVal >= 6) fscore += 7; }
+                                                        const fundamentalScore = fmax > 0 ? Math.round((fscore / fmax) * 100) : null;
 
-                                                          {/* 52-week range */}
-                                                          {km?.high52w != null && km?.low52w != null && (
-                                                            <div className="p-3 bg-gray-800/40 rounded-lg border border-gray-700/30">
-                                                              <p className="text-[11px] text-gray-400 mb-2">52-Week Price Range</p>
+                                                        // Valuation signal
+                                                        const valuationLabel = peVal === null ? null : peVal < 12 ? { text: 'Deeply Undervalued', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30' } : peVal < 20 ? { text: 'Fairly Valued', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/30' } : peVal < 30 ? { text: 'Slightly Overvalued', color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30' } : { text: 'Premium Priced', color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/30' };
+
+                                                        // Quality grade
+                                                        const qualityGrade = fundamentalScore === null ? null : fundamentalScore >= 80 ? { grade: 'A+', label: 'Exceptional Quality', color: 'text-green-400' } : fundamentalScore >= 65 ? { grade: 'A', label: 'High Quality', color: 'text-green-400' } : fundamentalScore >= 50 ? { grade: 'B+', label: 'Good Quality', color: 'text-blue-400' } : fundamentalScore >= 35 ? { grade: 'B', label: 'Average Quality', color: 'text-yellow-400' } : { grade: 'C', label: 'Below Average', color: 'text-red-400' };
+
+                                                        // Pre-computed display values (avoids nested ternary in template literals)
+                                                        const pgSign = profitGrowth !== null && profitGrowth >= 0 ? '+' : '';
+                                                        const pgLabel = profitGrowth !== null ? (pgSign + profitGrowth.toFixed(1) + '%') : null;
+
+                                                        // Risk level
+                                                        let riskScore = 0;
+                                                        if (deVal !== null && deVal > 1.5) riskScore += 2;
+                                                        if (betaVal !== null && betaVal > 1.3) riskScore += 2;
+                                                        if (pmVal !== null && pmVal < 5) riskScore += 1;
+                                                        if (profitGrowth !== null && profitGrowth < -10) riskScore += 2;
+                                                        if (recentTrend === 'declining') riskScore += 1;
+                                                        const riskLevel = riskScore <= 1 ? { label: 'Low Risk', color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/30' } : riskScore <= 3 ? { label: 'Moderate Risk', color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/30' } : { label: 'High Risk', color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/30' };
+
+                                                        // Bull / Bear cases
+                                                        const bullPoints: string[] = [];
+                                                        const bearPoints: string[] = [];
+                                                        if (profitGrowth !== null && profitGrowth > 10) bullPoints.push(`Strong profit CAGR of +${profitGrowth.toFixed(1)}% over ${qd.length} quarters`);
+                                                        if (roeVal !== null && roeVal >= 18) bullPoints.push(`Exceptional ROE of ${roeVal.toFixed(1)}% — top-tier capital efficiency`);
+                                                        if (roceVal !== null && roceVal >= 15) bullPoints.push(`ROCE of ${roceVal.toFixed(1)}% indicates excellent capital deployment`);
+                                                        if (deVal !== null && deVal < 0.5) bullPoints.push(`Near-zero leverage (D/E: ${deVal.toFixed(2)}) — fortress balance sheet`);
+                                                        if (pmVal !== null && pmVal >= 15) bullPoints.push(`High profit margin of ${pmVal.toFixed(1)}% shows strong pricing power`);
+                                                        if (recentTrend === 'improving') bullPoints.push('Most recent quarter shows accelerating profit momentum');
+                                                        if (dyVal !== null && dyVal > 1.5) bullPoints.push(`Attractive dividend yield of ${dyVal.toFixed(2)}% supports income investors`);
+                                                        if (peVal !== null && peVal < 15) bullPoints.push(`Discounted valuation at ${peVal.toFixed(1)}x P/E — potential re-rating upside`);
+
+                                                        if (profitGrowth !== null && profitGrowth < 0) bearPoints.push(`Profit declined ${profitGrowth.toFixed(1)}% over ${qd.length} quarters — concerning trend`);
+                                                        if (roeVal !== null && roeVal < 10) bearPoints.push(`ROE of ${roeVal.toFixed(1)}% below 10% — capital allocation concerns`);
+                                                        if (deVal !== null && deVal > 1.5) bearPoints.push(`High leverage (D/E: ${deVal.toFixed(2)}) increases financial risk`);
+                                                        if (pmVal !== null && pmVal < 5) bearPoints.push(`Thin margins (${pmVal.toFixed(1)}%) vulnerable to cost inflation`);
+                                                        if (peVal !== null && peVal > 35) bearPoints.push(`Premium valuation of ${peVal.toFixed(1)}x P/E leaves little room for disappointment`);
+                                                        if (betaVal !== null && betaVal > 1.3) bearPoints.push(`High beta of ${betaVal.toFixed(2)} means significant volatility during market downturns`);
+                                                        if (recentTrend === 'declining') bearPoints.push('Most recent quarter shows deteriorating profit — watch next result closely');
+
+                                                        // Fill defaults if empty
+                                                        if (bullPoints.length === 0) bullPoints.push('Diversified business model with multiple revenue streams', 'Track record in established sector');
+                                                        if (bearPoints.length === 0) bearPoints.push('Monitor quarterly results for any guidance downgrade', 'Macro headwinds remain a sector-wide risk');
+
+                                                        // 52W position
+                                                        const h52 = km?.high52w ?? null;
+                                                        const l52 = km?.low52w ?? null;
+                                                        const rangePct = h52 && l52 && h52 > l52 ? Math.round(((h52 - l52) / h52) * 100) : null;
+
+                                                        return (
+                                                          <div className="space-y-3">
+                                                            {/* Header */}
+                                                            <div className="flex items-center justify-between">
                                                               <div className="flex items-center gap-2">
-                                                                <span className="text-[11px] text-red-400">₹{km.low52w.toLocaleString()}</span>
-                                                                <div className="flex-1 h-1.5 bg-gray-700 rounded-full overflow-hidden">
-                                                                  <div className="h-full bg-gradient-to-r from-red-500 to-green-500 rounded-full" style={{ width: '100%' }} />
+                                                                <Sparkles className="h-4 w-4 text-purple-400" />
+                                                                <span className="text-sm font-semibold text-gray-200">AI Fundamental Analysis</span>
+                                                                <span className="text-[10px] text-gray-600">— {fullReportSymbol}</span>
+                                                              </div>
+                                                              <span className="text-[10px] text-gray-600">Multi-source · Real data only</span>
+                                                            </div>
+
+                                                            {/* Scorecard row */}
+                                                            <div className="grid grid-cols-3 gap-2">
+                                                              {qualityGrade && (
+                                                                <div className="flex flex-col items-center justify-center p-3 rounded-xl bg-gray-800/60 border border-gray-700/40">
+                                                                  <span className={`text-2xl font-black ${qualityGrade.color}`}>{qualityGrade.grade}</span>
+                                                                  <span className="text-[10px] text-gray-500 mt-0.5 text-center leading-tight">{qualityGrade.label}</span>
+                                                                  <span className="text-[9px] text-gray-700 mt-1">Fundamental Score</span>
                                                                 </div>
-                                                                <span className="text-[11px] text-green-400">₹{km.high52w.toLocaleString()}</span>
+                                                              )}
+                                                              {valuationLabel && (
+                                                                <div className={`flex flex-col items-center justify-center p-3 rounded-xl border ${valuationLabel.bg}`}>
+                                                                  <span className={`text-xs font-bold ${valuationLabel.color} text-center leading-tight`}>{valuationLabel.text}</span>
+                                                                  <span className="text-[10px] text-gray-500 mt-1">{peVal?.toFixed(1)}x P/E</span>
+                                                                  <span className="text-[9px] text-gray-700 mt-0.5">Valuation</span>
+                                                                </div>
+                                                              )}
+                                                              <div className={`flex flex-col items-center justify-center p-3 rounded-xl border ${riskLevel.bg}`}>
+                                                                <span className={`text-xs font-bold ${riskLevel.color} text-center leading-tight`}>{riskLevel.label}</span>
+                                                                <span className="text-[9px] text-gray-700 mt-1">Risk Level</span>
                                                               </div>
                                                             </div>
-                                                          )}
 
-                                                          <p className="text-[10px] text-gray-600">
-                                                            Data sourced via: Screener.in → Yahoo Finance2 → NSE India API → Trendlyne → Moneycontrol (priority chain)
-                                                          </p>
-                                                        </div>
-                                                      )}
+                                                            {/* Key metrics inline */}
+                                                            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 p-3 rounded-xl bg-gray-800/40 border border-gray-700/30">
+                                                              <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider col-span-2 mb-0.5">Key Financials at a Glance</p>
+                                                              {[
+                                                                { label: 'Net Profit Growth', value: pgLabel, positive: profitGrowth !== null && profitGrowth >= 0 },
+                                                                { label: 'Recent Trend', value: recentTrend ? (recentTrend === 'improving' ? '↑ Improving' : '↓ Declining') : null, positive: recentTrend === 'improving' },
+                                                                { label: 'ROE', value: km?.roe || null, positive: roeVal !== null && roeVal >= 15 },
+                                                                { label: 'ROCE', value: km?.roce || null, positive: roceVal !== null && roceVal >= 15 },
+                                                                { label: 'Profit Margin', value: km?.profitMargin || null, positive: pmVal !== null && pmVal >= 10 },
+                                                                { label: 'Revenue Growth', value: km?.revenueGrowth || null, positive: rgVal !== null && rgVal >= 0 },
+                                                                { label: 'Debt / Equity', value: deVal !== null ? deVal.toFixed(2) : null, positive: deVal !== null && deVal < 1 },
+                                                                { label: 'Beta', value: betaVal !== null ? betaVal.toFixed(2) : null, positive: betaVal !== null && betaVal < 1.2 },
+                                                              ].filter(m => m.value).map(({ label, value, positive }) => (
+                                                                <div key={label} className="flex justify-between items-center">
+                                                                  <span className="text-[10px] text-gray-600">{label}</span>
+                                                                  <span className={`text-[11px] font-semibold ${positive ? 'text-green-400' : 'text-red-400'}`}>{value}</span>
+                                                                </div>
+                                                              ))}
+                                                            </div>
+
+                                                            {/* Bull case */}
+                                                            <div className="p-3 rounded-xl bg-green-900/10 border border-green-700/20">
+                                                              <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="text-green-400 text-xs font-bold">▲ Bull Case</span>
+                                                                <span className="text-[10px] text-gray-600">— reasons to be optimistic</span>
+                                                              </div>
+                                                              <ul className="space-y-1">
+                                                                {bullPoints.slice(0, 4).map((pt, i) => (
+                                                                  <li key={i} className="flex items-start gap-1.5">
+                                                                    <span className="text-green-500 text-[10px] mt-0.5 shrink-0">✓</span>
+                                                                    <span className="text-[11px] text-gray-300 leading-relaxed">{pt}</span>
+                                                                  </li>
+                                                                ))}
+                                                              </ul>
+                                                            </div>
+
+                                                            {/* Bear case */}
+                                                            <div className="p-3 rounded-xl bg-red-900/10 border border-red-700/20">
+                                                              <div className="flex items-center gap-1.5 mb-2">
+                                                                <span className="text-red-400 text-xs font-bold">▼ Bear Case</span>
+                                                                <span className="text-[10px] text-gray-600">— risks to monitor</span>
+                                                              </div>
+                                                              <ul className="space-y-1">
+                                                                {bearPoints.slice(0, 4).map((pt, i) => (
+                                                                  <li key={i} className="flex items-start gap-1.5">
+                                                                    <span className="text-red-500 text-[10px] mt-0.5 shrink-0">✕</span>
+                                                                    <span className="text-[11px] text-gray-300 leading-relaxed">{pt}</span>
+                                                                  </li>
+                                                                ))}
+                                                              </ul>
+                                                            </div>
+
+                                                            {/* 52-week range */}
+                                                            {h52 !== null && l52 !== null && (
+                                                              <div className="p-3 rounded-xl bg-gray-800/40 border border-gray-700/30">
+                                                                <div className="flex items-center justify-between mb-2">
+                                                                  <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider">52-Week Price Range</span>
+                                                                  {rangePct !== null && <span className="text-[10px] text-gray-600">{rangePct}% spread</span>}
+                                                                </div>
+                                                                <div className="flex items-center gap-2">
+                                                                  <span className="text-[11px] text-red-400 font-medium shrink-0">₹{l52.toLocaleString()}</span>
+                                                                  <div className="flex-1 h-2 bg-gray-700 rounded-full overflow-hidden">
+                                                                    <div className="h-full rounded-full" style={{ background: 'linear-gradient(90deg, #ef4444 0%, #eab308 50%, #22c55e 100%)', width: '100%' }} />
+                                                                  </div>
+                                                                  <span className="text-[11px] text-green-400 font-medium shrink-0">₹{h52.toLocaleString()}</span>
+                                                                </div>
+                                                                <p className="text-[10px] text-gray-600 mt-1.5 text-center">
+                                                                  {rangePct !== null && rangePct > 30 ? 'Wide annual range — high volatility stock.' : 'Relatively stable price band this year.'}
+                                                                </p>
+                                                              </div>
+                                                            )}
+
+                                                            {/* Investment thesis */}
+                                                            <div className="p-3 rounded-xl bg-purple-900/15 border border-purple-700/25">
+                                                              <div className="flex items-center gap-1.5 mb-2">
+                                                                <Sparkles className="h-3 w-3 text-purple-400" />
+                                                                <span className="text-[10px] font-semibold text-purple-300 uppercase tracking-wider">Investment Thesis</span>
+                                                              </div>
+                                                              <p className="text-[11px] text-gray-300 leading-relaxed">
+                                                                {(() => {
+                                                                  const strong = profitGrowth !== null && profitGrowth > 10 && roeVal !== null && roeVal > 15 && (deVal === null || deVal < 1);
+                                                                  const weak   = profitGrowth !== null && profitGrowth < 0 && (deVal !== null && deVal > 1.5);
+                                                                  if (strong) return `${fullReportSymbol} demonstrates strong fundamental quality — consistent profit growth, efficient capital usage, and a healthy balance sheet make it a compelling candidate for long-term portfolios. Current valuation${peVal ? ` at ${peVal.toFixed(1)}x P/E` : ''} ${peVal && peVal < 22 ? 'offers a reasonable entry point.' : 'demands continued earnings delivery to justify the premium.'}`;
+                                                                  if (weak)   return `${fullReportSymbol} is navigating through a challenging phase — declining profits and elevated leverage warrant caution. Investors should wait for 2 consecutive quarters of profit recovery before taking fresh positions. Stop-losses and position sizing are critical at this stage.`;
+                                                                  return `${fullReportSymbol} shows a mixed fundamental picture. ${bullPoints[0] || 'Established business with sector presence.'} However, ${bearPoints[0]?.toLowerCase() || 'key metrics need improvement.'}. A selective, SIP-based accumulation strategy with defined risk management is advisable.`;
+                                                                })()}
+                                                              </p>
+                                                            </div>
+
+                                                            {/* Disclaimer + source */}
+                                                            <div className="flex items-start gap-1.5 pt-1">
+                                                              <span className="text-[9px] text-gray-700 leading-relaxed">
+                                                                ℹ️ Analysis generated from real financial data via Screener.in → Yahoo Finance2 → NSE India API → Trendlyne → Moneycontrol. For informational purposes only — not investment advice. Always consult a SEBI-registered advisor.
+                                                              </span>
+                                                            </div>
+                                                          </div>
+                                                        );
+                                                      })()}
 
                                                     </div>
                                                   </div>

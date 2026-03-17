@@ -2500,6 +2500,9 @@ export default function Home() {
   const [searchResultsNewsSymbol, setSearchResultsNewsSymbol] = useState("");
   const [aiChartSelectedTimeframe, setAiChartSelectedTimeframe] = useState('1Y');
 
+  const [flashBarIndex, setFlashBarIndex] = useState(0);
+  const [flashBarVisible, setFlashBarVisible] = useState(true);
+
   // Listen for timeframe change events to trigger re-render
   useEffect(() => {
     const handleTimeframeChange = () => {
@@ -8135,6 +8138,43 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [isWatchlistQuarterlyLoading, setIsWatchlistQuarterlyLoading] = useState(false);
   const [nifty50Timeframe, setNifty50Timeframe] = useState('1D');
   const [niftyBankTimeframe, setNiftyBankTimeframe] = useState('1D');
+
+  const flashBarItems = useMemo(() => {
+    const items: Array<{ category: string; text: string; colorClass: string; tab: string }> = [];
+
+    items.push({ category: 'LIVE', text: 'BANKNIFTY · SENSEX · GOLD — real-time prices streaming', colorClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30', tab: 'watchlist' });
+
+    const newsSource = allMarketNewsItems.length > 0 ? allMarketNewsItems : nifty50NewsItems.length > 0 ? nifty50NewsItems : marketNewsItems;
+    newsSource.slice(0, 6).forEach(n => {
+      items.push({ category: 'News', text: n.title, colorClass: 'bg-green-500/20 text-green-300 border-green-500/30', tab: 'market-news' });
+    });
+
+    watchlistSymbols.slice(0, 4).forEach(s => {
+      items.push({ category: 'Watchlist', text: `${s.displayName || s.symbol.replace('-EQ','').replace('NSE:','').replace('BSE:','')} — tap to view chart & analysis`, colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', tab: 'watchlist' });
+    });
+
+    if (watchlistSymbols.length === 0) {
+      items.push({ category: 'Watchlist', text: 'Add stocks to your watchlist to track live prices', colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', tab: 'watchlist' });
+    }
+
+    items.push({ category: 'Social', text: 'Community insights · Trading discussions · Market reactions', colorClass: 'bg-purple-500/20 text-purple-300 border-purple-500/30', tab: 'social' });
+    items.push({ category: 'Journal', text: 'Log your trades and track P&L performance over time', colorClass: 'bg-orange-500/20 text-orange-300 border-orange-500/30', tab: 'journal' });
+    items.push({ category: 'Challenge', text: 'Live Trading Challenge — sharpen your skills & compete', colorClass: 'bg-red-500/20 text-red-300 border-red-500/30', tab: 'trade-challenge' });
+
+    return items;
+  }, [watchlistSymbols, allMarketNewsItems, nifty50NewsItems, marketNewsItems]);
+
+  useEffect(() => {
+    if (flashBarItems.length <= 1) return;
+    const id = setInterval(() => {
+      setFlashBarVisible(false);
+      setTimeout(() => {
+        setFlashBarIndex(prev => (prev + 1) % flashBarItems.length);
+        setFlashBarVisible(true);
+      }, 220);
+    }, 4000);
+    return () => clearInterval(id);
+  }, [flashBarItems.length]);
 
   // Queries for NIFTY50 and NIFTYBANK chart data - optimized with caching
   const { data: nifty50ChartData = [], isLoading: isNifty50Loading } = useQuery({
@@ -15812,126 +15852,59 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       {/* Dynamic Greeting - Hidden on mobile */}
                     
 
-                      {/* Search Input - Hidden on mobile, moves to bottom when results appear */}
-                      {!searchResults && (
-                      <div
-                        className={`relative mx-auto transition-all duration-300 md:block hidden ${
-                          isSearchActive ? "max-w-4xl" : "max-w-2xl"
-                        }`}
-                      >
-                        <Input
-                          placeholder="Search stocks, technical analysis, social feed, news, journal, alerts, or ask AI anything..."
-                          value={searchQuery}
-                          disabled={!isSearchInputActive}
-                          onFocus={() => setIsSearchActive(true)}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setSearchQuery(value);
-                            setIsSearchActive(value.length > 0);
-                          }}
-                          onKeyPress={async (e) => {
-                            if (e.key === "Enter" && searchQuery.trim()) {
-                              await handleSearch();
-                            }
-                          }}
-                          className={`w-full transition-all duration-300 bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400 pr-12 text-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent ${
-                            isSearchActive
-                              ? "h-14 rounded-xl"
-                              : "h-12 rounded-2xl"
-                          } ${!isSearchInputActive ? 'cursor-not-allowed' : ''}`}
-                        />
-                        <Button
-                          size="sm"
-                          className={`absolute right-2 top-1/2 -translate-y-1/2 transition-all duration-300 h-8 w-8 p-0 ${
-                            isSearchInputActive 
-                              ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20" 
-                              : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                          }`}
-                          onClick={() => {
-                            if (!isSearchInputActive) {
-                              setIsSearchInputActive(true);
-                              // Small delay to ensure input is enabled before focusing
-                              setTimeout(() => {
-                                const input = document.querySelector('input[placeholder*="Search stocks"]');
-                                if (input instanceof HTMLInputElement) input.focus();
-                              }, 10);
-                            } else {
-                              handleSearch();
-                            }
-                          }}
-                          disabled={isSearchLoading || (isSearchInputActive && !searchQuery.trim())}
-                        >
-                          {isSearchLoading ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Bot className="h-4 w-4" />
-                          )}
-                        </Button>
-                      </div>
-                      )}
+                      {/* Magic Flash Bar - Auto-cycling highlights from all tabs */}
+                      <div className="relative mx-auto md:block hidden max-w-4xl">
+                        {(() => {
+                          const item = flashBarItems[flashBarIndex] || flashBarItems[0];
+                          if (!item) return null;
+                          return (
+                            <button
+                              data-testid="flash-bar"
+                              onClick={() => setActiveTab(item.tab)}
+                              className="w-full h-12 rounded-2xl bg-gray-800/70 border border-gray-700/60 hover:border-gray-500 hover:bg-gray-800 transition-all duration-200 flex items-center gap-3 px-4 text-left group"
+                            >
+                              {/* Live dot */}
+                              <span className="relative flex-shrink-0 flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                              </span>
 
-                      {/* Search bar at bottom when results are shown */}
-                      {searchResults && (
-                      <div className="fixed bottom-20 md:bottom-0 left-0 right-0 z-[55] block">
-                        <div className="w-full bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 px-4 py-3">
-                          <div className="max-w-4xl mx-auto flex gap-2">
-                            <Input
-                              placeholder="New search..."
-                              value={searchQuery}
-                              disabled={!isSearchInputActive}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setSearchQuery(value);
-                              }}
-                              onKeyPress={async (e) => {
-                                if (e.key === "Enter" && searchQuery.trim()) {
-                                  await handleSearch();
-                                }
-                              }}
-                              className={`flex-1 bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400 h-10 text-sm ${!isSearchInputActive ? 'cursor-not-allowed' : ''}`}
-                            />
-                            <Button
-                              size="sm"
-                              className={`h-10 px-4 transition-all duration-300 ${
-                                isSearchInputActive 
-                                  ? "bg-blue-600 hover:bg-blue-500 text-white shadow-lg shadow-blue-500/20" 
-                                  : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                              }`}
-                              onClick={() => {
-                                if (!isSearchInputActive) {
-                                  setIsSearchInputActive(true);
-                                  setTimeout(() => {
-                                    const input = document.querySelector('input[placeholder="New search..."]');
-                                    if (input instanceof HTMLInputElement) input.focus();
-                                  }, 10);
-                                } else {
-                                  handleSearch();
-                                }
-                              }}
-                              disabled={isSearchLoading || (isSearchInputActive && !searchQuery.trim())}
-                            >
-                              {isSearchLoading ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <Bot className="h-4 w-4" />
-                              )}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-gray-400 hover:text-gray-200 h-10 px-3"
-                              onClick={() => {
-                                setSearchQuery("");
-                                setIsSearchActive(false);
-                                setSearchResults("");
-                              }}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
+                              {/* Category badge */}
+                              <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.colorClass} uppercase tracking-wide`}>
+                                {item.category}
+                              </span>
+
+                              {/* Cycling text */}
+                              <span
+                                className="flex-1 min-w-0 text-sm text-gray-300 truncate transition-opacity duration-200"
+                                style={{ opacity: flashBarVisible ? 1 : 0 }}
+                              >
+                                {item.text}
+                              </span>
+
+                              {/* Progress dots */}
+                              <span className="flex-shrink-0 flex items-center gap-[3px]">
+                                {Array.from({ length: Math.min(flashBarItems.length, 8) }).map((_, i) => (
+                                  <span
+                                    key={i}
+                                    className="block rounded-full transition-all duration-300"
+                                    style={{
+                                      width: i === flashBarIndex % Math.min(flashBarItems.length, 8) ? 10 : 4,
+                                      height: 4,
+                                      background: i === flashBarIndex % Math.min(flashBarItems.length, 8) ? '#60a5fa' : '#374151',
+                                    }}
+                                  />
+                                ))}
+                              </span>
+
+                              {/* Arrow hint */}
+                              <span className="flex-shrink-0 text-gray-600 group-hover:text-gray-400 transition-colors">
+                                <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5l4.5 4.5L5 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                              </span>
+                            </button>
+                          );
+                        })()}
                       </div>
-                      )}
 
         {/* Feedback / Request Feature Dialog */}
         <Dialog open={isFeedbackDialogOpen} onOpenChange={setIsFeedbackDialogOpen}>

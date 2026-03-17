@@ -16100,10 +16100,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                       {/* AI Search Results - All screen sizes for all tabs */}
                       {isSearchActive && (
-                        <div className={`max-w-5xl mx-auto mt-4 animate-in slide-in-from-top-4 duration-300 ${searchResults ? 'block pb-20' : 'hidden md:block'}`}>
-                          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl p-3 md:p-4">
-                            {searchResults ? (
-                              <div className="space-y-1">
+                        <div className={`max-w-5xl mx-auto mt-4 animate-in slide-in-from-top-4 duration-300 ${(searchResults || isSearchLoading) ? 'block pb-20' : 'hidden md:block'}`}>
+                          <div className="bg-gray-800/50 backdrop-blur-sm border border-gray-700 rounded-xl overflow-hidden">
+                            {isSearchLoading && !searchResults ? (
+                              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                                <div className="relative flex items-center justify-center">
+                                  <div className="w-10 h-10 rounded-full border-2 border-gray-700 border-t-blue-500 animate-spin" />
+                                  <div className="absolute w-4 h-4 rounded-full border-2 border-gray-700 border-t-violet-400 animate-spin" style={{ animationDirection: 'reverse', animationDuration: '0.7s' }} />
+                                </div>
+                                <span className="text-xs text-gray-500 animate-pulse tracking-wide">Generating report…</span>
+                              </div>
+                            ) : searchResults ? (
+                              <div className="space-y-1 p-3 md:p-4">
                                 <div className="flex items-center justify-between pb-3 border-b border-gray-700/50">
                                   <div className="flex items-center gap-2">
                                   {searchResults.includes("[CHART:WATCHLIST]") ? (
@@ -16144,11 +16152,70 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     <X className="h-4 w-4" />
                                   </button>
                                 </div>
-                                <div className="prose prose-invert max-w-none">
-                                  <div className="text-gray-300 whitespace-pre-wrap leading-relaxed">
+                                <div className="max-w-none">
+                                  <div className="text-gray-300 leading-relaxed">
                                     {(() => {
                                       let renderedContent: any = null;
                                       let processedResults = searchResults;
+
+                                      // Minimal market-news-style renderer for AI report text
+                                      const renderReportText = (text: string) => {
+                                        if (!text || !text.trim()) return null;
+                                        const lines = text.split('\n');
+                                        const items: Array<{type: string; content: string; key?: string; value?: string}> = [];
+                                        lines.forEach(line => {
+                                          const t = line.trim();
+                                          if (!t || t === '---') return;
+                                          if (t.startsWith('## ')) {
+                                            items.push({ type: 'h2', content: t.replace(/^##\s*/, '').replace(/\*\*/g, '') });
+                                          } else if (t.startsWith('### ')) {
+                                            items.push({ type: 'h3', content: t.replace(/^###\s*/, '').replace(/\*\*/g, '') });
+                                          } else if (/^\*\*[^*]+:\*\*/.test(t)) {
+                                            const m = t.match(/^\*\*([^*]+):\*\*\s*(.*)/);
+                                            if (m) items.push({ type: 'kv', key: m[1], value: m[2].replace(/\*\*/g, '').replace(/\*/g, '') });
+                                            else items.push({ type: 'text', content: t.replace(/\*\*/g, '').replace(/\*/g, '') });
+                                          } else if (t.startsWith('- ') || t.startsWith('• ')) {
+                                            items.push({ type: 'bullet', content: t.slice(2).replace(/\*\*/g, '').replace(/\*/g, '') });
+                                          } else {
+                                            items.push({ type: 'text', content: t.replace(/\*\*/g, '').replace(/\*/g, '') });
+                                          }
+                                        });
+                                        return (
+                                          <div className="w-full rounded-xl border border-gray-800 bg-gray-900/80 overflow-hidden">
+                                            <div className="divide-y divide-gray-800/70">
+                                              {items.map((it, i) => {
+                                                if (it.type === 'h2') return (
+                                                  <div key={i} className="px-4 py-2.5 bg-gray-900/60 flex items-center gap-2">
+                                                    <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">{it.content}</span>
+                                                  </div>
+                                                );
+                                                if (it.type === 'h3') return (
+                                                  <div key={i} className="px-4 py-2 bg-gray-900/30">
+                                                    <span className="text-xs font-medium text-gray-400">{it.content}</span>
+                                                  </div>
+                                                );
+                                                if (it.type === 'kv') return (
+                                                  <div key={i} className="px-4 py-2.5 flex items-baseline gap-3 hover:bg-gray-800/30 transition-colors">
+                                                    <span className="text-[11px] text-gray-500 shrink-0 w-32">{it.key}</span>
+                                                    <span className="text-xs text-gray-200 flex-1 leading-relaxed">{it.value}</span>
+                                                  </div>
+                                                );
+                                                if (it.type === 'bullet') return (
+                                                  <div key={i} className="px-4 py-2 flex items-start gap-2">
+                                                    <span className="text-gray-600 text-[10px] mt-0.5 shrink-0">·</span>
+                                                    <span className="text-xs text-gray-400 leading-relaxed">{it.content}</span>
+                                                  </div>
+                                                );
+                                                return (
+                                                  <div key={i} className="px-4 py-2">
+                                                    <span className="text-xs text-gray-400 leading-relaxed">{it.content}</span>
+                                                  </div>
+                                                );
+                                              })}
+                                            </div>
+                                          </div>
+                                        );
+                                      };
 
                                       // Handle Market News view
                                       if (searchResults.includes("[CHART:MARKET_NEWS]")) {
@@ -18585,7 +18652,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                           .trim();
                                       }
 
-                                      return renderedContent || processedResults || searchResults;
+                                      return renderedContent || (processedResults ? renderReportText(processedResults) : null) || searchResults;
                                     })()}
 
 

@@ -174,7 +174,6 @@ function RegionDialog({
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5 border-b border-gray-800">
         <div className="flex items-center gap-2">
-          <span className="text-xl leading-none">{meta?.flag}</span>
           <div>
             <div className="flex items-center gap-1.5">
               <h2 className="text-[13px] font-bold text-white leading-tight">

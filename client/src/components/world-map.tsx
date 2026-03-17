@@ -49,6 +49,7 @@ interface YoutubeChannel {
   name: string;
   channelId: string;
   channelUrl: string;
+  liveVideoId: string | null;
 }
 
 const REGION_META: Record<
@@ -66,9 +67,9 @@ const REGION_META: Record<
       "Treasury yields dip as inflation data cools slightly",
     ],
     youtubeChannels: [
-      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@BloombergTV" },
-      { name: "CNBC", channelId: "UCvJJ_dzjViJCoLf5uKUTwoA", channelUrl: "https://www.youtube.com/@CNBCtelevision" },
-      { name: "CNN", channelId: "UCupvZG-5ko_eiXAX-wkdbsQ", channelUrl: "https://www.youtube.com/@CNN" },
+      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@BloombergTV/live", liveVideoId: "dp8PhLsUcFE" },
+      { name: "CNBC", channelId: "UCvJJ_dzjViJCoLf5uKUTwoA", channelUrl: "https://www.youtube.com/@CNBCtelevision/live", liveVideoId: "MZLLnRTCnrI" },
+      { name: "CNN", channelId: "UCupvZG-5ko_eiXAX-wkdbsQ", channelUrl: "https://www.youtube.com/@CNN/live", liveVideoId: "92KEGz4eTFU" },
     ],
   },
   CANADA: {
@@ -82,9 +83,9 @@ const REGION_META: Record<
       "TSX financials post steady gains amid global rally",
     ],
     youtubeChannels: [
-      { name: "CBC News", channelId: "UCzhMpkMB-ku7hbYoepgGMOQ", channelUrl: "https://www.youtube.com/@CBCNews" },
-      { name: "CTV News", channelId: "UCK37X1RttzADYMBMWMJe_6w", channelUrl: "https://www.youtube.com/@CTVNews" },
-      { name: "Global News", channelId: "UCx9ESURjdyvZJYK0e9VkDtg", channelUrl: "https://www.youtube.com/@GlobalNews" },
+      { name: "CBC News", channelId: "UCzhMpkMB-ku7hbYoepgGMOQ", channelUrl: "https://www.youtube.com/@CBCNews/live", liveVideoId: "hjzMMoB4hA4" },
+      { name: "CTV News", channelId: "UCK37X1RttzADYMBMWMJe_6w", channelUrl: "https://www.youtube.com/@CTVNews/live", liveVideoId: "d_Dz8A0TlMI" },
+      { name: "Global News", channelId: "UCx9ESURjdyvZJYK0e9VkDtg", channelUrl: "https://www.youtube.com/@GlobalNews/live", liveVideoId: "mu90GCdxuvg" },
     ],
   },
   INDIA: {
@@ -98,9 +99,9 @@ const REGION_META: Record<
       "SEBI introduces new derivative risk framework",
     ],
     youtubeChannels: [
-      { name: "NDTV", channelId: "UCZFMm1mMw0F81Z37aaEzTUA", channelUrl: "https://www.youtube.com/@ndtv" },
-      { name: "Republic TV", channelId: "UCrFiAQI5BMOVkMoWL9nDrCg", channelUrl: "https://www.youtube.com/@RepublicTV" },
-      { name: "Times Now", channelId: "UC6qPDE2cFcMhrQVSTaFeTmg", channelUrl: "https://www.youtube.com/@TimesNow" },
+      { name: "NDTV", channelId: "UCZFMm1mMw0F81Z37aaEzTUA", channelUrl: "https://www.youtube.com/@ndtv/live", liveVideoId: "bz0TZaQqrGI" },
+      { name: "Republic TV", channelId: "UCrFiAQI5BMOVkMoWL9nDrCg", channelUrl: "https://www.youtube.com/@RepublicTV/live", liveVideoId: "AEjpkjMFU3s" },
+      { name: "Times Now", channelId: "UC6qPDE2cFcMhrQVSTaFeTmg", channelUrl: "https://www.youtube.com/@TimesNow/live", liveVideoId: "uKN_4tkIWDU" },
     ],
   },
   "HONG KONG": {
@@ -114,9 +115,9 @@ const REGION_META: Record<
       "HK IPO pipeline strengthens for second half of year",
     ],
     youtubeChannels: [
-      { name: "Al Jazeera", channelId: "UCNye-wNBqNL5ZzHSJdpkDXA", channelUrl: "https://www.youtube.com/@AlJazeeraEnglish" },
-      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@BloombergTV" },
-      { name: "SCMP", channelId: "UC7ATgCH0-h0sC8CZAFInGgg", channelUrl: "https://www.youtube.com/@SouthChinaMorningPost" },
+      { name: "Al Jazeera", channelId: "UCNye-wNBqNL5ZzHSJdpkDXA", channelUrl: "https://www.youtube.com/@AlJazeeraEnglish/live", liveVideoId: "h3MuIUNCCzI" },
+      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@BloombergTV/live", liveVideoId: "dp8PhLsUcFE" },
+      { name: "SCMP", channelId: "UC7ATgCH0-h0sC8CZAFInGgg", channelUrl: "https://www.youtube.com/@SouthChinaMorningPost/live", liveVideoId: null },
     ],
   },
   TOKYO: {
@@ -130,9 +131,9 @@ const REGION_META: Record<
       "Auto sector leads Nikkei gains on strong US demand",
     ],
     youtubeChannels: [
-      { name: "NHK World", channelId: "UCqx7owSD-iSKR4CYkY13g9g", channelUrl: "https://www.youtube.com/@NHKWorldNews" },
-      { name: "Al Jazeera", channelId: "UCNye-wNBqNL5ZzHSJdpkDXA", channelUrl: "https://www.youtube.com/@AlJazeeraEnglish" },
-      { name: "DW News", channelId: "UCknLrEdhRCp1aegoMqRaCZg", channelUrl: "https://www.youtube.com/@DWNews" },
+      { name: "NHK World", channelId: "UCqx7owSD-iSKR4CYkY13g9g", channelUrl: "https://www.youtube.com/@NHKWorldNews/live", liveVideoId: "oHWOzlELqMQ" },
+      { name: "Al Jazeera", channelId: "UCNye-wNBqNL5ZzHSJdpkDXA", channelUrl: "https://www.youtube.com/@AlJazeeraEnglish/live", liveVideoId: "h3MuIUNCCzI" },
+      { name: "DW News", channelId: "UCknLrEdhRCp1aegoMqRaCZg", channelUrl: "https://www.youtube.com/@DWNews/live", liveVideoId: "jCbPD0L6_qM" },
     ],
   },
 };
@@ -183,6 +184,29 @@ function RegionDialog({
   const change = market?.change ?? 0;
   const chartColor = isUp ? "#10b981" : "#ef4444";
   const [activeVideo, setActiveVideo] = useState<YoutubeChannel | null>(null);
+  const [resolvedVideoId, setResolvedVideoId] = useState<string | null>(null);
+  const [videoLoading, setVideoLoading] = useState(false);
+  const [videoError, setVideoError] = useState(false);
+
+  const selectChannel = async (ch: YoutubeChannel) => {
+    setActiveVideo(ch);
+    setVideoError(false);
+    setResolvedVideoId(null);
+    setVideoLoading(true);
+    try {
+      const res = await fetch(`/api/youtube-live-video?channelId=${ch.channelId}`);
+      const json = await res.json();
+      if (json.videoId) {
+        setResolvedVideoId(json.videoId);
+      } else {
+        setResolvedVideoId(ch.liveVideoId);
+      }
+    } catch {
+      setResolvedVideoId(ch.liveVideoId);
+    } finally {
+      setVideoLoading(false);
+    }
+  };
 
   const { data, isLoading } = useQuery<RegionMarketData>({
     queryKey: ["/api/region-market-data", region],
@@ -265,13 +289,45 @@ function RegionDialog({
 
       {activeVideo ? (
         /* YouTube Video Player */
-        <div className="relative bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
-          <iframe
-            src={`https://www.youtube.com/embed/live_stream?channel=${activeVideo.channelId}&autoplay=1&mute=0`}
-            className="absolute top-0 left-0 w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+        <div className="bg-black" style={{ paddingBottom: "56.25%", position: "relative", height: 0 }}>
+          {videoLoading ? (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-gray-950">
+              <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-[9px] text-gray-500">Finding live stream…</span>
+            </div>
+          ) : resolvedVideoId && !videoError ? (
+            <iframe
+              key={resolvedVideoId}
+              src={`https://www.youtube.com/embed/${resolvedVideoId}?autoplay=1&mute=0&rel=0`}
+              className="absolute top-0 left-0 w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+              onError={() => setVideoError(true)}
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 bg-gray-950 px-4">
+              <div className="w-10 h-10 rounded-full bg-red-500/10 flex items-center justify-center">
+                <svg className="h-5 w-5 text-red-400" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+              </div>
+              <div className="text-center">
+                <p className="text-[10px] text-gray-300 font-medium mb-0.5">Live stream unavailable</p>
+                <p className="text-[9px] text-gray-600 mb-3">The channel may not be streaming right now</p>
+                <a
+                  href={activeVideo.channelUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-red-600 text-white text-[9px] font-medium hover:bg-red-700 transition-colors"
+                >
+                  <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  Watch on YouTube
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <>
@@ -378,7 +434,7 @@ function RegionDialog({
                 {meta.youtubeChannels.map((ch) => (
                   <button
                     key={ch.channelId}
-                    onClick={() => setActiveVideo(ch)}
+                    onClick={() => selectChannel(ch)}
                     className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-900/80 border border-gray-800/60 hover:border-red-500/40 hover:bg-gray-900 transition-colors flex-1 min-w-0"
                     data-testid={`button-yt-channel-${ch.name.toLowerCase().replace(/\s+/g, "-")}`}
                   >

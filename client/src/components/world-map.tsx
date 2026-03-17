@@ -108,6 +108,22 @@ interface RegionChartPoint { time: string; price: number }
 interface RegionNewsItem { title: string; source: string; url: string; publishedAt: string }
 interface RegionMarketData { chart: RegionChartPoint[]; news: RegionNewsItem[] }
 
+function relativeTime(dateStr: string): string {
+  if (!dateStr) return "";
+  try {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return "just now";
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days}d ago`;
+  } catch {
+    return "";
+  }
+}
+
 function RegionDialog({
   region,
   marketData,
@@ -256,12 +272,20 @@ function RegionDialog({
                 href={item.url || "#"}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-gray-900/70 border border-gray-800/50 hover:border-gray-700 hover:bg-gray-900 transition-colors"
+                className="flex items-start gap-2 px-2.5 py-1.5 rounded-lg bg-gray-900/70 border border-gray-800/50 hover:border-gray-700 hover:bg-gray-900 transition-colors"
               >
-                <div className="w-1 h-1 rounded-full flex-shrink-0" style={{ backgroundColor: chartColor }} />
+                <div className="w-1 h-1 rounded-full flex-shrink-0 mt-[5px]" style={{ backgroundColor: chartColor }} />
                 <div className="min-w-0 flex-1">
                   <p className="text-[10px] text-gray-300 truncate leading-tight">{item.title}</p>
-                  <p className="text-[8px] text-gray-600">{item.source}</p>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <p className="text-[8px] text-gray-600">{item.source}</p>
+                    {item.publishedAt && (
+                      <>
+                        <span className="text-[8px] text-gray-700">·</span>
+                        <span className="text-[8px] text-gray-600">{relativeTime(item.publishedAt)}</span>
+                      </>
+                    )}
+                  </div>
                 </div>
               </a>
             ))}

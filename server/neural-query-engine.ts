@@ -410,8 +410,7 @@ class NeuralQueryEngine {
   ): string {
     const parts: string[] = [];
     
-    // Add thinking header
-    parts.push(`**Analysis for:** "${query}"\n`);
+    // (query echo removed)
     
     // Stock analysis response
     if (intent.stocks.length > 0) {
@@ -528,11 +527,7 @@ class NeuralQueryEngine {
       parts.push('');
     }
     
-    // Add source attribution
-    const successfulSources = sources.filter(s => s.success).map(s => s.name);
-    if (successfulSources.length > 0) {
-      parts.push(`\n---\n*Data from: ${successfulSources.join(', ')}*`);
-    }
+    // (source attribution removed)
     
     return parts.join('\n');
   }

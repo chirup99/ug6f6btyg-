@@ -3055,10 +3055,7 @@ export default function Home() {
               (window as any).companyInsightsData = null;
             }
 
-            // Add sources footer if available
-            if (data.sources && data.sources.length > 0) {
-              result += `\n\n---\n**Sources:** ${data.sources.join(' | ')}`;
-            }
+            // (sources footer removed)
 
             setSearchResults(result);
 
@@ -16158,6 +16155,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       let renderedContent: any = null;
                                       let processedResults = searchResults;
 
+                                      // Strip metadata/noise from AI text parts before rendering
+                                      const cleanReportPart = (text: string): string => {
+                                        if (!text) return '';
+                                        return text
+                                          .replace(/^\*\*Analysis for:\*\*[^\n]*/gm, '')
+                                          .replace(/##\s[^\n]+\n[\s\S]*?\*Data from:[^\n]*\*[^\n]*/g, '')
+                                          .replace(/\*Data from:[^\n]*\*/g, '')
+                                          .replace(/^---\s*\*\*Sources:\*\*[^\n]*/gm, '')
+                                          .replace(/^---+\s*$/gm, '')
+                                          .replace(/^[,\s]+$/gm, '')
+                                          .replace(/\n{3,}/g, '\n\n')
+                                          .trim();
+                                      };
+
                                       // Minimal market-news-style renderer for AI report text
                                       const renderReportText = (text: string) => {
                                         if (!text || !text.trim()) return null;
@@ -18389,7 +18400,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                                         const companyInsightsContent = (
                                           <>
-                                            {parts[0]}
+                                            {parts[0] ? renderReportText(cleanReportPart(parts[0])) : null}
                                             {chartData.length > 0 && (
                                               <div className="my-4 bg-gray-900/50 rounded-lg p-4 border border-gray-600">
                                                 <div className="flex items-center justify-between mb-3">
@@ -18578,7 +18589,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 </div>
                                               </div>
                                             )}
-                                            {parts[1] || ""}
+                                            {parts[1] ? renderReportText(cleanReportPart(parts[1])) : null}
                                           </>
                                         );
 
@@ -18640,22 +18651,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       // by the chart components so the raw text is redundant.
                                       // Pattern: "## Company (SYM)\n\n**Current Price:**…\n---\n*Data from:…*"
                                       if (processedResults && typeof processedResults === 'string') {
-                                        processedResults = processedResults
-                                          // Remove "Analysis for:" query echo lines
-                                          .replace(/^\*\*Analysis for:\*\*[^\n]*/gm, '')
-                                          // Remove full stock data blocks (## header → *Data from:* line)
-                                          .replace(/##\s[^\n]+\n[\s\S]*?\*Data from:[^\n]*\*[^\n]*/g, '')
-                                          // Remove any orphaned *Data from:* attribution lines
-                                          .replace(/\*Data from:[^\n]*\*/g, '')
-                                          // Remove --- **Sources:** footer lines
-                                          .replace(/^---\s*\*\*Sources:\*\*[^\n]*/gm, '')
-                                          // Remove standalone --- separator lines
-                                          .replace(/^---+\s*$/gm, '')
-                                          // Remove lines containing only commas / whitespace
-                                          .replace(/^[,\s]+$/gm, '')
-                                          // Collapse 3+ consecutive blank lines to max 2
-                                          .replace(/\n{3,}/g, '\n\n')
-                                          .trim();
+                                        processedResults = cleanReportPart(processedResults);
                                       }
 
                                       return renderedContent || (processedResults ? renderReportText(processedResults) : null) || searchResults;

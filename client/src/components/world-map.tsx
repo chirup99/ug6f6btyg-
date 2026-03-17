@@ -695,10 +695,10 @@ export function WorldMap() {
   const dotRadius = isMobile ? "1.5" : "1.8";
 
   return (
-    <div className="mb-5 relative">
+    <div className="relative h-full flex flex-col">
       {/* World Map with Dots - No Animation */}
       <div
-        className="relative h-35 overflow-hidden group"
+        className="relative flex-1 overflow-hidden group"
         style={{ backgroundColor: isDarkMode ? "#1a1a1a" : "#e3f2fd" }}
       >
         {/* Drawing Tools Overlay */}
@@ -1448,7 +1448,8 @@ export function WorldMap() {
 
       {/* Trading hours indicator with live market data */}
       <div
-        className={`flex justify-center items-center gap-4 mt-3 w-full transition-opacity duration-300 ${isDrawing ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+        className={`flex justify-center items-center gap-4 py-1 w-full flex-shrink-0 transition-opacity duration-300 ${isDrawing ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+        style={{ backgroundColor: isDarkMode ? "#1a1a1a" : "#e3f2fd" }}
       >
         {marketRegions.map((region) => {
           const market = marketData?.[region.name as keyof typeof marketData];

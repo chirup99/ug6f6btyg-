@@ -15917,11 +15917,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     transformOrigin: "right center",
                   }}
                 >
-                  {/* World Map Section - At top of main content */}
+                  {/* World Map Section - 35% of viewport height */}
                   {!searchResults && (
-                    <div className="w-full flex items-center justify-center py-1" style={{ background: theme === 'dark' ? '#1a1a1a' : '#e3f2fd' }}>
-                      {/* Container for WorldMap - full width on mobile, constrained on desktop */}
-                      <div className="w-full md:max-w-md flex items-center justify-center">
+                    <div className="w-full flex items-center justify-center" style={{ height: '35vh', background: theme === 'dark' ? '#1a1a1a' : '#e3f2fd' }}>
+                      <div className="w-full h-full">
                         <WorldMap />
                       </div>
                     </div>
@@ -15961,7 +15960,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                   {/* Blue Section: Expands to 100% when search results show, fixed height otherwise */}
                   <div className={`w-full bg-blue-900 flex flex-col items-center justify-start md:py-3 py-0 relative overflow-y-auto ${
-                    searchResults ? "h-screen px-3 md:px-4" : "h-[62vh] md:h-[58vh] px-0 md:px-4"
+                    searchResults ? "h-screen px-3 md:px-4" : "h-[65vh] px-0 md:px-4"
                   }`}>
                     <div className="max-w-4xl w-full md:space-y-2">
                       {/* Dynamic Greeting - Hidden on mobile */}

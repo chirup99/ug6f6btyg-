@@ -806,6 +806,84 @@ export function WorldMap() {
               />
             );
           })}
+
+          {/* Clickable region markers on the map */}
+          {!isDrawing && marketRegions.map((region) => {
+            const market = marketData?.[region.name as keyof typeof marketData];
+            const isUp = market?.isUp ?? true;
+            const markerColor = market
+              ? isUp ? "#10b981" : "#ef4444"
+              : "#64748b";
+            // Convert percentage coords to SVG space (viewBox: "-10 0 1045.2 458")
+            const svgX = -10 + (region.x / 100) * 1045.2;
+            const svgY = (region.y / 100) * 458;
+            const meta = REGION_META[region.name];
+
+            return (
+              <g
+                key={`marker-${region.name}`}
+                style={{ cursor: "pointer" }}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSelectedRegion(region.name);
+                }}
+                data-testid={`map-marker-${region.name.toLowerCase().replace(" ", "-")}`}
+              >
+                {/* Invisible large tap target */}
+                <circle cx={svgX} cy={svgY} r={16} fill="transparent" />
+
+                {/* Outer animated ping ring */}
+                <circle
+                  cx={svgX}
+                  cy={svgY}
+                  r={9}
+                  fill="none"
+                  stroke={markerColor}
+                  strokeWidth="1.2"
+                  opacity="0.5"
+                >
+                  <animate
+                    attributeName="r"
+                    values="6;14;6"
+                    dur={`${2 + region.pulseDelay}s`}
+                    repeatCount="indefinite"
+                    begin={`${region.pulseDelay}s`}
+                  />
+                  <animate
+                    attributeName="opacity"
+                    values="0.6;0;0.6"
+                    dur={`${2 + region.pulseDelay}s`}
+                    repeatCount="indefinite"
+                    begin={`${region.pulseDelay}s`}
+                  />
+                </circle>
+
+                {/* Inner solid dot */}
+                <circle
+                  cx={svgX}
+                  cy={svgY}
+                  r={4}
+                  fill={markerColor}
+                  stroke="white"
+                  strokeWidth="1"
+                  opacity="0.95"
+                />
+
+                {/* Flag + region label */}
+                <text
+                  x={svgX}
+                  y={svgY - 10}
+                  textAnchor="middle"
+                  fontSize="8"
+                  fill="white"
+                  opacity="0.85"
+                  style={{ pointerEvents: "none", userSelect: "none" }}
+                >
+                  {meta?.flag} {region.name}
+                </text>
+              </g>
+            );
+          })}
         </svg>
 
         {/* Market Region Indicators */}

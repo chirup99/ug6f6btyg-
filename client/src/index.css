@@ -402,11 +402,7 @@ input[type="range"].slider-thumb-purple::-moz-range-track {
 }
 .overflow-y-auto {
   scrollbar-width: thin;
-  scrollbar-color: rgb(156, 163, 175) rgb(243, 244, 246);
-}
-
-.dark .overflow-y-auto {
-  scrollbar-color: rgb(75, 85, 99) rgb(17, 24, 39);
+  scrollbar-color: rgb(75, 85, 99) rgb(31, 41, 55);
 }
 
 .overflow-y-auto::-webkit-scrollbar {
@@ -414,16 +410,12 @@ input[type="range"].slider-thumb-purple::-moz-range-track {
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-  background: rgb(243, 244, 246);
+  background: rgb(31, 41, 55);
   border-radius: 4px;
 }
 
-.dark .overflow-y-auto::-webkit-scrollbar-track {
-  background: rgb(17, 24, 39);
-}
-
 .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: rgb(156, 163, 175);
+  background: rgb(75, 85, 99);
   border-radius: 4px;
 }
 
@@ -431,11 +423,27 @@ input[type="range"].slider-thumb-purple::-moz-range-track {
   background: rgb(107, 114, 128);
 }
 
-.dark .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: rgb(75, 85, 99);
+/* Always-dark scrollbar for horizontal tab bars and quick-action rows */
+.overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(75, 85, 99) rgb(31, 41, 55);
 }
 
-.dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+.overflow-x-auto::-webkit-scrollbar {
+  height: 3px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+  background: rgb(31, 41, 55);
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+  background: rgb(75, 85, 99);
+  border-radius: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb:hover {
   background: rgb(107, 114, 128);
 }
 

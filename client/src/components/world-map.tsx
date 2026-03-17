@@ -17,10 +17,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import {
-  Dialog,
-  DialogContent,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 import {
   LineChart,
   Line,
@@ -41,12 +38,15 @@ interface MarketRegion {
 const marketRegions: MarketRegion[] = [
   { name: "USA", x: 18, y: 40, pulseDelay: 0 },
   { name: "CANADA", x: 16, y: 26, pulseDelay: 0.3 },
-  { name: "INDIA", x: 55.5, y: 48, pulseDelay: 1.0 },
-  { name: "HONG KONG", x: 65.5, y: 44, pulseDelay: 1.3 },
-  { name: "TOKYO", x: 72.5, y: 37, pulseDelay: 1.6 },
+  { name: "INDIA", x: 56.5, y: 55, pulseDelay: 1.0 },
+  { name: "HONG KONG", x: 60.5, y: 44, pulseDelay: 1.3 },
+  { name: "TOKYO", x: 69.5, y: 37, pulseDelay: 1.6 },
 ];
 
-const REGION_META: Record<string, { flag: string; index: string; indexCode: string; news: string[] }> = {
+const REGION_META: Record<
+  string,
+  { flag: string; index: string; indexCode: string; news: string[] }
+> = {
   USA: {
     flag: "🇺🇸",
     index: "S&P 500",
@@ -104,9 +104,20 @@ const REGION_META: Record<string, { flag: string; index: string; indexCode: stri
   },
 };
 
-interface RegionChartPoint { time: string; price: number }
-interface RegionNewsItem { title: string; source: string; url: string; publishedAt: string }
-interface RegionMarketData { chart: RegionChartPoint[]; news: RegionNewsItem[] }
+interface RegionChartPoint {
+  time: string;
+  price: number;
+}
+interface RegionNewsItem {
+  title: string;
+  source: string;
+  url: string;
+  publishedAt: string;
+}
+interface RegionMarketData {
+  chart: RegionChartPoint[];
+  news: RegionNewsItem[];
+}
 
 function relativeTime(dateStr: string): string {
   if (!dateStr) return "";
@@ -142,16 +153,21 @@ function RegionDialog({
   const { data, isLoading } = useQuery<RegionMarketData>({
     queryKey: ["/api/region-market-data", region],
     queryFn: () =>
-      fetch(`/api/region-market-data?region=${encodeURIComponent(region)}`, { credentials: "include" })
-        .then((r) => r.json()),
+      fetch(`/api/region-market-data?region=${encodeURIComponent(region)}`, {
+        credentials: "include",
+      }).then((r) => r.json()),
     enabled: !!region,
     staleTime: 5 * 60 * 1000,
   });
 
   const chartPoints = data?.chart ?? [];
   const newsItems = data?.news ?? [];
-  const minPrice = chartPoints.length ? Math.min(...chartPoints.map((d) => d.price)) : 0;
-  const maxPrice = chartPoints.length ? Math.max(...chartPoints.map((d) => d.price)) : 1;
+  const minPrice = chartPoints.length
+    ? Math.min(...chartPoints.map((d) => d.price))
+    : 0;
+  const maxPrice = chartPoints.length
+    ? Math.max(...chartPoints.map((d) => d.price))
+    : 1;
 
   return (
     <div>
@@ -161,21 +177,27 @@ function RegionDialog({
           <span className="text-xl leading-none">{meta?.flag}</span>
           <div>
             <div className="flex items-center gap-1.5">
-              <h2 className="text-[13px] font-bold text-white leading-tight">{meta?.index}</h2>
-              <span className="text-[9px] text-gray-500 bg-gray-800 px-1.5 py-0.5 rounded-full leading-tight">
-                {meta?.indexCode}
-              </span>
+              <h2 className="text-[13px] font-bold text-white leading-tight">
+                {meta?.index}
+              </h2>
             </div>
             <p className="text-[9px] text-gray-600 mt-0.5">{region}</p>
           </div>
         </div>
         <div
           className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold ${
-            isUp ? "bg-green-500/15 text-green-400" : "bg-red-500/15 text-red-400"
+            isUp
+              ? "bg-green-500/15 text-green-400"
+              : "bg-red-500/15 text-red-400"
           }`}
         >
-          {isUp ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
-          {isUp ? "+" : ""}{change.toFixed(2)}%
+          {isUp ? (
+            <TrendingUp className="h-3 w-3" />
+          ) : (
+            <TrendingDown className="h-3 w-3" />
+          )}
+          {isUp ? "+" : ""}
+          {change.toFixed(2)}%
         </div>
       </div>
 
@@ -183,8 +205,13 @@ function RegionDialog({
       <div className="px-4 pt-2.5 pb-2 border-b border-gray-800/60">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-1">
-            <div className="w-1.5 h-1.5 rounded-full animate-pulse" style={{ backgroundColor: chartColor }} />
-            <span className="text-[9px] text-gray-500 uppercase tracking-wide">Intraday</span>
+            <div
+              className="w-1.5 h-1.5 rounded-full animate-pulse"
+              style={{ backgroundColor: chartColor }}
+            />
+            <span className="text-[9px] text-gray-500 uppercase tracking-wide">
+              Intraday
+            </span>
           </div>
           <div className="flex gap-2 text-[8px] text-gray-600">
             <span>Open</span>
@@ -200,14 +227,21 @@ function RegionDialog({
                   <div
                     key={i}
                     className="w-1 rounded-sm animate-pulse"
-                    style={{ backgroundColor: chartColor, height: `${10 + (i % 4) * 8}px`, animationDelay: `${i * 0.08}s` }}
+                    style={{
+                      backgroundColor: chartColor,
+                      height: `${10 + (i % 4) * 8}px`,
+                      animationDelay: `${i * 0.08}s`,
+                    }}
                   />
                 ))}
               </div>
             </div>
           ) : chartPoints.length > 1 ? (
             <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={chartPoints} margin={{ top: 4, right: 4, left: -38, bottom: 0 }}>
+              <LineChart
+                data={chartPoints}
+                margin={{ top: 4, right: 4, left: -38, bottom: 0 }}
+              >
                 <XAxis
                   dataKey="time"
                   axisLine={false}
@@ -231,7 +265,12 @@ function RegionDialog({
                     color: "#e2e8f0",
                     padding: "3px 7px",
                   }}
-                  formatter={(val: any) => [Number(val).toLocaleString(undefined, { minimumFractionDigits: 2 }), meta?.indexCode]}
+                  formatter={(val: any) => [
+                    Number(val).toLocaleString(undefined, {
+                      minimumFractionDigits: 2,
+                    }),
+                    meta?.indexCode,
+                  ]}
                   labelStyle={{ color: "#64748b", fontSize: "8px" }}
                 />
                 <Line
@@ -256,18 +295,27 @@ function RegionDialog({
       <div className="px-4 pt-2 pb-3">
         <div className="flex items-center gap-1.5 mb-2">
           <Globe className="h-3 w-3 text-blue-400" />
-          <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">Market News</span>
+          <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
+            Market News
+          </span>
         </div>
         {isLoading ? (
           <div className="space-y-1.5">
             {[...Array(3)].map((_, i) => (
-              <div key={i} className="h-9 rounded-lg bg-gray-800/50 animate-pulse" />
+              <div
+                key={i}
+                className="h-9 rounded-lg bg-gray-800/50 animate-pulse"
+              />
             ))}
           </div>
         ) : newsItems.length > 0 ? (
           <div
             className="space-y-1.5 overflow-y-auto"
-            style={{ maxHeight: 192, scrollbarWidth: "thin", scrollbarColor: "#1e293b transparent" }}
+            style={{
+              maxHeight: 192,
+              scrollbarWidth: "thin",
+              scrollbarColor: "#1e293b transparent",
+            }}
           >
             {newsItems.map((item, i) => (
               <a
@@ -277,15 +325,24 @@ function RegionDialog({
                 rel="noopener noreferrer"
                 className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-gray-900/60 border border-gray-800/40 hover:border-gray-700/60 hover:bg-gray-900 transition-colors block"
               >
-                <div className="w-1 h-1 rounded-full flex-shrink-0 mt-[4px]" style={{ backgroundColor: chartColor }} />
+                <div
+                  className="w-1 h-1 rounded-full flex-shrink-0 mt-[4px]"
+                  style={{ backgroundColor: chartColor }}
+                />
                 <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-gray-200 leading-snug line-clamp-2">{item.title}</p>
+                  <p className="text-[10px] text-gray-200 leading-snug line-clamp-2">
+                    {item.title}
+                  </p>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-[8px] text-gray-600 truncate">{item.source}</span>
+                    <span className="text-[8px] text-gray-600 truncate">
+                      {item.source}
+                    </span>
                     {item.publishedAt && (
                       <>
                         <span className="text-[8px] text-gray-700">·</span>
-                        <span className="text-[8px] text-gray-600 flex-shrink-0">{relativeTime(item.publishedAt)}</span>
+                        <span className="text-[8px] text-gray-600 flex-shrink-0">
+                          {relativeTime(item.publishedAt)}
+                        </span>
                       </>
                     )}
                   </div>
@@ -294,7 +351,9 @@ function RegionDialog({
             ))}
           </div>
         ) : (
-          <div className="text-gray-700 text-[9px] text-center py-4">No news available</div>
+          <div className="text-gray-700 text-[9px] text-center py-4">
+            No news available
+          </div>
         )}
       </div>
     </div>
@@ -986,82 +1045,86 @@ export function WorldMap() {
           })}
 
           {/* Clickable region markers on the map */}
-          {!isDrawing && marketRegions.map((region) => {
-            const market = marketData?.[region.name as keyof typeof marketData];
-            const isUp = market?.isUp ?? true;
-            const markerColor = market
-              ? isUp ? "#10b981" : "#ef4444"
-              : "#64748b";
-            // Convert percentage coords to SVG space (viewBox: "-10 0 1045.2 458")
-            const svgX = -10 + (region.x / 100) * 1045.2;
-            const svgY = (region.y / 100) * 458;
-            const meta = REGION_META[region.name];
+          {!isDrawing &&
+            marketRegions.map((region) => {
+              const market =
+                marketData?.[region.name as keyof typeof marketData];
+              const isUp = market?.isUp ?? true;
+              const markerColor = market
+                ? isUp
+                  ? "#10b981"
+                  : "#ef4444"
+                : "#64748b";
+              // Convert percentage coords to SVG space (viewBox: "-10 0 1045.2 458")
+              const svgX = -10 + (region.x / 100) * 1045.2;
+              const svgY = (region.y / 100) * 458;
+              const meta = REGION_META[region.name];
 
-            return (
-              <g
-                key={`marker-${region.name}`}
-                style={{ cursor: "pointer" }}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setSelectedRegion(region.name);
-                }}
-                data-testid={`map-marker-${region.name.toLowerCase().replace(" ", "-")}`}
-              >
-                {/* Invisible large tap target */}
-                <circle cx={svgX} cy={svgY} r={16} fill="transparent" />
-
-                {/* Outer animated ping ring */}
-                <circle
-                  cx={svgX}
-                  cy={svgY}
-                  r={9}
-                  fill="none"
-                  stroke={markerColor}
-                  strokeWidth="1.2"
-                  opacity="0.5"
+              return (
+                <g
+                  key={`marker-${region.name}`}
+                  style={{ cursor: "pointer" }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedRegion(region.name);
+                  }}
+                  data-testid={`map-marker-${region.name.toLowerCase().replace(" ", "-")}`}
                 >
-                  <animate
-                    attributeName="r"
-                    values="6;14;6"
-                    dur={`${2 + region.pulseDelay}s`}
-                    repeatCount="indefinite"
-                    begin={`${region.pulseDelay}s`}
-                  />
-                  <animate
-                    attributeName="opacity"
-                    values="0.6;0;0.6"
-                    dur={`${2 + region.pulseDelay}s`}
-                    repeatCount="indefinite"
-                    begin={`${region.pulseDelay}s`}
-                  />
-                </circle>
+                  {/* Invisible large tap target */}
+                  <circle cx={svgX} cy={svgY} r={16} fill="transparent" />
 
-                {/* Inner solid dot */}
-                <circle
-                  cx={svgX}
-                  cy={svgY}
-                  r={4}
-                  fill={markerColor}
-                  stroke="white"
-                  strokeWidth="1"
-                  opacity="0.95"
-                />
+                  {/* Outer animated ping ring */}
+                  <circle
+                    cx={svgX}
+                    cy={svgY}
+                    r={9}
+                    fill="none"
+                    stroke={markerColor}
+                    strokeWidth="1.2"
+                    opacity="0.5"
+                  >
+                    <animate
+                      attributeName="r"
+                      values="6;14;6"
+                      dur={`${2 + region.pulseDelay}s`}
+                      repeatCount="indefinite"
+                      begin={`${region.pulseDelay}s`}
+                    />
+                    <animate
+                      attributeName="opacity"
+                      values="0.6;0;0.6"
+                      dur={`${2 + region.pulseDelay}s`}
+                      repeatCount="indefinite"
+                      begin={`${region.pulseDelay}s`}
+                    />
+                  </circle>
 
-                {/* Flag + region label */}
-                <text
-                  x={svgX}
-                  y={svgY - 10}
-                  textAnchor="middle"
-                  fontSize="8"
-                  fill="white"
-                  opacity="0.85"
-                  style={{ pointerEvents: "none", userSelect: "none" }}
-                >
-                  {meta?.flag} {region.name}
-                </text>
-              </g>
-            );
-          })}
+                  {/* Inner solid dot */}
+                  <circle
+                    cx={svgX}
+                    cy={svgY}
+                    r={4}
+                    fill={markerColor}
+                    stroke="white"
+                    strokeWidth="1"
+                    opacity="0.95"
+                  />
+
+                  {/* Flag + region label */}
+                  <text
+                    x={svgX}
+                    y={svgY - 10}
+                    textAnchor="middle"
+                    fontSize="8"
+                    fill="white"
+                    opacity="0.85"
+                    style={{ pointerEvents: "none", userSelect: "none" }}
+                  >
+                    {meta?.flag} {region.name}
+                  </text>
+                </g>
+              );
+            })}
         </svg>
 
         {/* Market Region Indicators */}
@@ -1237,7 +1300,7 @@ export function WorldMap() {
                 </div>
               </div>
             )}
-            
+
             {/* Embedded Controls */}
             <div className="mt-auto flex items-center gap-2 pt-1">
               {allPaths.length > 0 && (
@@ -1325,7 +1388,12 @@ export function WorldMap() {
       </div>
 
       {/* Region Detail Dialog */}
-      <Dialog open={!!selectedRegion} onOpenChange={(open) => { if (!open) setSelectedRegion(null); }}>
+      <Dialog
+        open={!!selectedRegion}
+        onOpenChange={(open) => {
+          if (!open) setSelectedRegion(null);
+        }}
+      >
         <DialogContent className="sm:max-w-[380px] bg-gray-950 border-gray-800 text-white p-0 overflow-hidden rounded-2xl">
           {selectedRegion && (
             <RegionDialog

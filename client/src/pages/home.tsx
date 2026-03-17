@@ -8145,7 +8145,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [compareLoading, setCompareLoading] = useState(false);
   const [compareAiInsights, setCompareAiInsights] = useState<string | null>(null);
   const [showCompareResults, setShowCompareResults] = useState(false);
-  const [compareActiveTab, setCompareActiveTab] = useState<'overview'|'pnl'|'balance'|'metrics'>('overview');
+  const [compareActiveTab, setCompareActiveTab] = useState<'overview'|'pnl'|'balance'|'metrics'|'insights'>('overview');
   const [showFullReport, setShowFullReport] = useState(false);
   const [fullReportLoading, setFullReportLoading] = useState(false);
   const [fullReportData, setFullReportData] = useState<{quarterly: any[]; annualFinancials: any; keyMetrics: any} | null>(null);
@@ -18754,15 +18754,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                                                     {/* ── INSIGHTS TAB ── */}
                                                     {compareActiveTab === 'insights' && (() => {
-                                                      const getPnLValue = (sym: string, hint: string, yi = 0): number | null => {
+                                                      // Broad label matcher — covers Screener.in, Yahoo Finance & NSE label variants
+                                                      const getPnLValue = (sym: string, hints: string[], yi = 0): number | null => {
                                                         const rows: any[] = compareAnalysisData[sym]?.annualFinancials?.profitLoss || [];
-                                                        const row = rows.find((r: any) => r.label?.toLowerCase().includes(hint.toLowerCase()));
-                                                        if (!row) return null;
-                                                        const v = row.values?.[yi]?.value;
-                                                        if (v === undefined || v === null) return null;
-                                                        const n = parseFloat(String(v).replace(/,/g, ''));
-                                                        return isNaN(n) ? null : n;
+                                                        for (const hint of hints) {
+                                                          const row = rows.find((r: any) => r.label?.toLowerCase().includes(hint.toLowerCase()));
+                                                          if (row) {
+                                                            const v = row.values?.[yi]?.value;
+                                                            if (v !== undefined && v !== null) {
+                                                              const n = parseFloat(String(v).replace(/,/g, ''));
+                                                              if (!isNaN(n)) return n;
+                                                            }
+                                                          }
+                                                        }
+                                                        return null;
                                                       };
+                                                      const REV_HINTS  = ['revenue from operations','revenue','net revenue','total revenue','total income','net sales','sales','operating income','income from operations'];
+                                                      const NP_HINTS   = ['net profit','profit after tax','pat','profit for the year','net income','profit attributable'];
                                                       const getSymYears = (sym: string) => (compareAnalysisData[sym]?.annualFinancials?.years || []).slice(0, 5).reverse();
                                                       const allYearsI = (() => {
                                                         const sets = compareSymbols.map(s => getSymYears(s));
@@ -18772,14 +18780,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         const row: any = { year: yr };
                                                         compareSymbols.forEach(sym => {
                                                           const sy = getSymYears(sym); const idx = sy.indexOf(yr);
-                                                          if (idx !== -1) { const v = getPnLValue(sym,'revenue',idx) ?? getPnLValue(sym,'net sales',idx) ?? getPnLValue(sym,'total income',idx); row[sym] = v; }
+                                                          if (idx !== -1) { const v = getPnLValue(sym, REV_HINTS, idx); if (v !== null) row[sym] = v; }
                                                         }); return row;
                                                       });
                                                       const npTrend = allYearsI.map(yr => {
                                                         const row: any = { year: yr };
                                                         compareSymbols.forEach(sym => {
                                                           const sy = getSymYears(sym); const idx = sy.indexOf(yr);
-                                                          if (idx !== -1) { const v = getPnLValue(sym,'net profit',idx) ?? getPnLValue(sym,'pat',idx); row[sym] = v; }
+                                                          if (idx !== -1) { const v = getPnLValue(sym, NP_HINTS, idx); if (v !== null) row[sym] = v; }
                                                         }); return row;
                                                       });
                                                       const marginTrend = allYearsI.map(yr => {
@@ -18787,9 +18795,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         compareSymbols.forEach(sym => {
                                                           const sy = getSymYears(sym); const idx = sy.indexOf(yr);
                                                           if (idx !== -1) {
-                                                            const rev = getPnLValue(sym,'revenue',idx) ?? getPnLValue(sym,'net sales',idx) ?? getPnLValue(sym,'total income',idx);
-                                                            const np = getPnLValue(sym,'net profit',idx) ?? getPnLValue(sym,'pat',idx);
-                                                            row[sym] = (rev && np && rev > 0) ? parseFloat(((np/rev)*100).toFixed(2)) : null;
+                                                            const rev = getPnLValue(sym, REV_HINTS, idx);
+                                                            const np  = getPnLValue(sym, NP_HINTS, idx);
+                                                            if (rev !== null && np !== null) row[sym] = (rev > 0) ? parseFloat(((np/rev)*100).toFixed(2)) : null;
                                                           }
                                                         }); return row;
                                                       });
@@ -18816,8 +18824,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         const pm = parse(d?.keyMetrics?.profitMargin);
                                                         if (!isNaN(pm)) { total++; const g = pm>=10; if(g) score++; flags.push({label:'Margin',value:`${pm.toFixed(1)}%`,good:g}); }
                                                         const pct = total>0 ? Math.round((score/total)*100) : 0;
-                                                        const verdict = pct>=70 ? 'Strong Buy' : pct>=50 ? 'Moderate Buy' : pct>=35 ? 'Hold' : 'Caution';
-                                                        const vc = pct>=70 ? '#34d399' : pct>=50 ? '#60a5fa' : pct>=35 ? '#fbbf24' : '#f87171';
+                                                        const verdict = total===0 ? 'Awaiting Data' : pct>=70 ? 'Strong Buy' : pct>=50 ? 'Moderate Buy' : pct>=35 ? 'Hold' : 'Caution';
+                                                        const vc = total===0 ? '#6b7280' : pct>=70 ? '#34d399' : pct>=50 ? '#60a5fa' : pct>=35 ? '#fbbf24' : '#f87171';
                                                         return {sym, score, total, pct, flags, verdict, vc, color: COLORS[si]};
                                                       });
                                                       const norm = (v: number|null, mn: number, mx: number) => v===null||isNaN(v) ? 0 : Math.min(100,Math.max(0,((v-mn)/(mx-mn))*100));
@@ -19009,25 +19017,28 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                               if (!isNaN(pb) && pb>0 && !isNaN(bv)) lines.push(pb<1.5 ? `💎 P/B of ${pb.toFixed(2)}x — trading near book value` : pb<3 ? `📊 P/B of ${pb.toFixed(2)}x — moderate premium to book` : `📊 P/B of ${pb.toFixed(2)}x — market values strong intangibles/franchise`);
                                                               if (!isNaN(pm)) lines.push(pm>=25 ? `✅ Exceptional margin of ${pm.toFixed(1)}% — pricing power & cost discipline` : pm>=15 ? `✅ Strong net margin ${pm.toFixed(1)}%` : pm>=8 ? `📊 Decent margin ${pm.toFixed(1)}%` : `⚠️ Thin net margin ${pm.toFixed(1)}% — watch for cost pressures`);
                                                               if (qtdGrowth!==null) lines.push(qtdGrowth>=20 ? `📈 Strong profit momentum: +${qtdGrowth.toFixed(1)}% over ${qd.length} quarters` : qtdGrowth>=5 ? `📈 Steady profit growth of +${qtdGrowth.toFixed(1)}%` : qtdGrowth>=0 ? `📊 Modest profit growth of +${qtdGrowth.toFixed(1)}% — stable` : `📉 Profit contracted ${Math.abs(qtdGrowth).toFixed(1)}% over ${qd.length} quarters — monitor closely`);
-                                                              if (!lines.length) return null;
                                                               return (
                                                                 <div key={sc.sym} className="space-y-1.5 pt-3 border-t border-purple-800/20 first:border-t-0 first:pt-0">
                                                                   <div className="flex items-center gap-2">
                                                                     <span className="w-2.5 h-2.5 rounded-full" style={{background:sc.color}} />
                                                                     <span className="text-xs font-bold" style={{color:sc.color}}>{sc.sym}</span>
                                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold" style={{background:sc.vc+'22',color:sc.vc}}>{sc.verdict}</span>
-                                                                    <span className="ml-auto text-[10px] text-gray-500">{sc.score}/{sc.total} criteria met</span>
+                                                                    {sc.total > 0 && <span className="ml-auto text-[10px] text-gray-500">{sc.score}/{sc.total} criteria met</span>}
                                                                   </div>
-                                                                  <div className="space-y-1 pl-4">
-                                                                    {lines.map((line,li)=>(
-                                                                      <p key={li} className="text-[11px] text-gray-300 leading-relaxed">{line}</p>
-                                                                    ))}
-                                                                  </div>
+                                                                  {lines.length > 0 ? (
+                                                                    <div className="space-y-1 pl-4">
+                                                                      {lines.map((line,li)=>(
+                                                                        <p key={li} className="text-[11px] text-gray-300 leading-relaxed">{line}</p>
+                                                                      ))}
+                                                                    </div>
+                                                                  ) : (
+                                                                    <p className="text-[11px] text-gray-500 pl-4 italic">Fundamental data not yet available — try re-running Compare Analysis.</p>
+                                                                  )}
                                                                 </div>
                                                               );
                                                             })}
-                                                            {scoreCards.length >= 2 && (() => {
-                                                              const ranked = [...scoreCards].sort((a,b)=>b.pct-a.pct);
+                                                            {scoreCards.filter(sc => sc.total > 0).length >= 2 && (() => {
+                                                              const ranked = [...scoreCards].filter(sc => sc.total > 0).sort((a,b)=>b.pct-a.pct);
                                                               const w = ranked[0]; const l = ranked[ranked.length-1];
                                                               const gap = w.pct - l.pct;
                                                               return (
@@ -19042,7 +19053,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                                   {gap < 10 && gap > 0 && (
                                                                     <p className="text-[11px] text-blue-400">⚖️ Close contest — both stocks show comparable fundamentals. Sector & valuation timing matters.</p>
                                                                   )}
-                                                                  <p className="text-[10px] text-gray-600 mt-1 italic">ℹ️ Analysis uses only real scraped financial data (Screener.in · Yahoo Finance · NSE). Not investment advice.</p>
+                                                                  <p className="text-[10px] text-gray-600 mt-1 italic">ℹ️ For informational purposes only — not investment advice. Consult a SEBI-registered advisor.</p>
                                                                 </div>
                                                               );
                                                             })()}

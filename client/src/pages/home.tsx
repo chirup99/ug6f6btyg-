@@ -18266,7 +18266,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               };
 
                                               const tabs = [
-                                                { id: 'overview', label: 'Overview' },
+                                                { id: 'overview', label: 'Quarterly Report' },
                                                 { id: 'pnl', label: 'P&L Statement' },
                                                 { id: 'balance', label: 'Balance Sheet' },
                                                 { id: 'metrics', label: 'Key Metrics' },

@@ -14,6 +14,8 @@ import {
   TrendingUp,
   TrendingDown,
   Globe,
+  Tv2,
+  ChevronLeft,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
@@ -43,9 +45,15 @@ const marketRegions: MarketRegion[] = [
   { name: "TOKYO", x: 69.5, y: 37, pulseDelay: 1.6 },
 ];
 
+interface YoutubeChannel {
+  name: string;
+  channelId: string;
+  channelUrl: string;
+}
+
 const REGION_META: Record<
   string,
-  { flag: string; index: string; indexCode: string; news: string[] }
+  { flag: string; index: string; indexCode: string; news: string[]; youtubeChannels: YoutubeChannel[] }
 > = {
   USA: {
     flag: "🇺🇸",
@@ -56,6 +64,11 @@ const REGION_META: Record<
       "S&P 500 tech sector leads gains on AI spending outlook",
       "US jobs report beats expectations with 200K new hires",
       "Treasury yields dip as inflation data cools slightly",
+    ],
+    youtubeChannels: [
+      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@BloombergTV" },
+      { name: "CNBC", channelId: "UCvJJ_dzjViJCoLf5uKUTwoA", channelUrl: "https://www.youtube.com/@CNBCtelevision" },
+      { name: "CNN", channelId: "UCupvZG-5ko_eiXAX-wkdbsQ", channelUrl: "https://www.youtube.com/@CNN" },
     ],
   },
   CANADA: {
@@ -68,6 +81,11 @@ const REGION_META: Record<
       "Canadian dollar strengthens on positive trade data",
       "TSX financials post steady gains amid global rally",
     ],
+    youtubeChannels: [
+      { name: "CBC News", channelId: "UCzhMpkMB-ku7hbYoepgGMOQ", channelUrl: "https://www.youtube.com/@CBCNews" },
+      { name: "CTV News", channelId: "UCK37X1RttzADYMBMWMJe_6w", channelUrl: "https://www.youtube.com/@CTVNews" },
+      { name: "Global News", channelId: "UCx9ESURjdyvZJYK0e9VkDtg", channelUrl: "https://www.youtube.com/@GlobalNews" },
+    ],
   },
   INDIA: {
     flag: "🇮🇳",
@@ -78,6 +96,11 @@ const REGION_META: Record<
       "IT sector stocks surge on strong Q4 earnings outlook",
       "FII inflows boost Nifty 50 to new monthly high",
       "SEBI introduces new derivative risk framework",
+    ],
+    youtubeChannels: [
+      { name: "NDTV", channelId: "UCZFMm1mMw0F81Z37aaEzTUA", channelUrl: "https://www.youtube.com/@ndtv" },
+      { name: "Republic TV", channelId: "UCrFiAQI5BMOVkMoWL9nDrCg", channelUrl: "https://www.youtube.com/@RepublicTV" },
+      { name: "Times Now", channelId: "UC6qPDE2cFcMhrQVSTaFeTmg", channelUrl: "https://www.youtube.com/@TimesNow" },
     ],
   },
   "HONG KONG": {
@@ -90,6 +113,11 @@ const REGION_META: Record<
       "Property sector faces pressure amid rate outlook",
       "HK IPO pipeline strengthens for second half of year",
     ],
+    youtubeChannels: [
+      { name: "Al Jazeera", channelId: "UCNye-wNBqNL5ZzHSJdpkDXA", channelUrl: "https://www.youtube.com/@AlJazeeraEnglish" },
+      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@BloombergTV" },
+      { name: "SCMP", channelId: "UC7ATgCH0-h0sC8CZAFInGgg", channelUrl: "https://www.youtube.com/@SouthChinaMorningPost" },
+    ],
   },
   TOKYO: {
     flag: "🇯🇵",
@@ -100,6 +128,11 @@ const REGION_META: Record<
       "Bank of Japan maintains ultra-loose monetary policy",
       "Japan exports surge boosting manufacturing stocks",
       "Auto sector leads Nikkei gains on strong US demand",
+    ],
+    youtubeChannels: [
+      { name: "NHK World", channelId: "UCqx7owSD-iSKR4CYkY13g9g", channelUrl: "https://www.youtube.com/@NHKWorldNews" },
+      { name: "Al Jazeera", channelId: "UCNye-wNBqNL5ZzHSJdpkDXA", channelUrl: "https://www.youtube.com/@AlJazeeraEnglish" },
+      { name: "DW News", channelId: "UCknLrEdhRCp1aegoMqRaCZg", channelUrl: "https://www.youtube.com/@DWNews" },
     ],
   },
 };
@@ -149,6 +182,7 @@ function RegionDialog({
   const isUp = market?.isUp ?? true;
   const change = market?.change ?? 0;
   const chartColor = isUp ? "#10b981" : "#ef4444";
+  const [activeVideo, setActiveVideo] = useState<YoutubeChannel | null>(null);
 
   const { data, isLoading } = useQuery<RegionMarketData>({
     queryKey: ["/api/region-market-data", region],
@@ -174,187 +208,257 @@ function RegionDialog({
       {/* Header */}
       <div className="flex items-center justify-between px-4 pt-3.5 pb-2.5 border-b border-gray-800">
         <div className="flex items-center gap-2">
+          {activeVideo && (
+            <button
+              onClick={() => setActiveVideo(null)}
+              className="flex items-center gap-1 text-gray-400 hover:text-white transition-colors mr-1"
+              data-testid="button-back-from-video"
+            >
+              <ChevronLeft className="h-3.5 w-3.5" />
+            </button>
+          )}
           <div>
             <div className="flex items-center gap-1.5">
               <h2 className="text-[13px] font-bold text-white leading-tight">
-                {meta?.index}
+                {activeVideo ? activeVideo.name : meta?.index}
               </h2>
             </div>
-            <p className="text-[9px] text-gray-600 mt-0.5">{region}</p>
+            <p className="text-[9px] text-gray-600 mt-0.5">
+              {activeVideo ? "Live on YouTube" : region}
+            </p>
           </div>
         </div>
-        <div
-          className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold ${
-            isUp
-              ? "bg-green-500/15 text-green-400"
-              : "bg-red-500/15 text-red-400"
-          }`}
-        >
-          {isUp ? (
-            <TrendingUp className="h-3 w-3" />
-          ) : (
-            <TrendingDown className="h-3 w-3" />
+        <div className="flex items-center gap-2">
+          {activeVideo && (
+            <a
+              href={activeVideo.channelUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-red-600/20 text-red-400 hover:bg-red-600/30 transition-colors text-[9px] font-medium"
+              data-testid="link-watch-youtube"
+            >
+              <svg className="h-3 w-3" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+              </svg>
+              YouTube
+            </a>
           )}
-          {isUp ? "+" : ""}
-          {change.toFixed(2)}%
+          {!activeVideo && (
+            <div
+              className={`flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-bold ${
+                isUp
+                  ? "bg-green-500/15 text-green-400"
+                  : "bg-red-500/15 text-red-400"
+              }`}
+            >
+              {isUp ? (
+                <TrendingUp className="h-3 w-3" />
+              ) : (
+                <TrendingDown className="h-3 w-3" />
+              )}
+              {isUp ? "+" : ""}
+              {change.toFixed(2)}%
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Chart — fixed height */}
-      <div className="px-4 pt-2.5 pb-2 border-b border-gray-800/60">
-        <div className="flex items-center justify-between mb-1">
-          <div className="flex items-center gap-1">
-            <div
-              className="w-1.5 h-1.5 rounded-full animate-pulse"
-              style={{ backgroundColor: chartColor }}
-            />
-            <span className="text-[9px] text-gray-500 uppercase tracking-wide">
-              Intraday
-            </span>
-          </div>
-          <div className="flex gap-2 text-[8px] text-gray-600">
-            <span>Open</span>
-            <span>→</span>
-            <span>Now</span>
-          </div>
+      {activeVideo ? (
+        /* YouTube Video Player */
+        <div className="relative bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
+          <iframe
+            src={`https://www.youtube.com/embed/live_stream?channel=${activeVideo.channelId}&autoplay=1&mute=0`}
+            className="absolute top-0 left-0 w-full h-full"
+            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            allowFullScreen
+          />
         </div>
-        <div style={{ height: 96 }}>
-          {isLoading ? (
-            <div className="h-full flex items-center justify-center">
-              <div className="flex gap-1 items-end">
-                {[...Array(8)].map((_, i) => (
-                  <div
-                    key={i}
-                    className="w-1 rounded-sm animate-pulse"
-                    style={{
-                      backgroundColor: chartColor,
-                      height: `${10 + (i % 4) * 8}px`,
-                      animationDelay: `${i * 0.08}s`,
-                    }}
-                  />
+      ) : (
+        <>
+          {/* Chart — fixed height */}
+          <div className="px-4 pt-2.5 pb-2 border-b border-gray-800/60">
+            <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center gap-1">
+                <div
+                  className="w-1.5 h-1.5 rounded-full animate-pulse"
+                  style={{ backgroundColor: chartColor }}
+                />
+                <span className="text-[9px] text-gray-500 uppercase tracking-wide">
+                  Intraday
+                </span>
+              </div>
+              <div className="flex gap-2 text-[8px] text-gray-600">
+                <span>Open</span>
+                <span>→</span>
+                <span>Now</span>
+              </div>
+            </div>
+            <div style={{ height: 96 }}>
+              {isLoading ? (
+                <div className="h-full flex items-center justify-center">
+                  <div className="flex gap-1 items-end">
+                    {[...Array(8)].map((_, i) => (
+                      <div
+                        key={i}
+                        className="w-1 rounded-sm animate-pulse"
+                        style={{
+                          backgroundColor: chartColor,
+                          height: `${10 + (i % 4) * 8}px`,
+                          animationDelay: `${i * 0.08}s`,
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ) : chartPoints.length > 1 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <LineChart
+                    data={chartPoints}
+                    margin={{ top: 4, right: 4, left: -38, bottom: 0 }}
+                  >
+                    <XAxis
+                      dataKey="time"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 7, fill: "#4b5563" }}
+                      interval={Math.floor(chartPoints.length / 4)}
+                    />
+                    <YAxis
+                      domain={[minPrice * 0.9995, maxPrice * 1.0005]}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fontSize: 7, fill: "#4b5563" }}
+                      tickCount={3}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        background: "#0f172a",
+                        border: "1px solid #1e293b",
+                        borderRadius: "6px",
+                        fontSize: "10px",
+                        color: "#e2e8f0",
+                        padding: "3px 7px",
+                      }}
+                      formatter={(val: any) => [
+                        Number(val).toLocaleString(undefined, {
+                          minimumFractionDigits: 2,
+                        }),
+                        meta?.indexCode,
+                      ]}
+                      labelStyle={{ color: "#64748b", fontSize: "8px" }}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="price"
+                      stroke={chartColor}
+                      strokeWidth={1.5}
+                      dot={false}
+                      activeDot={{ r: 2.5, fill: chartColor }}
+                    />
+                  </LineChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-700 text-[9px]">
+                  Chart unavailable
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* YouTube Live TV Channels */}
+          {meta?.youtubeChannels && meta.youtubeChannels.length > 0 && (
+            <div className="px-4 pt-2 pb-2 border-b border-gray-800/60">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Tv2 className="h-3 w-3 text-red-400" />
+                <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
+                  Live TV
+                </span>
+              </div>
+              <div className="flex gap-2">
+                {meta.youtubeChannels.map((ch) => (
+                  <button
+                    key={ch.channelId}
+                    onClick={() => setActiveVideo(ch)}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-gray-900/80 border border-gray-800/60 hover:border-red-500/40 hover:bg-gray-900 transition-colors flex-1 min-w-0"
+                    data-testid={`button-yt-channel-${ch.name.toLowerCase().replace(/\s+/g, "-")}`}
+                  >
+                    <svg className="h-3 w-3 text-red-500 flex-shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                    </svg>
+                    <span className="text-[9px] text-gray-300 truncate">{ch.name}</span>
+                  </button>
                 ))}
               </div>
             </div>
-          ) : chartPoints.length > 1 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart
-                data={chartPoints}
-                margin={{ top: 4, right: 4, left: -38, bottom: 0 }}
-              >
-                <XAxis
-                  dataKey="time"
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 7, fill: "#4b5563" }}
-                  interval={Math.floor(chartPoints.length / 4)}
-                />
-                <YAxis
-                  domain={[minPrice * 0.9995, maxPrice * 1.0005]}
-                  axisLine={false}
-                  tickLine={false}
-                  tick={{ fontSize: 7, fill: "#4b5563" }}
-                  tickCount={3}
-                />
-                <Tooltip
-                  contentStyle={{
-                    background: "#0f172a",
-                    border: "1px solid #1e293b",
-                    borderRadius: "6px",
-                    fontSize: "10px",
-                    color: "#e2e8f0",
-                    padding: "3px 7px",
-                  }}
-                  formatter={(val: any) => [
-                    Number(val).toLocaleString(undefined, {
-                      minimumFractionDigits: 2,
-                    }),
-                    meta?.indexCode,
-                  ]}
-                  labelStyle={{ color: "#64748b", fontSize: "8px" }}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="price"
-                  stroke={chartColor}
-                  strokeWidth={1.5}
-                  dot={false}
-                  activeDot={{ r: 2.5, fill: chartColor }}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          ) : (
-            <div className="h-full flex items-center justify-center text-gray-700 text-[9px]">
-              Chart unavailable
-            </div>
           )}
-        </div>
-      </div>
 
-      {/* News — fixed max-height scroll */}
-      <div className="px-4 pt-2 pb-3">
-        <div className="flex items-center gap-1.5 mb-2">
-          <Globe className="h-3 w-3 text-blue-400" />
-          <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
-            Market News
-          </span>
-        </div>
-        {isLoading ? (
-          <div className="space-y-1.5">
-            {[...Array(3)].map((_, i) => (
+          {/* News — fixed max-height scroll */}
+          <div className="px-4 pt-2 pb-3">
+            <div className="flex items-center gap-1.5 mb-2">
+              <Globe className="h-3 w-3 text-blue-400" />
+              <span className="text-[9px] font-semibold text-gray-400 uppercase tracking-widest">
+                Market News
+              </span>
+            </div>
+            {isLoading ? (
+              <div className="space-y-1.5">
+                {[...Array(3)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="h-9 rounded-lg bg-gray-800/50 animate-pulse"
+                  />
+                ))}
+              </div>
+            ) : newsItems.length > 0 ? (
               <div
-                key={i}
-                className="h-9 rounded-lg bg-gray-800/50 animate-pulse"
-              />
-            ))}
-          </div>
-        ) : newsItems.length > 0 ? (
-          <div
-            className="space-y-1.5 overflow-y-auto"
-            style={{
-              maxHeight: 192,
-              scrollbarWidth: "thin",
-              scrollbarColor: "#1e293b transparent",
-            }}
-          >
-            {newsItems.map((item, i) => (
-              <a
-                key={i}
-                href={item.url || "#"}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-gray-900/60 border border-gray-800/40 hover:border-gray-700/60 hover:bg-gray-900 transition-colors block"
+                className="space-y-1.5 overflow-y-auto"
+                style={{
+                  maxHeight: 160,
+                  scrollbarWidth: "thin",
+                  scrollbarColor: "#1e293b transparent",
+                }}
               >
-                <div
-                  className="w-1 h-1 rounded-full flex-shrink-0 mt-[4px]"
-                  style={{ backgroundColor: chartColor }}
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] text-gray-200 leading-snug line-clamp-2">
-                    {item.title}
-                  </p>
-                  <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-[8px] text-gray-600 truncate">
-                      {item.source}
-                    </span>
-                    {item.publishedAt && (
-                      <>
-                        <span className="text-[8px] text-gray-700">·</span>
-                        <span className="text-[8px] text-gray-600 flex-shrink-0">
-                          {relativeTime(item.publishedAt)}
+                {newsItems.map((item, i) => (
+                  <a
+                    key={i}
+                    href={item.url || "#"}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-start gap-2 px-2.5 py-2 rounded-lg bg-gray-900/60 border border-gray-800/40 hover:border-gray-700/60 hover:bg-gray-900 transition-colors block"
+                  >
+                    <div
+                      className="w-1 h-1 rounded-full flex-shrink-0 mt-[4px]"
+                      style={{ backgroundColor: chartColor }}
+                    />
+                    <div className="min-w-0 flex-1">
+                      <p className="text-[10px] text-gray-200 leading-snug line-clamp-2">
+                        {item.title}
+                      </p>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-[8px] text-gray-600 truncate">
+                          {item.source}
                         </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </a>
-            ))}
+                        {item.publishedAt && (
+                          <>
+                            <span className="text-[8px] text-gray-700">·</span>
+                            <span className="text-[8px] text-gray-600 flex-shrink-0">
+                              {relativeTime(item.publishedAt)}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            ) : (
+              <div className="text-gray-700 text-[9px] text-center py-4">
+                No news available
+              </div>
+            )}
           </div>
-        ) : (
-          <div className="text-gray-700 text-[9px] text-center py-4">
-            No news available
-          </div>
-        )}
-      </div>
+        </>
+      )}
     </div>
   );
 }

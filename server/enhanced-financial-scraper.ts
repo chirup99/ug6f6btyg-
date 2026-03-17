@@ -411,7 +411,7 @@ export class EnhancedFinancialScraper {
       
       const stockData = await this.scrapeStockInfo(symbol);
       if (!stockData) {
-        return this.generateMockInsights(symbol);
+        return null;
       }
 
       // Fetch quarterly performance and annual financials in parallel
@@ -447,7 +447,7 @@ export class EnhancedFinancialScraper {
       return insights;
     } catch (error) {
       console.error('[ENHANCED-SCRAPER] Company insights error:', error);
-      return this.generateMockInsights(symbol);
+      return null;
     }
   }
 
@@ -814,102 +814,9 @@ export class EnhancedFinancialScraper {
       console.log(`[ENHANCED-SCRAPER] ⚠️ Tickertape failed for ${cleanSymbol}: ${tickertapeError.message}`);
     }
     
-    // FINAL FALLBACK: Generate data based on current stock price with realistic quarter-over-quarter changes
-    console.log(`[ENHANCED-SCRAPER] ⚠️ All web scraping failed for ${cleanSymbol}, using price-based estimation...`);
-    
-    // Helper function to convert calendar date to Indian fiscal year quarter format
-    const getIndianFYQuarterLabel = (date: Date): string => {
-      const month = date.getMonth(); // 0-11
-      const year = date.getFullYear();
-      
-      // Indian fiscal year: Apr-Mar
-      // Q1: Apr-Jun (months 3-5), Q2: Jul-Sep (months 6-8), Q3: Oct-Dec (months 9-11), Q4: Jan-Mar (months 0-2)
-      let quarterNum: number;
-      let fiscalYear: number;
-      
-      if (month >= 3 && month <= 5) {
-        // Apr-Jun = Q1, FY starts this year
-        quarterNum = 1;
-        fiscalYear = year + 1;
-      } else if (month >= 6 && month <= 8) {
-        // Jul-Sep = Q2
-        quarterNum = 2;
-        fiscalYear = year + 1;
-      } else if (month >= 9 && month <= 11) {
-        // Oct-Dec = Q3
-        quarterNum = 3;
-        fiscalYear = year + 1;
-      } else {
-        // Jan-Mar = Q4
-        quarterNum = 4;
-        fiscalYear = year;
-      }
-      
-      return `Q${quarterNum} FY${fiscalYear.toString().slice(-2)}`;
-    };
-    
-    try {
-      const stockData = await this.scrapeStockInfo(cleanSymbol);
-      if (stockData && stockData.price > 0) {
-        // Use actual price movement to estimate quarterly performance
-        const currentPrice = stockData.price;
-        const yearHigh = stockData.high52Week || currentPrice * 1.2;
-        const yearLow = stockData.low52Week || currentPrice * 0.8;
-        
-        // Calculate rough quarterly progression based on 52-week range
-        const priceRange = yearHigh - yearLow;
-        const currentPosition = (currentPrice - yearLow) / priceRange; // 0 to 1
-        
-        // Generate realistic quarterly values based on where the stock is in its 52-week range
-        for (let i = 3; i >= 0; i--) {
-          const quarterDate = new Date(currentDate);
-          quarterDate.setMonth(currentDate.getMonth() - (i * 3));
-          
-          // Use proper Indian fiscal year quarter format
-          const quarterLabel = getIndianFYQuarterLabel(quarterDate);
-          
-          // Simulate quarterly progression toward current price
-          const quarterPosition = currentPosition * (4 - i) / 4;
-          const quarterValue = yearLow + (priceRange * quarterPosition);
-          
-          const prevQuarterValue = i < 3 ? (yearLow + (priceRange * (currentPosition * (4 - i - 1) / 4))) : quarterValue * 0.95;
-          const changePercent = prevQuarterValue > 0 ? 
-            Math.round(((quarterValue - prevQuarterValue) / prevQuarterValue) * 100 * 100) / 100 : 0;
-          
-          quarters.push({
-            quarter: quarterLabel,
-            value: Math.round(quarterValue * 100) / 100,
-            change: changePercent,
-            changePercent: changePercent
-          });
-        }
-        
-        console.log(`[ENHANCED-SCRAPER] 📊 Generated price-based quarterly data for ${cleanSymbol}`);
-        return quarters;
-      }
-    } catch (priceError) {
-      console.log(`[ENHANCED-SCRAPER] ⚠️ Price-based estimation also failed`);
-    }
-    
-    // Ultimate fallback with clearly marked estimated data
-    console.log(`[ENHANCED-SCRAPER] ❌ All methods failed for ${cleanSymbol}, using minimal fallback`);
-    
-    for (let i = 3; i >= 0; i--) {
-      const quarterDate = new Date(currentDate);
-      quarterDate.setMonth(currentDate.getMonth() - (i * 3));
-      
-      // Use proper Indian fiscal year quarter format
-      const quarterLabel = getIndianFYQuarterLabel(quarterDate);
-      
-      quarters.push({
-        quarter: quarterLabel,
-        value: 0, // Return 0 to indicate no real data
-        change: 0,
-        changePercent: 0
-      });
-    }
-
-    return quarters;
+    // All web scraping failed — return empty array so only real data is shown
+    console.log(`[ENHANCED-SCRAPER] ⚠️ All web scraping failed for ${cleanSymbol}, returning no data`);
+    return [];
   }
 
   // Fetch Balance Sheet and Profit & Loss data from Screener.in

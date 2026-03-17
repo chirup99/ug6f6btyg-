@@ -17660,11 +17660,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                   <span className="text-sm font-semibold text-gray-200">
                                                     Full Report{fullReportSymbol ? ` — ${fullReportSymbol}` : ''}
                                                   </span>
-                                                  {fullReportData && (
-                                                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/20 text-blue-300">
-                                                      Multi-source
-                                                    </span>
-                                                  )}
                                                 </div>
                                                 <button
                                                   onClick={() => setShowFullReport(false)}
@@ -17676,8 +17671,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               {fullReportLoading ? (
                                                 <div className="flex flex-col items-center justify-center py-12">
                                                   <Loader2 className="h-6 w-6 animate-spin text-blue-400 mb-3" />
-                                                  <p className="text-xs text-gray-400">Fetching data from multiple sources…</p>
-                                                  <p className="text-[10px] text-gray-600 mt-1">Screener.in → Yahoo Finance → NSE India → Trendlyne → Moneycontrol</p>
+                                                  <p className="text-xs text-gray-400">Fetching latest financial data…</p>
                                                 </div>
                                               ) : fullReportData ? (() => {
                                                 const frTabs = [
@@ -17742,11 +17736,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                             {frHasTrend && (
                                                               <span className={`text-[10px] px-1.5 py-0.5 rounded ${frTrendUp ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
                                                                 {frTrendUp ? '↑ Uptrend' : '↓ Downtrend'}
-                                                              </span>
-                                                            )}
-                                                            {qd.length > 0 && (
-                                                              <span className="ml-auto text-[10px] text-gray-600">
-                                                                Source: {(qd[0] as any).source || 'multi-source'}
                                                               </span>
                                                             )}
                                                           </div>
@@ -17833,7 +17822,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                           <div className="flex items-center gap-2 mb-3">
                                                             <TrendingUp className="h-3.5 w-3.5 text-gray-400" />
                                                             <span className="text-xs font-semibold text-gray-300">Annual Profit & Loss</span>
-                                                            {af && <span className="ml-auto text-[10px] text-gray-600">Source: {af.source}</span>}
                                                           </div>
                                                           {af?.profitLoss?.length > 0 ? (
                                                             <div className="overflow-x-auto rounded-lg border border-gray-700/40">
@@ -17876,7 +17864,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                           <div className="flex items-center gap-2 mb-3">
                                                             <BarChart className="h-3.5 w-3.5 text-gray-400" />
                                                             <span className="text-xs font-semibold text-gray-300">Annual Balance Sheet</span>
-                                                            {af && <span className="ml-auto text-[10px] text-gray-600">Source: {af.source}</span>}
                                                           </div>
                                                           {af?.balanceSheet?.length > 0 ? (
                                                             <div className="overflow-x-auto rounded-lg border border-gray-700/40">
@@ -17919,7 +17906,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                           <div className="flex items-center gap-2 mb-3">
                                                             <Sparkles className="h-3.5 w-3.5 text-yellow-400" />
                                                             <span className="text-xs font-semibold text-gray-300">Key Metrics</span>
-                                                            {km && <span className="ml-auto text-[10px] text-gray-600">Source: {km.source}</span>}
                                                           </div>
                                                           {km ? (
                                                             <div className="grid grid-cols-2 gap-2">
@@ -18030,7 +18016,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                                 <span className="text-sm font-semibold text-gray-200">AI Fundamental Analysis</span>
                                                                 <span className="text-[10px] text-gray-600">— {fullReportSymbol}</span>
                                                               </div>
-                                                              <span className="text-[10px] text-gray-600">Multi-source · Real data only</span>
                                                             </div>
 
                                                             {/* Scorecard row */}
@@ -18144,10 +18129,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                               </p>
                                                             </div>
 
-                                                            {/* Disclaimer + source */}
+                                                            {/* Disclaimer */}
                                                             <div className="flex items-start gap-1.5 pt-1">
                                                               <span className="text-[9px] text-gray-700 leading-relaxed">
-                                                                ℹ️ Analysis generated from real financial data via Screener.in → Yahoo Finance2 → NSE India API → Trendlyne → Moneycontrol. For informational purposes only — not investment advice. Always consult a SEBI-registered advisor.
+                                                                ℹ️ For informational purposes only — not investment advice. Always consult a SEBI-registered advisor before making investment decisions.
                                                               </span>
                                                             </div>
                                                           </div>

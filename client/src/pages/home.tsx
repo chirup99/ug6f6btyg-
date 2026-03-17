@@ -16139,7 +16139,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       <>
                       <Bot className="h-4 w-4 text-blue-400" />
                       <h3 className="text-base md:text-lg font-medium text-gray-100">
-                        AI Assistant
+                        Full Report
                                       </h3>
                                       </>
                                     )}
@@ -18641,10 +18641,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       // Pattern: "## Company (SYM)\n\n**Current Price:**…\n---\n*Data from:…*"
                                       if (processedResults && typeof processedResults === 'string') {
                                         processedResults = processedResults
+                                          // Remove "Analysis for:" query echo lines
+                                          .replace(/^\*\*Analysis for:\*\*[^\n]*/gm, '')
                                           // Remove full stock data blocks (## header → *Data from:* line)
                                           .replace(/##\s[^\n]+\n[\s\S]*?\*Data from:[^\n]*\*[^\n]*/g, '')
                                           // Remove any orphaned *Data from:* attribution lines
                                           .replace(/\*Data from:[^\n]*\*/g, '')
+                                          // Remove --- **Sources:** footer lines
+                                          .replace(/^---\s*\*\*Sources:\*\*[^\n]*/gm, '')
+                                          // Remove standalone --- separator lines
+                                          .replace(/^---+\s*$/gm, '')
                                           // Remove lines containing only commas / whitespace
                                           .replace(/^[,\s]+$/gm, '')
                                           // Collapse 3+ consecutive blank lines to max 2

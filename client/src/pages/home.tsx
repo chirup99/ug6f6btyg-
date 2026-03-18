@@ -17620,20 +17620,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                             <span className="w-2 h-2 rounded-full bg-red-500"></span> Negative Quarter
                                                           </span>
                                                         </div>
-                                                        {/* View Full Report — always visible */}
-                                                        <div className="mt-2 flex justify-end">
-                                                          <button
-                                                            onClick={() => {
-                                                              const symbol = searchResultsNewsSymbol || selectedWatchlistSymbol;
-                                                              if (symbol) handleViewFullReport(symbol);
-                                                            }}
-                                                            className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 px-3 py-1.5 rounded-lg bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 transition-colors"
-                                                            data-testid="button-view-full-report"
-                                                          >
-                                                            <FileText className="h-3 w-3" />
-                                                            View Full Report
-                                                          </button>
-                                                        </div>
                                                         {/* PDF Links for Deep Analysis */}
                                                         {quarterlyData.some((q: any) => q.pdf_url) && (
                                                           <div className="mt-3 pt-3 border-t border-gray-700">

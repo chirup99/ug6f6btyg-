@@ -183,6 +183,19 @@ function RegionDialog({
   const change = market?.change ?? 0;
   const chartColor = isUp ? "#10b981" : "#ef4444";
   const [activeVideo, setActiveVideo] = useState<YoutubeChannel | null>(null);
+  const [liveVideoId, setLiveVideoId] = useState<string | null>(null);
+  const [loadingLive, setLoadingLive] = useState(false);
+
+  useEffect(() => {
+    if (!activeVideo) { setLiveVideoId(null); return; }
+    setLiveVideoId(null);
+    setLoadingLive(true);
+    fetch(`/api/youtube-live-id?channelId=${encodeURIComponent(activeVideo.channelId)}`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(d => setLiveVideoId(d.videoId || null))
+      .catch(() => setLiveVideoId(null))
+      .finally(() => setLoadingLive(false));
+  }, [activeVideo]);
 
   const { data, isLoading } = useQuery<RegionMarketData>({
     queryKey: ["/api/region-market-data", region],
@@ -266,12 +279,24 @@ function RegionDialog({
       {activeVideo ? (
         /* YouTube Video Player */
         <div className="relative bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
-          <iframe
-            src={`https://www.youtube.com/embed/live_stream?channel=${activeVideo.channelId}&autoplay=1&mute=0`}
-            className="absolute top-0 left-0 w-full h-full"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
+          {loadingLive ? (
+            <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center gap-2">
+              <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+              <span className="text-[10px] text-gray-500">Finding live stream…</span>
+            </div>
+          ) : (
+            <iframe
+              key={liveVideoId ?? activeVideo.channelId}
+              src={
+                liveVideoId
+                  ? `https://www.youtube.com/embed/${liveVideoId}?autoplay=1&mute=0`
+                  : `https://www.youtube.com/embed/live_stream?channel=${activeVideo.channelId}&autoplay=1&mute=0`
+              }
+              className="absolute top-0 left-0 w-full h-full"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+              allowFullScreen
+            />
+          )}
         </div>
       ) : (
         <>

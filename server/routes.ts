@@ -7661,6 +7661,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // --- YouTube live video ID resolver ---
+  app.get('/api/youtube-live-id', async (req: Request, res: Response) => {
+    const channelId = ((req.query.channelId as string) || '').trim();
+    if (!channelId) return res.status(400).json({ error: 'channelId required' });
+    try {
+      const ytRes = await fetch(`https://www.youtube.com/channel/${channelId}/live`, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+        signal: AbortSignal.timeout(8000),
+      });
+      const html = await ytRes.text();
+      const patterns = [
+        /"videoId":"([a-zA-Z0-9_-]{11})"/,
+        /watch\?v=([a-zA-Z0-9_-]{11})/,
+        /"currentVideoId":"([a-zA-Z0-9_-]{11})"/,
+      ];
+      for (const pattern of patterns) {
+        const m = html.match(pattern);
+        if (m) return res.json({ videoId: m[1] });
+      }
+      return res.json({ videoId: null });
+    } catch (err) {
+      console.warn('[YOUTUBE-LIVE] fetch failed:', err);
+      return res.json({ videoId: null });
+    }
+  });
+
   app.get('/api/stock-news/:symbol', async (req, res) => {
     const { symbol } = req.params;
 

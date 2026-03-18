@@ -278,26 +278,62 @@ function RegionDialog({
 
       {activeVideo ? (
         /* YouTube Video Player */
-        <div className="relative bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
-          {loadingLive ? (
-            <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center gap-2">
-              <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
-              <span className="text-[10px] text-gray-500">Finding live stream…</span>
+        <>
+          <div className="relative bg-black" style={{ paddingBottom: "56.25%", height: 0 }}>
+            {loadingLive ? (
+              <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center gap-2">
+                <div className="w-6 h-6 border-2 border-red-500 border-t-transparent rounded-full animate-spin" />
+                <span className="text-[10px] text-gray-500">Finding live stream…</span>
+              </div>
+            ) : liveVideoId ? (
+              <iframe
+                key={liveVideoId}
+                src={`https://www.youtube.com/embed/${liveVideoId}?autoplay=1&mute=0&rel=0`}
+                className="absolute top-0 left-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              />
+            ) : (
+              /* Embedding blocked or no live stream — show direct link */
+              <div className="absolute top-0 left-0 w-full h-full flex flex-col items-center justify-center gap-3 px-6">
+                <div className="flex items-center gap-2">
+                  <svg className="h-8 w-8 text-red-500" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  <span className="text-white text-[13px] font-semibold">{activeVideo.name}</span>
+                </div>
+                <p className="text-gray-500 text-[10px] text-center">This channel's live stream cannot be embedded. Watch it directly on YouTube.</p>
+                <a
+                  href={`${activeVideo.channelUrl}/live`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg bg-red-600 hover:bg-red-500 text-white text-[11px] font-semibold transition-colors"
+                >
+                  <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                  </svg>
+                  Watch Live on YouTube
+                </a>
+              </div>
+            )}
+          </div>
+          {/* Always show a YouTube link below when embed is showing */}
+          {!loadingLive && liveVideoId && (
+            <div className="flex justify-end px-3 py-1.5 bg-black border-t border-gray-900">
+              <a
+                href={`${activeVideo.channelUrl}/live`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-1 text-[9px] text-gray-600 hover:text-red-400 transition-colors"
+              >
+                <svg className="h-2.5 w-2.5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/>
+                </svg>
+                Open on YouTube
+              </a>
             </div>
-          ) : (
-            <iframe
-              key={liveVideoId ?? activeVideo.channelId}
-              src={
-                liveVideoId
-                  ? `https://www.youtube.com/embed/${liveVideoId}?autoplay=1&mute=0`
-                  : `https://www.youtube.com/embed/live_stream?channel=${activeVideo.channelId}&autoplay=1&mute=0`
-              }
-              className="absolute top-0 left-0 w-full h-full"
-              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-              allowFullScreen
-            />
           )}
-        </div>
+        </>
       ) : (
         <>
           {/* Chart — fixed height */}

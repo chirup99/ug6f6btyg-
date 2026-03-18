@@ -20188,7 +20188,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         )}
                         {/* Mobile Layout: 3 horizontal cards + swipeable below */}
                         {!searchResults && (
-                        <div className="md:hidden mt-6">
+                        <div className="md:hidden mt-2">
                           {/* Three cards in a row */}
                           <div className="grid grid-cols-3 gap-3 px-4 mb-3">
                             {/* Social Feed Card */}

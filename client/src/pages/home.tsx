@@ -16017,7 +16017,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               className="w-full h-9 rounded-2xl bg-gray-800/70 border border-gray-700/60 hover:border-gray-500 hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 px-3 text-left group mt-[0px] mb-[0px] pl-[12px] pr-[12px] pt-[20px] pb-[20px]"
                             >
                               {/* Live dot */}
-                              <span className="relative flex-shrink-0 flex h-2 w-2">
+                              <span className="relative flex-shrink-0 hidden md:flex h-2 w-2">
                                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
                                 <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
                               </span>

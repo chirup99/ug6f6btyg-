@@ -15911,7 +15911,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     e.stopPropagation();
                     setIsNavOpen(!isNavOpen);
                   }}
-                  className="md:hidden fixed top-4 right-4 z-50 w-10 h-10 flex flex-col items-center justify-center gap-1.5 bg-transparent hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-all duration-300"
+                  className={`${isSearchActive && searchResults ? 'hidden' : 'md:hidden'} fixed top-4 right-4 z-50 w-10 h-10 flex flex-col items-center justify-center gap-1.5 bg-transparent hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-all duration-300`}
                   data-testid="button-nav-toggle"
                 >
                   <div

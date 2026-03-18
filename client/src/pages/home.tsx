@@ -19762,68 +19762,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       <div className={`${searchResults ? 'bg-transparent hidden md:block' : 'bg-white'} md:pt-3 md:pb-3 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mb-[14px] pt-[22px] pb-[10px] ml-[0px] mr-[0px] pl-4 pr-4 mt-[15px]`}>
                         {/* Mobile Search Bar - Fully visible at top */}
                         <div className="md:hidden absolute -top-3 left-4 right-4 z-50">
-                          <div className="relative">
-                            <Input
-                              placeholder="Search stocks, technical analysis, social feed..."
-                              value={searchQuery}
-                              onFocus={() => setIsSearchActive(true)}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setSearchQuery(value);
-                                setIsSearchActive(value.length > 0);
-                              }}
-                              onKeyPress={async (e) => {
-                                if (e.key === "Enter" && searchQuery.trim()) {
-                                  await handleSearch();
-                                }
-                              }}
-                              className="w-full h-12 bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400 pr-24 text-xs rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-lg mt-[0px] mb-[0px]"
-                            />
-                            {searchQuery && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="absolute right-14 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 h-8 w-8 p-0"
-                                onClick={() => {
-                                  setSearchQuery("");
-                                  setIsSearchActive(false);
-                                  setSearchResults("");
-                                }}
-                                data-testid="button-clear-search"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              className="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-700 hover:bg-gray-600 text-gray-300"
-                              onClick={() => handleSearch()}
-                              disabled={!searchQuery.trim() || isSearchLoading}
-                            >
-                              {isSearchLoading ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <Bot className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-
-                          {/* Mobile backdrop - tap outside to close search */}
-                          {isSearchActive && !searchResults && (
-                            <div
-                              className="md:hidden fixed inset-0 z-40"
-                              onClick={() => {
-                                setSearchQuery("");
-                                setIsSearchActive(false);
-                                setSearchResults("");
-                              }}
-                            />
-                          )}
-
-                          {/* Mobile Quick Suggestion Buttons - Same as desktop, horizontal scroll when search is active */}
-                          {isSearchActive && (
-                            <div
-                              className="mt-2 flex gap-2 overflow-x-auto scrollbar-hide pb-2 relative z-50"
+                          {/* Mobile Quick Action Flash Bar */}
+                          <div
+                            className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 relative z-50"
                               style={{
                                 scrollbarWidth: "none",
                                 msOverflowStyle: "none",
@@ -19934,7 +19875,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 </div>
                               </Button>
                             </div>
-                          )}
 
                           {/* Mobile AI Search Results - suppressed for all tabs; desktop layout is used on all screen sizes */}
                           {false && isSearchActive && searchResults && (

@@ -2499,6 +2499,7 @@ export default function Home() {
   const [searchResults, setSearchResults] = useState("");
   const [isSearchLoading, setIsSearchLoading] = useState(false);
   const [showFloatingClose, setShowFloatingClose] = useState(false);
+  useEffect(() => { setShowFloatingClose(false); }, [searchResults]);
   const [isSearchInputActive, setIsSearchInputActive] = useState(false);
   const [isReportLoading, setIsReportLoading] = useState(false);
   const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);

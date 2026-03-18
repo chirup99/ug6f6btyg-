@@ -20190,7 +20190,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         {!searchResults && (
                         <div className="md:hidden mt-2">
                           {/* Three cards in a row */}
-                          <div className="grid grid-cols-3 gap-3 px-4 mb-3">
+                          <div className="grid grid-cols-3 gap-3 mb-3">
                             {/* Social Feed Card */}
                             <div
                               className="bg-blue-500 rounded-xl overflow-hidden h-20 relative cursor-pointer active:scale-95 transition-transform"

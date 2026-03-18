@@ -498,11 +498,30 @@ input[type="range"].slider-thumb-purple::-moz-range-track {
   scrollbar-width: none;
 }
 
-/* Carousel utilities */
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+/* Force dark scrollbars inside specific dark-background areas (flashbar, result tab, worldmap dialog) */
+.dark-scrollbar-area,
+.dark-scrollbar-area .overflow-y-auto,
+.dark-scrollbar-area .overflow-x-auto {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(75, 85, 99) rgb(31, 41, 55);
 }
-.no-scrollbar {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
+
+.dark-scrollbar-area::-webkit-scrollbar-track,
+.dark-scrollbar-area .overflow-y-auto::-webkit-scrollbar-track,
+.dark-scrollbar-area .overflow-x-auto::-webkit-scrollbar-track {
+  background: rgb(31, 41, 55) !important;
+  border-radius: 4px;
+}
+
+.dark-scrollbar-area::-webkit-scrollbar-thumb,
+.dark-scrollbar-area .overflow-y-auto::-webkit-scrollbar-thumb,
+.dark-scrollbar-area .overflow-x-auto::-webkit-scrollbar-thumb {
+  background: rgb(75, 85, 99) !important;
+  border-radius: 4px;
+}
+
+.dark-scrollbar-area::-webkit-scrollbar-thumb:hover,
+.dark-scrollbar-area .overflow-y-auto::-webkit-scrollbar-thumb:hover,
+.dark-scrollbar-area .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: rgb(107, 114, 128) !important;
 }

@@ -1543,7 +1543,7 @@ export function WorldMap() {
           if (!open) setSelectedRegion(null);
         }}
       >
-        <DialogContent className="sm:max-w-[380px] bg-gray-950 border-gray-800 text-white p-0 overflow-hidden rounded-2xl">
+        <DialogContent className="dark-scrollbar-area sm:max-w-[380px] bg-gray-950 border-gray-800 text-white p-0 overflow-hidden rounded-2xl">
           {selectedRegion && (
             <RegionDialog
               region={selectedRegion}

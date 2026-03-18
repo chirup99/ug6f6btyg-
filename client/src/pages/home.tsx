@@ -15959,7 +15959,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   </div>
 
                   {/* Blue Section: Expands to 100% when search results show, fixed height otherwise */}
-                  <div className={`w-full bg-blue-900 flex flex-col items-center justify-start md:py-3 py-0 relative overflow-y-auto ${
+                  <div className={`dark-scrollbar-area w-full bg-blue-900 flex flex-col items-center justify-start md:py-3 py-0 relative overflow-y-auto ${
                     searchResults ? "h-screen px-3 md:px-4" : "h-[65vh] px-0 md:px-4"
                   }`}>
                     <div className="max-w-4xl w-full md:space-y-2">

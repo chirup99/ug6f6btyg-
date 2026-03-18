@@ -525,6 +525,8 @@ class AngelOneAPI {
         }));
       }
       
+      // Log the actual API response when no data returned — crucial for debugging
+      console.warn(`⚠️ [getCandleData] No data returned. status=${response.status} errorcode=${response.errorcode} message=${response.message} data=${JSON.stringify(response.data)?.substring(0, 200)}`);
       this.trackRequest(false, Date.now() - startTime);
       return [];
     } catch (error: any) {

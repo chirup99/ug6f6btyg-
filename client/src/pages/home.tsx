@@ -9321,6 +9321,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     return () => clearTimeout(timer);
   }, [angelOneServerConnected, selectedJournalSymbol, activeTab, fetchJournalChartData]);
 
+  // ✅ SAFETY-NET: If chart is still empty 3s after journal tab opens, do one final retry.
+  // This handles the race-condition where the 200ms/500ms/800ms fetches all return empty
+  // because the Angel One historical API hasn't fully settled at startup. Clicking the
+  // reload button after this point always works because the API is ready by then — this
+  // effect replicates that delayed-ready behaviour automatically.
+  useEffect(() => {
+    if (activeTab !== 'journal' || !selectedJournalSymbol) return;
+    const timer = setTimeout(() => {
+      if (!journalChartDataRef.current || journalChartDataRef.current.length === 0) {
+        console.log(`🔄 [SAFETY-NET] Chart still empty 3s after tab open — final auto-retry for ${selectedJournalSymbol}`);
+        fetchJournalChartData();
+      }
+    }, 3000);
+    return () => clearTimeout(timer);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeTab, selectedJournalSymbol]);
+
   const fetchHeatmapChartData = useCallback(async (symbol: string, date: string) => {
     try {
       console.log(`🗓️ [HEATMAP FETCH] Starting fetch for ${symbol} on ${date}`);

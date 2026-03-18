@@ -1493,7 +1493,7 @@ export function WorldMap() {
 
       {/* Trading hours indicator with live market data */}
       <div
-        className={`flex justify-center items-center gap-4 py-1 w-full flex-shrink-0 transition-opacity duration-300 ${isDrawing ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+        className={`flex flex-wrap justify-center items-center gap-x-3 gap-y-1 py-1.5 w-full flex-shrink-0 transition-opacity duration-300 ${isDrawing ? "opacity-0 pointer-events-none" : "opacity-100"}`}
         style={{ backgroundColor: isDarkMode ? "#1a1a1a" : "#e3f2fd" }}
       >
         {marketRegions.map((region) => {

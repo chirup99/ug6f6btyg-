@@ -2498,6 +2498,15 @@ export default function Home() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchResults, setSearchResults] = useState("");
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [showFloatingClose, setShowFloatingClose] = useState(false);
+  useEffect(() => {
+    if (searchResults) {
+      const t = setTimeout(() => setShowFloatingClose(true), 1200);
+      return () => clearTimeout(t);
+    } else {
+      setShowFloatingClose(false);
+    }
+  }, [searchResults]);
   const [isSearchInputActive, setIsSearchInputActive] = useState(false);
   const [isReportLoading, setIsReportLoading] = useState(false);
   const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
@@ -15983,7 +15992,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   >
                     <div className="max-w-4xl w-full md:space-y-2">
                       {/* Floating close button - mobile only, shown after tab loads */}
-                      {isSearchActive && searchResults && !isSearchLoading && (
+                      {isSearchActive && searchResults && showFloatingClose && (
                         <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto">
                           <button
                             onClick={() => { setSearchResults(""); setIsSearchActive(false); setSearchQuery(""); }}

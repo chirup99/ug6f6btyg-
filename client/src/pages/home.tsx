@@ -19794,15 +19794,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 }}
                                 className="w-full h-10 rounded-2xl bg-gray-800 border border-gray-700 hover:border-gray-500 hover:bg-gray-900 transition-all duration-200 flex items-center gap-2 px-3 text-left group"
                               >
-                                {/* Live dot */}
-                                <span className="relative flex-shrink-0 flex h-2 w-2">
-                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
-                                </span>
-
-                                {/* Category badge */}
-                                <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.colorClass} uppercase tracking-wide`}>
-                                  {item.category}
+                                {/* Category icon */}
+                                <span className={`flex-shrink-0 flex items-center justify-center w-5 h-5 rounded-full border ${item.colorClass}`}>
+                                  {item.category === 'News' && <Newspaper className="w-2.5 h-2.5" />}
+                                  {item.category === 'Watchlist' && <Eye className="w-2.5 h-2.5" />}
+                                  {item.category === 'Social' && <MessageCircle className="w-2.5 h-2.5" />}
+                                  {item.category === 'Journal' && <FileText className="w-2.5 h-2.5" />}
+                                  {(item.category === 'Challenge' || item.category === 'Trade') && <Trophy className="w-2.5 h-2.5" />}
                                 </span>
 
                                 {/* Cycling content */}

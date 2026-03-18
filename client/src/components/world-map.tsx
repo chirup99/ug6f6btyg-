@@ -66,7 +66,7 @@ const REGION_META: Record<
       "Treasury yields dip as inflation data cools slightly",
     ],
     youtubeChannels: [
-      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@BloombergTV" },
+      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@markets" },
       { name: "CNBC", channelId: "UCvJJ_dzjViJCoLf5uKUTwoA", channelUrl: "https://www.youtube.com/@CNBCtelevision" },
       { name: "CNN", channelId: "UCupvZG-5ko_eiXAX-wkdbsQ", channelUrl: "https://www.youtube.com/@CNN" },
     ],
@@ -98,8 +98,8 @@ const REGION_META: Record<
       "SEBI introduces new derivative risk framework",
     ],
     youtubeChannels: [
+      { name: "CNBC TV18", channelId: "UCQ8TUkc6qs8mGKKNjOmRTXw", channelUrl: "https://www.youtube.com/@CNBCtv18" },
       { name: "NDTV", channelId: "UCZFMm1mMw0F81Z37aaEzTUA", channelUrl: "https://www.youtube.com/@ndtv" },
-      { name: "Republic TV", channelId: "UCrFiAQI5BMOVkMoWL9nDrCg", channelUrl: "https://www.youtube.com/@RepublicTV" },
       { name: "Times Now", channelId: "UC6qPDE2cFcMhrQVSTaFeTmg", channelUrl: "https://www.youtube.com/@TimesNow" },
     ],
   },
@@ -115,7 +115,7 @@ const REGION_META: Record<
     ],
     youtubeChannels: [
       { name: "Al Jazeera", channelId: "UCNye-wNBqNL5ZzHSJdpkDXA", channelUrl: "https://www.youtube.com/@AlJazeeraEnglish" },
-      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@BloombergTV" },
+      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@markets" },
       { name: "SCMP", channelId: "UC7ATgCH0-h0sC8CZAFInGgg", channelUrl: "https://www.youtube.com/@SouthChinaMorningPost" },
     ],
   },
@@ -190,7 +190,7 @@ function RegionDialog({
     if (!activeVideo) { setLiveVideoId(null); return; }
     setLiveVideoId(null);
     setLoadingLive(true);
-    fetch(`/api/youtube-live-id?channelId=${encodeURIComponent(activeVideo.channelId)}`, { credentials: 'include' })
+    fetch(`/api/youtube-live-id?channelUrl=${encodeURIComponent(activeVideo.channelUrl)}`, { credentials: 'include' })
       .then(r => r.json())
       .then(d => setLiveVideoId(d.videoId || null))
       .catch(() => setLiveVideoId(null))

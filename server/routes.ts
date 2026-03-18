@@ -7663,10 +7663,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // --- YouTube live video ID resolver ---
   app.get('/api/youtube-live-id', async (req: Request, res: Response) => {
+    const channelUrl = ((req.query.channelUrl as string) || '').trim();
     const channelId = ((req.query.channelId as string) || '').trim();
-    if (!channelId) return res.status(400).json({ error: 'channelId required' });
+    const livePageUrl = channelUrl
+      ? `${channelUrl}/live`
+      : channelId
+      ? `https://www.youtube.com/channel/${channelId}/live`
+      : null;
+    if (!livePageUrl) return res.status(400).json({ error: 'channelUrl or channelId required' });
     try {
-      const ytRes = await fetch(`https://www.youtube.com/channel/${channelId}/live`, {
+      const ytRes = await fetch(livePageUrl, {
         headers: {
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
           'Accept-Language': 'en-US,en;q=0.9',

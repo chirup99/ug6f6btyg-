@@ -19759,7 +19759,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
 
                       {/* Trading Tools Section - White container with centered cards */}
-                      <div className={`${searchResults ? 'bg-transparent hidden md:block' : 'bg-white'} md:pt-3 md:pb-3 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mb-[14px] pt-[52px] pb-[10px] ml-[0px] mr-[0px] pl-4 pr-4 mt-[20px]`}>
+                      <div className={`${searchResults ? 'bg-transparent hidden md:block' : 'bg-white'} md:pt-3 md:pb-3 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mb-[14px] pt-[96px] pb-[10px] ml-[0px] mr-[0px] pl-4 pr-4 mt-[20px]`}>
                         {/* Mobile Flashbar - replaces search bar */}
                         <div className="md:hidden absolute -top-3 left-4 right-4 z-50">
                           {/* Flashbar cycling highlights */}
@@ -19792,7 +19792,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     generateJournalAIReport();
                                   }
                                 }}
-                                className="w-full h-10 rounded-2xl bg-gray-800/70 border border-gray-700/60 hover:border-gray-500 hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 px-3 text-left group"
+                                className="w-full h-10 rounded-2xl bg-gray-800 border border-gray-700 hover:border-gray-500 hover:bg-gray-900 transition-all duration-200 flex items-center gap-2 px-3 text-left group"
                               >
                                 {/* Live dot */}
                                 <span className="relative flex-shrink-0 flex h-2 w-2">
@@ -19867,6 +19867,113 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             );
                           })()}
 
+                          {/* Mobile Quick Action Buttons - Always visible below flashbar */}
+                          <div
+                            className="mt-2 flex gap-2 overflow-x-auto scrollbar-hide pb-2 relative z-50"
+                            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                          >
+                            <Button
+                              variant="secondary"
+                              className="bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                              onClick={() => {
+                                const userId = localStorage.getItem('currentUserId');
+                                const userEmail = localStorage.getItem('currentUserEmail');
+                                if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
+                                  setLocation('/login');
+                                  return;
+                                }
+                                setIsWatchlistLoading(true);
+                                setIsSearchActive(true);
+                                setSearchResults("[CHART:WATCHLIST]");
+                                setIsWatchlistOpen(true);
+                                if (watchlistSymbols.length > 0 && !selectedWatchlistSymbol) {
+                                  const firstStock = watchlistSymbols[0];
+                                  setSelectedWatchlistSymbol(firstStock.symbol);
+                                  setSearchResultsNewsSymbol(firstStock.symbol);
+                                }
+                                setTimeout(() => setIsWatchlistLoading(false), 300);
+                              }}
+                              data-testid="button-watchlist-mobile"
+                            >
+                              <div className="flex items-center justify-center gap-1">
+                                {isWatchlistLoading ? (
+                                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <Eye className="h-3 w-3" />
+                                )}
+                                <span>Watchlist</span>
+                              </div>
+                            </Button>
+
+                            <Button
+                              variant="secondary"
+                              className="bg-green-600 hover:bg-green-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                              onClick={() => {
+                                setIsSearchActive(true);
+                                setSearchResults("[CHART:MARKET_NEWS]");
+                                fetchNifty50News();
+                              }}
+                            >
+                              <div className="flex items-center gap-1">
+                                <Newspaper className="h-3 w-3" />
+                                <span>Market News</span>
+                              </div>
+                            </Button>
+
+                            <Button
+                              variant="secondary"
+                              className="bg-pink-600 hover:bg-pink-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                              onClick={() =>
+                                handleSuggestionClick("Social feed community discussions and trending topics")
+                              }
+                            >
+                              <div className="flex items-center gap-1">
+                                <User className="h-3 w-3" />
+                                <span>Social Feed</span>
+                              </div>
+                            </Button>
+
+                            <Button
+                              variant="secondary"
+                              className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                              onClick={() => {
+                                const userId = localStorage.getItem('currentUserId');
+                                const userEmail = localStorage.getItem('currentUserEmail');
+                                if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
+                                  setLocation('/login');
+                                  return;
+                                }
+                                generateJournalAIReport();
+                              }}
+                              data-testid="button-trading-journal-mobile"
+                            >
+                              <div className="flex items-center gap-1">
+                                <FileText className="h-3 w-3" />
+                                <span>Trading Journal</span>
+                              </div>
+                            </Button>
+
+                            <Button
+                              variant="secondary"
+                              className="bg-orange-600 hover:bg-orange-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                              onClick={() => {
+                                const userId = localStorage.getItem('currentUserId');
+                                const userEmail = localStorage.getItem('currentUserEmail');
+                                if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
+                                  setLocation('/login');
+                                  return;
+                                }
+                                setIsSearchActive(true);
+                                setSearchResults("[CHART:TRADE]");
+                              }}
+                              data-testid="button-trade-challenge-mobile"
+                            >
+                              <div className="flex items-center gap-1">
+                                <Trophy className="h-3 w-3" />
+                                <span>Trade Challenge</span>
+                              </div>
+                            </Button>
+                          </div>
 
                           {/* Mobile AI Search Results - suppressed for all tabs; desktop layout is used on all screen sizes */}
                           {false && isSearchActive && searchResults && (

@@ -15984,7 +15984,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     
 
                       {/* Magic Flash Bar - Auto-cycling highlights from all tabs */}
-                      <div className="relative mx-auto md:block hidden max-w-4xl">
+                      <div className="relative mx-auto block max-w-4xl">
                         {(() => {
                           const item = flashBarItems[flashBarIndex] || flashBarItems[0];
                           if (!item) return null;
@@ -16094,6 +16094,76 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             </button>
                           );
                         })()}
+                      </div>
+
+                      {/* Mobile Quick Action Buttons - shown below flashbar */}
+                      <div className="md:hidden flex gap-2 overflow-x-auto scrollbar-hide pb-1 px-0" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                        <Button
+                          variant="secondary"
+                          className="bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                          onClick={() => {
+                            const userId = localStorage.getItem('currentUserId');
+                            const userEmail = localStorage.getItem('currentUserEmail');
+                            if (!userId || !userEmail || userId === 'null' || userEmail === 'null') { setLocation('/login'); return; }
+                            setIsWatchlistLoading(true);
+                            setIsSearchActive(true);
+                            setSearchResults("[CHART:WATCHLIST]");
+                            setIsWatchlistOpen(true);
+                            if (watchlistSymbols.length > 0 && !selectedWatchlistSymbol) {
+                              const firstStock = watchlistSymbols[0];
+                              setSelectedWatchlistSymbol(firstStock.symbol);
+                              setSearchResultsNewsSymbol(firstStock.symbol);
+                            }
+                            setTimeout(() => setIsWatchlistLoading(false), 300);
+                          }}
+                          data-testid="button-watchlist-mobile"
+                        >
+                          <div className="flex items-center gap-1">
+                            {isWatchlistLoading ? <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Eye className="h-3 w-3" />}
+                            <span>Watchlist</span>
+                          </div>
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          className="bg-green-600 hover:bg-green-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                          onClick={() => { setIsSearchActive(true); setSearchResults("[CHART:MARKET_NEWS]"); fetchNifty50News(); }}
+                        >
+                          <div className="flex items-center gap-1"><Newspaper className="h-3 w-3" /><span>Market News</span></div>
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          className="bg-pink-600 hover:bg-pink-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                          onClick={() => handleSuggestionClick("Social feed community discussions and trending topics")}
+                        >
+                          <div className="flex items-center gap-1"><User className="h-3 w-3" /><span>Social Feed</span></div>
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                          onClick={() => {
+                            const userId = localStorage.getItem('currentUserId');
+                            const userEmail = localStorage.getItem('currentUserEmail');
+                            if (!userId || !userEmail || userId === 'null' || userEmail === 'null') { setLocation('/login'); return; }
+                            generateJournalAIReport();
+                          }}
+                          data-testid="button-trading-journal-mobile"
+                        >
+                          <div className="flex items-center gap-1"><FileText className="h-3 w-3" /><span>Trading Journal</span></div>
+                        </Button>
+                        <Button
+                          variant="secondary"
+                          className="bg-orange-600 hover:bg-orange-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                          onClick={() => {
+                            const userId = localStorage.getItem('currentUserId');
+                            const userEmail = localStorage.getItem('currentUserEmail');
+                            if (!userId || !userEmail || userId === 'null' || userEmail === 'null') { setLocation('/login'); return; }
+                            setIsSearchActive(true);
+                            setSearchResults("[CHART:TRADE]");
+                          }}
+                          data-testid="button-trade-challenge-mobile"
+                        >
+                          <div className="flex items-center gap-1"><Trophy className="h-3 w-3" /><span>Trade Challenge</span></div>
+                        </Button>
                       </div>
 
         {/* Feedback / Request Feature Dialog */}
@@ -19761,15 +19831,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       {/* Trading Tools Section - White container with centered cards */}
                       <div className={`${searchResults ? 'bg-transparent hidden md:block' : 'bg-white'} md:pt-3 md:pb-3 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mb-[14px] pt-[22px] pb-[10px] ml-[0px] mr-[0px] pl-4 pr-4 mt-[15px]`}>
                         {/* Mobile Search Bar - Fully visible at top */}
-                        <div className="md:hidden absolute -top-3 left-4 right-4 z-50">
-                          {/* Mobile Quick Action Flash Bar */}
-                          <div
-                            className="flex gap-2 overflow-x-auto scrollbar-hide pb-2 relative z-50"
-                              style={{
-                                scrollbarWidth: "none",
-                                msOverflowStyle: "none",
-                              }}
-                            >
+                        <div className="md:hidden absolute -top-3 left-4 right-4 z-50 hidden">
+                          <div>
                               <Button
                                 variant="secondary"
                                 className="bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"

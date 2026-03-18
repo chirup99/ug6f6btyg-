@@ -191,7 +191,7 @@ function RegionDialog({
         credentials: "include",
       }).then((r) => r.json()),
     enabled: !!region,
-    staleTime: 5 * 60 * 1000,
+    staleTime: 0,
   });
 
   const chartPoints = data?.chart ?? [];

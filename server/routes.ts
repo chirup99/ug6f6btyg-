@@ -7602,18 +7602,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn(`[REGION-CHART] Chart fetch failed for ${cfg.yahooSymbol}:`, chartErr);
       }
 
-      // --- News (Google News RSS) ---
+      // --- News (Google News RSS — two parallel queries for up to 20 items) ---
       let news: { title: string; source: string; url: string; publishedAt: string }[] = [];
       try {
-        const gnUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(cfg.newsQuery + ' when:3d')}&hl=en&gl=US&ceid=US:en`;
-        const gnRes = await fetch(gnUrl, {
-          headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/rss+xml' },
-          signal: AbortSignal.timeout(7000),
-        });
-        if (gnRes.ok) {
-          const xml = await gnRes.text();
+        const parseRssItems = (xml: string) => {
           const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
-          for (const itemXml of items.slice(0, 20)) {
+          const parsed: { title: string; source: string; url: string; publishedAt: string }[] = [];
+          for (const itemXml of items) {
             const titleMatch = itemXml.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || itemXml.match(/<title>([\s\S]*?)<\/title>/);
             const linkMatch = itemXml.match(/<link>([\s\S]*?)<\/link>/);
             const pubMatch = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/);
@@ -7621,9 +7616,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const titleParts = rawTitle.match(/^([\s\S]+?)\s+-\s+([^-]+)$/);
             const title = titleParts ? titleParts[1].trim() : rawTitle;
             const source = titleParts ? titleParts[2].trim() : 'News';
-            if (title) {
-              news.push({ title, source, url: linkMatch?.[1]?.trim() || '', publishedAt: pubMatch?.[1]?.trim() || '' });
-            }
+            const url = linkMatch?.[1]?.trim() || '';
+            if (title) parsed.push({ title, source, url, publishedAt: pubMatch?.[1]?.trim() || '' });
+          }
+          return parsed;
+        };
+
+        const fetchRss = async (query: string) => {
+          const url = `https://news.google.com/rss/search?q=${encodeURIComponent(query)}&hl=en&gl=US&ceid=US:en`;
+          const res = await fetch(url, {
+            headers: { 'User-Agent': 'Mozilla/5.0', Accept: 'application/rss+xml' },
+            signal: AbortSignal.timeout(8000),
+          });
+          if (!res.ok) return [];
+          return parseRssItems(await res.text());
+        };
+
+        const [batch1, batch2] = await Promise.allSettled([
+          fetchRss(cfg.newsQuery + ' when:3d'),
+          fetchRss(cfg.newsQuery + ' stock market when:7d'),
+        ]);
+
+        const seenUrls = new Set<string>();
+        const combined = [
+          ...(batch1.status === 'fulfilled' ? batch1.value : []),
+          ...(batch2.status === 'fulfilled' ? batch2.value : []),
+        ];
+        for (const item of combined) {
+          if (news.length >= 20) break;
+          const key = item.url || item.title;
+          if (!seenUrls.has(key)) {
+            seenUrls.add(key);
+            news.push(item);
           }
         }
       } catch (newsErr) {

@@ -19799,7 +19799,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   {item.category === 'News' && <Newspaper className="w-2.5 h-2.5" />}
                                   {item.category === 'Watchlist' && <Eye className="w-2.5 h-2.5" />}
                                   {item.category === 'Social' && <MessageCircle className="w-2.5 h-2.5" />}
-                                  {item.category === 'Journal' && <FileText className="w-2.5 h-2.5" />}
+                                  {item.category === 'Journal' && <Pencil className="w-2.5 h-2.5" />}
                                   {(item.category === 'Challenge' || item.category === 'Trade') && <Trophy className="w-2.5 h-2.5" />}
                                 </span>
 

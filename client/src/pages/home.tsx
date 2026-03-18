@@ -2498,6 +2498,7 @@ export default function Home() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchResults, setSearchResults] = useState("");
   const [isSearchLoading, setIsSearchLoading] = useState(false);
+  const [showFloatingClose, setShowFloatingClose] = useState(false);
   const [isSearchInputActive, setIsSearchInputActive] = useState(false);
   const [isReportLoading, setIsReportLoading] = useState(false);
   const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
@@ -15976,10 +15977,28 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   </div>
 
                   {/* Blue Section: Expands to 100% when search results show, fixed height otherwise */}
-                  <div className={`dark-scrollbar-area w-full bg-blue-900 flex flex-col items-center justify-start md:py-3 py-0 relative overflow-y-auto ${
-                    searchResults ? "h-screen px-3 md:px-4" : "h-[65vh] px-0 md:px-4"
-                  }`}>
+                  <div
+                    className={`dark-scrollbar-area w-full bg-blue-900 flex flex-col items-center justify-start md:py-3 py-0 relative overflow-y-auto ${
+                      searchResults ? "h-screen px-3 md:px-4" : "h-[65vh] px-0 md:px-4"
+                    }`}
+                    onScroll={(e) => {
+                      const el = e.currentTarget;
+                      setShowFloatingClose(el.scrollTop > 80);
+                    }}
+                  >
                     <div className="max-w-4xl w-full md:space-y-2">
+                      {/* Floating close button - mobile only, appears after scrolling down */}
+                      {isSearchActive && searchResults && showFloatingClose && (
+                        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto">
+                          <button
+                            onClick={() => { setSearchResults(""); setIsSearchActive(false); setSearchQuery(""); setShowFloatingClose(false); }}
+                            className="flex items-center gap-2 bg-gray-900/95 border border-gray-600 text-white px-5 py-2.5 rounded-full shadow-2xl text-sm font-medium backdrop-blur-sm active:scale-95 transition-transform"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                            <span>Clear</span>
+                          </button>
+                        </div>
+                      )}
                       {/* Dynamic Greeting - Hidden on mobile */}
                     
 

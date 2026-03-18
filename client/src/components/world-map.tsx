@@ -788,7 +788,7 @@ export function WorldMap() {
           ref={svgRef}
           viewBox="-10 0 1045.2 458"
           className={`w-full h-full ${isDrawing ? "cursor-crosshair" : ""}`}
-          preserveAspectRatio="xMidYMid slice"
+          preserveAspectRatio="xMidYMid meet"
           shapeRendering="crispEdges"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}

@@ -15936,7 +15936,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   {/* World Map Section - 35% of viewport height */}
                   {!searchResults && (
-                    <div className="w-full flex items-center justify-center h-[42vh] md:h-[35vh]" style={{ background: theme === 'dark' ? '#1a1a1a' : '#e3f2fd' }}>
+                    <div className="w-full flex items-center justify-center h-[35vh]" style={{ background: theme === 'dark' ? '#1a1a1a' : '#e3f2fd' }}>
                       <div className="w-full h-full">
                         <WorldMap />
                       </div>

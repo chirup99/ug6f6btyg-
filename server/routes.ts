@@ -7539,12 +7539,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/region-market-data', async (req, res) => {
     const region = (req.query.region as string || '').toUpperCase();
 
-    const REGION_CONFIG: Record<string, { yahooSymbol: string; newsQuery: string }> = {
-      INDIA:       { yahooSymbol: '^NSEI',    newsQuery: 'Nifty 50 India stock market NSE' },
-      USA:         { yahooSymbol: '^GSPC',    newsQuery: 'S&P 500 US stock market Wall Street' },
-      CANADA:      { yahooSymbol: '^GSPTSE',  newsQuery: 'TSX Toronto stock market Canada economy' },
-      'HONG KONG': { yahooSymbol: '^HSI',     newsQuery: 'Hang Seng Hong Kong stock market' },
-      TOKYO:       { yahooSymbol: '^N225',    newsQuery: 'Nikkei 225 Japan Tokyo stock market' },
+    const REGION_CONFIG: Record<string, { yahooSymbol: string; newsQuery: string; timezone: string }> = {
+      INDIA:       { yahooSymbol: '^NSEI',    newsQuery: 'Nifty 50 India stock market NSE',           timezone: 'Asia/Kolkata' },
+      USA:         { yahooSymbol: '^GSPC',    newsQuery: 'S&P 500 US stock market Wall Street',       timezone: 'America/New_York' },
+      CANADA:      { yahooSymbol: '^GSPTSE',  newsQuery: 'TSX Toronto stock market Canada economy',   timezone: 'America/Toronto' },
+      'HONG KONG': { yahooSymbol: '^HSI',     newsQuery: 'Hang Seng Hong Kong stock market',          timezone: 'Asia/Hong_Kong' },
+      TOKYO:       { yahooSymbol: '^N225',    newsQuery: 'Nikkei 225 Japan Tokyo stock market',       timezone: 'Asia/Tokyo' },
     };
 
     const cfg = REGION_CONFIG[region];
@@ -7568,8 +7568,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           .filter((q: any) => q.close != null)
           .map((q: any) => {
             const d = new Date(q.date);
+            const time = d.toLocaleTimeString('en-GB', {
+              timeZone: cfg.timezone,
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            });
             return {
-              time: `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`,
+              time,
               price: parseFloat(q.close.toFixed(2)),
             };
           });

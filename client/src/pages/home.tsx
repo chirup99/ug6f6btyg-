@@ -2498,15 +2498,6 @@ export default function Home() {
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [searchResults, setSearchResults] = useState("");
   const [isSearchLoading, setIsSearchLoading] = useState(false);
-  const [showFloatingClose, setShowFloatingClose] = useState(false);
-  useEffect(() => {
-    if (searchResults) {
-      const t = setTimeout(() => setShowFloatingClose(true), 1200);
-      return () => clearTimeout(t);
-    } else {
-      setShowFloatingClose(false);
-    }
-  }, [searchResults]);
   const [isSearchInputActive, setIsSearchInputActive] = useState(false);
   const [isReportLoading, setIsReportLoading] = useState(false);
   const [isWatchlistLoading, setIsWatchlistLoading] = useState(false);
@@ -15920,7 +15911,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     e.stopPropagation();
                     setIsNavOpen(!isNavOpen);
                   }}
-                  className={`${isSearchActive && searchResults ? 'hidden' : 'md:hidden'} fixed top-4 right-4 z-50 w-10 h-10 flex flex-col items-center justify-center gap-1.5 bg-transparent hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-all duration-300`}
+                  className="md:hidden fixed top-4 right-4 z-50 w-10 h-10 flex flex-col items-center justify-center gap-1.5 bg-transparent hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-all duration-300"
                   data-testid="button-nav-toggle"
                 >
                   <div
@@ -15985,24 +15976,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   </div>
 
                   {/* Blue Section: Expands to 100% when search results show, fixed height otherwise */}
-                  <div
-                    className={`dark-scrollbar-area w-full bg-blue-900 flex flex-col items-center justify-start md:py-3 py-0 relative overflow-y-auto ${
-                      searchResults ? "h-screen px-3 md:px-4" : "h-[65vh] px-0 md:px-4"
-                    }`}
-                  >
+                  <div className={`dark-scrollbar-area w-full bg-blue-900 flex flex-col items-center justify-start md:py-3 py-0 relative overflow-y-auto ${
+                    searchResults ? "h-screen px-3 md:px-4" : "h-[65vh] px-0 md:px-4"
+                  }`}>
                     <div className="max-w-4xl w-full md:space-y-2">
-                      {/* Floating close button - mobile only, shown after tab loads */}
-                      {isSearchActive && searchResults && showFloatingClose && (
-                        <div className="md:hidden fixed bottom-6 left-1/2 -translate-x-1/2 z-[100] pointer-events-auto">
-                          <button
-                            onClick={() => { setSearchResults(""); setIsSearchActive(false); setSearchQuery(""); }}
-                            className="flex items-center gap-2 bg-gray-900/95 border border-gray-600 text-white px-5 py-2.5 rounded-full shadow-2xl text-sm font-medium backdrop-blur-sm active:scale-95 transition-transform"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                            <span>Clear</span>
-                          </button>
-                        </div>
-                      )}
                       {/* Dynamic Greeting - Hidden on mobile */}
                     
 

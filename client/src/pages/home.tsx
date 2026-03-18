@@ -17637,20 +17637,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                         {/* PDF Links for Deep Analysis */}
                                                         {quarterlyData.some((q: any) => q.pdf_url) && (
                                                           <div className="mt-3 pt-3 border-t border-gray-700">
-                                                            <div className="flex items-center justify-between mb-2">
+                                                            <div className="mb-2">
                                                               <span className="text-xs font-medium text-gray-400">Quarterly Results PDFs</span>
-                                                              <button
-                                                                onClick={() => {
-                                                                  const symbol = searchResultsNewsSymbol || selectedWatchlistSymbol;
-                                                                  if (symbol) {
-                                                                    handleViewFullReport(symbol);
-                                                                  }
-                                                                }}
-                                                                className="text-xs text-blue-400 hover:text-blue-300 cursor-pointer"
-                                                                data-testid="button-ai-full-report"
-                                                              >
-                                                                View Full Report
-                                                              </button>
                                                             </div>
                                                             <div className="flex flex-wrap gap-2">
                                                               {quarterlyData.slice(-4).map((q: any, idx: number) => 

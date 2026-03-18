@@ -788,7 +788,7 @@ export function WorldMap() {
           ref={svgRef}
           viewBox="-10 0 1045.2 458"
           className={`w-full h-full ${isDrawing ? "cursor-crosshair" : ""}`}
-          preserveAspectRatio="xMidYMid meet"
+          preserveAspectRatio="xMidYMid slice"
           shapeRendering="crispEdges"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
@@ -1493,7 +1493,7 @@ export function WorldMap() {
 
       {/* Trading hours indicator with live market data */}
       <div
-        className={`flex flex-wrap justify-center items-center gap-x-3 gap-y-1 py-1.5 w-full flex-shrink-0 transition-opacity duration-300 ${isDrawing ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+        className={`flex flex-wrap justify-center items-center gap-x-3 gap-y-1.5 px-6 py-3 w-full flex-shrink-0 transition-opacity duration-300 ${isDrawing ? "opacity-0 pointer-events-none" : "opacity-100"}`}
         style={{ backgroundColor: isDarkMode ? "#1a1a1a" : "#e3f2fd" }}
       >
         {marketRegions.map((region) => {

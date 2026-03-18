@@ -402,6 +402,10 @@ input[type="range"].slider-thumb-purple::-moz-range-track {
 }
 .overflow-y-auto {
   scrollbar-width: thin;
+  scrollbar-color: hsl(240, 5.9%, 70%) hsl(240, 5.9%, 90%);
+}
+
+.dark .overflow-y-auto {
   scrollbar-color: rgb(75, 85, 99) rgb(31, 41, 55);
 }
 
@@ -410,22 +414,38 @@ input[type="range"].slider-thumb-purple::-moz-range-track {
 }
 
 .overflow-y-auto::-webkit-scrollbar-track {
-  background: rgb(31, 41, 55);
+  background: hsl(240, 5.9%, 90%);
   border-radius: 4px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb {
-  background: rgb(75, 85, 99);
+  background: hsl(240, 5.9%, 70%);
   border-radius: 4px;
 }
 
 .overflow-y-auto::-webkit-scrollbar-thumb:hover {
+  background: hsl(240, 5.9%, 60%);
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-track {
+  background: rgb(31, 41, 55);
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-thumb {
+  background: rgb(75, 85, 99);
+}
+
+.dark .overflow-y-auto::-webkit-scrollbar-thumb:hover {
   background: rgb(107, 114, 128);
 }
 
-/* Always-dark scrollbar for horizontal tab bars and quick-action rows */
+/* Theme-aware scrollbar for horizontal tab bars and quick-action rows */
 .overflow-x-auto {
   scrollbar-width: thin;
+  scrollbar-color: hsl(240, 5.9%, 70%) hsl(240, 5.9%, 90%);
+}
+
+.dark .overflow-x-auto {
   scrollbar-color: rgb(75, 85, 99) rgb(31, 41, 55);
 }
 
@@ -434,16 +454,28 @@ input[type="range"].slider-thumb-purple::-moz-range-track {
 }
 
 .overflow-x-auto::-webkit-scrollbar-track {
-  background: rgb(31, 41, 55);
+  background: hsl(240, 5.9%, 90%);
   border-radius: 4px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb {
-  background: rgb(75, 85, 99);
+  background: hsl(240, 5.9%, 70%);
   border-radius: 4px;
 }
 
 .overflow-x-auto::-webkit-scrollbar-thumb:hover {
+  background: hsl(240, 5.9%, 60%);
+}
+
+.dark .overflow-x-auto::-webkit-scrollbar-track {
+  background: rgb(31, 41, 55);
+}
+
+.dark .overflow-x-auto::-webkit-scrollbar-thumb {
+  background: rgb(75, 85, 99);
+}
+
+.dark .overflow-x-auto::-webkit-scrollbar-thumb:hover {
   background: rgb(107, 114, 128);
 }
 

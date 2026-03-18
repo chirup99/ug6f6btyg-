@@ -19759,180 +19759,114 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
 
                       {/* Trading Tools Section - White container with centered cards */}
-                      <div className={`${searchResults ? 'bg-transparent hidden md:block' : 'bg-white'} md:pt-3 md:pb-3 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mb-[14px] pt-[96px] pb-[10px] ml-[0px] mr-[0px] pl-4 pr-4 mt-[20px]`}>
-                        {/* Mobile Search Bar - Fully visible at top */}
+                      <div className={`${searchResults ? 'bg-transparent hidden md:block' : 'bg-white'} md:pt-3 md:pb-3 md:rounded-3xl rounded-3xl relative pointer-events-auto touch-pan-y flex-shrink-0 w-full mb-[14px] pt-[52px] pb-[10px] ml-[0px] mr-[0px] pl-4 pr-4 mt-[20px]`}>
+                        {/* Mobile Flashbar - replaces search bar */}
                         <div className="md:hidden absolute -top-3 left-4 right-4 z-50">
-                          <div className="relative">
-                            <Input
-                              placeholder="Search stocks, technical analysis, social feed..."
-                              value={searchQuery}
-                              onFocus={() => setIsSearchActive(true)}
-                              onChange={(e) => {
-                                const value = e.target.value;
-                                setSearchQuery(value);
-                                setIsSearchActive(value.length > 0);
-                              }}
-                              onKeyPress={async (e) => {
-                                if (e.key === "Enter" && searchQuery.trim()) {
-                                  await handleSearch();
-                                }
-                              }}
-                              className="w-full h-12 bg-gray-800 border-gray-700 text-gray-100 placeholder-gray-400 pr-24 text-xs rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-lg mt-[0px] mb-[0px]"
-                            />
-                            {searchQuery && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="absolute right-14 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-200 h-8 w-8 p-0"
+                          {/* Flashbar cycling highlights */}
+                          {(() => {
+                            const item = flashBarItems[flashBarIndex] || flashBarItems[0];
+                            if (!item) return null;
+                            return (
+                              <button
+                                data-testid="flash-bar-mobile"
                                 onClick={() => {
-                                  setSearchQuery("");
-                                  setIsSearchActive(false);
-                                  setSearchResults("");
-                                }}
-                                data-testid="button-clear-search"
-                              >
-                                <X className="h-4 w-4" />
-                              </Button>
-                            )}
-                            <Button
-                              size="sm"
-                              className="absolute right-3 top-1/2 -translate-y-1/2 bg-gray-700 hover:bg-gray-600 text-gray-300"
-                              onClick={() => handleSearch()}
-                              disabled={!searchQuery.trim() || isSearchLoading}
-                            >
-                              {isSearchLoading ? (
-                                <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                              ) : (
-                                <Bot className="h-4 w-4" />
-                              )}
-                            </Button>
-                          </div>
-
-                          {/* Mobile backdrop - tap outside to close search */}
-                          {isSearchActive && !searchResults && (
-                            <div
-                              className="md:hidden fixed inset-0 z-40"
-                              onClick={() => {
-                                setSearchQuery("");
-                                setIsSearchActive(false);
-                                setSearchResults("");
-                              }}
-                            />
-                          )}
-
-                          {/* Mobile Quick Action Buttons - Always visible below search bar */}
-                            <div
-                              className="mt-2 flex gap-2 overflow-x-auto scrollbar-hide pb-2 relative z-50"
-                              style={{
-                                scrollbarWidth: "none",
-                                msOverflowStyle: "none",
-                              }}
-                            >
-                              <Button
-                                variant="secondary"
-                                className="bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
-                                onClick={() => {
-                                  const userId = localStorage.getItem('currentUserId');
-                                  const userEmail = localStorage.getItem('currentUserEmail');
-                                  if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
-                                    setLocation('/login');
-                                    return;
+                                  if (item.tab === 'watchlist') {
+                                    setSearchResults("[CHART:WATCHLIST]");
+                                    setIsSearchActive(true);
+                                  } else if (item.tab === 'market-news') {
+                                    setSearchResults("[CHART:MARKET_NEWS]");
+                                    setIsSearchActive(true);
+                                    fetchNifty50News();
+                                  } else if (item.tab === 'trade-challenge') {
+                                    setSearchResults("[CHART:TRADE]");
+                                    setIsSearchActive(true);
+                                  } else if (item.tab === 'social') {
+                                    handleSuggestionClick("Social feed community discussions and trending topics");
+                                  } else if (item.tab === 'journal') {
+                                    const userId = localStorage.getItem('currentUserId');
+                                    const userEmail = localStorage.getItem('currentUserEmail');
+                                    if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
+                                      setLocation('/login');
+                                      return;
+                                    }
+                                    generateJournalAIReport();
                                   }
-                                  setIsWatchlistLoading(true);
-                                  setIsSearchActive(true);
-                                  setSearchResults("[CHART:WATCHLIST]");
-                                  setIsWatchlistOpen(true);
-                                  // Auto-select first stock in watchlist and fetch its quarterly data
-                                  if (watchlistSymbols.length > 0 && !selectedWatchlistSymbol) {
-                                    const firstStock = watchlistSymbols[0];
-                                    setSelectedWatchlistSymbol(firstStock.symbol);
-                                    setSearchResultsNewsSymbol(firstStock.symbol);
-                                  }
-                                  setTimeout(() => setIsWatchlistLoading(false), 300);
                                 }}
-                                data-testid="button-watchlist-mobile"
+                                className="w-full h-10 rounded-2xl bg-gray-800/70 border border-gray-700/60 hover:border-gray-500 hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 px-3 text-left group"
                               >
-                                <div className="flex items-center justify-center gap-1">
-                                  {isWatchlistLoading ? (
-                                    <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                  ) : (
-                                    <Eye className="h-3 w-3" />
+                                {/* Live dot */}
+                                <span className="relative flex-shrink-0 flex h-2 w-2">
+                                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
+                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                                </span>
+
+                                {/* Category badge */}
+                                <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.colorClass} uppercase tracking-wide`}>
+                                  {item.category}
+                                </span>
+
+                                {/* Cycling content */}
+                                <span
+                                  className="flex-1 min-w-0 flex items-center gap-2 transition-opacity duration-200 overflow-hidden"
+                                  style={{ opacity: flashBarVisible ? 1 : 0 }}
+                                >
+                                  {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
+                                    const sd = newsStockPrices[item.symbol];
+                                    const isUp = sd.changePercent >= 0;
+                                    const prices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
+                                    const minP = prices.length > 1 ? Math.min(...prices) : 0;
+                                    const maxP = prices.length > 1 ? Math.max(...prices) : 1;
+                                    return (
+                                      <>
+                                        <span className="text-[11px] font-semibold text-gray-200 truncate">{item.symbol.replace('-EQ','')}</span>
+                                        <span className={`text-[11px] font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                                          ₹{sd.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                                        </span>
+                                        <span className={`text-[10px] ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                                          {isUp ? '▲' : '▼'} {Math.abs(sd.changePercent).toFixed(2)}%
+                                        </span>
+                                        {prices.length > 1 && (
+                                          <svg width="36" height="16" viewBox={`0 0 36 16`} className="flex-shrink-0">
+                                            <polyline
+                                              points={prices.map((p, i) => `${(i / (prices.length - 1)) * 36},${16 - ((p - minP) / (maxP - minP || 1)) * 14}`).join(' ')}
+                                              fill="none"
+                                              stroke={isUp ? '#22c55e' : '#ef4444'}
+                                              strokeWidth="1.5"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                            />
+                                          </svg>
+                                        )}
+                                      </>
+                                    );
+                                  })() : (
+                                    <span className="text-xs text-gray-300 truncate">{item.text}</span>
                                   )}
-                                  <span>Watchlist</span>
-                                </div>
-                              </Button>
+                                </span>
 
-                              <Button
-                                variant="secondary"
-                                className="bg-green-600 hover:bg-green-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
-                                onClick={() => {
-                                  setIsSearchActive(true);
-                                  setSearchResults("[CHART:MARKET_NEWS]");
-                                  fetchNifty50News();
-                                }}
-                              >
-                                <div className="flex items-center gap-1">
-                                  <Newspaper className="h-3 w-3" />
-                                  <span>Market News</span>
-                                </div>
-                              </Button>
+                                {/* Progress dots */}
+                                <span className="flex-shrink-0 flex items-center gap-[3px]">
+                                  {Array.from({ length: Math.min(flashBarItems.length, 8) }).map((_, i) => (
+                                    <span
+                                      key={i}
+                                      className="block rounded-full transition-all duration-300"
+                                      style={{
+                                        width: i === flashBarIndex % Math.min(flashBarItems.length, 8) ? 10 : 4,
+                                        height: 4,
+                                        background: i === flashBarIndex % Math.min(flashBarItems.length, 8) ? '#60a5fa' : '#374151',
+                                      }}
+                                    />
+                                  ))}
+                                </span>
 
-                              <Button
-                                variant="secondary"
-                                className="bg-pink-600 hover:bg-pink-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
-                                onClick={() =>
-                                  handleSuggestionClick(
-                                    "Social feed community discussions and trending topics",
-                                  )
-                                }
-                              >
-                                <div className="flex items-center gap-1">
-                                  <User className="h-3 w-3" />
-                                  <span>Social Feed</span>
-                                </div>
-                              </Button>
+                                {/* Arrow hint */}
+                                <span className="flex-shrink-0 text-gray-600 group-hover:text-gray-400 transition-colors">
+                                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5l4.5 4.5L5 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                </span>
+                              </button>
+                            );
+                          })()}
 
-                              <Button
-                                variant="secondary"
-                                className="bg-indigo-600 hover:bg-indigo-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
-                                onClick={() => {
-                                  const userId = localStorage.getItem('currentUserId');
-                                  const userEmail = localStorage.getItem('currentUserEmail');
-                                  if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
-                                    setLocation('/login');
-                                    return;
-                                  }
-                                  generateJournalAIReport();
-                                }}
-                                data-testid="button-trading-journal-mobile"
-                              >
-                                <div className="flex items-center gap-1">
-                                  <FileText className="h-3 w-3" />
-                                  <span>Trading Journal</span>
-                                </div>
-                              </Button>
-
-                              <Button
-                                variant="secondary"
-                                className="bg-orange-600 hover:bg-orange-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
-                                onClick={() => {
-                                  const userId = localStorage.getItem('currentUserId');
-                                  const userEmail = localStorage.getItem('currentUserEmail');
-                                  if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
-                                    setLocation('/login');
-                                    return;
-                                  }
-                                  setIsSearchActive(true);
-                                  setSearchResults("[CHART:TRADE]");
-                                }}
-                                data-testid="button-trade-challenge-mobile"
-                              >
-                                <div className="flex items-center gap-1">
-                                  <Trophy className="h-3 w-3" />
-                                  <span>Trade Challenge</span>
-                                </div>
-                              </Button>
-                            </div>
 
                           {/* Mobile AI Search Results - suppressed for all tabs; desktop layout is used on all screen sizes */}
                           {false && isSearchActive && searchResults && (

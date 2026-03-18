@@ -130,7 +130,7 @@ const REGION_META: Record<
       "Auto sector leads Nikkei gains on strong US demand",
     ],
     youtubeChannels: [
-      { name: "NHK World", channelId: "UCqx7owSD-iSKR4CYkY13g9g", channelUrl: "https://www.youtube.com/@NHKWorldNews" },
+      { name: "NHK World", channelId: "UCqx7owSD-iSKR4CYkY13g9g", channelUrl: "https://www.youtube.com/@NHKWORLDJAPAN" },
       { name: "Nikkei Asia", channelId: "UCvqo5nkuQgQJFY0gGf2ORJA", channelUrl: "https://www.youtube.com/@NikkeiAsia" },
       { name: "TV Tokyo Biz", channelId: "UCkKVQ_GNjd8FbAuT6xDcWgg", channelUrl: "https://www.youtube.com/@tvtokyobiz" },
     ],

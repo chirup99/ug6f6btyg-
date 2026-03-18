@@ -8157,8 +8157,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const flashBarItems = useMemo(() => {
     const items: Array<{ category: string; text: string; colorClass: string; tab: string; symbol?: string }> = [];
 
-    items.push({ category: 'LIVE', text: 'BANKNIFTY · SENSEX · GOLD — real-time prices streaming', colorClass: 'bg-blue-500/20 text-blue-300 border-blue-500/30', tab: 'watchlist' });
-
     const newsSource = allMarketNewsItems.length > 0 ? allMarketNewsItems : nifty50NewsItems.length > 0 ? nifty50NewsItems : marketNewsItems;
     newsSource.slice(0, 6).forEach(n => {
       items.push({ category: 'News', text: n.title, colorClass: 'bg-green-500/20 text-green-300 border-green-500/30', tab: 'market-news' });
@@ -19808,7 +19806,38 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   className="flex-1 min-w-0 flex items-center gap-2 transition-opacity duration-200 overflow-hidden"
                                   style={{ opacity: flashBarVisible ? 1 : 0 }}
                                 >
-                                  <span className="text-xs text-gray-300 truncate">{item.text}</span>
+                                  {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
+                                    const sd = newsStockPrices[item.symbol];
+                                    const isUp = sd.changePercent >= 0;
+                                    const prices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
+                                    const minP = prices.length > 1 ? Math.min(...prices) : 0;
+                                    const maxP = prices.length > 1 ? Math.max(...prices) : 1;
+                                    return (
+                                      <>
+                                        <span className="text-[11px] font-semibold text-gray-200 truncate">{item.symbol.replace('-EQ','')}</span>
+                                        <span className={`text-[11px] font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                                          ₹{sd.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
+                                        </span>
+                                        <span className={`text-[10px] ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                                          {isUp ? '▲' : '▼'} {Math.abs(sd.changePercent).toFixed(2)}%
+                                        </span>
+                                        {prices.length > 1 && (
+                                          <svg width="36" height="16" viewBox={`0 0 36 16`} className="flex-shrink-0">
+                                            <polyline
+                                              points={prices.map((p, i) => `${(i / (prices.length - 1)) * 36},${16 - ((p - minP) / (maxP - minP || 1)) * 14}`).join(' ')}
+                                              fill="none"
+                                              stroke={isUp ? '#22c55e' : '#ef4444'}
+                                              strokeWidth="1.5"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                            />
+                                          </svg>
+                                        )}
+                                      </>
+                                    );
+                                  })() : (
+                                    <span className="text-xs text-gray-300 truncate">{item.text}</span>
+                                  )}
                                 </span>
 
                                 {/* Progress dots */}

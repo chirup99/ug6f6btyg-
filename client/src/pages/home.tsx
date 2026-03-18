@@ -15975,6 +15975,86 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
                   </div>
 
+                  {/* Mobile Flashbar - positioned at boundary: 20% above blue section, 80% inside */}
+                  <div className="md:hidden relative z-20 px-3 -mb-[29px]">
+                    {(() => {
+                      const item = flashBarItems[flashBarIndex] || flashBarItems[0];
+                      if (!item) return null;
+                      return (
+                        <button
+                          data-testid="flash-bar-mobile"
+                          onClick={() => {
+                            if (item.tab === 'watchlist') {
+                              setSearchResults("[CHART:WATCHLIST]");
+                              setIsSearchActive(true);
+                            } else if (item.tab === 'market-news') {
+                              setSearchResults("[CHART:MARKET_NEWS]");
+                              setIsSearchActive(true);
+                              fetchNifty50News();
+                            } else if (item.tab === 'trade-challenge') {
+                              setSearchResults("[CHART:TRADE]");
+                              setIsSearchActive(true);
+                            } else if (item.tab === 'social') {
+                              handleSuggestionClick("Social feed community discussions and trending topics");
+                            } else if (item.tab === 'journal') {
+                              const userId = localStorage.getItem('currentUserId');
+                              const userEmail = localStorage.getItem('currentUserEmail');
+                              if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
+                                setLocation('/login');
+                                return;
+                              }
+                              generateJournalAIReport();
+                            }
+                          }}
+                          className="w-full h-9 rounded-2xl bg-gray-800/90 border border-gray-700/60 hover:border-gray-500 hover:bg-gray-800 transition-all duration-200 flex items-center gap-2 px-3 text-left group shadow-lg"
+                        >
+                          <span className="relative flex-shrink-0 flex h-2 w-2">
+                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-60" />
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+                          </span>
+                          <span className={`flex-shrink-0 text-[10px] font-bold px-2 py-0.5 rounded-full border ${item.colorClass} uppercase tracking-wide`}>
+                            {item.category}
+                          </span>
+                          <span className="flex-1 min-w-0 flex items-center gap-2 transition-opacity duration-200 overflow-hidden" style={{ opacity: flashBarVisible ? 1 : 0 }}>
+                            {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
+                              const sd = newsStockPrices[item.symbol];
+                              const isUp = sd.changePercent >= 0;
+                              const prices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
+                              const minP = prices.length > 1 ? Math.min(...prices) : 0;
+                              const maxP = prices.length > 1 ? Math.max(...prices) : 1;
+                              const range = maxP - minP || 1;
+                              const W = 52, H = 18;
+                              const pts = prices.length > 1
+                                ? prices.map((p: number, i: number) => `${(i / (prices.length - 1)) * W},${H - ((p - minP) / range) * H}`).join(' ')
+                                : null;
+                              const newsSource = nifty50NewsItems.length > 0 ? nifty50NewsItems : marketNewsItems;
+                              const latestNews = newsSource.find((n: any) => n.symbol === item.symbol)?.title || null;
+                              return (
+                                <>
+                                  <span className="text-sm font-semibold text-gray-100 flex-shrink-0">{item.text}</span>
+                                  <span className={`text-sm font-bold flex-shrink-0 ${isUp ? 'text-green-400' : 'text-red-400'}`}>₹{sd.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}</span>
+                                  <span className={`text-[11px] flex-shrink-0 ${isUp ? 'text-green-400' : 'text-red-400'}`}>{isUp ? '▲' : '▼'}{Math.abs(sd.changePercent).toFixed(2)}%</span>
+                                  {pts && (<svg width={W} height={H} className="flex-shrink-0" style={{ overflow: 'visible' }}><polyline points={pts} fill="none" stroke={isUp ? '#4ade80' : '#f87171'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" /></svg>)}
+                                  {latestNews && (<><span className="flex-shrink-0 w-px h-3 bg-gray-600 mx-0.5" /><span className="text-[11px] text-gray-400 truncate min-w-0">{latestNews}</span></>)}
+                                </>
+                              );
+                            })() : (
+                              <span className="text-sm text-gray-300 truncate">{item.text}</span>
+                            )}
+                          </span>
+                          <span className="flex-shrink-0 flex items-center gap-[3px]">
+                            {Array.from({ length: Math.min(flashBarItems.length, 8) }).map((_, i) => (
+                              <span key={i} className="block rounded-full transition-all duration-300" style={{ width: i === flashBarIndex % Math.min(flashBarItems.length, 8) ? 10 : 4, height: 4, background: i === flashBarIndex % Math.min(flashBarItems.length, 8) ? '#60a5fa' : '#374151' }} />
+                            ))}
+                          </span>
+                          <span className="flex-shrink-0 text-gray-600 group-hover:text-gray-400 transition-colors">
+                            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M5 2.5l4.5 4.5L5 11.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                          </span>
+                        </button>
+                      );
+                    })()}
+                  </div>
+
                   {/* Blue Section: Expands to 100% when search results show, fixed height otherwise */}
                   <div className={`dark-scrollbar-area w-full bg-blue-900 flex flex-col items-center justify-start md:py-3 py-0 relative overflow-y-auto ${
                     searchResults ? "h-screen px-3 md:px-4" : "h-[65vh] px-0 md:px-4"
@@ -15983,8 +16063,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       {/* Dynamic Greeting - Hidden on mobile */}
                     
 
-                      {/* Magic Flash Bar - Auto-cycling highlights from all tabs */}
-                      <div className="relative mx-auto block max-w-4xl">
+                      {/* Magic Flash Bar - Auto-cycling highlights from all tabs (desktop only) */}
+                      <div className="relative mx-auto hidden md:block max-w-4xl">
                         {(() => {
                           const item = flashBarItems[flashBarIndex] || flashBarItems[0];
                           if (!item) return null;
@@ -16097,7 +16177,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
 
                       {/* Mobile Quick Action Buttons - shown below flashbar */}
-                      <div className="md:hidden flex gap-2 overflow-x-auto scrollbar-hide pb-1 px-0" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
+                      <div className="md:hidden flex gap-2 overflow-x-auto scrollbar-hide pb-1 px-0 mt-[36px]" style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}>
                         <Button
                           variant="secondary"
                           className="bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"

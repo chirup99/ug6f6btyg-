@@ -413,7 +413,7 @@ function RegionDialog({
               <div
                 className="space-y-1.5 overflow-y-auto"
                 style={{
-                  maxHeight: 160,
+                  maxHeight: 320,
                   scrollbarWidth: "thin",
                   scrollbarColor: "#1e293b transparent",
                 }}

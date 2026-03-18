@@ -7613,7 +7613,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (gnRes.ok) {
           const xml = await gnRes.text();
           const items = xml.match(/<item>([\s\S]*?)<\/item>/g) || [];
-          for (const itemXml of items.slice(0, 6)) {
+          for (const itemXml of items.slice(0, 20)) {
             const titleMatch = itemXml.match(/<title><!\[CDATA\[([\s\S]*?)\]\]><\/title>/) || itemXml.match(/<title>([\s\S]*?)<\/title>/);
             const linkMatch = itemXml.match(/<link>([\s\S]*?)<\/link>/);
             const pubMatch = itemXml.match(/<pubDate>([\s\S]*?)<\/pubDate>/);

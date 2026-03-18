@@ -114,9 +114,9 @@ const REGION_META: Record<
       "HK IPO pipeline strengthens for second half of year",
     ],
     youtubeChannels: [
-      { name: "Al Jazeera", channelId: "UCNye-wNBqNL5ZzHSJdpkDXA", channelUrl: "https://www.youtube.com/@AlJazeeraEnglish" },
-      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@markets" },
       { name: "SCMP", channelId: "UC7ATgCH0-h0sC8CZAFInGgg", channelUrl: "https://www.youtube.com/@SouthChinaMorningPost" },
+      { name: "Bloomberg TV", channelId: "UCIALMKvObZNtJ6AmdCLP7Hg", channelUrl: "https://www.youtube.com/@markets" },
+      { name: "CGTN", channelId: "UCnl3dqyI4dQgMklcF3vZMpA", channelUrl: "https://www.youtube.com/@CGTNOfficial" },
     ],
   },
   TOKYO: {
@@ -131,8 +131,8 @@ const REGION_META: Record<
     ],
     youtubeChannels: [
       { name: "NHK World", channelId: "UCqx7owSD-iSKR4CYkY13g9g", channelUrl: "https://www.youtube.com/@NHKWorldNews" },
-      { name: "Al Jazeera", channelId: "UCNye-wNBqNL5ZzHSJdpkDXA", channelUrl: "https://www.youtube.com/@AlJazeeraEnglish" },
-      { name: "DW News", channelId: "UCknLrEdhRCp1aegoMqRaCZg", channelUrl: "https://www.youtube.com/@DWNews" },
+      { name: "Nikkei Asia", channelId: "UCvqo5nkuQgQJFY0gGf2ORJA", channelUrl: "https://www.youtube.com/@NikkeiAsia" },
+      { name: "TV Tokyo Biz", channelId: "UCkKVQ_GNjd8FbAuT6xDcWgg", channelUrl: "https://www.youtube.com/@tvtokyobiz" },
     ],
   },
 };

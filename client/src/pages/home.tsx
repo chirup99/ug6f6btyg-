@@ -3238,25 +3238,6 @@ export default function Home() {
 
         const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100) : 0;
 
-        // Build a lightweight heatmap-only version of tradingDataByDate
-        // (only keep performanceMetrics needed for color/tooltip — strip trade history to stay under DynamoDB 400KB limit)
-        const lightTradingDataByDate: Record<string, any> = {};
-        dates.forEach(dateKey => {
-          const dayData = filteredData[dateKey];
-          if (!dayData) return;
-          const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-          if (metrics) {
-            lightTradingDataByDate[dateKey] = {
-              performanceMetrics: {
-                netPnL: metrics.netPnL ?? 0,
-                winRate: metrics.winRate ?? 0,
-                totalTrades: metrics.totalTrades ?? 0,
-                winningTrades: metrics.winningTrades ?? 0,
-              },
-            };
-          }
-        });
-
         metadata = {
           type: 'range_report',
           fromDate: dates[0] || '',
@@ -3269,8 +3250,6 @@ export default function Home() {
           trendData,
           fomoDates,
           dateCount: dates.length,
-          tradingDays,
-          tradingDataByDate: lightTradingDataByDate,
         };
       }
 
@@ -3280,6 +3259,10 @@ export default function Home() {
       const { getCognitoUser } = await import('@/cognito');
       const user = await getCognitoUser();
       if (!user?.userId) throw new Error('Not authenticated');
+
+      if (metadata.type === 'range_report') {
+        metadata.ownerUserId = user.userId;
+      }
 
       const response = await fetch('/api/social-posts', {
         method: 'POST',

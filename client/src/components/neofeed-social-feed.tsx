@@ -2583,6 +2583,25 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const fomoButtonRef = useRef<HTMLButtonElement>(null);
   const heatmapContainerRef = useRef<HTMLDivElement>(null);
+  const [mirrorData, setMirrorData] = useState<Record<string, any> | null>(null);
+  const [mirrorLoading, setMirrorLoading] = useState(false);
+
+  // Mirror fetch: if ownerUserId is present, load heatmap data live from the owner's journal
+  useEffect(() => {
+    if (!m.ownerUserId) return;
+    setMirrorLoading(true);
+    const params = new URLSearchParams();
+    if (m.fromDate) params.set('from', m.fromDate);
+    if (m.toDate) params.set('to', m.toDate);
+    fetch(`/api/journal/heatmap-mirror/${m.ownerUserId}?${params.toString()}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setMirrorData(data); })
+      .catch(() => {})
+      .finally(() => setMirrorLoading(false));
+  }, [m.ownerUserId, m.fromDate, m.toDate]);
+
+  // Resolve heatmap data: prefer live mirror, fallback to legacy embedded data
+  const heatmapData: Record<string, any> | null = mirrorData ?? m.tradingDataByDate ?? null;
 
   const maxT = Math.max(...trendData, 0);
   const minT = Math.min(...trendData, 0);
@@ -2635,10 +2654,20 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
           {m.dateCount || 0} Trading Days{fromLabel ? ` · ${fromLabel}` : ''}{fromLabel && toLabel ? ' – ' : ''}{toLabel}
         </div>
-        <div className="text-[9px] text-gray-400 font-medium">{new Date(m.toDate || Date.now()).getFullYear()}</div>
+        <div className="flex items-center gap-2">
+          {m.ownerUserId && (
+            <span className="text-[9px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded font-medium">live mirror</span>
+          )}
+          <div className="text-[9px] text-gray-400 font-medium">{new Date(m.toDate || Date.now()).getFullYear()}</div>
+        </div>
       </div>
 
-      {m.tradingDataByDate ? (
+      {mirrorLoading ? (
+        <div className="px-4 pb-3 flex items-center gap-2 text-xs text-gray-400">
+          <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+          Loading heatmap...
+        </div>
+      ) : heatmapData ? (
         <div className="px-4 pb-2">
           <div className="relative">
             <div
@@ -2646,7 +2675,7 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
               className="max-h-48 overflow-auto scrollbar-hide border border-slate-100 dark:border-zinc-800 rounded-lg"
             >
               <DemoHeatmap
-                tradingDataByDate={m.tradingDataByDate}
+                tradingDataByDate={heatmapData}
                 onDateSelect={() => {}}
                 selectedDate={null}
                 onDataUpdate={() => {}}

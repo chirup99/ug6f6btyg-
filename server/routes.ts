@@ -6744,6 +6744,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Mirror endpoint: returns heatmap-safe (metrics only) data for a specific owner+date range
+  // Used by NeoFeed range_report posts to live-read the owner's data without storing it in the post
+  app.get('/api/journal/heatmap-mirror/:ownerUserId', async (req, res) => {
+    try {
+      const { ownerUserId } = req.params;
+      const { from, to } = req.query as { from?: string; to?: string };
+
+      if (!ownerUserId) return res.status(400).json({ error: 'ownerUserId required' });
+
+      const journals = await awsDynamoDBService.getAllUserJournalData(ownerUserId);
+
+      const result: Record<string, any> = {};
+      Object.keys(journals).forEach(dateKey => {
+        if (from && dateKey < from) return;
+        if (to && dateKey > to) return;
+
+        const dayData = journals[dateKey];
+        const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+        if (!metrics) return;
+
+        result[dateKey] = {
+          performanceMetrics: {
+            netPnL: Number(metrics.netPnL) || 0,
+            totalTrades: Number(metrics.totalTrades) || 0,
+            winningTrades: Number(metrics.winningTrades) || 0,
+            losingTrades: Number(metrics.losingTrades) || 0,
+          },
+        };
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error('❌ Error fetching heatmap mirror:', error);
+      res.status(500).json({ error: 'Failed to fetch heatmap data' });
+    }
+  });
+
   // Get all trading journal entries for a user (PRIVATE - includes all details)
   // ✅ AWS DynamoDB ONLY (Firebase removed Dec 3, 2025)
   app.get('/api/user-journal/:userId/all', async (req, res) => {
@@ -7999,11 +8036,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // 3. Merge and sort all posts by createdAt (newest first)
-      const sortedPosts = allPosts.sort((a, b) => {
-        const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
-        const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
-        return dateB.getTime() - dateA.getTime();
-      });
+      const now = Date.now();
+      const sortedPosts = allPosts
+        .filter((post: any) => {
+          if (post.expiresAt) {
+            return new Date(post.expiresAt).getTime() > now;
+          }
+          return true;
+        })
+        .sort((a, b) => {
+          const dateA = a.createdAt instanceof Date ? a.createdAt : new Date(a.createdAt);
+          const dateB = b.createdAt instanceof Date ? b.createdAt : new Date(b.createdAt);
+          return dateB.getTime() - dateA.getTime();
+        });
 
       console.log(`✅ Total posts fetched: ${sortedPosts.length} (User posts + Finance news from Firebase)`);
 
@@ -8094,6 +8139,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Include trade insight metadata if present (for Journal → Social Feed posts)
       if (metadata && typeof metadata === 'object') {
         postData.metadata = metadata;
+        // Range reports expire after 24 hours to avoid storing large data long-term
+        if (metadata.type === 'range_report') {
+          postData.expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
+        }
       }
 
       console.log(`📝 [${requestId}] Creating social post for user: ${userData.username} | ${userData.displayName}`);

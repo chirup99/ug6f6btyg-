@@ -2828,38 +2828,38 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt }: { metadata: any
         </div>
       )}
 
-      <div className="bg-gradient-to-r from-violet-500 to-purple-600 mx-3 mb-3 rounded-xl px-4 py-3">
+      <div className="bg-gradient-to-r from-violet-500 to-purple-600 mx-2 mb-2 rounded-lg px-2.5 py-2">
         <div className="flex items-center justify-around text-white">
           <div className="flex flex-col items-center gap-0.5">
-            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
-            <div className="text-sm font-bold leading-none">{isProfit ? '+' : '-'}₹{(Math.abs(stats.totalPnL || 0) / 1000).toFixed(1)}K</div>
+            <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
+            <div className="text-xs font-bold leading-none">{isProfit ? '+' : '-'}₹{(Math.abs(stats.totalPnL || 0) / 1000).toFixed(1)}K</div>
           </div>
-          <div className="w-px h-8 bg-white/20" />
+          <div className="w-px h-6 bg-white/20" />
           <div className="flex flex-col items-center gap-0.5">
-            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
-            <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-10 h-5">
+            <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
+            <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-8 h-4">
               <path d={trendPath} fill="none" stroke="white" strokeWidth="1.8" opacity="0.95" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <div className="w-px h-8 bg-white/20" />
+          <div className="w-px h-6 bg-white/20" />
           <button
             ref={fomoButtonRef}
-            className={`flex flex-col items-center gap-0.5 rounded-2xl px-4 py-1.5 border shadow-inner transition-all ${fomoHighlight ? 'bg-white/30 border-white/60 ring-2 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
+            className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 border shadow-inner transition-all ${fomoHighlight ? 'bg-white/30 border-white/60 ring-2 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
             onClick={() => setFomoHighlight(prev => !prev)}
             title={`Tap to ${fomoHighlight ? 'hide' : 'show'} FOMO trading days`}
           >
-            <div className="text-[9px] font-medium opacity-90 uppercase tracking-wide">FOMO</div>
-            <div className="text-sm font-bold leading-none">{stats.fomoCount || 0}</div>
+            <div className="text-[8px] font-medium opacity-90 uppercase tracking-wide">FOMO</div>
+            <div className="text-xs font-bold leading-none">{stats.fomoCount || 0}</div>
           </button>
-          <div className="w-px h-8 bg-white/20" />
+          <div className="w-px h-6 bg-white/20" />
           <div className="flex flex-col items-center gap-0.5">
-            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
-            <div className="text-sm font-bold leading-none">{stats.winRate || 0}%</div>
+            <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
+            <div className="text-xs font-bold leading-none">{stats.winRate || 0}%</div>
           </div>
-          <div className="w-px h-8 bg-white/20" />
+          <div className="w-px h-6 bg-white/20" />
           <div className="flex flex-col items-center gap-0.5">
-            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
-            <div className="text-sm font-bold leading-none">{stats.streak || 0}</div>
+            <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
+            <div className="text-xs font-bold leading-none">{stats.streak || 0}</div>
           </div>
         </div>
       </div>
@@ -3374,22 +3374,22 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
   }
 
   return (
-    <Card className="bg-card border border-border shadow-none mb-3 rounded-lg transition-none">
+    <Card className="bg-card border border-border shadow-none mb-2 rounded-xl transition-none">
       
-      <CardContent className="p-3 xl:p-4 transition-none">
+      <CardContent className="p-2.5 xl:p-4 transition-none">
         {/* User Header - For reposts, shows the reposter (current user) as the main author */}
-        <div className="flex items-start justify-between mb-2 xl:mb-4">
+        <div className="flex items-start justify-between mb-2 xl:mb-3">
           <div className="flex items-center gap-2 xl:gap-3">
             <div className="relative">
               {(() => {
                 const avatarUrl = post.authorAvatar || post.user?.avatar;
                 const isValidAvatar = avatarUrl && avatarUrl.includes('s3.') && !avatarUrl.includes('ui-avatars.com');
                 return (
-                  <Avatar className="w-9 h-9 border border-border">
+                  <Avatar className="w-7 h-7 xl:w-9 xl:h-9 border border-border">
                     {isValidAvatar ? (
                       <AvatarImage src={avatarUrl} alt={post.authorDisplayName || post.authorUsername} className="object-cover" />
                     ) : null}
-                    <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-sm">
+                    <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs xl:text-sm">
                       {post.user?.initial || 
                        post.authorDisplayName?.charAt(0) || 
                        post.authorUsername?.charAt(0) || 
@@ -3415,7 +3415,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                       }
                     }
                   }}
-                  className="text-foreground font-semibold text-base hover:underline cursor-pointer transition-colors"
+                  className="text-foreground font-semibold text-sm xl:text-base hover:underline cursor-pointer transition-colors"
                   data-testid={`button-profile-${post.authorUsername}`}
                 >
                   {post.user?.username || 
@@ -3449,7 +3449,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                   </div>
                 )}
               </div>
-              <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 text-sm font-medium ">
+              <div className="flex items-center gap-1.5 text-gray-500 dark:text-gray-400 text-xs font-medium">
                 <span>@{post.user?.handle || post.authorUsername || 'user'}</span>
                 {/* Hide timestamp for finance news posts (auto-generated content) */}
                 {post.authorUsername !== 'finance_news' && (
@@ -3524,7 +3524,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
         </div>
 
         {/* Post Content */}
-        <div className="mb-2 xl:mb-4">
+        <div className="mb-1.5 xl:mb-3">
           {/* Range Report Card */}
           {post.metadata?.type === 'range_report' && (
             <RangeReportCard metadata={post.metadata} postId={post.id} postCreatedAt={post.createdAt} />
@@ -3536,7 +3536,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           <div className="relative">
             {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && (
             <p 
-              className={`text-gray-900 dark:text-white leading-relaxed mb-2 xl:mb-3 text-base font-medium ${
+              className={`text-gray-900 dark:text-white leading-snug mb-1.5 xl:mb-3 text-sm xl:text-base font-medium ${
                 isAudioMode ? 'cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors rounded-lg p-2 -m-2' : ''
               }`}
               onClick={handleTextSelection}
@@ -3571,11 +3571,11 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           
           {/* Ticker and Sentiment - Only show if valid ticker exists */}
           {post.ticker && (
-            <div className="flex items-center gap-2 mb-2 xl:mb-3">
-              <Badge className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-4 py-2 font-bold ">
+            <div className="flex items-center gap-1.5 mb-1.5 xl:mb-3">
+              <Badge className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800 px-2 py-0.5 xl:px-4 xl:py-2 font-bold text-xs">
                 {post.ticker}
               </Badge>
-              <Badge className={`px-4 py-2 border font-bold ${
+              <Badge className={`px-2 py-0.5 xl:px-4 xl:py-2 border font-bold text-xs ${
                 post.sentiment === 'bullish' ? 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-300 border-green-200 dark:border-green-800' :
                 post.sentiment === 'bearish' ? 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-300 border-red-200 dark:border-red-800' :
                 'bg-gray-50 dark:bg-gray-900/20 text-gray-700 dark:text-gray-300 border-gray-200 dark:border-gray-800'
@@ -3625,19 +3625,19 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center justify-between pt-3 border-t border-border py-3">
-          <div className="flex items-center gap-8">
+        <div className="flex items-center justify-between pt-2 border-t border-border py-1.5 xl:py-2">
+          <div className="flex items-center gap-3 xl:gap-8">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowCommentSection(!showCommentSection)}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-1 xl:gap-2 px-1.5 xl:px-3 py-1 xl:py-2 h-auto rounded-lg transition-colors ${
                 showCommentSection ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
               data-testid={`button-comment-${post.id}`}
             >
-              <MessageCircle className={`h-5 w-5 ${showCommentSection ? 'text-blue-500' : ''}`} />
-              <span>{commentCount}</span>
+              <MessageCircle className={`h-4 w-4 xl:h-5 xl:w-5 ${showCommentSection ? 'text-blue-500' : ''}`} />
+              <span className="text-xs xl:text-sm">{commentCount}</span>
             </Button>
             
             <Button
@@ -3645,13 +3645,13 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
               size="sm"
               onClick={() => repostMutation.mutate({ wasReposted: reposted })}
               disabled={repostMutation.isPending}
-              className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex items-center gap-1 xl:gap-2 px-1.5 xl:px-3 py-1 xl:py-2 h-auto rounded-lg transition-colors ${
                 reposted ? 'text-green-500 dark:text-green-400' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
               data-testid={`button-repost-${post.id}`}
             >
-              <Repeat className={`h-5 w-5 ${reposted ? 'text-green-500' : ''}`} />
-              <span>{repostCount}</span>
+              <Repeat className={`h-4 w-4 xl:h-5 xl:w-5 ${reposted ? 'text-green-500' : ''}`} />
+              <span className="text-xs xl:text-sm">{repostCount}</span>
             </Button>
             
             <div ref={voteBarRef} className="relative">
@@ -3660,7 +3660,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 size="sm"
                 onClick={() => setShowVoteBar(!showVoteBar)}
                 disabled={likeMutation.isPending || downtrendMutation.isPending}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                className={`flex items-center gap-1 xl:gap-2 px-1.5 xl:px-3 py-1 xl:py-2 h-auto rounded-lg transition-colors ${
                   liked || downtrended
                     ? liked ? 'text-green-500 dark:text-green-400' : 'text-red-500 dark:text-red-400'
                     : 'text-muted-foreground hover:text-foreground hover:bg-muted'
@@ -3669,13 +3669,13 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 title="Click to vote"
               >
                 {liked ? (
-                  <TrendingUp className="h-5 w-5 fill-green-600 dark:fill-green-400 text-green-600 dark:text-green-400" />
+                  <TrendingUp className="h-4 w-4 xl:h-5 xl:w-5 fill-green-600 dark:fill-green-400 text-green-600 dark:text-green-400" />
                 ) : downtrended ? (
-                  <TrendingDown className="h-5 w-5 fill-red-600 dark:fill-red-400 text-red-600 dark:text-red-400" />
+                  <TrendingDown className="h-4 w-4 xl:h-5 xl:w-5 fill-red-600 dark:fill-red-400 text-red-600 dark:text-red-400" />
                 ) : (
-                  <TrendingUp className="h-5 w-5" />
+                  <TrendingUp className="h-4 w-4 xl:h-5 xl:w-5" />
                 )}
-                <span>{liked ? likeCount : downtrended ? downtrendCount : likeCount}</span>
+                <span className="text-xs xl:text-sm">{liked ? likeCount : downtrended ? downtrendCount : likeCount}</span>
               </Button>
 
               {/* Vote Bar - Facebook/LinkedIn Style */}
@@ -3728,11 +3728,11 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowAnalysis(!showAnalysis)}
-                className={`flex items-center gap-2  backdrop-blur-sm hover:bg-gray-500/20 px-3 py-2 rounded-lg ${
+                className={`flex items-center gap-1 backdrop-blur-sm hover:bg-gray-500/20 px-1.5 xl:px-3 py-1 xl:py-2 h-auto rounded-lg ${
                   showAnalysis ? 'text-black dark:text-white' : 'text-black dark:text-white hover:text-gray-700 dark:hover:text-gray-300'
                 }`}
               >
-                <BarChart3 className="h-5 w-5" />
+                <BarChart3 className="h-4 w-4 xl:h-5 xl:w-5" />
               </Button>
             )}
           </div>
@@ -3741,10 +3741,10 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             variant="ghost" 
             size="sm" 
             onClick={() => setShowShareModal(true)}
-            className="text-black dark:text-white hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-500/20  backdrop-blur-sm p-2 rounded-lg"
+            className="text-muted-foreground hover:text-foreground hover:bg-muted p-1.5 xl:p-2 h-auto rounded-lg"
             data-testid={`button-share-${post.id}`}
           >
-            <Share className="h-5 w-5" />
+            <Share className="h-4 w-4 xl:h-5 xl:w-5" />
           </Button>
         </div>
 
@@ -4794,7 +4794,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
           {/* Show Profile Header when Profile filter is selected */}
           {selectedFilter === 'Profile' && <ProfileHeader />}
           
-          <div className="space-y-3 xl:space-y-6">
+          <div className="space-y-2 xl:space-y-4">
             {feedData.map((post) => (
               <PostCard key={post.id} post={post} currentUserUsername={currentUserUsername} onViewUserProfile={setViewingUserProfile} />
             ))}

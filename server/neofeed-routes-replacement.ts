@@ -70,37 +70,65 @@ async function getAuthenticatedUser(req: any): Promise<{ userId: string; usernam
   };
 }
 
-// Helper function to enrich posts with real engagement counts and author avatar from DynamoDB
+// Mirror profile cache — short TTL so updates reflect quickly without hammering DynamoDB
+const _profileCache = new Map<string, { data: any; expiresAt: number }>();
+
+async function getProfileCached(username: string): Promise<any> {
+  const key = username.toLowerCase();
+  const now = Date.now();
+  const cached = _profileCache.get(key);
+  if (cached && cached.expiresAt > now) return cached.data;
+  const profile = await getUserProfileByUsername(key);
+  _profileCache.set(key, { data: profile, expiresAt: now + 30_000 }); // 30s TTL
+  return profile;
+}
+
+// Invalidate cache entry when user updates profile so next fetch is fresh
+export function invalidateProfileCache(username: string) {
+  _profileCache.delete(username.toLowerCase());
+}
+
+// MIRROR LOGIC: Always pull the latest displayName and avatar from the profile —
+// the stored post fields are ignored so every profile update is immediately reflected everywhere.
 async function enrichPostWithRealCounts(post: any): Promise<any> {
   const [likes, reposts, comments] = await Promise.all([
     getPostLikesCount(post.id),
     getPostRetweetsCount(post.id),
     getPostCommentsCount(post.id)
   ]);
-  
-  // Fetch author's profile picture if not already present
+
   let authorAvatar = post.authorAvatar || null;
-  if (!authorAvatar && post.authorUsername) {
+  let authorDisplayName = post.authorDisplayName || post.authorUsername || null;
+
+  if (post.authorUsername) {
     try {
-      const authorProfile = await getUserProfileByUsername(post.authorUsername);
-      if (authorProfile?.profilePicUrl) {
-        authorAvatar = authorProfile.profilePicUrl;
-        console.log(`🖼️ [AVATAR] Found avatar for ${post.authorUsername}: ${authorAvatar.substring(0, 80)}...`);
-      } else {
-        console.log(`🖼️ [AVATAR] No profilePicUrl for ${post.authorUsername}, profile found: ${!!authorProfile}`);
+      const profile = await getProfileCached(post.authorUsername);
+      if (profile) {
+        if (profile.profilePicUrl) authorAvatar = profile.profilePicUrl;
+        if (profile.displayName) authorDisplayName = profile.displayName;
       }
     } catch (err) {
-      console.log(`🖼️ [AVATAR] Error fetching avatar for ${post.authorUsername}:`, err);
+      console.log(`🪞 [MIRROR] Profile fetch failed for ${post.authorUsername}:`, err);
     }
   }
-  
-  return {
-    ...post,
-    likes,
-    reposts,
-    comments,
-    authorAvatar
-  };
+
+  return { ...post, likes, reposts, comments, authorAvatar, authorDisplayName };
+}
+
+// Mirror logic for comments — always use the latest profile displayName and avatar
+async function enrichCommentWithProfile(comment: any): Promise<any> {
+  if (!comment.authorUsername) return comment;
+  try {
+    const profile = await getProfileCached(comment.authorUsername);
+    if (profile) {
+      return {
+        ...comment,
+        authorDisplayName: profile.displayName || comment.authorDisplayName || comment.authorUsername,
+        authorAvatar: profile.profilePicUrl || comment.authorAvatar || null
+      };
+    }
+  } catch (_err) { /* keep original on error */ }
+  return comment;
 }
 
 export function registerNeoFeedAwsRoutes(app: any) {
@@ -710,7 +738,8 @@ export function registerNeoFeedAwsRoutes(app: any) {
     try {
       const { postId } = req.params;
       const comments = await getPostComments(postId);
-      res.json(comments || []);
+      const enriched = await Promise.all((comments || []).map(enrichCommentWithProfile));
+      res.json(enriched);
     } catch (error: any) {
       console.error('❌ Error fetching comments:', error);
       res.json([]);
@@ -721,7 +750,8 @@ export function registerNeoFeedAwsRoutes(app: any) {
     try {
       const postId = req.params.id;
       const comments = await getPostComments(postId);
-      res.json(comments || []);
+      const enriched = await Promise.all((comments || []).map(enrichCommentWithProfile));
+      res.json(enriched);
     } catch (error: any) {
       console.error('❌ Error fetching comments:', error);
       res.json([]);
@@ -1475,6 +1505,11 @@ export function registerNeoFeedAwsRoutes(app: any) {
       console.log(`📥 UPDATE PROFILE for ${user.userId}:`, updates);
 
       const profile = await createOrUpdateUserProfile(user.userId, updates);
+      
+      // Bust the mirror cache for this user so next post/comment fetch is fresh
+      if (user.username) invalidateProfileCache(user.username);
+      if (updates.username) invalidateProfileCache(updates.username);
+      
       res.json({ success: true, profile });
     } catch (error: any) {
       console.error('❌ Error updating user profile:', error);

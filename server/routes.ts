@@ -8320,69 +8320,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
-      // Import AWS S3 SDK
-      const { S3Client, PutObjectCommand } = await import('@aws-sdk/client-s3');
-      
       const awsAccessKeyId = process.env.AWS_ACCESS_KEY_ID;
       const awsSecretAccessKey = process.env.AWS_SECRET_ACCESS_KEY;
       const awsRegion = process.env.ACM_REGION || process.env.AWS_REGION || 'ap-south-1';
       const bucketName = process.env.AWS_S3_BUCKET || 'neofeed-profile-images';
 
       if (!awsAccessKeyId || !awsSecretAccessKey) {
-        console.log('❌ AWS credentials not configured for S3 upload');
-        return res.status(500).json({ 
-          error: 'AWS credentials not configured',
-          message: 'Image upload service is unavailable. Please contact support.',
-          details: 'AWS S3 credentials are required for image storage.'
-        });
+        console.log('⚠️ AWS credentials not configured, will use local storage fallback');
       }
 
-      try {
-        const s3Client = new S3Client({
-          region: awsRegion,
-          credentials: {
-            accessKeyId: awsAccessKeyId,
-            secretAccessKey: awsSecretAccessKey
+      // Generate unique filename shared across storage methods
+      const timestamp = Date.now();
+      const fileExtension = (file.name?.split('.').pop() || 'jpg').toLowerCase();
+      const safeExt = ['jpg','jpeg','png','gif','webp'].includes(fileExtension) ? fileExtension : 'jpg';
+
+      // --- Try AWS S3 first ---
+      let uploadedUrl: string | null = null;
+      if (awsAccessKeyId && awsSecretAccessKey) {
+        try {
+          const s3Client = new S3Client({
+            region: awsRegion,
+            credentials: { accessKeyId: awsAccessKeyId, secretAccessKey: awsSecretAccessKey }
+          });
+          const key = `profiles/${userId}/${imageType}-${timestamp}.${safeExt}`;
+          await s3Client.send(new PutObjectCommand({
+            Bucket: bucketName,
+            Key: key,
+            Body: file.data,
+            ContentType: file.mimetype || 'image/jpeg'
+          }));
+          uploadedUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com/${key}`;
+          console.log(`✅ ${imageType} image uploaded to S3:`, uploadedUrl);
+        } catch (s3Error: any) {
+          console.warn(`⚠️ S3 upload failed (${s3Error.message}), falling back to local storage`);
+        }
+      }
+
+      // --- Fallback: local file storage served via Express static ---
+      if (!uploadedUrl) {
+        try {
+          const fsModule = await import('fs');
+          const pathModule = await import('path');
+          const uploadsDir = pathModule.default.resolve(process.cwd(), 'uploads', 'profiles', userId);
+          if (!fsModule.default.existsSync(uploadsDir)) {
+            fsModule.default.mkdirSync(uploadsDir, { recursive: true });
           }
-        });
-
-        // Generate unique filename
-        const timestamp = Date.now();
-        const fileExtension = file.name?.split('.').pop() || 'jpg';
-        const key = `profiles/${userId}/${imageType}-${timestamp}.${fileExtension}`;
-
-        // Upload to S3 (without ACL - use bucket policy for public access instead)
-        const uploadCommand = new PutObjectCommand({
-          Bucket: bucketName,
-          Key: key,
-          Body: file.data,
-          ContentType: file.mimetype || 'image/jpeg'
-        });
-
-        console.log(`📤 Uploading ${imageType} image to S3 bucket: ${bucketName}, key: ${key}`);
-        await s3Client.send(uploadCommand);
-        
-        // Construct public URL
-        const publicUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com/${key}`;
-        
-        console.log(`✅ ${imageType} image uploaded to S3:`, publicUrl);
-        res.json({ url: publicUrl, success: true });
-      } catch (s3Error: any) {
-        console.error('❌ S3 upload error:', s3Error.message);
-        console.error('❌ S3 error details:', JSON.stringify({
-          code: s3Error.Code || s3Error.code,
-          name: s3Error.name,
-          statusCode: s3Error.$metadata?.httpStatusCode,
-          bucket: bucketName,
-          region: awsRegion
-        }));
-        // Return error instead of fallback URL - don't save fake placeholder images
-        res.status(500).json({ 
-          error: 'S3 upload failed', 
-          message: s3Error.message,
-          details: 'Image could not be uploaded to storage. Please try again.'
-        });
+          const filename = `${imageType}-${timestamp}.${safeExt}`;
+          const filePath = pathModule.default.join(uploadsDir, filename);
+          fsModule.default.writeFileSync(filePath, file.data);
+          // Build a public URL using the Replit dev domain if available
+          const devDomain = process.env.REPLIT_DEV_DOMAIN;
+          const baseUrl = devDomain ? `https://${devDomain}` : '';
+          uploadedUrl = `${baseUrl}/uploads/profiles/${userId}/${filename}`;
+          console.log(`✅ ${imageType} image saved locally:`, uploadedUrl);
+        } catch (localError: any) {
+          console.error('❌ Local file save failed:', localError.message);
+          return res.status(500).json({ error: 'Image upload failed', message: 'Could not save image. Please try again.' });
+        }
       }
+
+      res.json({ url: uploadedUrl, success: true });
     } catch (error: any) {
       console.error('❌ Error uploading profile image:', error);
       res.status(500).json({ error: 'Failed to upload image' });

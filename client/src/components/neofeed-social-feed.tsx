@@ -1057,8 +1057,9 @@ function ProfileHeader() {
       
       toast({ description: `${imageType === 'profile' ? 'Profile' : 'Cover'} photo updated successfully!` });
       
-      // Invalidate profile cache to refresh
+      // Invalidate profile and posts cache — mirror logic will pick up new image on next fetch
       queryClient.invalidateQueries({ queryKey: ['my-profile'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
       setShowImageCropModal(false);
       setSelectedImage(null);
     } catch (error: any) {
@@ -4042,6 +4043,10 @@ function ViewUserProfile({
           onSuccess={() => {
             setShowEditProfile(false);
             queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/profile`] });
+            queryClient.invalidateQueries({ queryKey: ['my-profile'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
+            queryClient.invalidateQueries({ queryKey: [`/api/social-posts/by-user/${username}`] });
+            setTimeout(() => window.location.reload(), 500);
           }}
         />
       )}

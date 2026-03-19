@@ -147,6 +147,9 @@ app.use(fileUpload({
 
 app.use(cookieParser());
 
+// Serve locally uploaded profile/cover images
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

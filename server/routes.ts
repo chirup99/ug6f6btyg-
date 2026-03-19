@@ -18,7 +18,7 @@ const upload = multer({
   storage: multer.memoryStorage(),
   limits: {
     fileSize: 10 * 1024 * 1024, // 10MB max file size
-    files: 5 // Max 5 files
+    files: 3 // Max 3 files
   }
 });
 import crypto from "crypto";

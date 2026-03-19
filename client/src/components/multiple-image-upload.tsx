@@ -187,7 +187,7 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
     const imageCards = allCards.filter(card => card.image !== null);
     const emptyCards = allCards.filter(card => card.image === null);
     const cardsToShow = variant === 'neofeed' 
-      ? (images.length < 5 ? [...images.map((img, i) => ({ id: img.id, label: 'Image', image: img })), { id: 'upload-new', label: 'Upload Image', image: null }] : images.map((img, i) => ({ id: img.id, label: 'Image', image: img })))
+      ? (images.length < 3 ? [...images.map((img, i) => ({ id: img.id, label: 'Image', image: img })), { id: 'upload-new', label: 'Upload Image', image: null }] : images.map((img, i) => ({ id: img.id, label: 'Image', image: img })))
       : [...imageCards, ...emptyCards];
 
     if (variant === 'neofeed') {
@@ -259,7 +259,7 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
               </div>
             ))}
             
-            {images.length < 5 && (
+            {images.length < 3 && (
               <button
                 type="button"
                 onClick={(e) => {
@@ -274,7 +274,7 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
                 </div>
                 <div className="text-center">
                   <p className="text-sm font-medium">Add Image</p>
-                  <p className="text-[10px] opacity-70">Up to 5 images allowed</p>
+                  <p className="text-[10px] opacity-70">Up to 3 images allowed</p>
                 </div>
               </button>
             )}

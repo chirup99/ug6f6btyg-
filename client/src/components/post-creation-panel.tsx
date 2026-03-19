@@ -196,7 +196,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
   };
 
   const addTextCardSnippet = () => {
-    if (content.trim() && selectedTextSnippets.length < 5) {
+    if (content.trim() && selectedTextSnippets.length < 3) {
       const username = currentUser.username || currentUser.email?.split('@')[0] || 'anonymous';
       const displayName = currentUser.displayName || username;
       
@@ -208,7 +208,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
       });
       
       setContent('');
-      toast({ description: `Card ${selectedTextSnippets.length + 1}/5 added!` });
+      toast({ description: `Card ${selectedTextSnippets.length + 1}/3 added!` });
     }
   };
 

@@ -25,7 +25,7 @@ export function AudioModeProvider({ children }: { children: ReactNode }) {
   const [selectedTextSnippets, setSelectedTextSnippets] = useState<SelectedTextSnippet[]>([]);
 
   const addTextSnippet = (snippet: Omit<SelectedTextSnippet, 'id' | 'timestamp'>) => {
-    if (selectedTextSnippets.length >= 5) {
+    if (selectedTextSnippets.length >= 3) {
       return;
     }
     

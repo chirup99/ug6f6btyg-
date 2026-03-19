@@ -685,7 +685,7 @@ function PriceChartSection({ ticker, analysisData }: { ticker: string; analysisD
   const { data: chartData = [], isLoading: chartLoading } = useQuery({
     queryKey: ['stock-chart', cleanTicker, timeframe],
     queryFn: () => fetch(`/api/stock-chart-data/${cleanTicker}?timeframe=${timeframe}`).then(res => res.json()),
-    refetchInterval: timeframe === '1D' ? 60000 : 300000,
+    refetchInterval: 300000,
     staleTime: timeframe === '1D' ? 30000 : 180000,
     gcTime: 600000,
     refetchOnMount: true,
@@ -2092,11 +2092,10 @@ function AnalysisPanel({ ticker, isOpen, onClose }: { ticker: string; isOpen: bo
       return await response.json();
     },
     enabled: isOpen,
-    staleTime: 60000, // Consider data stale after 1 minute
-    gcTime: 300000, // Keep in cache for 5 minutes
-    refetchOnMount: true, // Always refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when user focuses window
-    refetchInterval: 300000, // Auto-refresh every 5 minutes
+    staleTime: 600000,
+    gcTime: 600000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   // Combine data for display
@@ -3330,25 +3329,15 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
 
   // If this is an audio minicast post, render the special card
   if (post.isAudioPost) {
-    console.log('🎙️ Audio Minicast Post Detected:', {
-      postId: post.id,
-      selectedPostIds: post.selectedPostIds,
-      hasSavedSelectedPosts: !!post.selectedPosts && post.selectedPosts.length > 0
-    });
-    
     // Use the saved selectedPosts if available, otherwise try to find them from cache
     let selectedPosts: Array<{ id: string | number; content: string }> = [];
     
     if (post.selectedPosts && post.selectedPosts.length > 0) {
-      // Use the saved selected posts content (preferred method)
-      console.log('✅ Using saved selectedPosts from post data');
       selectedPosts = post.selectedPosts.map(sp => ({
         id: sp.id,
         content: sp.content
       }));
     } else if (post.selectedPostIds && post.selectedPostIds.length > 0) {
-      // Fallback: Try to find posts in cache (backward compatibility)
-      console.log('⚠️ Falling back to cache lookup for selectedPosts');
       const allPosts = queryClient.getQueryData<any[]>(['/api/social-posts']) || [];
       selectedPosts = (post.selectedPostIds || [])
         .map(selectedId => {
@@ -3363,11 +3352,6 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
         })
         .filter((p): p is { id: string | number; content: string } => p !== null);
     }
-    
-    console.log('📊 Final selectedPosts array:', {
-      count: selectedPosts.length,
-      posts: selectedPosts.map(p => ({ id: p.id, contentLength: p.content.length }))
-    });
     
     return (
       <AudioMinicastCard

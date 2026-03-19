@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Radio, Play, Heart, MessageCircle, Share, MoreVertical, Trash2 } from 'lucide-react';
@@ -44,7 +44,7 @@ interface AudioCard {
   colorIndex: number;
 }
 
-export function AudioMinicastCard({
+export const AudioMinicastCard = memo(function AudioMinicastCard({
   content,
   author,
   selectedPostIds = [],
@@ -68,30 +68,13 @@ export function AudioMinicastCard({
   const queryClient = useQueryClient();
 
   const [cards, setCards] = useState<AudioCard[]>(() => {
-    console.log('🎧 AudioMinicastCard Initializing:', {
-      selectedPostsCount: selectedPosts.length,
-      selectedPostIdsCount: selectedPostIds.length,
-      hasPosts: selectedPosts.length > 0
-    });
-    
-    // Only include posts with actual content (not the main announcement card)
     const allCards: AudioCard[] = [];
-    
-    // Only include posts with actual content (not placeholders or empty content)
     if (selectedPosts.length > 0) {
-      console.log('✅ Using selectedPosts with actual content');
       selectedPosts.forEach((post, idx) => {
-        // Filter out posts with no content or placeholder content
         const hasRealContent = post.content && 
                                post.content.trim().length > 0 && 
                                !post.content.startsWith('Selected Post');
-        
         if (hasRealContent) {
-          console.log(`  Card ${idx + 1}:`, {
-            id: post.id,
-            contentLength: post.content?.length || 0,
-            contentPreview: post.content?.substring(0, 50) + '...'
-          });
           allCards.push({
             id: `post-${post.id}`,
             type: 'post',
@@ -99,13 +82,9 @@ export function AudioMinicastCard({
             postId: post.id,
             colorIndex: idx % 5
           });
-        } else {
-          console.log(`  Skipping card ${idx + 1}: No real content`);
         }
       });
     }
-    
-    console.log('📋 Total content cards created:', allCards.length);
     return allCards;
   });
 
@@ -471,7 +450,6 @@ export function AudioMinicastCard({
           {(() => {
             const avatarUrl = author.avatar;
             const isValidAvatar = avatarUrl && avatarUrl.includes('s3.') && !avatarUrl.includes('ui-avatars.com');
-            console.log('🖼️ AudioMinicastCard avatar debug:', { avatarUrl, isValidAvatar });
             return (
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white font-semibold overflow-hidden">
                 {isValidAvatar ? (
@@ -877,4 +855,4 @@ export function AudioMinicastCard({
       </CardContent>
     </Card>
   );
-}
+});

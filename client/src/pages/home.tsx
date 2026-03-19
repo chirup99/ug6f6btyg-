@@ -31397,7 +31397,26 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   }
                 };
 
-                const DOW = ['S','M','T','W','T','F','S'];
+                const DOW = ['S','M','T','W','TH','F','S'];
+
+                // Smooth cubic bezier sparkline for Trend
+                const smoothTrendPath = (() => {
+                  if (trendData.length < 2) return `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
+                  const pts = trendData.map((v, i) => ({
+                    x: (i / (trendData.length - 1)) * svgW,
+                    y: svgH - ((v - minTrend) / rangeT) * svgH,
+                  }));
+                  let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+                  for (let i = 1; i < pts.length; i++) {
+                    const prev = pts[i - 1];
+                    const curr = pts[i];
+                    const cpx = (curr.x - prev.x) / 2.5;
+                    const cp1x = (prev.x + cpx).toFixed(1);
+                    const cp2x = (curr.x - cpx).toFixed(1);
+                    d += ` C ${cp1x} ${prev.y.toFixed(1)}, ${cp2x} ${curr.y.toFixed(1)}, ${curr.x.toFixed(1)} ${curr.y.toFixed(1)}`;
+                  }
+                  return d;
+                })();
 
                 return (
                   <div className="space-y-2">
@@ -31406,8 +31425,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
 
                     {/* Heatmap Calendar */}
-                    <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 overflow-x-auto">
-                      <div className="flex gap-4 min-w-max">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl pt-3 pb-2 overflow-x-auto">
+                      <div className="flex gap-3 px-3 min-w-max">
                         {months.map(({ year, month, label }) => {
                           const firstDay = new Date(year, month, 1).getDay();
                           const daysInMonth = new Date(year, month + 1, 0).getDate();
@@ -31418,76 +31437,82 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
 
                           return (
-                            <div key={`${year}-${month}`} className="flex flex-col gap-0.5">
-                              <div className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 mb-1">{label}</div>
-                              <div className="flex gap-0.5">
+                            <div key={`${year}-${month}`} className="flex flex-col">
+                              <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 mb-1.5 text-center">{label}</div>
+                              <div className="flex gap-1 mb-1">
                                 {DOW.map((d, i) => (
-                                  <div key={i} className="w-4 text-center text-[7px] text-slate-400 font-medium leading-none mb-0.5">{d}</div>
+                                  <div key={i} className="w-[18px] text-center text-[7px] text-slate-400 font-medium leading-none">{d}</div>
                                 ))}
                               </div>
-                              {weeks.map((week, wi) => (
-                                <div key={wi} className="flex gap-0.5">
-                                  {week.map((day, di) => {
-                                    if (!day) return <div key={di} className="w-4 h-4" />;
-                                    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                                    const color = getDotColor(dateKey);
-                                    return (
-                                      <div
-                                        key={di}
-                                        className="w-4 h-4 rounded-full flex items-center justify-center"
-                                        style={{ backgroundColor: color || '#e2e8f0' }}
-                                        title={color ? `${dateKey}: ₹${(pnlMap[dateKey] / 1000).toFixed(1)}K` : dateKey}
-                                      />
-                                    );
-                                  })}
-                                </div>
-                              ))}
+                              <div className="flex flex-col gap-1">
+                                {weeks.map((week, wi) => (
+                                  <div key={wi} className="flex gap-1">
+                                    {week.map((day, di) => {
+                                      if (!day) return <div key={di} className="w-[18px] h-[18px]" />;
+                                      const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                      const color = getDotColor(dateKey);
+                                      return (
+                                        <div
+                                          key={di}
+                                          className="w-[18px] h-[18px] rounded-full"
+                                          style={{ backgroundColor: color || '#e2e8f0' }}
+                                          title={color ? `${dateKey}: ₹${(pnlMap[dateKey] / 1000).toFixed(1)}K` : dateKey}
+                                        />
+                                      );
+                                    })}
+                                  </div>
+                                ))}
+                              </div>
                             </div>
                           );
                         })}
                       </div>
 
                       {/* Legend */}
-                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
-                        <div className="flex items-center gap-1">
-                          <span className="text-[8px] text-slate-400 font-medium">Loss</span>
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#fca5a5] inline-block" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] inline-block" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#b91c1c] inline-block" />
+                      <div className="flex items-center justify-between px-4 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[9px] text-slate-500 font-medium">Loss</span>
+                          <span className="w-3 h-3 rounded-full bg-[#b91c1c] inline-block" />
+                          <span className="w-3 h-3 rounded-full bg-[#ef4444] inline-block" />
+                          <span className="w-3 h-3 rounded-full bg-[#fca5a5] inline-block" />
                         </div>
-                        <div className="flex items-center gap-1">
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#86efac] inline-block" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#22c55e] inline-block" />
-                          <span className="w-2.5 h-2.5 rounded-full bg-[#15803d] inline-block" />
-                          <span className="text-[8px] text-slate-400 font-medium">Profit</span>
+                        <div className="flex items-center gap-1.5">
+                          <span className="w-3 h-3 rounded-full bg-[#86efac] inline-block" />
+                          <span className="w-3 h-3 rounded-full bg-[#22c55e] inline-block" />
+                          <span className="w-3 h-3 rounded-full bg-[#15803d] inline-block" />
+                          <span className="text-[9px] text-slate-500 font-medium">Profit</span>
                         </div>
                       </div>
                     </div>
 
                     {/* Stats Bar */}
-                    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg px-3 py-2">
-                      <div className="flex items-center justify-around text-white gap-1">
-                        <div className="flex flex-col items-center">
-                          <div className="text-[9px] opacity-80">P&L</div>
-                          <div className="text-xs font-bold">{isProfit ? '+' : ''}₹{(totalPnL / 1000).toFixed(1)}K</div>
+                    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl px-4 py-3">
+                      <div className="flex items-center justify-around text-white">
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
+                          <div className="text-sm font-bold leading-none">{isProfit ? '+' : ''}₹{(totalPnL / 1000).toFixed(1)}K</div>
                         </div>
-                        <div className="flex flex-col items-center">
-                          <div className="text-[9px] opacity-80">Trend</div>
-                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-8 h-4">
-                            <path d={trendPath} fill="none" stroke="white" strokeWidth="1.5" opacity="0.9" strokeLinecap="round" strokeLinejoin="round" />
+                        <div className="w-px h-8 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
+                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-10 h-5">
+                            <path d={smoothTrendPath} fill="none" stroke="white" strokeWidth="1.8" opacity="0.95" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </div>
-                        <div className="flex flex-col items-center">
-                          <div className="text-[9px] opacity-80">FOMO</div>
-                          <div className="text-xs font-bold">{fomoCount}</div>
+                        <div className="w-px h-8 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">FOMO</div>
+                          <div className="text-sm font-bold leading-none">{fomoCount}</div>
                         </div>
-                        <div className="flex flex-col items-center">
-                          <div className="text-[9px] opacity-80">Win%</div>
-                          <div className="text-xs font-bold">{winRate.toFixed(0)}%</div>
+                        <div className="w-px h-8 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
+                          <div className="text-sm font-bold leading-none">{winRate.toFixed(0)}%</div>
                         </div>
-                        <div className="flex flex-col items-center">
-                          <div className="text-[9px] opacity-80">Streak</div>
-                          <div className="text-xs font-bold">{maxStreak}</div>
+                        <div className="w-px h-8 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
+                          <div className="text-sm font-bold leading-none">{maxStreak}</div>
                         </div>
                       </div>
                     </div>

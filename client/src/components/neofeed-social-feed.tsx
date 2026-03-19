@@ -2460,6 +2460,84 @@ function AnalysisPanel({ ticker, isOpen, onClose }: { ticker: string; isOpen: bo
   );
 }
 
+function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: string | number }) {
+  const [fomoActive, setFomoActive] = useState(false);
+  const isProfit = (m.totalPnL || 0) >= 0;
+  const trendData: number[] = m.trendData || [];
+  const fomoDates: string[] = m.fomoDates || [];
+
+  const maxT = Math.max(...trendData, 0);
+  const minT = Math.min(...trendData, 0);
+  const rangeT = maxT - minT || 1;
+  const svgW = 40, svgH = 20;
+  const trendPath = trendData.length > 1
+    ? trendData.map((v, i) => {
+        const x = (i / (trendData.length - 1)) * svgW;
+        const y = svgH - ((v - minT) / rangeT) * svgH;
+        return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+      }).join(' ')
+    : `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
+
+  const fromLabel = m.fromDate ? new Date(m.fromDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
+  const toLabel = m.toDate ? new Date(m.toDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
+
+  return (
+    <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
+      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 pt-3 pb-1">
+        {m.dateCount || 0} Trading Days{fromLabel ? ` · ${fromLabel}` : ''}{fromLabel && toLabel ? ' – ' : ''}{toLabel}
+      </div>
+      <div className="bg-gradient-to-r from-violet-500 to-purple-600 mx-3 mb-3 rounded-lg px-3 py-2">
+        <div className="flex items-center justify-around text-white gap-1">
+          <div className="flex flex-col items-center">
+            <div className="text-[9px] opacity-80">P&L</div>
+            <div className="text-xs font-bold">
+              {isProfit ? '+' : ''}₹{(Math.abs(m.totalPnL || 0) / 1000).toFixed(1)}K
+            </div>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="text-[9px] opacity-80">Trend</div>
+            <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-8 h-4">
+              <path d={trendPath} fill="none" stroke="white" strokeWidth="1.5" opacity="0.9" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <button
+            className={`flex flex-col items-center px-1.5 py-0.5 rounded transition-all ${fomoActive ? 'bg-white/30 ring-1 ring-white/50' : 'hover:bg-white/10'}`}
+            onClick={() => setFomoActive(v => !v)}
+            title="Click to see FOMO trading days"
+            data-testid={`button-fomo-${postId}`}
+          >
+            <div className="text-[9px] opacity-80">FOMO</div>
+            <div className="text-xs font-bold">{m.fomoCount || 0}</div>
+          </button>
+          <div className="flex flex-col items-center">
+            <div className="text-[9px] opacity-80">Win%</div>
+            <div className="text-xs font-bold">{m.winRate || 0}%</div>
+          </div>
+          <div className="flex flex-col items-center">
+            <div className="text-[9px] opacity-80">Streak</div>
+            <div className="text-xs font-bold">{m.streak || 0}</div>
+          </div>
+        </div>
+      </div>
+      {fomoActive && fomoDates.length > 0 && (
+        <div className="px-3 pb-3">
+          <div className="text-[9px] font-semibold text-violet-500 dark:text-violet-400 mb-1.5 uppercase tracking-wide">FOMO Days</div>
+          <div className="flex flex-wrap gap-1.5">
+            {fomoDates.map(d => (
+              <span key={d} className="text-[10px] bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 rounded px-1.5 py-0.5 font-medium">
+                {new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {fomoActive && fomoDates.length === 0 && (
+        <div className="px-3 pb-3 text-[10px] text-slate-400">No FOMO trades recorded in this period.</div>
+      )}
+    </div>
+  );
+}
+
 const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserProfile }: { post: FeedPost; currentUserUsername?: string; onViewUserProfile?: (username: string) => void }) {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [liked, setLiked] = useState(false);
@@ -3133,6 +3211,11 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
 
         {/* Post Content */}
         <div className="mb-2 xl:mb-4">
+          {/* Range Report Card */}
+          {post.metadata?.type === 'range_report' && (
+            <RangeReportCard metadata={post.metadata} postId={post.id} />
+          )}
+
           {post.metadata?.type === 'trade_insight' && (
             <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
               <div className="flex h-[140px]">

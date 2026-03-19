@@ -2893,6 +2893,132 @@ export default function Home() {
     }
   };
 
+  // Post trading report to NeoFeed
+  const handlePostToNeoFeed = async () => {
+    setIsPostingReport(true);
+    try {
+      let metadata: any = {};
+      const content = reportPostDescription.trim() || 'Shared my trading report';
+
+      if (reportPostMode === 'today' || reportPostMode === 'selected') {
+        const dateKey = reportPostMode === 'today'
+          ? new Date().toISOString().split('T')[0]
+          : reportPostSelectedDate;
+        const dayData = tradingDataByDate[dateKey] || {};
+        const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+        const tradeHistory: any[] = dayData?.tradeHistory || [];
+
+        let cumulative = 0;
+        const chartData = tradeHistory.map((trade: any) => {
+          const pnl = typeof trade.pnl === 'number'
+            ? trade.pnl
+            : parseFloat(String(trade.pnl || '0').replace(/[₹+,]/g, '')) || 0;
+          cumulative += pnl;
+          return cumulative;
+        });
+
+        const totalPnL = metrics?.netPnL ?? dayData?.profitLossAmount ?? 0;
+        const totalTrades = metrics?.totalTrades ?? dayData?.totalTrades ?? tradeHistory.length;
+        const winRate = totalTrades > 0 ? ((metrics?.winningTrades || 0) / totalTrades * 100) : 0;
+
+        const dateObj = new Date(dateKey);
+        const formattedDate = dateObj.toLocaleDateString('en-US', {
+          weekday: 'short', day: 'numeric', month: 'short', year: 'numeric',
+        }).toUpperCase();
+
+        metadata = {
+          type: 'trade_insight',
+          date: formattedDate,
+          pnl: totalPnL,
+          trades: totalTrades,
+          winRate: Math.round(winRate),
+          chartData: chartData.length > 0 ? chartData : [0],
+        };
+      } else if (reportPostMode === 'range') {
+        const filteredData = getFilteredHeatmapData();
+        const dates = Object.keys(filteredData).sort();
+        let totalPnL = 0, totalTrades = 0, winningTrades = 0;
+        let fomoCount = 0, currentStreak = 0, maxStreak = 0;
+        const trendData: number[] = [];
+        const fomoDates: string[] = [];
+
+        dates.forEach(dateKey => {
+          const dayData = filteredData[dateKey];
+          const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+          const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+          if (metrics) {
+            const netPnL = metrics.netPnL || 0;
+            totalPnL += netPnL;
+            totalTrades += metrics.totalTrades || 0;
+            winningTrades += metrics.winningTrades || 0;
+            trendData.push(netPnL);
+            if (netPnL > 0) { currentStreak++; maxStreak = Math.max(maxStreak, currentStreak); }
+            else { currentStreak = 0; }
+            if (Array.isArray(tags)) {
+              tags.forEach((tag: string) => {
+                if (tag.toLowerCase().includes('fomo') && !fomoDates.includes(dateKey)) {
+                  fomoDates.push(dateKey);
+                  fomoCount++;
+                }
+              });
+            }
+          }
+        });
+
+        const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100) : 0;
+        metadata = {
+          type: 'range_report',
+          fromDate: dates[0] || '',
+          toDate: dates[dates.length - 1] || '',
+          totalPnL,
+          totalTrades,
+          winRate: Math.round(winRate),
+          fomoCount,
+          streak: maxStreak,
+          trendData,
+          fomoDates,
+          dateCount: dates.length,
+        };
+      }
+
+      const username = currentUser?.username || currentUser?.email?.split('@')[0] || 'anonymous';
+      const displayName = currentUser?.displayName || currentUser?.username || 'Anonymous User';
+
+      const { getCognitoUser } = await import('@/cognito');
+      const user = await getCognitoUser();
+      if (!user?.userId) throw new Error('Not authenticated');
+
+      const response = await fetch('/api/social-posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          content,
+          authorUsername: username,
+          authorDisplayName: displayName,
+          stockMentions: [],
+          sentiment: 'neutral',
+          tags: ['trading-report'],
+          hasImage: false,
+          metadata,
+          userId: user.userId,
+        }),
+        credentials: 'include',
+      });
+
+      if (!response.ok) throw new Error('Failed to post');
+
+      toast({ title: 'Posted to NeoFeed!', description: 'Your trading report has been shared.' });
+      setShowReportPostDialog(false);
+      setReportPostDescription('');
+      setReportPostMode(null);
+      setReportPostSelectedDate('');
+    } catch (error: any) {
+      toast({ title: 'Error', description: error.message || 'Failed to post', variant: 'destructive' });
+    } finally {
+      setIsPostingReport(false);
+    }
+  };
+
   // AI Finance Assistant Logic - Real data fetching and analysis
   const fetchRealStockData = async (
     symbol: string,
@@ -11391,6 +11517,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // State to trigger re-render of curved lines during scroll for report dialog
   const [reportDialogScrollTrigger, setReportDialogScrollTrigger] = useState(0);
+
+  // State for post-to-NeoFeed feature in Trading Report
+  const [showReportPostPickerPopover, setShowReportPostPickerPopover] = useState(false);
+  const [showReportPostDialog, setShowReportPostDialog] = useState(false);
+  const [reportPostMode, setReportPostMode] = useState<'today' | 'selected' | 'range' | null>(null);
+  const [reportPostDescription, setReportPostDescription] = useState('');
+  const [reportPostSelectedDate, setReportPostSelectedDate] = useState<string>('');
+  const [isPostingReport, setIsPostingReport] = useState(false);
 
   // Effect to handle scroll updates for report dialog curved lines
   useEffect(() => {
@@ -30468,6 +30602,61 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 {/* Share actions */}
                 {!isSharedReportMode && (
                   <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {/* Post to NeoFeed button with picker popover */}
+                    <Popover open={showReportPostPickerPopover} onOpenChange={setShowReportPostPickerPopover}>
+                      <PopoverTrigger asChild>
+                        <Button
+                          size="icon"
+                          className="bg-violet-600 hover:bg-violet-700 h-7 w-7"
+                          title="Post to NeoFeed"
+                          data-testid="button-post-to-neofeed"
+                        >
+                          <Send className="w-3 h-3" />
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-44 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg" align="end" sideOffset={6}>
+                        <div className="flex flex-col gap-0.5">
+                          <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide px-2 py-1">Post to NeoFeed</p>
+                          <button
+                            className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
+                            data-testid="button-post-today"
+                            onClick={() => {
+                              setReportPostMode('today');
+                              setShowReportPostPickerPopover(false);
+                              setShowReportPostDialog(true);
+                            }}
+                          >
+                            <span className="text-base">📅</span>
+                            <span>Today's Post</span>
+                          </button>
+                          <button
+                            className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
+                            data-testid="button-post-selected"
+                            onClick={() => {
+                              setReportPostMode('selected');
+                              setShowReportPostPickerPopover(false);
+                              setShowReportPostDialog(true);
+                            }}
+                          >
+                            <span className="text-base">🗓️</span>
+                            <span>Selected Post</span>
+                          </button>
+                          <button
+                            className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
+                            data-testid="button-post-range"
+                            onClick={() => {
+                              setReportPostMode('range');
+                              setShowReportPostPickerPopover(false);
+                              setShowReportPostDialog(true);
+                            }}
+                          >
+                            <span className="text-base">📊</span>
+                            <span>Range Post</span>
+                          </button>
+                        </div>
+                      </PopoverContent>
+                    </Popover>
+
                     {!shareableUrl ? (
                       <Button
                         size="icon"
@@ -31014,6 +31203,227 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 </div>
               </div>
 
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Post to NeoFeed Composition Dialog */}
+        <Dialog
+          open={showReportPostDialog}
+          onOpenChange={(open) => {
+            setShowReportPostDialog(open);
+            if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); }
+          }}
+        >
+          <DialogContent className="w-full sm:max-w-md max-h-[90dvh] overflow-hidden flex flex-col gap-0 p-0">
+            <DialogHeader className="flex-shrink-0 px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
+                  <Send className="w-3 h-3 text-white" />
+                </div>
+                <DialogTitle className="text-sm font-semibold">
+                  {reportPostMode === 'today' ? "Today's Post" : reportPostMode === 'selected' ? 'Selected Post' : 'Range Post'}
+                </DialogTitle>
+              </div>
+            </DialogHeader>
+
+            <div className="flex-1 overflow-auto px-4 py-3 space-y-3">
+              {/* Date picker for Selected mode */}
+              {reportPostMode === 'selected' && (
+                <div>
+                  <label className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1 block">Select Date</label>
+                  <input
+                    type="date"
+                    value={reportPostSelectedDate}
+                    onChange={(e) => setReportPostSelectedDate(e.target.value)}
+                    className="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
+                    data-testid="input-post-date"
+                    max={new Date().toISOString().split('T')[0]}
+                  />
+                </div>
+              )}
+
+              {/* Trade card preview for Today / Selected */}
+              {(reportPostMode === 'today' || reportPostMode === 'selected') && (() => {
+                const dateKey = reportPostMode === 'today'
+                  ? new Date().toISOString().split('T')[0]
+                  : reportPostSelectedDate;
+                if (!dateKey && reportPostMode === 'selected') return null;
+                const dayData = tradingDataByDate[dateKey] || {};
+                const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                const tradeHistory: any[] = dayData?.tradeHistory || [];
+                let cumulative = 0;
+                const chartPoints = tradeHistory.map((t: any) => {
+                  const p = typeof t.pnl === 'number' ? t.pnl : parseFloat(String(t.pnl || '0').replace(/[₹+,]/g, '')) || 0;
+                  cumulative += p;
+                  return cumulative;
+                });
+                const totalPnL = metrics?.netPnL ?? dayData?.profitLossAmount ?? 0;
+                const totalTrades = metrics?.totalTrades ?? dayData?.totalTrades ?? tradeHistory.length;
+                const winRate = totalTrades > 0 ? ((metrics?.winningTrades || 0) / totalTrades * 100) : 0;
+                const isProfit = totalPnL >= 0;
+                const dateObj = dateKey ? new Date(dateKey) : new Date();
+                const formattedDate = dateObj.toLocaleDateString('en-US', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }).toUpperCase();
+
+                const maxVal = Math.max(...chartPoints, 0);
+                const minVal = Math.min(...chartPoints, 0);
+                const range = maxVal - minVal || 1;
+                const svgW = 160, svgH = 60;
+                const pathD = chartPoints.length > 1
+                  ? chartPoints.map((v, i) => {
+                      const x = (i / (chartPoints.length - 1)) * svgW;
+                      const y = svgH - ((v - minVal) / range) * svgH;
+                      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+                    }).join(' ')
+                  : `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
+
+                return (
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
+                    <div className="flex h-[130px]">
+                      <div className="flex-1 p-3 flex flex-col">
+                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{formattedDate}</div>
+                        <div className="flex-1 w-full min-h-0">
+                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-full" preserveAspectRatio="none">
+                            <path d={pathD} fill="none" stroke={isProfit ? '#22c55e' : '#ef4444'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                      </div>
+                      <div className="w-[110px] bg-slate-50 dark:bg-slate-800/50 border-l border-slate-100 dark:border-slate-700 p-3 flex flex-col justify-center space-y-2.5">
+                        <div>
+                          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">TOTAL P&L</div>
+                          <div className={`text-sm font-bold ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
+                            {isProfit ? '+' : '-'}₹{Math.abs(totalPnL).toLocaleString()}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">TRADES</div>
+                          <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">{totalTrades}</div>
+                        </div>
+                        <div>
+                          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">WIN RATE</div>
+                          <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">{winRate.toFixed(0)}%</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Range Report Preview */}
+              {reportPostMode === 'range' && (() => {
+                const filteredData = getFilteredHeatmapData();
+                const dates = Object.keys(filteredData).sort();
+                let totalPnL = 0, totalTrades = 0, winningTrades = 0;
+                let fomoCount = 0, currentStreak = 0, maxStreak = 0;
+                const trendData: number[] = [];
+
+                dates.forEach(dateKey => {
+                  const dayData = filteredData[dateKey];
+                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                  const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+                  if (metrics) {
+                    const netPnL = metrics.netPnL || 0;
+                    totalPnL += netPnL;
+                    totalTrades += metrics.totalTrades || 0;
+                    winningTrades += metrics.winningTrades || 0;
+                    trendData.push(netPnL);
+                    if (netPnL > 0) { currentStreak++; maxStreak = Math.max(maxStreak, currentStreak); }
+                    else { currentStreak = 0; }
+                    if (Array.isArray(tags)) {
+                      tags.forEach((tag: string) => { if (tag.toLowerCase().includes('fomo')) fomoCount++; });
+                    }
+                  }
+                });
+
+                const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100) : 0;
+                const isProfit = totalPnL >= 0;
+                const fromLabel = dates[0] ? new Date(dates[0]).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '-';
+                const toLabel = dates[dates.length - 1] ? new Date(dates[dates.length - 1]).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+
+                const maxTrend = Math.max(...trendData, 0);
+                const minTrend = Math.min(...trendData, 0);
+                const rangeT = maxTrend - minTrend || 1;
+                const svgW = 40, svgH = 20;
+                const trendPath = trendData.length > 1
+                  ? trendData.map((v, i) => {
+                      const x = (i / (trendData.length - 1)) * svgW;
+                      const y = svgH - ((v - minTrend) / rangeT) * svgH;
+                      return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
+                    }).join(' ')
+                  : `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
+
+                return (
+                  <div className="space-y-2">
+                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      {dates.length} trading days · {fromLabel} – {toLabel}
+                    </div>
+                    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg px-3 py-2">
+                      <div className="flex items-center justify-around text-white gap-1">
+                        <div className="flex flex-col items-center">
+                          <div className="text-[9px] opacity-80">P&L</div>
+                          <div className="text-xs font-bold">{isProfit ? '+' : ''}₹{(totalPnL / 1000).toFixed(1)}K</div>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="text-[9px] opacity-80">Trend</div>
+                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-8 h-4">
+                            <path d={trendPath} fill="none" stroke="white" strokeWidth="1.5" opacity="0.9" strokeLinecap="round" strokeLinejoin="round" />
+                          </svg>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="text-[9px] opacity-80">FOMO</div>
+                          <div className="text-xs font-bold">{fomoCount}</div>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="text-[9px] opacity-80">Win%</div>
+                          <div className="text-xs font-bold">{winRate.toFixed(0)}%</div>
+                        </div>
+                        <div className="flex flex-col items-center">
+                          <div className="text-[9px] opacity-80">Streak</div>
+                          <div className="text-xs font-bold">{maxStreak}</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Description + User row */}
+              <div className="flex items-start gap-2.5">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
+                  {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
+                </div>
+                <div className="flex-1">
+                  <div className="text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
+                    {currentUser?.displayName || currentUser?.email || 'Guest'}
+                  </div>
+                  <textarea
+                    value={reportPostDescription}
+                    onChange={(e) => setReportPostDescription(e.target.value)}
+                    placeholder="Add a description... (optional)"
+                    rows={3}
+                    className="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    data-testid="textarea-post-description"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Footer with POST button */}
+            <div className="flex-shrink-0 px-4 py-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+              <span className="text-xs text-slate-400">Posts to NeoFeed tab</span>
+              <Button
+                onClick={handlePostToNeoFeed}
+                disabled={isPostingReport || (reportPostMode === 'selected' && !reportPostSelectedDate)}
+                className="bg-violet-600 hover:bg-violet-700 text-white h-8 px-4 text-sm font-semibold"
+                data-testid="button-submit-post"
+              >
+                {isPostingReport ? (
+                  <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                ) : (
+                  <Send className="w-3.5 h-3.5 mr-1.5" />
+                )}
+                POST
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

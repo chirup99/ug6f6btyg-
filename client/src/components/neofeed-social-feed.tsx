@@ -149,117 +149,22 @@ function CommentContent({ content }: { content: string }) {
   return <>{parts}</>;
 }
 
-// Inline Comment Section Component - Twitter/Instagram Style with @mentions
+// Inline Comment Section Component - minimal plain comment input
 function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onCommentDeleted }: { post: FeedPost; isVisible: boolean; onClose: () => void; onCommentAdded?: () => void; onCommentDeleted?: () => void }) {
   const [comment, setComment] = useState('');
-  const [showDeleteMenu, setShowDeleteMenu] = useState<string | null>(null);
-  const [mentionSearch, setMentionSearch] = useState('');
-  const [showMentionSuggestions, setShowMentionSuggestions] = useState(false);
-  const [mentionSuggestions, setMentionSuggestions] = useState<MentionSuggestion[]>([]);
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const [selectedMentionIndex, setSelectedMentionIndex] = useState(0);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
-  const suggestionsRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { getUserDisplayName, getUsername } = useCurrentUser();
+  const { getUsername, getUserDisplayName } = useCurrentUser();
 
-  // Fetch existing comments for this post from AWS DynamoDB
-  const { data: existingComments = [], isLoading: loadingComments, refetch: refetchComments } = useQuery({
-    queryKey: [`/api/social-posts/${post.id}/comments`],
-    queryFn: async () => {
-      const response = await fetch(`/api/social-posts/${post.id}/comments`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch comments');
-      }
-      return response.json();
-    },
-    enabled: isVisible,
-    staleTime: 30000,
-  });
-
-  // Search users for @mention autocomplete
-  const searchUsers = async (query: string) => {
-    if (!query || query.length < 1) {
-      setMentionSuggestions([]);
-      return;
-    }
-    try {
-      const response = await fetch(`/api/users/search?q=${encodeURIComponent(query)}&limit=5`);
-      if (response.ok) {
-        const users = await response.json();
-        setMentionSuggestions(users);
-        setSelectedMentionIndex(0);
-      }
-    } catch (error) {
-      console.error('Error searching users:', error);
-    }
-  };
-
-  // Handle text input and detect @mentions
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const value = e.target.value;
-    const cursorPos = e.target.selectionStart || 0;
-    setComment(value);
-    setCursorPosition(cursorPos);
-
-    // Detect if user is typing @mention
-    const textBeforeCursor = value.slice(0, cursorPos);
-    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
-    
-    if (mentionMatch) {
-      const searchTerm = mentionMatch[1];
-      setMentionSearch(searchTerm);
-      setShowMentionSuggestions(true);
-      searchUsers(searchTerm);
-    } else {
-      setShowMentionSuggestions(false);
-      setMentionSearch('');
-    }
+    setComment(e.target.value);
   };
 
-  // Handle keyboard navigation in mention suggestions
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (!showMentionSuggestions || mentionSuggestions.length === 0) return;
-
-    if (e.key === 'ArrowDown') {
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      setSelectedMentionIndex(prev => 
-        prev < mentionSuggestions.length - 1 ? prev + 1 : 0
-      );
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      setSelectedMentionIndex(prev => 
-        prev > 0 ? prev - 1 : mentionSuggestions.length - 1
-      );
-    } else if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      insertMention(mentionSuggestions[selectedMentionIndex]);
-    } else if (e.key === 'Escape') {
-      setShowMentionSuggestions(false);
-    }
-  };
-
-  // Insert selected mention into comment
-  const insertMention = (user: MentionSuggestion) => {
-    const textBeforeCursor = comment.slice(0, cursorPosition);
-    const textAfterCursor = comment.slice(cursorPosition);
-    const mentionMatch = textBeforeCursor.match(/@(\w*)$/);
-    
-    if (mentionMatch) {
-      const beforeMention = textBeforeCursor.slice(0, mentionMatch.index);
-      const newText = `${beforeMention}@${user.username} ${textAfterCursor}`;
-      setComment(newText);
-      setShowMentionSuggestions(false);
-      
-      // Focus and set cursor position after the inserted mention
-      setTimeout(() => {
-        if (textareaRef.current) {
-          const newCursorPos = beforeMention.length + user.username.length + 2;
-          textareaRef.current.focus();
-          textareaRef.current.setSelectionRange(newCursorPos, newCursorPos);
-        }
-      }, 0);
+      if (comment.trim()) commentMutation.mutate(comment.trim());
     }
   };
 
@@ -304,216 +209,43 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
     }
   });
 
-  // Delete comment mutation
-  const deleteCommentMutation = useMutation({
-    mutationFn: async (commentId: string) => {
-      const username = getUsername() || localStorage.getItem('currentUsername');
-      const response = await fetch(`/api/comments/${commentId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authorUsername: username })
-      });
-      if (!response.ok) {
-        throw new Error('Failed to delete comment');
-      }
-      return response.json();
-    },
-    onSuccess: () => {
-      if (onCommentDeleted) {
-        onCommentDeleted();
-      }
-      queryClient.invalidateQueries({ queryKey: [`/api/social-posts/${post.id}/comments`] });
-      setShowDeleteMenu(null);
-      toast({ description: "Comment deleted" });
-    },
-    onError: () => {
-      toast({ description: "Failed to delete comment", variant: "destructive" });
-    }
-  });
-
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (comment.trim() && !showMentionSuggestions) {
+    if (comment.trim()) {
       commentMutation.mutate(comment.trim());
     }
   };
 
-  // Click outside to close mention suggestions
-  useEffect(() => {
-    const handleClickOutside = (e: MouseEvent) => {
-      if (suggestionsRef.current && !suggestionsRef.current.contains(e.target as Node)) {
-        setShowMentionSuggestions(false);
-      }
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   if (!isVisible) return null;
 
-  const currentUsername = getUsername() || localStorage.getItem('currentUsername');
-
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 pt-4 overflow-x-hidden" data-testid={`comment-section-${post.id}`}>
-      {/* Loading State */}
-      {loadingComments && (
-        <div className="flex justify-center py-4">
-          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-        </div>
-      )}
-
-      {/* Comments List */}
-      {existingComments.length > 0 && (
-        <div className="mb-4">
-          <div className="max-h-80 overflow-y-auto overflow-x-hidden space-y-3">
-            {existingComments.map((existingComment: any) => {
-              const isUserComment = existingComment.authorUsername?.toLowerCase() === currentUsername?.toLowerCase();
-              
-              return (
-                <div key={existingComment.id} className="relative group" data-testid={`comment-${existingComment.id}`}>
-                  <div className="flex items-start gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 rounded-lg transition-colors">
-                    <Avatar className="w-8 h-8 flex-shrink-0">
-                      {existingComment.authorAvatar ? (
-                        <AvatarImage src={existingComment.authorAvatar} alt={existingComment.authorDisplayName} />
-                      ) : null}
-                      <AvatarFallback className="text-xs bg-gradient-to-br from-blue-500 to-purple-500 text-white">
-                        {existingComment.authorDisplayName?.[0]?.toUpperCase() || existingComment.authorUsername?.[0]?.toUpperCase() || 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-0.5">
-                        <span className="font-semibold text-sm text-gray-900 dark:text-white">
-                          {existingComment.authorDisplayName || existingComment.authorUsername || 'Anonymous'}
-                        </span>
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          @{existingComment.authorUsername}
-                        </span>
-                        <span className="text-xs text-gray-400 dark:text-gray-500">
-                          {formatCommentTimestamp(existingComment.createdAt)}
-                        </span>
-                      </div>
-                        <p className="text-sm text-gray-700 dark:text-gray-300 break-words leading-relaxed">
-                          <CommentContent content={existingComment.content} />
-                        </p>
-                    </div>
-                    
-                    {/* Delete menu for user's own comments */}
-                    {isUserComment && (
-                      <div className="relative opacity-0 group-hover:opacity-100 transition-opacity">
-                        <button
-                          onClick={() => setShowDeleteMenu(showDeleteMenu === existingComment.id ? null : existingComment.id)}
-                          className="p-1.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-full transition-colors"
-                          data-testid={`button-comment-menu-${existingComment.id}`}
-                        >
-                          <MoreHorizontal className="h-4 w-4 text-gray-400" />
-                        </button>
-                        
-                        {showDeleteMenu === existingComment.id && (
-                          <div className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl py-1 z-50 min-w-[100px]">
-                            <button
-                              onClick={() => deleteCommentMutation.mutate(existingComment.id)}
-                              disabled={deleteCommentMutation.isPending}
-                              className="flex items-center gap-2 px-3 py-2 text-sm text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 w-full text-left"
-                              data-testid={`button-delete-comment-${existingComment.id}`}
-                            >
-                              <Trash2 className="h-4 w-4" />
-                              {deleteCommentMutation.isPending ? 'Deleting...' : 'Delete'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!loadingComments && existingComments.length === 0 && (
-        <div className="text-center py-4 text-gray-500 dark:text-gray-400 text-sm">
-          No comments yet. Be the first to comment!
-        </div>
-      )}
-
+    <div className="border-t border-gray-200 dark:border-gray-700 pt-3 overflow-x-hidden" data-testid={`comment-section-${post.id}`}>
       {/* Add New Comment Form */}
       <form onSubmit={handleSubmit} className="relative">
-        <div className="flex items-start gap-3 px-3">
-          <Avatar className="w-8 h-8 flex-shrink-0">
-            <AvatarFallback className="text-xs bg-gradient-to-br from-green-500 to-blue-500 text-white">
-              {getUserDisplayName()?.[0]?.toUpperCase() || 'U'}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex-1 relative">
-            <Textarea
-              ref={textareaRef}
-              placeholder="Write a comment... Use @ to mention someone"
-              value={comment}
-              onChange={handleCommentChange}
-              onKeyDown={handleKeyDown}
-              className="min-h-[50px] text-sm bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 resize-none rounded-xl pr-16"
-              disabled={commentMutation.isPending}
-              data-testid={`input-comment-${post.id}`}
-            />
-            
-            {/* Mention Suggestions Dropdown */}
-            {showMentionSuggestions && mentionSuggestions.length > 0 && (
-              <div 
-                ref={suggestionsRef}
-                className="absolute bottom-full left-0 mb-1 w-full max-w-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-xl z-50 overflow-hidden"
-              >
-                <div className="py-1">
-                  {mentionSuggestions.map((user, index) => (
-                    <button
-                      key={`${user.username}-${index}`}
-                      type="button"
-                      onClick={() => insertMention(user)}
-                      className={`w-full flex items-center gap-3 px-3 py-2 text-left transition-colors ${
-                        index === selectedMentionIndex 
-                          ? 'bg-blue-50 dark:bg-blue-900/30' 
-                          : 'hover:bg-gray-50 dark:hover:bg-gray-700'
-                      }`}
-                      data-testid={`mention-suggestion-${user.username}`}
-                    >
-                      <Avatar className="w-8 h-8">
-                        {user.avatar ? (
-                          <AvatarImage src={user.avatar} alt={user.displayName} />
-                        ) : null}
-                        <AvatarFallback className="text-xs bg-gradient-to-br from-purple-500 to-pink-500 text-white">
-                          {user.displayName?.[0]?.toUpperCase() || user.username?.[0]?.toUpperCase()}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <div className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                          {user.displayName}
-                        </div>
-                        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          @{user.username}
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
+        <div className="flex items-center gap-2 px-1">
+          <Textarea
+            ref={textareaRef}
+            placeholder="Add a comment..."
+            value={comment}
+            onChange={handleCommentChange}
+            onKeyDown={handleKeyDown}
+            className="min-h-[36px] max-h-[80px] text-sm bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 resize-none rounded-lg pr-10 py-2"
+            disabled={commentMutation.isPending}
+            data-testid={`input-comment-${post.id}`}
+          />
+          <Button 
+            type="submit" 
+            size="icon"
+            disabled={!comment.trim() || commentMutation.isPending}
+            className="h-8 w-8 flex-shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-40"
+            data-testid={`button-submit-comment-${post.id}`}
+          >
+            {commentMutation.isPending ? (
+              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div>
+            ) : (
+              <Send className="h-3.5 w-3.5" />
             )}
-
-            {/* Submit Button inside textarea */}
-            <Button 
-              type="submit" 
-              size="icon"
-              disabled={!comment.trim() || commentMutation.isPending}
-              className="absolute right-2 bottom-2 h-8 w-8 rounded-full bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-50"
-              data-testid={`button-submit-comment-${post.id}`}
-            >
-              {commentMutation.isPending ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-              ) : (
-                <Send className="h-4 w-4" />
-              )}
-            </Button>
-          </div>
+          </Button>
         </div>
       </form>
     </div>
@@ -1007,7 +739,7 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Ask me about stocks, market news, IPOs, trading strategies..."
+              placeholder="Ask me about stocks..."
               value={searchQuery}
               onChange={handleInputChange}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
@@ -1788,14 +1520,14 @@ function ImageCropModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm p-5">
-        <DialogHeader className="pb-1">
+      <DialogContent className="max-w-xs p-4 overflow-hidden">
+        <DialogHeader className="pb-2">
           <DialogTitle className="text-sm font-semibold text-foreground">
             Adjust {imageType === 'profile' ? 'Profile' : 'Cover'} Photo
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex flex-col items-center gap-4">
+        <div className="flex flex-col items-center gap-3">
           <div 
             ref={containerRef}
             className={`relative overflow-hidden bg-muted ${containerClass} cursor-move flex items-center justify-center`}
@@ -1822,30 +1554,16 @@ function ImageCropModal({
               draggable={false}
             />
           </div>
-
-          <div className="flex items-center gap-3 w-full">
-            <ZoomOut className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-            <input
-              type="range"
-              min="0.5"
-              max="3"
-              step="0.1"
-              value={scale}
-              onChange={(e) => setScale(parseFloat(e.target.value))}
-              className="flex-1 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-blue-500"
-              data-testid="slider-zoom"
-            />
-            <ZoomIn className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-          </div>
+          <p className="text-[11px] text-muted-foreground">Drag to reposition</p>
         </div>
 
         <canvas ref={canvasRef} className="hidden" />
 
-        <div className="flex gap-2 justify-end pt-1">
-          <Button variant="outline" size="sm" onClick={onClose} disabled={uploading} data-testid="button-cancel-crop" className="h-8 px-3 text-xs">
+        <div className="flex gap-2 justify-end pt-2">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={uploading} data-testid="button-cancel-crop" className="h-7 px-3 text-xs">
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={uploading} data-testid="button-apply-crop" className="h-8 px-3 text-xs">
+          <Button size="sm" onClick={handleSave} disabled={uploading} data-testid="button-apply-crop" className="h-7 px-3 text-xs">
             {uploading ? (
               <>
                 <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
@@ -3520,7 +3238,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             <TradeInsightCard post={post} />
           )}
           <div className="relative">
-            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && (
+            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && post.content !== 'trading-report' && !post.content?.toLowerCase().includes('trading report') && (
             <p 
               className={`text-gray-900 dark:text-white leading-snug mb-1.5 xl:mb-3 text-sm xl:text-base font-medium ${
                 isAudioMode ? 'cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors rounded-lg p-2 -m-2' : ''
@@ -3534,7 +3252,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             )}
             
             {/* Expand/Collapse button for long text */}
-            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && post.content.length > MAX_TEXT_LENGTH && (
+            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && post.content !== 'trading-report' && !post.content?.toLowerCase().includes('trading report') && post.content.length > MAX_TEXT_LENGTH && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium mt-1 transition-colors"

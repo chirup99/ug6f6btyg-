@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useMemo, memo } from 'react';
+import { useState, useRef, useEffect, useMemo, memo, JSX } from 'react';
+import { DemoHeatmap } from './DemoHeatmap';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { PostCreationPanel } from './post-creation-panel';
@@ -2578,7 +2579,10 @@ function TradeInsightCard({ post, onViewUserProfile }: { post: FeedPost; onViewU
 function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: string | number }) {
   const isProfit = (m.totalPnL || 0) >= 0;
   const trendData: number[] = m.trendData || [];
-  const tradingDays: { date: string; pnl: number; isFomo: boolean }[] = m.tradingDays || [];
+  const [fomoHighlight, setFomoHighlight] = useState(false);
+  const [scrollTrigger, setScrollTrigger] = useState(0);
+  const fomoButtonRef = useRef<HTMLButtonElement>(null);
+  const heatmapContainerRef = useRef<HTMLDivElement>(null);
 
   const maxT = Math.max(...trendData, 0);
   const minT = Math.min(...trendData, 0);
@@ -2595,8 +2599,21 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
   const fromLabel = m.fromDate ? new Date(m.fromDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
   const toLabel = m.toDate ? new Date(m.toDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
-  const maxAbsPnL = Math.max(...tradingDays.map(d => Math.abs(d.pnl)), 1);
+  useEffect(() => {
+    if (!fomoHighlight) return;
+    const container = heatmapContainerRef.current;
+    if (!container) return;
+    const handleScroll = () => setScrollTrigger(prev => prev + 1);
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [fomoHighlight]);
 
+  const tradingDays: { date: string; pnl: number; isFomo: boolean }[] = m.tradingDays || [];
+  const maxAbsPnL = Math.max(...tradingDays.map(d => Math.abs(d.pnl)), 1);
   const monthGroups: { label: string; days: { date: string; pnl: number; isFomo: boolean }[] }[] = [];
   tradingDays.forEach(day => {
     const d = new Date(day.date);
@@ -2605,7 +2622,6 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
     if (existing) { existing.days.push(day); }
     else { monthGroups.push({ label, days: [day] }); }
   });
-
   const getDotSize = (pnl: number) => {
     const ratio = Math.abs(pnl) / maxAbsPnL;
     if (ratio > 0.66) return 11;
@@ -2622,40 +2638,86 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
         <div className="text-[9px] text-gray-400 font-medium">{new Date(m.toDate || Date.now()).getFullYear()}</div>
       </div>
 
-      {tradingDays.length > 0 && (
+      {m.tradingDataByDate ? (
+        <div className="px-4 pb-2">
+          <div className="relative">
+            <div
+              ref={heatmapContainerRef}
+              className="max-h-48 overflow-auto scrollbar-hide border border-slate-100 dark:border-zinc-800 rounded-lg"
+            >
+              <DemoHeatmap
+                tradingDataByDate={m.tradingDataByDate}
+                onDateSelect={() => {}}
+                selectedDate={null}
+                onDataUpdate={() => {}}
+                isPublicView={true}
+                disableAutoScroll={true}
+                onSelectDateForHeatmap={() => {}}
+              />
+            </div>
+            {fomoHighlight && m.fomoDates && m.fomoDates.length > 0 && (() => {
+              void scrollTrigger;
+              if (!fomoButtonRef.current || !heatmapContainerRef.current) return null;
+              const scrollableEl = heatmapContainerRef.current;
+              const scrollLeft = scrollableEl.scrollLeft || 0;
+              const scrollTop = scrollableEl.scrollTop || 0;
+              const scrollWidth = scrollableEl.scrollWidth || 0;
+              const scrollHeight = scrollableEl.scrollHeight || 0;
+              const containerRect = scrollableEl.getBoundingClientRect();
+              const buttonRect = fomoButtonRef.current.getBoundingClientRect();
+              const buttonCenterX = buttonRect.left - containerRect.left + scrollLeft + buttonRect.width / 2;
+              const buttonCenterY = buttonRect.top - containerRect.top + scrollTop + buttonRect.height / 2;
+              const paths: JSX.Element[] = [];
+              (m.fomoDates as string[]).forEach((date: string, index: number) => {
+                const cellEl = scrollableEl.querySelector(`[data-date="${date}"]`);
+                if (cellEl) {
+                  const cellRect = cellEl.getBoundingClientRect();
+                  const cellCenterX = cellRect.left - containerRect.left + scrollLeft + cellRect.width / 2;
+                  const cellCenterY = cellRect.top - containerRect.top + scrollTop + cellRect.height / 2;
+                  const controlX = (buttonCenterX + cellCenterX) / 2;
+                  const controlY = Math.min(buttonCenterY, cellCenterY) - 40;
+                  paths.push(
+                    <g key={`nf-${date}-${index}`}>
+                      <path d={`M ${buttonCenterX} ${buttonCenterY} Q ${controlX} ${controlY}, ${cellCenterX} ${cellCenterY}`} fill="none" stroke="url(#nfGrad)" strokeWidth="2" strokeDasharray="6,4" opacity="0.9" />
+                      <circle cx={cellCenterX} cy={cellCenterY} r="4" fill="#fcd34d" opacity="0.9" />
+                      <circle cx={cellCenterX} cy={cellCenterY} r="3" fill="#fbbf24" />
+                    </g>
+                  );
+                }
+              });
+              return (
+                <svg style={{ position: 'absolute', top: 0, left: 0, width: `${scrollWidth}px`, height: `${scrollHeight}px`, pointerEvents: 'none', zIndex: 10, overflow: 'visible' }}>
+                  <defs>
+                    <linearGradient id="nfGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#c084fc" stopOpacity="1" />
+                      <stop offset="50%" stopColor="#f472b6" stopOpacity="1" />
+                      <stop offset="100%" stopColor="#fbbf24" stopOpacity="1" />
+                    </linearGradient>
+                  </defs>
+                  {paths}
+                </svg>
+              );
+            })()}
+          </div>
+        </div>
+      ) : tradingDays.length > 0 && (
         <div className="px-4 pb-2">
           <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-zinc-700">
             <div className="flex gap-4 min-w-max pb-1">
               {monthGroups.map(group => (
                 <div key={group.label} className="flex flex-col gap-1">
-                  <div className="text-[9px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wide">
-                    {group.label.split(' ')[0]}
-                  </div>
+                  <div className="text-[9px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wide">{group.label.split(' ')[0]}</div>
                   <div className="flex flex-col gap-[3px]">
                     {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dow, wi) => (
                       <div key={wi} className="flex gap-[3px] items-center">
                         <span className="text-[7px] text-gray-300 dark:text-zinc-600 w-2">{dow}</span>
-                        {group.days
-                          .filter(day => new Date(day.date).getDay() === wi)
-                          .map(day => {
-                            const size = getDotSize(day.pnl);
-                            const isGain = day.pnl >= 0;
-                            const title = `${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${isGain ? '+' : ''}₹${Math.round(day.pnl).toLocaleString()}${day.isFomo ? ' (FOMO)' : ''}`;
-                            return (
-                              <div
-                                key={day.date}
-                                title={title}
-                                style={{ width: size, height: size }}
-                                className={`rounded-full flex-shrink-0 ${
-                                  day.isFomo
-                                    ? 'bg-yellow-400 dark:bg-yellow-500'
-                                    : isGain
-                                    ? 'bg-emerald-500 dark:bg-emerald-400'
-                                    : 'bg-red-500 dark:bg-red-400'
-                                }`}
-                              />
-                            );
-                          })}
+                        {group.days.filter(day => new Date(day.date).getDay() === wi).map(day => {
+                          const size = getDotSize(day.pnl);
+                          const isGain = day.pnl >= 0;
+                          return (
+                            <div key={day.date} title={`${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${isGain ? '+' : ''}₹${Math.round(day.pnl).toLocaleString()}${day.isFomo ? ' (FOMO)' : ''}`} style={{ width: size, height: size }} className={`rounded-full flex-shrink-0 ${day.isFomo ? 'bg-yellow-400 dark:bg-yellow-500' : isGain ? 'bg-emerald-500 dark:bg-emerald-400' : 'bg-red-500 dark:bg-red-400'}`} />
+                          );
+                        })}
                       </div>
                     ))}
                   </div>
@@ -2663,54 +2725,46 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
               ))}
             </div>
           </div>
-          <div className="flex items-center justify-between mt-1">
-            <div className="flex items-center gap-2 text-[9px] text-gray-400">
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-red-500" />
-                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
-                <span>Loss</span>
-              </div>
-              <div className="flex items-center gap-1">
-                <div className="w-2 h-2 rounded-full bg-emerald-500" />
-                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
-                <span>Profit</span>
-              </div>
-              {m.fomoCount > 0 && (
-                <div className="flex items-center gap-1">
-                  <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                  <span>FOMO</span>
-                </div>
-              )}
-            </div>
+          <div className="flex items-center gap-2 mt-1 text-[9px] text-gray-400">
+            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500" /><span>Loss</span></div>
+            <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500" /><span>Profit</span></div>
+            {m.fomoCount > 0 && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-yellow-400" /><span>FOMO</span></div>}
           </div>
         </div>
       )}
 
-      <div className="bg-gradient-to-r from-violet-500 to-purple-600 mx-3 mb-3 rounded-lg px-3 py-2">
-        <div className="flex items-center justify-around text-white gap-1">
-          <div className="flex flex-col items-center">
-            <div className="text-[9px] opacity-80">P&L</div>
-            <div className="text-xs font-bold">
-              {isProfit ? '+' : '-'}₹{(Math.abs(m.totalPnL || 0) / 1000).toFixed(1)}K
-            </div>
+      <div className="bg-gradient-to-r from-violet-500 to-purple-600 mx-3 mb-3 rounded-xl px-4 py-3">
+        <div className="flex items-center justify-around text-white">
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
+            <div className="text-sm font-bold leading-none">{isProfit ? '+' : '-'}₹{(Math.abs(m.totalPnL || 0) / 1000).toFixed(1)}K</div>
           </div>
-          <div className="flex flex-col items-center">
-            <div className="text-[9px] opacity-80">Trend</div>
-            <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-8 h-4">
-              <path d={trendPath} fill="none" stroke="white" strokeWidth="1.5" opacity="0.9" strokeLinecap="round" strokeLinejoin="round" />
+          <div className="w-px h-8 bg-white/20" />
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
+            <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-10 h-5">
+              <path d={trendPath} fill="none" stroke="white" strokeWidth="1.8" opacity="0.95" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <div className="flex flex-col items-center">
-            <div className="text-[9px] opacity-80">FOMO</div>
-            <div className="text-xs font-bold">{m.fomoCount || 0}</div>
+          <div className="w-px h-8 bg-white/20" />
+          <button
+            ref={fomoButtonRef}
+            className={`flex flex-col items-center gap-0.5 rounded-2xl px-4 py-1.5 border shadow-inner transition-all ${fomoHighlight ? 'bg-white/30 border-white/60 ring-2 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
+            onClick={() => setFomoHighlight(prev => !prev)}
+            title={`Tap to ${fomoHighlight ? 'hide' : 'show'} FOMO trading days`}
+          >
+            <div className="text-[9px] font-medium opacity-90 uppercase tracking-wide">FOMO</div>
+            <div className="text-sm font-bold leading-none">{m.fomoCount || 0}</div>
+          </button>
+          <div className="w-px h-8 bg-white/20" />
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
+            <div className="text-sm font-bold leading-none">{m.winRate || 0}%</div>
           </div>
-          <div className="flex flex-col items-center">
-            <div className="text-[9px] opacity-80">Win%</div>
-            <div className="text-xs font-bold">{m.winRate || 0}%</div>
-          </div>
-          <div className="flex flex-col items-center">
-            <div className="text-[9px] opacity-80">Streak</div>
-            <div className="text-xs font-bold">{m.streak || 0}</div>
+          <div className="w-px h-8 bg-white/20" />
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
+            <div className="text-sm font-bold leading-none">{m.streak || 0}</div>
           </div>
         </div>
       </div>

@@ -3250,6 +3250,7 @@ export default function Home() {
           fomoDates,
           dateCount: dates.length,
           tradingDays,
+          tradingDataByDate: filteredData,
         };
       }
 
@@ -31690,6 +31691,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           selectedDate={null}
                           onDataUpdate={() => {}}
                           isPublicView={true}
+                          disableAutoScroll={true}
                           onSelectDateForHeatmap={() => {}}
                         />
                       </div>

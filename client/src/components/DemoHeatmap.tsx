@@ -30,6 +30,7 @@ interface DemoHeatmapProps {
     dates: string[];
   } | null;
   isPublicView?: boolean;
+  disableAutoScroll?: boolean;
   onSelectDateForHeatmap?: (symbol: string, date: string) => void;
   refreshTrigger?: number;
 }
@@ -86,7 +87,7 @@ function getPnLColor(pnl: number): string {
   }
 }
 
-export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0 }: DemoHeatmapProps) {
+export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, disableAutoScroll, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0 }: DemoHeatmapProps) {
   const { currentUser } = useCurrentUser();
   // Default to December of last year so the calendar shows the correct year before data loads
   const [currentDate, setCurrentDate] = useState(new Date(new Date().getFullYear() - 1, 11, 1));
@@ -317,7 +318,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
 
   // Auto-scroll heatmap horizontally when in public view (showcase animation)
   useEffect(() => {
-    if (!isPublicView || !heatmapContainerRef.current || isLoading) {
+    if (!isPublicView || !heatmapContainerRef.current || isLoading || disableAutoScroll) {
       return;
     }
 

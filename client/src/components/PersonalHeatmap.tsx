@@ -178,6 +178,13 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
         setHeatmapData(normalizedData);
         setIsLoading(false);
 
+        // Auto-navigate to the month/year of the latest data entry
+        const latestDateKey = Object.keys(normalizedData).sort().pop();
+        if (latestDateKey) {
+          const [yr, mo] = latestDateKey.split('-').map(Number);
+          setCurrentDate(new Date(yr, mo - 1, 1));
+        }
+
         // Log each date for debugging
         Object.keys(normalizedData).forEach(dateKey => {
           const pnl = calculatePnL(normalizedData[dateKey]);
@@ -751,11 +758,11 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
     };
   }, [selectedRange]);
 
-  // Generate calendar data for the year with perfect calendar design (empty cells at start)
+  // Generate calendar data spanning all years with data (dynamic multi-year support)
   const generateMonthsData = () => {
-    // Always use current year - show complete calendar regardless of range selection
-    const startYear = currentDate.getFullYear();
-    const endYear = currentDate.getFullYear();
+    const dataKeys = Object.keys(heatmapData).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+    const startYear = dataKeys.length > 0 ? parseInt(dataKeys[0].slice(0, 4)) : currentDate.getFullYear();
+    const endYear = dataKeys.length > 0 ? parseInt(dataKeys[dataKeys.length - 1].slice(0, 4)) : currentDate.getFullYear();
     const startMonth = 0;
     const endMonth = 11;
 
@@ -898,7 +905,13 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
             <>
               <span>{editableTitle} {selectedRange 
                 ? `${selectedRange.from.getFullYear()}${selectedRange.from.getFullYear() !== selectedRange.to.getFullYear() ? `-${selectedRange.to.getFullYear()}` : ''}`
-                : currentDate.getFullYear()
+                : (() => {
+                    const dataKeys = Object.keys(heatmapData).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+                    if (dataKeys.length === 0) return currentDate.getFullYear();
+                    const minYear = parseInt(dataKeys[0].slice(0, 4));
+                    const maxYear = parseInt(dataKeys[dataKeys.length - 1].slice(0, 4));
+                    return minYear === maxYear ? minYear : `${minYear}-${maxYear}`;
+                  })()
               }</span>
               <button
                 onClick={() => setIsEditingTitle(true)}

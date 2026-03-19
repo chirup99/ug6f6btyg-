@@ -88,7 +88,7 @@ function getPnLColor(pnl: number): string {
 
 export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0 }: DemoHeatmapProps) {
   const { currentUser } = useCurrentUser();
-  const [currentDate, setCurrentDate] = useState(new Date(2025, 0, 1));
+  const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -189,13 +189,14 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
       setIsUsingExternalData(true);
       setIsLoading(false);
       
-      // Auto-navigate to the year of the latest data entry
-      const latestYear = Object.keys(tradingDataByDate)
+      // Auto-navigate to the month/year of the latest data entry
+      const latestDateKey = Object.keys(tradingDataByDate)
         .filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k))
         .sort()
-        .pop()?.slice(0, 4);
-      if (latestYear) {
-        setCurrentDate(new Date(parseInt(latestYear, 10), 0, 1));
+        .pop();
+      if (latestDateKey) {
+        const [yr, mo] = latestDateKey.split('-').map(Number);
+        setCurrentDate(new Date(yr, mo - 1, 1));
       }
       
       // Emit data to parent component
@@ -235,10 +236,11 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
         setHeatmapData(processedData);
         setIsLoading(false);
         
-        // Auto-navigate to the year of the latest data entry
-        const latestYear = Object.keys(processedData).sort().pop()?.slice(0, 4);
-        if (latestYear) {
-          setCurrentDate(new Date(parseInt(latestYear, 10), 0, 1));
+        // Auto-navigate to the month/year of the latest data entry
+        const latestDateKey = Object.keys(processedData).sort().pop();
+        if (latestDateKey) {
+          const [yr, mo] = latestDateKey.split('-').map(Number);
+          setCurrentDate(new Date(yr, mo - 1, 1));
         }
         
         // Emit data to parent component
@@ -651,11 +653,11 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
     return filtered;
   };
 
-  // Generate calendar data for the year (ALWAYS show complete calendar, no filtering)
+  // Generate calendar data spanning all years with data (dynamic multi-year support)
   const generateMonthsData = () => {
-    // Always use current year - show complete calendar regardless of range selection
-    const startYear = currentDate.getFullYear();
-    const endYear = currentDate.getFullYear();
+    const dataKeys = Object.keys(heatmapData).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+    const startYear = dataKeys.length > 0 ? parseInt(dataKeys[0].slice(0, 4)) : currentDate.getFullYear();
+    const endYear = dataKeys.length > 0 ? parseInt(dataKeys[dataKeys.length - 1].slice(0, 4)) : currentDate.getFullYear();
     const startMonth = 0;
     const endMonth = 11;
 
@@ -1090,7 +1092,13 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
           <span>
             {selectedRange 
               ? `${selectedRange.from.getFullYear()}${selectedRange.from.getFullYear() !== selectedRange.to.getFullYear() ? `-${selectedRange.to.getFullYear()}` : ''}`
-              : currentDate.getFullYear()
+              : (() => {
+                  const dataKeys = Object.keys(heatmapData).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+                  if (dataKeys.length === 0) return currentDate.getFullYear();
+                  const minYear = parseInt(dataKeys[0].slice(0, 4));
+                  const maxYear = parseInt(dataKeys[dataKeys.length - 1].slice(0, 4));
+                  return minYear === maxYear ? minYear : `${minYear}-${maxYear}`;
+                })()
             }
           </span>
         </div>

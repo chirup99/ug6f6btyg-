@@ -178,16 +178,18 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
   // Fetch data OR use provided tradingDataByDate - SECURE for public view
   // Helper: find the last date key that has actual trading data
   function findLastDataDate(data: Record<string, any>): string | undefined {
-    // Only count dates that have actual trade history records (not just metadata/stray entries)
+    const currentYear = new Date().getFullYear();
+    // Only look at dates from PREVIOUS years — demo data should never be in the current year
     const datesWithTrades = Object.keys(data)
       .filter(k => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return false;
+        const entryYear = parseInt(k.slice(0, 4));
+        if (entryYear >= currentYear) return false; // Skip current year (2026+) entries
         const d = data[k];
         const tradeCount = (d?.tradeHistory?.length || 0) + (d?.tradingData?.tradeHistory?.length || 0);
         return tradeCount > 0;
       })
       .sort();
-    // Fall back to any valid date key only if no dates have actual trades
     return datesWithTrades.length > 0
       ? datesWithTrades[datesWithTrades.length - 1]
       : undefined;

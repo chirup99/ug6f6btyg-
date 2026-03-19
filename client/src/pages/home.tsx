@@ -1887,6 +1887,273 @@ const getFullApiUrl = (path: string): string => {
   return `${API_BASE_URL}${path}`;
 };
 
+function RangeHeatmapPreview({ filteredData }: { filteredData: Record<string, any> }) {
+  const [fomoActive, setFomoActive] = useState(false);
+  const [fomoLinePositions, setFomoLinePositions] = useState<Array<{ x1: number; y1: number; x2: number; y2: number }> | null>(null);
+  const heatmapContainerRef = useRef<HTMLDivElement>(null);
+  const fomoButtonRef = useRef<HTMLButtonElement>(null);
+  const outerRef = useRef<HTMLDivElement>(null);
+
+  const dates = Object.keys(filteredData).sort();
+
+  let totalPnL = 0, totalTrades = 0, winningTrades = 0;
+  let fomoCount = 0, currentStreak = 0, maxStreak = 0;
+  const trendData: number[] = [];
+  const fomoDates: string[] = [];
+
+  dates.forEach(dateKey => {
+    const dayData = filteredData[dateKey];
+    const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+    const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+    if (metrics) {
+      const netPnL = metrics.netPnL || 0;
+      totalPnL += netPnL;
+      totalTrades += metrics.totalTrades || 0;
+      winningTrades += metrics.winningTrades || 0;
+      trendData.push(netPnL);
+      if (netPnL > 0) { currentStreak++; maxStreak = Math.max(maxStreak, currentStreak); }
+      else currentStreak = 0;
+    }
+    if (Array.isArray(tags)) {
+      tags.forEach((tag: string) => { if (tag.toLowerCase().includes('fomo') && !fomoDates.includes(dateKey)) { fomoCount++; fomoDates.push(dateKey); } });
+    }
+  });
+
+  const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100) : 0;
+  const isProfit = totalPnL >= 0;
+  const fromLabel = dates[0] ? new Date(dates[0]).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '-';
+  const toLabel = dates[dates.length - 1] ? new Date(dates[dates.length - 1]).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '-';
+
+  const months = useMemo(() => {
+    if (dates.length === 0) return [];
+    const startD = new Date(dates[0]); startD.setDate(1);
+    const endD = new Date(dates[dates.length - 1]);
+    const result: { name: string; year: number; dayRows: (Date | null)[][] }[] = [];
+    const cur = new Date(startD);
+    while (cur.getFullYear() < endD.getFullYear() || (cur.getFullYear() === endD.getFullYear() && cur.getMonth() <= endD.getMonth())) {
+      const year = cur.getFullYear();
+      const monthIndex = cur.getMonth();
+      const monthName = cur.toLocaleString('en-US', { month: 'short' });
+      const lastDay = new Date(year, monthIndex + 1, 0);
+      const dayColumns: (Date | null)[][] = [[], [], [], [], [], [], []];
+      for (let i = 0; i < new Date(year, monthIndex, 1).getDay(); i++) dayColumns[i].push(null);
+      for (let day = 1; day <= lastDay.getDate(); day++) {
+        const date = new Date(year, monthIndex, day);
+        dayColumns[date.getDay()].push(date);
+      }
+      result.push({ name: monthName, year, dayRows: dayColumns });
+      cur.setMonth(cur.getMonth() + 1);
+      if (result.length > 24) break;
+    }
+    return result;
+  }, [dates.join(',')]);
+
+  const getPnLColor = (pnl: number) => {
+    if (pnl === 0) return "bg-gray-200 dark:bg-gray-700";
+    const amount = Math.abs(pnl);
+    if (pnl > 0) {
+      if (amount >= 5000) return "bg-green-800 dark:bg-green-700";
+      if (amount >= 1500) return "bg-green-600 dark:bg-green-500";
+      return "bg-green-300 dark:bg-green-300";
+    } else {
+      if (amount >= 5000) return "bg-red-800 dark:bg-red-700";
+      if (amount >= 1500) return "bg-red-600 dark:bg-red-500";
+      return "bg-red-300 dark:bg-red-300";
+    }
+  };
+
+  const getCellPnL = (dateKey: string) => {
+    const data = filteredData[dateKey];
+    if (!data) return 0;
+    const metrics = data?.tradingData?.performanceMetrics || data?.performanceMetrics;
+    return metrics?.netPnL || 0;
+  };
+
+  useEffect(() => {
+    if (!fomoActive || fomoDates.length === 0) { setFomoLinePositions(null); return; }
+    const calc = () => {
+      const outer = outerRef.current;
+      const heatmap = heatmapContainerRef.current;
+      const fomoBtn = fomoButtonRef.current;
+      if (!outer || !heatmap || !fomoBtn) return;
+      const outerRect = outer.getBoundingClientRect();
+      const fomoBtnRect = fomoBtn.getBoundingClientRect();
+      const originX = fomoBtnRect.left - outerRect.left + fomoBtnRect.width / 2;
+      const originY = fomoBtnRect.top - outerRect.top + fomoBtnRect.height / 2;
+      const lines: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+      fomoDates.forEach(dateKey => {
+        const cell = heatmap.querySelector(`[data-date="${dateKey}"]`) as HTMLElement;
+        if (cell) {
+          const cellRect = cell.getBoundingClientRect();
+          const x2 = cellRect.left - outerRect.left + cellRect.width / 2;
+          const y2 = cellRect.top - outerRect.top + cellRect.height / 2;
+          lines.push({ x1: originX, y1: originY, x2, y2 });
+        }
+      });
+      setFomoLinePositions(lines.length > 0 ? lines : null);
+    };
+    const t1 = setTimeout(calc, 50);
+    const t2 = setTimeout(calc, 250);
+    const scroll = heatmapContainerRef.current;
+    scroll?.addEventListener('scroll', calc);
+    return () => { clearTimeout(t1); clearTimeout(t2); scroll?.removeEventListener('scroll', calc); };
+  }, [fomoActive, fomoDates.join(',')]);
+
+  const svgW = 40, svgH = 20;
+  const maxTrend = Math.max(...trendData, 0);
+  const minTrend = Math.min(...trendData, 0);
+  const rangeT = maxTrend - minTrend || 1;
+  const smoothTrendPath = (() => {
+    if (trendData.length < 2) return `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
+    const pts = trendData.map((v, i) => ({ x: (i / (trendData.length - 1)) * svgW, y: svgH - ((v - minTrend) / rangeT) * svgH }));
+    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let i = 1; i < pts.length; i++) {
+      const p = pts[i - 1], c = pts[i], cx = (c.x - p.x) / 2.5;
+      d += ` C ${(p.x + cx).toFixed(1)} ${p.y.toFixed(1)}, ${(c.x - cx).toFixed(1)} ${c.y.toFixed(1)}, ${c.x.toFixed(1)} ${c.y.toFixed(1)}`;
+    }
+    return d;
+  })();
+
+  const dayLabels = ['S', 'M', 'T', 'W', 'TH', 'F', 'S'];
+
+  return (
+    <div className="space-y-2" ref={outerRef} style={{ position: 'relative' }}>
+      <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+        {dates.length} trading days · {fromLabel} – {toLabel}
+      </div>
+
+      {/* FOMO SVG overlay — spans the full outer container */}
+      {fomoActive && fomoLinePositions && (
+        <svg style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', pointerEvents: 'none', zIndex: 20, overflow: 'visible' }}>
+          <defs>
+            <linearGradient id="range-fomo-grad" x1="0%" y1="100%" x2="100%" y2="0%">
+              <stop offset="0%" style={{ stopColor: 'rgb(234, 179, 8)', stopOpacity: 0.9 }} />
+              <stop offset="100%" style={{ stopColor: 'rgb(167, 51, 234)', stopOpacity: 0.9 }} />
+            </linearGradient>
+          </defs>
+          {fomoLinePositions.map((line, idx) => {
+            const { x1, y1, x2, y2 } = line;
+            const dx = x2 - x1, dy = y2 - y1;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const curveAmt = Math.min(dist * 0.3, 50);
+            const angle = Math.atan2(dy, dx);
+            const perp = angle - Math.PI / 2;
+            const cx = (x1 + x2) / 2 + Math.cos(perp) * curveAmt;
+            const cy = (y1 + y2) / 2 + Math.sin(perp) * curveAmt;
+            return (
+              <path
+                key={idx}
+                d={`M ${x1} ${y1} Q ${cx} ${cy}, ${x2} ${y2}`}
+                stroke="url(#range-fomo-grad)"
+                strokeWidth="2"
+                fill="none"
+                strokeLinecap="round"
+                strokeDasharray="5,3"
+                style={{ filter: 'drop-shadow(0 2px 4px rgba(234,179,8,0.5))' }}
+              />
+            );
+          })}
+        </svg>
+      )}
+
+      {/* Scrollable Heatmap */}
+      <div className="border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden bg-white dark:bg-slate-900">
+        <div className="overflow-x-auto" ref={heatmapContainerRef} style={{ position: 'relative' }}>
+          <div className="flex gap-3 p-3 pb-2 select-none" style={{ minWidth: 'fit-content' }}>
+            {months.map((month, monthIndex) => (
+              <div key={monthIndex} className="flex flex-col gap-0.5">
+                <div className="text-[10px] font-medium text-gray-600 dark:text-gray-400 mb-1 text-center select-none">{month.name}</div>
+                <div className="flex gap-1">
+                  <div className="flex flex-col gap-0.5 select-none">
+                    {dayLabels.map((label, i) => (
+                      <div key={i} className="w-5 h-3 flex items-center justify-center text-[8px] text-gray-500 dark:text-gray-500 select-none">{label}</div>
+                    ))}
+                  </div>
+                  <div className="flex flex-col gap-0.5 min-w-fit select-none">
+                    {month.dayRows.map((column, colIdx) => (
+                      <div key={colIdx} className="flex gap-0.5 select-none">
+                        {column.map((date, dateIdx) => {
+                          if (!date) return <div key={dateIdx} className="w-3 h-3" />;
+                          const y = date.getFullYear();
+                          const m = String(date.getMonth() + 1).padStart(2, '0');
+                          const d = String(date.getDate()).padStart(2, '0');
+                          const dateKey = `${y}-${m}-${d}`;
+                          const pnl = getCellPnL(dateKey);
+                          const isFomo = fomoDates.includes(dateKey);
+                          return (
+                            <div
+                              key={dateIdx}
+                              className={`w-3 h-3 rounded-sm transition-all relative ${getPnLColor(pnl)} ${fomoActive && isFomo ? 'ring-2 ring-yellow-400 dark:ring-yellow-300 animate-pulse shadow-lg shadow-yellow-400/50' : ''}`}
+                              data-date={dateKey}
+                              title={`${dateKey}: ₹${pnl.toFixed(0)}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Legend */}
+        <div className="flex items-center justify-between px-3 py-2 border-t border-slate-100 dark:border-slate-700">
+          <div className="flex items-center gap-1.5">
+            <span className="text-[9px] text-gray-500 dark:text-gray-400">Loss</span>
+            <div className="w-2.5 h-2.5 bg-red-800 dark:bg-red-700 rounded-full" />
+            <div className="w-2.5 h-2.5 bg-red-600 dark:bg-red-500 rounded-full" />
+            <div className="w-2.5 h-2.5 bg-red-300 rounded-full" />
+          </div>
+          <div className="flex items-center gap-1.5">
+            <div className="w-2.5 h-2.5 bg-green-300 rounded-full" />
+            <div className="w-2.5 h-2.5 bg-green-600 dark:bg-green-500 rounded-full" />
+            <div className="w-2.5 h-2.5 bg-green-800 dark:bg-green-700 rounded-full" />
+            <span className="text-[9px] text-gray-500 dark:text-gray-400">Profit</span>
+          </div>
+        </div>
+      </div>
+
+      {/* Purple Stats Bar */}
+      <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl px-4 py-3">
+        <div className="flex items-center justify-around text-white">
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
+            <div className="text-sm font-bold leading-none">{isProfit ? '+' : ''}₹{(totalPnL / 1000).toFixed(1)}K</div>
+          </div>
+          <div className="w-px h-8 bg-white/20" />
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
+            <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-10 h-5">
+              <path d={smoothTrendPath} fill="none" stroke="white" strokeWidth="1.8" opacity="0.95" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+          </div>
+          <div className="w-px h-8 bg-white/20" />
+          <button
+            ref={fomoButtonRef}
+            className={`flex flex-col items-center gap-0.5 px-3 py-1 rounded-lg transition-all cursor-pointer ${fomoActive ? 'bg-white/25 ring-2 ring-white/60' : 'hover:bg-white/10'}`}
+            onClick={() => setFomoActive(v => !v)}
+          >
+            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">FOMO</div>
+            <div className="text-sm font-bold leading-none">{fomoCount}</div>
+          </button>
+          <div className="w-px h-8 bg-white/20" />
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
+            <div className="text-sm font-bold leading-none">{winRate.toFixed(0)}%</div>
+          </div>
+          <div className="w-px h-8 bg-white/20" />
+          <div className="flex flex-col items-center gap-0.5">
+            <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
+            <div className="text-sm font-bold leading-none">{maxStreak}</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [activeVoiceProfileId, setActiveVoiceProfileId] = useState<string>(() => { if (typeof window !== 'undefined') { return localStorage.getItem('activeVoiceProfileId') || 'ravi'; } return 'ravi'; });
   const [voiceLanguage, setVoiceLanguage] = useState("en"); // Multilingual support: en, hi, bn, ta, te, mr, gu, kn, ml

@@ -4782,15 +4782,15 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
       
       {/* Live Banner - Spans full width (Hidden in Profile view) */}
       {selectedFilter !== 'Profile' && (
-        <div className="px-4 py-4 max-w-7xl mx-auto">
+        <div className="px-4 py-4 max-w-7xl mx-auto w-full">
           <LiveBanner />
         </div>
       )}
       
       {/* Main Content Area with Post Creation Panel on Right */}
-      <div className="flex-1 flex gap-2 xl:gap-4 px-2 md:px-3 py-2 md:py-3 max-w-6xl mx-auto">
+      <div className="flex-1 flex gap-4 xl:gap-6 px-4 py-2 md:py-3 max-w-7xl mx-auto w-full">
         {/* Social Feed Posts - Left Side */}
-        <div className="flex-1 max-w-4xl">
+        <div className="flex-1 min-w-0 max-w-[620px]">
           {/* Show Profile Header when Profile filter is selected */}
           {selectedFilter === 'Profile' && <ProfileHeader />}
           
@@ -4813,8 +4813,8 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
         </div>
 
         {/* Post Creation Panel - Right Side (Desktop Only) */}
-        <div className="hidden md:block w-80 xl:w-96 flex-shrink-0">
-          <div className={`sticky z-30 transition-all duration-300 ${
+        <div className="hidden md:flex flex-1 min-w-0 max-w-sm xl:max-w-md flex-shrink-0">
+          <div className={`sticky z-30 transition-all duration-300 w-full ${
             showAppBar ? 'top-[140px] xl:top-[200px]' : 'top-[140px] xl:top-[160px]'
           }`}>
             <PostCreationPanel />

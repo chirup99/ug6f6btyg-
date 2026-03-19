@@ -3194,12 +3194,12 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
       const idToken = await getCognitoToken();
       if (!idToken) throw new Error('Not authenticated');
       const response = await fetch(`/api/social-posts/${post.id}`, {
-        method: 'PATCH',
+        method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
         },
-        body: JSON.stringify({ content })
+        body: JSON.stringify({ content, userId: currentUserUsername })
       });
       if (!response.ok) throw new Error('Failed to update post');
       return response.json();
@@ -3223,8 +3223,10 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
       const response = await fetch(`/api/social-posts/${post.id}`, {
         method: 'DELETE',
         headers: {
+          'Content-Type': 'application/json',
           'Authorization': `Bearer ${idToken}`
-        }
+        },
+        body: JSON.stringify({ userId: currentUserUsername })
       });
       if (!response.ok) throw new Error('Failed to delete post');
       return response.json();

@@ -6019,6 +6019,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updateResult = await docClient.send(updateCommand);
       console.log('✅ Profile updated successfully');
 
+      // Bust the in-memory mirror cache so next post/comment fetch returns fresh avatar/name
+      try {
+        const { invalidateProfileCache } = await import('./neofeed-routes-replacement');
+        if (oldUsername) invalidateProfileCache(oldUsername);
+        const newUsername = (username !== undefined ? username.toLowerCase() : null) || oldUsername;
+        if (newUsername && newUsername !== oldUsername) invalidateProfileCache(newUsername);
+        console.log('🗑️ Profile mirror cache busted for:', oldUsername);
+      } catch (cacheErr) {
+        console.warn('⚠️ Could not bust profile cache:', cacheErr);
+      }
+
       // If username changed, update the username mapping
       if (username !== undefined && username.toLowerCase() !== oldUsername) {
         // Delete old username mapping

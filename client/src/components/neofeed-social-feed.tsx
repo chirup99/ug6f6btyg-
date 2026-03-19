@@ -890,10 +890,10 @@ function ProfileHeader() {
       const data = await response.json();
       return data.profile || null;
     },
-    staleTime: 5 * 60 * 1000, // Cache for 5 minutes - profile data rarely changes
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
-    refetchOnMount: false, // Don't refetch when component remounts (tab switching)
-    refetchOnWindowFocus: false, // Don't refetch on window focus
+    staleTime: 30 * 1000, // 30 seconds — allows near-instant reflection of profile updates
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   const username = profileData?.username || '';
@@ -911,10 +911,10 @@ function ProfileHeader() {
       return data;
     },
     enabled: !!username,
-    staleTime: 2 * 60 * 1000, // Cache for 2 minutes
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes
-    refetchOnMount: false, // Don't refetch when component remounts (tab switching)
-    refetchOnWindowFocus: false, // Don't refetch on window focus
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   // Followers list - only when dialog opens
@@ -1057,9 +1057,20 @@ function ProfileHeader() {
       
       toast({ description: `${imageType === 'profile' ? 'Profile' : 'Cover'} photo updated successfully!` });
       
-      // Invalidate profile and posts cache — mirror logic will pick up new image on next fetch
+      // Bust every profile-related cache — mirror logic returns the fresh image on next fetch
       queryClient.invalidateQueries({ queryKey: ['my-profile'] });
       queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts/news'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts/audio'] });
+      if (username) {
+        queryClient.invalidateQueries({ queryKey: ['profile-stats', username] });
+        queryClient.invalidateQueries({ queryKey: ['user-posts', username] });
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/profile`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/social-posts/by-user/${username}`] });
+        queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/followers-count`] });
+        queryClient.invalidateQueries({ queryKey: ['followers-list', username] });
+        queryClient.invalidateQueries({ queryKey: ['following-list', username] });
+      }
       setShowImageCropModal(false);
       setSelectedImage(null);
     } catch (error: any) {
@@ -1300,15 +1311,21 @@ function ProfileHeader() {
         profileData={profileData}
         onSuccess={() => {
           setShowEditProfile(false);
-          // Invalidate all relevant social feed queries to refresh UI data
+          queryClient.invalidateQueries({ queryKey: ['my-profile'] });
           queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
           queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
           queryClient.invalidateQueries({ queryKey: ['/api/social-posts/news'] });
           queryClient.invalidateQueries({ queryKey: ['/api/social-posts/audio'] });
-          // Force a small delay then reload to ensure DynamoDB eventual consistency has a chance
-          setTimeout(() => {
-            window.location.reload();
-          }, 500);
+          if (username) {
+            queryClient.invalidateQueries({ queryKey: ['profile-stats', username] });
+            queryClient.invalidateQueries({ queryKey: ['user-posts', username] });
+            queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/profile`] });
+            queryClient.invalidateQueries({ queryKey: [`/api/social-posts/by-user/${username}`] });
+            queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/followers-count`] });
+            queryClient.invalidateQueries({ queryKey: ['followers-list', username] });
+            queryClient.invalidateQueries({ queryKey: ['following-list', username] });
+          }
+          setTimeout(() => { window.location.reload(); }, 500);
         }}
       />
 
@@ -3626,7 +3643,7 @@ function ViewUserProfile({
       if (!response.ok) throw new Error('Failed to fetch profile');
       return response.json();
     },
-    staleTime: 60000,
+    staleTime: 30 * 1000,
   });
 
   // Fetch followers/following counts
@@ -3637,7 +3654,7 @@ function ViewUserProfile({
       if (!response.ok) return { followers: 0, following: 0 };
       return response.json();
     },
-    staleTime: 60000,
+    staleTime: 30 * 1000,
   });
 
   // Fetch user posts directly for this user
@@ -3648,7 +3665,7 @@ function ViewUserProfile({
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
-    staleTime: 60000,
+    staleTime: 30 * 1000,
     enabled: !!username,
   });
 
@@ -4042,10 +4059,18 @@ function ViewUserProfile({
           profileData={profileData}
           onSuccess={() => {
             setShowEditProfile(false);
-            queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/profile`] });
             queryClient.invalidateQueries({ queryKey: ['my-profile'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
             queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/social-posts/news'] });
+            queryClient.invalidateQueries({ queryKey: ['/api/social-posts/audio'] });
+            queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/profile`] });
             queryClient.invalidateQueries({ queryKey: [`/api/social-posts/by-user/${username}`] });
+            queryClient.invalidateQueries({ queryKey: ['profile-stats', username] });
+            queryClient.invalidateQueries({ queryKey: ['user-posts', username] });
+            queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/followers-count`] });
+            queryClient.invalidateQueries({ queryKey: ['followers-list', username] });
+            queryClient.invalidateQueries({ queryKey: ['following-list', username] });
             setTimeout(() => window.location.reload(), 500);
           }}
         />

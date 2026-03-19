@@ -59,8 +59,18 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   const [isPlaying, setIsPlaying] = useState(false);
   const [localLiked, setLocalLiked] = useState(isLiked);
   const [likeCount, setLikeCount] = useState(likes);
+  const [isLiking, setIsLiking] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    setLocalLiked(isLiked);
+  }, [isLiked]);
+
+  useEffect(() => {
+    setLikeCount(likes);
+  }, [likes]);
+
   const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   const previousCardIdRef = useRef<string | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
@@ -403,9 +413,43 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     }
   }
 
-  const handleLike = () => {
-    setLocalLiked(!localLiked);
-    setLikeCount(prev => localLiked ? prev - 1 : prev + 1);
+  const handleLike = async () => {
+    if (!postId || isLiking) return;
+
+    const wasLiked = localLiked;
+    const previousCount = likeCount;
+
+    setLocalLiked(!wasLiked);
+    setLikeCount(prev => wasLiked ? prev - 1 : prev + 1);
+    setIsLiking(true);
+
+    try {
+      const userId = localStorage.getItem('currentUsername') || 'anonymous';
+      const method = wasLiked ? 'DELETE' : 'POST';
+      const url = wasLiked
+        ? `/api/social-posts/${postId}/like-v2?userId=${encodeURIComponent(userId)}`
+        : `/api/social-posts/${postId}/like-v2`;
+
+      const response = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: method === 'POST' ? JSON.stringify({ userId }) : undefined
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update like');
+      }
+
+      const data = await response.json();
+      setLikeCount(data.likes ?? (wasLiked ? previousCount - 1 : previousCount + 1));
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
+    } catch (error) {
+      setLocalLiked(wasLiked);
+      setLikeCount(previousCount);
+      toast({ description: 'Failed to update like', variant: 'destructive' });
+    } finally {
+      setIsLiking(false);
+    }
   };
 
   const handleDelete = async () => {
@@ -803,6 +847,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
             variant="ghost"
             size="sm"
             onClick={handleLike}
+            disabled={isLiking}
             className={`${
               localLiked
                 ? 'text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20'

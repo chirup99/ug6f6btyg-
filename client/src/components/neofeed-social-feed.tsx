@@ -150,7 +150,7 @@ function CommentContent({ content }: { content: string }) {
 }
 
 // Inline Comment Section Component - Twitter/Instagram Style with @mentions
-function InlineCommentSection({ post, isVisible, onClose, onCommentAdded }: { post: FeedPost; isVisible: boolean; onClose: () => void; onCommentAdded?: () => void }) {
+function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onCommentDeleted }: { post: FeedPost; isVisible: boolean; onClose: () => void; onCommentAdded?: () => void; onCommentDeleted?: () => void }) {
   const [comment, setComment] = useState('');
   const [showDeleteMenu, setShowDeleteMenu] = useState<string | null>(null);
   const [mentionSearch, setMentionSearch] = useState('');
@@ -295,7 +295,6 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded }: { po
       queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
       setComment('');
       toast({ description: "Comment added!" });
-      refetchComments();
     },
     onError: (error: any) => {
       toast({ 
@@ -320,6 +319,9 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded }: { po
       return response.json();
     },
     onSuccess: () => {
+      if (onCommentDeleted) {
+        onCommentDeleted();
+      }
       queryClient.invalidateQueries({ queryKey: [`/api/social-posts/${post.id}/comments`] });
       setShowDeleteMenu(null);
       toast({ description: "Comment deleted" });
@@ -3753,6 +3755,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           isVisible={showCommentSection}
           onClose={() => setShowCommentSection(false)}
           onCommentAdded={() => setCommentCount(prev => prev + 1)}
+          onCommentDeleted={() => setCommentCount(prev => Math.max(0, prev - 1))}
         />
 
         {/* Share Modal */}

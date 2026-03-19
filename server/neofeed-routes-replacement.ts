@@ -860,7 +860,7 @@ export function registerNeoFeedAwsRoutes(app: any) {
       if (alreadyReposted) {
         const count = await getPostRetweetsCount(postId);
         console.log(`⚠️ User ${userId} already reposted this post`);
-        return res.json({ success: true, alreadyReposted: true, reposts: count });
+        return res.json({ success: true, retweeted: true, alreadyReposted: true, reposts: count });
       }
 
       // Fetch the original post to get its content and author info

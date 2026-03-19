@@ -9319,20 +9319,22 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     return () => clearTimeout(timer);
   }, [angelOneServerConnected, selectedJournalSymbol, activeTab, fetchJournalChartData]);
 
-  // ✅ SAFETY-NET: If chart is still empty 3s after journal tab opens, do one final retry.
-  // This handles the race-condition where the 200ms/500ms/800ms fetches all return empty
-  // because the Angel One historical API hasn't fully settled at startup. Clicking the
-  // reload button after this point always works because the API is ready by then — this
-  // effect replicates that delayed-ready behaviour automatically.
+  // ✅ SAFETY-NET: Retry chain at 3s, 6s, and 12s if the chart is still empty.
+  // Angel One server auto-connect takes up to ~10s on startup so the early 200ms/500ms/800ms
+  // fetches may all fail. This chain keeps retrying until the API is ready, eliminating the
+  // need to visit the trading dashboard first to "warm up" the connection.
   useEffect(() => {
     if (activeTab !== 'journal' || !selectedJournalSymbol) return;
-    const timer = setTimeout(() => {
+    const retry = (delayMs: number) => setTimeout(() => {
       if (!journalChartDataRef.current || journalChartDataRef.current.length === 0) {
-        console.log(`🔄 [SAFETY-NET] Chart still empty 3s after tab open — final auto-retry for ${selectedJournalSymbol}`);
+        console.log(`🔄 [SAFETY-NET] Chart still empty after ${delayMs}ms — retrying for ${selectedJournalSymbol}`);
         fetchJournalChartData();
       }
-    }, 3000);
-    return () => clearTimeout(timer);
+    }, delayMs);
+    const t1 = retry(3000);
+    const t2 = retry(6000);
+    const t3 = retry(12000);
+    return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, selectedJournalSymbol]);
 

@@ -1419,7 +1419,7 @@ function ProfileHeader() {
           </div>
 
           <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700 -mx-4 px-4">
-            {(['Posts', 'Audio', 'Bullish', 'Bearish', 'Media', 'Likes'] as const).map((tab) => {
+            {(['Posts', 'Audio', 'Bullish', 'Bearish', 'Media'] as const).map((tab) => {
               const label = tab === 'Posts' && postCount > 0 ? `Posts (${postCount})` : tab;
               return (
                 <button
@@ -1505,7 +1505,6 @@ function ProfileHeader() {
             </div>
           );
         }
-        if (activeTab === 'Likes') return renderPosts(likedPosts, 'No liked posts yet. Like posts by tapping the voting button!');
         return null;
       })()}
 
@@ -1784,24 +1783,22 @@ function ImageCropModal({
   if (!isOpen || !imageSrc) return null;
 
   const containerClass = imageType === 'profile' 
-    ? 'w-[300px] h-[300px] rounded-full' 
-    : 'w-full max-w-[600px] h-[200px] rounded-lg';
+    ? 'w-[220px] h-[220px] rounded-full' 
+    : 'w-full h-[140px] rounded-md';
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-3xl">
-        <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Camera className="w-5 h-5" />
+      <DialogContent className="max-w-sm p-5">
+        <DialogHeader className="pb-1">
+          <DialogTitle className="text-sm font-semibold text-foreground">
             Adjust {imageType === 'profile' ? 'Profile' : 'Cover'} Photo
           </DialogTitle>
         </DialogHeader>
         
-        <div className="flex flex-col items-center gap-6 py-4">
-          {/* Preview Container */}
+        <div className="flex flex-col items-center gap-4">
           <div 
             ref={containerRef}
-            className={`relative overflow-hidden bg-gray-900 ${containerClass} cursor-move flex items-center justify-center`}
+            className={`relative overflow-hidden bg-muted ${containerClass} cursor-move flex items-center justify-center`}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -1818,19 +1815,16 @@ function ImageCropModal({
                 transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
                 maxWidth: 'none',
                 maxHeight: 'none',
-                width: imageType === 'profile' ? 'auto' : 'auto',
-                height: imageType === 'profile' ? 'auto' : 'auto',
-                minWidth: imageType === 'profile' ? '100%' : '100%',
-                minHeight: imageType === 'profile' ? '100%' : '100%',
+                minWidth: '100%',
+                minHeight: '100%',
                 objectFit: 'cover',
               }}
               draggable={false}
             />
           </div>
 
-          {/* Zoom Controls */}
-          <div className="flex items-center gap-4 w-full max-w-md">
-            <ZoomOut className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          <div className="flex items-center gap-3 w-full">
+            <ZoomOut className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
             <input
               type="range"
               min="0.5"
@@ -1838,29 +1832,24 @@ function ImageCropModal({
               step="0.1"
               value={scale}
               onChange={(e) => setScale(parseFloat(e.target.value))}
-              className="flex-1 h-2 bg-gray-200 dark:bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-500"
+              className="flex-1 h-1.5 bg-muted rounded-full appearance-none cursor-pointer accent-blue-500"
               data-testid="slider-zoom"
             />
-            <ZoomIn className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+            <ZoomIn className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
           </div>
-
-          <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
-            <Move className="w-4 h-4" />
-            Drag to reposition
-          </p>
         </div>
 
         <canvas ref={canvasRef} className="hidden" />
 
-        <div className="flex gap-2 justify-end">
-          <Button variant="outline" onClick={onClose} disabled={uploading} data-testid="button-cancel-crop">
+        <div className="flex gap-2 justify-end pt-1">
+          <Button variant="outline" size="sm" onClick={onClose} disabled={uploading} data-testid="button-cancel-crop" className="h-8 px-3 text-xs">
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={uploading} data-testid="button-apply-crop">
+          <Button size="sm" onClick={handleSave} disabled={uploading} data-testid="button-apply-crop" className="h-8 px-3 text-xs">
             {uploading ? (
               <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Uploading...
+                <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
+                Saving...
               </>
             ) : (
               'Apply'
@@ -3398,9 +3387,6 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                   </Avatar>
                 );
               })()}
-              {post.user?.online && (
-                <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-emerald-400 rounded-full border-2 border-white shadow-lg animate-pulse ring-1 ring-emerald-400/40"></div>
-              )}
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">

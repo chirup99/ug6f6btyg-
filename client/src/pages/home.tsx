@@ -30905,19 +30905,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                       {/* Column 2: Performance Trend */}
                       <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Trend</div>
-                          <div className={`text-[10px] font-bold ${isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
-                            {isProfitable ? '+' : ''}{(totalPnL / 1000).toFixed(1)}K
-                          </div>
-                        </div>
+                        <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Trend</div>
                         {trendData.length > 0 ? (
                           <div className="h-24 w-full">
                             {(() => {
                               const chartData = trendData.map((pnl, idx) => ({
                                 day: `${idx + 1}`,
                                 value: pnl,
-                                pnl: pnl,
                               }));
                               const strokeColor = isProfitable ? '#16a34a' : '#dc2626';
                               const gradientColor = isProfitable ? 'rgb(22, 163, 74)' : 'rgb(220, 38, 38)';
@@ -30926,7 +30920,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 <ResponsiveContainer width="100%" height="100%">
                                   <AreaChart
                                     data={chartData}
-                                    margin={{ top: 4, right: 44, left: 0, bottom: 4 }}
+                                    margin={{ top: 4, right: 0, left: 0, bottom: 4 }}
                                   >
                                     <defs>
                                       <linearGradient id="reportTrendGradient" x1="0" y1="0" x2="0" y2="1">
@@ -30934,17 +30928,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <stop offset="100%" stopColor={gradientColor} stopOpacity={0.03} />
                                       </linearGradient>
                                     </defs>
-                                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={false} width={0} />
-                                    <YAxis
-                                      orientation="right"
-                                      axisLine={false}
-                                      tickLine={false}
-                                      width={42}
-                                      tick={{ fontSize: 8, fill: "#64748b" }}
-                                      tickFormatter={(value) => `${value >= 0 ? '+' : ''}₹${(value / 1000).toFixed(1)}k`}
-                                      domain={['auto', 'auto']}
-                                      tickCount={4}
-                                    />
+                                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={false} hide />
+                                    <YAxis hide domain={['auto', 'auto']} />
                                     <Tooltip
                                       contentStyle={{
                                         background: 'var(--background)',

@@ -11871,7 +11871,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     if (!rangePostTagHighlight || rangePostTagHighlight.tag !== 'fomo') return;
     const container = rangePostHeatmapContainerRef.current;
     if (!container) return;
-    const scrollableElement = container.querySelector('.overflow-x-auto') || container;
+    const scrollableElement = container;
     let rafId: number | null = null;
     const handleScroll = () => {
       setRangePostScrollTrigger(prev => prev + 1);
@@ -31652,49 +31652,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     }).join(' ')
                   : `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
 
-                // Build pnl map for heatmap
-                const pnlMap: Record<string, number> = {};
-                const maxAbsPnL = Math.max(...dates.map(d => {
-                  const dayData = filteredData[d];
-                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-                  return Math.abs(metrics?.netPnL || 0);
-                }), 1);
-
-                dates.forEach(dateKey => {
-                  const dayData = filteredData[dateKey];
-                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-                  if (metrics) pnlMap[dateKey] = metrics.netPnL || 0;
-                });
-
-                // Get month range for heatmap
-                const startDate = dates[0] ? new Date(dates[0]) : new Date();
-                const endDate = dates[dates.length - 1] ? new Date(dates[dates.length - 1]) : new Date();
-                startDate.setDate(1);
-
-                const months: { year: number; month: number; label: string }[] = [];
-                const cur = new Date(startDate);
-                while (cur <= endDate || (cur.getFullYear() === endDate.getFullYear() && cur.getMonth() === endDate.getMonth())) {
-                  months.push({ year: cur.getFullYear(), month: cur.getMonth(), label: cur.toLocaleDateString('en-US', { month: 'short' }) });
-                  cur.setMonth(cur.getMonth() + 1);
-                  if (months.length > 12) break;
-                }
-
-                const getDotColor = (dateKey: string) => {
-                  if (!(dateKey in pnlMap)) return null;
-                  const pnl = pnlMap[dateKey];
-                  const intensity = Math.min(Math.abs(pnl) / maxAbsPnL, 1);
-                  if (pnl > 0) {
-                    if (intensity > 0.66) return '#15803d';
-                    if (intensity > 0.33) return '#22c55e';
-                    return '#86efac';
-                  } else {
-                    if (intensity > 0.66) return '#b91c1c';
-                    if (intensity > 0.33) return '#ef4444';
-                    return '#fca5a5';
-                  }
-                };
-
-                const DOW = ['S','M','T','W','TH','F','S'];
 
                 // Smooth cubic bezier sparkline for Trend
                 const smoothTrendPath = (() => {
@@ -31722,74 +31679,26 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
 
                     {/* Heatmap Calendar */}
-                    <div className="relative" ref={rangePostHeatmapContainerRef}>
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl pt-3 pb-2 overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-500 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-track]:bg-slate-800">
-                      <div className="flex gap-3 px-3 min-w-max">
-                        {months.map(({ year, month, label }) => {
-                          const firstDay = new Date(year, month, 1).getDay();
-                          const daysInMonth = new Date(year, month + 1, 0).getDate();
-                          const cells: (number | null)[] = Array(firstDay).fill(null);
-                          for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-                          while (cells.length % 7 !== 0) cells.push(null);
-                          const weeks: (number | null)[][] = [];
-                          for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
-
-                          return (
-                            <div key={`${year}-${month}`} className="flex flex-col">
-                              <div className="text-[10px] font-semibold text-slate-600 dark:text-slate-300 mb-1.5 text-center">{label}</div>
-                              <div className="flex gap-1 mb-1">
-                                {DOW.map((d, i) => (
-                                  <div key={i} className="w-[18px] text-center text-[7px] text-slate-400 font-medium leading-none">{d}</div>
-                                ))}
-                              </div>
-                              <div className="flex flex-col gap-1">
-                                {weeks.map((week, wi) => (
-                                  <div key={wi} className="flex gap-1">
-                                    {week.map((day, di) => {
-                                      if (!day) return <div key={di} className="w-[18px] h-[18px]" />;
-                                      const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
-                                      const color = getDotColor(dateKey);
-                                      return (
-                                        <div
-                                          key={di}
-                                          data-date={dateKey}
-                                          className="w-[18px] h-[18px] rounded-full"
-                                          style={{ backgroundColor: color || '#e2e8f0' }}
-                                          title={color ? `${dateKey}: ₹${(pnlMap[dateKey] / 1000).toFixed(1)}K` : dateKey}
-                                        />
-                                      );
-                                    })}
-                                  </div>
-                                ))}
-                              </div>
-                            </div>
-                          );
-                        })}
+                    <div className="relative">
+                      <div
+                        ref={rangePostHeatmapContainerRef}
+                        className="max-h-52 sm:max-h-72 overflow-auto border border-slate-200 scrollbar-hide dark:border-slate-700 rounded-lg"
+                      >
+                        <DemoHeatmap
+                          tradingDataByDate={getFilteredHeatmapData()}
+                          onDateSelect={() => {}}
+                          selectedDate={null}
+                          onDataUpdate={() => {}}
+                          isPublicView={true}
+                          onSelectDateForHeatmap={() => {}}
+                        />
                       </div>
-
-                      {/* Legend */}
-                      <div className="flex items-center justify-between px-4 mt-3 pt-2.5 border-t border-slate-100 dark:border-slate-800">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-[9px] text-slate-500 font-medium">Loss</span>
-                          <span className="w-3 h-3 rounded-full bg-[#b91c1c] inline-block" />
-                          <span className="w-3 h-3 rounded-full bg-[#ef4444] inline-block" />
-                          <span className="w-3 h-3 rounded-full bg-[#fca5a5] inline-block" />
-                        </div>
-                        <div className="flex items-center gap-1.5">
-                          <span className="w-3 h-3 rounded-full bg-[#86efac] inline-block" />
-                          <span className="w-3 h-3 rounded-full bg-[#22c55e] inline-block" />
-                          <span className="w-3 h-3 rounded-full bg-[#15803d] inline-block" />
-                          <span className="text-[9px] text-slate-500 font-medium">Profit</span>
-                        </div>
-                      </div>
-                    </div>
 
                     {/* FOMO Curved Lines Overlay */}
                     {rangePostTagHighlight?.tag === 'fomo' && rangePostTagHighlight.dates.length > 0 && (() => {
                       void rangePostScrollTrigger;
                       if (!rangePostFomoButtonRef.current || !rangePostHeatmapContainerRef.current) return null;
-                      const container = rangePostHeatmapContainerRef.current;
-                      const scrollableEl = (container.querySelector('.overflow-x-auto') as HTMLElement | null) || container;
+                      const scrollableEl = rangePostHeatmapContainerRef.current;
                       const scrollWidth = scrollableEl.scrollWidth || 0;
                       const scrollHeight = scrollableEl.scrollHeight || 0;
                       const scrollLeft = scrollableEl.scrollLeft || 0;

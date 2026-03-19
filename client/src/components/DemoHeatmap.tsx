@@ -91,7 +91,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
   const [currentDate, setCurrentDate] = useState(new Date(2025, 0, 1));
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const [isUsingExternalData, setIsUsingExternalData] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isRangeSelectMode, setIsRangeSelectMode] = useState(false);
@@ -1095,7 +1095,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
           </span>
         </div>
         <span className="text-[10px] text-gray-600 dark:text-gray-400">
-          {isLoading ? "Loading..." : selectedRange 
+          {selectedRange 
             ? `${countDatesWithData(filteredData)} of ${countDatesWithData(heatmapData)} dates`
             : `${countDatesWithData(heatmapData)} dates`
           }

@@ -30634,6 +30634,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             data-testid="button-post-selected"
                             onClick={() => {
                               setReportPostMode('selected');
+                              setReportPostSelectedDate(heatmapSelectedDate || new Date().toISOString().split('T')[0]);
                               setShowReportPostPickerPopover(false);
                               setShowReportPostDialog(true);
                             }}
@@ -31228,18 +31229,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             </DialogHeader>
 
             <div className="flex-1 overflow-auto px-4 py-3 space-y-3">
-              {/* Date picker for Selected mode */}
+              {/* Selected date display for Selected mode */}
               {reportPostMode === 'selected' && (
-                <div>
-                  <label className="text-xs text-slate-500 dark:text-slate-400 font-medium mb-1 block">Select Date</label>
-                  <input
-                    type="date"
-                    value={reportPostSelectedDate}
-                    onChange={(e) => setReportPostSelectedDate(e.target.value)}
-                    className="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100"
-                    data-testid="input-post-date"
-                    max={new Date().toISOString().split('T')[0]}
-                  />
+                <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
+                  <span className="text-sm">🗓️</span>
+                  <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">
+                    {reportPostSelectedDate
+                      ? new Date(reportPostSelectedDate).toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+                      : 'No date selected on heatmap'}
+                  </span>
                 </div>
               )}
 

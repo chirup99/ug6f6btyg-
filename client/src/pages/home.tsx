@@ -30973,14 +30973,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
 
                       {/* Column 3: Loss Tags */}
-                      <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800 shadow-lg">
-                        <div className="text-[10px] text-gray-600 dark:text-gray-400 uppercase font-semibold mb-2">Loss Tags</div>
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800 shadow-lg flex flex-col min-h-0">
+                        <div className="text-[10px] text-gray-600 dark:text-gray-400 uppercase font-semibold mb-2 flex-shrink-0">Loss Tags</div>
                         {lossTags.length > 0 ? (
-                          <div className="space-y-1">
+                          <div className="flex-1 overflow-y-auto space-y-1 min-h-0 pr-0.5" style={{ maxHeight: '120px' }}>
                             {lossTags.map(({ tag, lossAmount }) => (
                               <div
                                 key={tag}
-                                className="flex items-center justify-between px-2 py-1 bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/60 rounded"
+                                className="flex items-center justify-between px-2 py-0.5 bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/60 rounded"
                                 data-testid={`tag-loss-${tag}`}
                               >
                                 <span className="text-[10px] font-medium text-red-700 dark:text-red-300 capitalize truncate">{tag}</span>

@@ -11798,6 +11798,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [reportPostSelectedDate, setReportPostSelectedDate] = useState<string>('');
   const [isPostingReport, setIsPostingReport] = useState(false);
 
+  // State and refs for Range Post FOMO curved lines
+  const [rangePostTagHighlight, setRangePostTagHighlight] = useState<{ tag: string; dates: string[] } | null>(null);
+  const rangePostFomoButtonRef = useRef<HTMLButtonElement>(null);
+  const rangePostHeatmapContainerRef = useRef<HTMLDivElement>(null);
+  const [rangePostScrollTrigger, setRangePostScrollTrigger] = useState(0);
+
   // Effect to handle scroll updates for report dialog curved lines
   useEffect(() => {
     if (!reportDialogTagHighlight || reportDialogTagHighlight.tag !== 'fomo') return;
@@ -11859,6 +11865,30 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       }
     };
   }, [reportDialogTagHighlight]);
+
+  // Effect to handle scroll updates for range post curved lines
+  useEffect(() => {
+    if (!rangePostTagHighlight || rangePostTagHighlight.tag !== 'fomo') return;
+    const container = rangePostHeatmapContainerRef.current;
+    if (!container) return;
+    const scrollableElement = container.querySelector('.overflow-x-auto') || container;
+    let rafId: number | null = null;
+    const handleScroll = () => {
+      setRangePostScrollTrigger(prev => prev + 1);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+      rafId = requestAnimationFrame(() => {
+        setRangePostScrollTrigger(prev => prev + 1);
+        rafId = null;
+      });
+    };
+    scrollableElement.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    return () => {
+      scrollableElement.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
+  }, [rangePostTagHighlight]);
 
   // Date range selection state
   const [fromDate, setFromDate] = useState<Date | null>(null);
@@ -31485,7 +31515,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           open={showReportPostDialog}
           onOpenChange={(open) => {
             setShowReportPostDialog(open);
-            if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); }
+            if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); setRangePostTagHighlight(null); }
           }}
         >
           <DialogContent className="w-full sm:max-w-md max-h-[90dvh] overflow-hidden flex flex-col gap-0 p-0">
@@ -31692,6 +31722,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
 
                     {/* Heatmap Calendar */}
+                    <div className="relative" ref={rangePostHeatmapContainerRef}>
                     <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl pt-3 pb-2 overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-500 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-track]:bg-slate-800">
                       <div className="flex gap-3 px-3 min-w-max">
                         {months.map(({ year, month, label }) => {
@@ -31721,6 +31752,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       return (
                                         <div
                                           key={di}
+                                          data-date={dateKey}
                                           className="w-[18px] h-[18px] rounded-full"
                                           style={{ backgroundColor: color || '#e2e8f0' }}
                                           title={color ? `${dateKey}: ₹${(pnlMap[dateKey] / 1000).toFixed(1)}K` : dateKey}
@@ -31752,6 +31784,54 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
                     </div>
 
+                    {/* FOMO Curved Lines Overlay */}
+                    {rangePostTagHighlight?.tag === 'fomo' && rangePostTagHighlight.dates.length > 0 && (() => {
+                      void rangePostScrollTrigger;
+                      if (!rangePostFomoButtonRef.current || !rangePostHeatmapContainerRef.current) return null;
+                      const container = rangePostHeatmapContainerRef.current;
+                      const scrollableEl = (container.querySelector('.overflow-x-auto') as HTMLElement | null) || container;
+                      const scrollWidth = scrollableEl.scrollWidth || 0;
+                      const scrollHeight = scrollableEl.scrollHeight || 0;
+                      const scrollLeft = scrollableEl.scrollLeft || 0;
+                      const scrollTop = scrollableEl.scrollTop || 0;
+                      const containerRect = scrollableEl.getBoundingClientRect();
+                      const buttonRect = rangePostFomoButtonRef.current.getBoundingClientRect();
+                      const buttonCenterX = buttonRect.left - containerRect.left + scrollLeft + buttonRect.width / 2;
+                      const buttonCenterY = buttonRect.top - containerRect.top + scrollTop + buttonRect.height / 2;
+                      const rpPaths: JSX.Element[] = [];
+                      rangePostTagHighlight.dates.forEach((date, index) => {
+                        const cellEl = scrollableEl.querySelector(`[data-date="${date}"]`);
+                        if (cellEl) {
+                          const cellRect = cellEl.getBoundingClientRect();
+                          const cellCenterX = cellRect.left - containerRect.left + scrollLeft + cellRect.width / 2;
+                          const cellCenterY = cellRect.top - containerRect.top + scrollTop + cellRect.height / 2;
+                          const controlX = (buttonCenterX + cellCenterX) / 2;
+                          const controlY = Math.min(buttonCenterY, cellCenterY) - 50;
+                          const pathD = `M ${buttonCenterX} ${buttonCenterY} Q ${controlX} ${controlY}, ${cellCenterX} ${cellCenterY}`;
+                          rpPaths.push(
+                            <g key={`rp-${date}-${index}`}>
+                              <path d={pathD} fill="none" stroke="url(#rpGradient)" strokeWidth="2.5" strokeDasharray="6,4" opacity="0.95" />
+                              <circle cx={cellCenterX} cy={cellCenterY} r="4" fill="#fcd34d" opacity="0.9" />
+                              <circle cx={cellCenterX} cy={cellCenterY} r="3" fill="#fbbf24" className="animate-pulse" />
+                            </g>
+                          );
+                        }
+                      });
+                      return (
+                        <svg style={{ position: 'absolute', top: 0, left: 0, width: `${scrollWidth}px`, height: `${scrollHeight}px`, pointerEvents: 'none', zIndex: 10, overflow: 'visible' }}>
+                          <defs>
+                            <linearGradient id="rpGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#c084fc" stopOpacity="1" />
+                              <stop offset="50%" stopColor="#f472b6" stopOpacity="1" />
+                              <stop offset="100%" stopColor="#fbbf24" stopOpacity="1" />
+                            </linearGradient>
+                          </defs>
+                          {rpPaths}
+                        </svg>
+                      );
+                    })()}
+                    </div>
+
                     {/* Stats Bar */}
                     <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl px-4 py-3">
                       <div className="flex items-center justify-around text-white">
@@ -31767,10 +31847,34 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           </svg>
                         </div>
                         <div className="w-px h-8 bg-white/20" />
-                        <div className="flex flex-col items-center gap-0.5 bg-white/20 rounded-2xl px-4 py-1.5 border border-white/40 shadow-inner">
+                        <button
+                          ref={rangePostFomoButtonRef}
+                          className={`flex flex-col items-center gap-0.5 rounded-2xl px-4 py-1.5 border shadow-inner transition-all ${rangePostTagHighlight?.tag === 'fomo' ? 'bg-white/30 border-white/60 ring-2 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
+                          onClick={() => {
+                            if (rangePostTagHighlight?.tag === 'fomo') {
+                              setRangePostTagHighlight(null);
+                            } else {
+                              const fd = getFilteredHeatmapData();
+                              const fomoDates: string[] = [];
+                              Object.keys(fd).sort().forEach(dateKey => {
+                                const dayData = fd[dateKey];
+                                const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+                                if (Array.isArray(tags)) {
+                                  tags.forEach((tag: string) => {
+                                    if (tag.toLowerCase().includes('fomo') && !fomoDates.includes(dateKey)) {
+                                      fomoDates.push(dateKey);
+                                    }
+                                  });
+                                }
+                              });
+                              setRangePostTagHighlight({ tag: 'fomo', dates: fomoDates });
+                            }
+                          }}
+                          title={`Click to ${rangePostTagHighlight?.tag === 'fomo' ? 'hide' : 'show'} FOMO dates on calendar`}
+                        >
                           <div className="text-[9px] font-medium opacity-90 uppercase tracking-wide">FOMO</div>
                           <div className="text-sm font-bold leading-none">{fomoCount}</div>
-                        </div>
+                        </button>
                         <div className="w-px h-8 bg-white/20" />
                         <div className="flex flex-col items-center gap-0.5">
                           <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Win%</div>

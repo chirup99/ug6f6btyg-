@@ -152,7 +152,6 @@ function CommentContent({ content }: { content: string }) {
 // Inline Comment Section Component - compact with comments list and delete
 function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onCommentDeleted }: { post: FeedPost; isVisible: boolean; onClose: () => void; onCommentAdded?: () => void; onCommentDeleted?: () => void }) {
   const [comment, setComment] = useState('');
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { getUsername, getUserDisplayName } = useCurrentUser();
@@ -275,24 +274,22 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
         </div>
       )}
 
-      {/* Add comment form */}
+      {/* Add comment form - single-line compact input */}
       <form onSubmit={handleSubmit} className="relative">
-        <div className="flex items-center gap-2 px-1">
-          <Textarea
-            ref={textareaRef}
+        <div className="flex items-center gap-1.5 px-1">
+          <input
             placeholder="Add a comment..."
             value={comment}
-            onChange={handleCommentChange}
+            onChange={(e) => setComment(e.target.value)}
             onKeyDown={handleKeyDown}
-            className="min-h-[34px] max-h-[72px] text-sm bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 resize-none rounded-2xl py-2 leading-tight"
+            className="flex-1 h-7 text-xs bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-3 outline-none focus:border-blue-400 dark:focus:border-blue-500 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             disabled={commentMutation.isPending}
             data-testid={`input-comment-${post.id}`}
           />
-          <Button 
-            type="submit" 
-            size="icon"
+          <button
+            type="submit"
             disabled={!comment.trim() || commentMutation.isPending}
-            className="h-7 w-7 flex-shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-40"
+            className="h-7 w-7 flex-shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-30 flex items-center justify-center transition-colors"
             data-testid={`button-submit-comment-${post.id}`}
           >
             {commentMutation.isPending ? (
@@ -300,7 +297,7 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
             ) : (
               <Send className="h-3 w-3" />
             )}
-          </Button>
+          </button>
         </div>
       </form>
     </div>
@@ -794,7 +791,7 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
             <Input
-              placeholder="Ask me about stocks..."
+              placeholder="Search stocks"
               value={searchQuery}
               onChange={handleInputChange}
               onKeyPress={(e) => e.key === 'Enter' && handleSearch()}

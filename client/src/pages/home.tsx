@@ -16597,7 +16597,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                     {newsAiAnalysis.trendingSectors?.length > 0 && (
                                                       <div className="px-4 py-3">
                                                         <p className="text-[10px] font-medium text-gray-600 uppercase tracking-widest mb-2">Sectors</p>
-                                                        <div className="space-y-1">
+                                                        <div className="space-y-1 max-h-28 overflow-y-auto pr-0.5">
                                                           {newsAiAnalysis.trendingSectors.map((s: any, i: number) => (
                                                             <div key={i} className="flex items-center gap-2.5 py-1">
                                                               <span className="text-[10px] text-gray-700 font-mono w-4 shrink-0">{s.rank || i+1}</span>

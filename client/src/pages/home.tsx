@@ -3242,13 +3242,6 @@ export default function Home() {
           type: 'range_report',
           fromDate: dates[0] || '',
           toDate: dates[dates.length - 1] || '',
-          totalPnL,
-          totalTrades,
-          winRate: Math.round(winRate),
-          fomoCount,
-          streak: maxStreak,
-          trendData,
-          fomoDates,
           dateCount: dates.length,
         };
       }

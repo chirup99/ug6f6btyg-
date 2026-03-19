@@ -2577,8 +2577,6 @@ function TradeInsightCard({ post, onViewUserProfile }: { post: FeedPost; onViewU
 }
 
 function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: string | number }) {
-  const isProfit = (m.totalPnL || 0) >= 0;
-  const trendData: number[] = m.trendData || [];
   const [fomoHighlight, setFomoHighlight] = useState(false);
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const fomoButtonRef = useRef<HTMLButtonElement>(null);
@@ -2586,7 +2584,7 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
   const [mirrorData, setMirrorData] = useState<Record<string, any> | null>(null);
   const [mirrorLoading, setMirrorLoading] = useState(false);
 
-  // Mirror fetch: if ownerUserId is present, load heatmap data live from the owner's journal
+  // Mirror fetch: load heatmap data live from the owner's journal
   useEffect(() => {
     if (!m.ownerUserId) return;
     setMirrorLoading(true);
@@ -2602,6 +2600,53 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
 
   // Resolve heatmap data: prefer live mirror, fallback to legacy embedded data
   const heatmapData: Record<string, any> | null = mirrorData ?? m.tradingDataByDate ?? null;
+
+  // Compute stats live from mirror data — no stored metadata needed
+  const mirrorStats = useMemo(() => {
+    if (!mirrorData || Object.keys(mirrorData).length === 0) return null;
+    let totalPnL = 0, totalTrades = 0, winningTrades = 0;
+    let fomoCount = 0, currentStreak = 0, maxStreak = 0;
+    const trendData: number[] = [];
+    const fomoDates: string[] = [];
+    Object.entries(mirrorData)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .forEach(([dateKey, dayData]: [string, any]) => {
+        const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+        const tags: string[] = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+        if (metrics) {
+          const netPnL = Number(metrics.netPnL) || 0;
+          totalPnL += netPnL;
+          totalTrades += Number(metrics.totalTrades) || 0;
+          winningTrades += Number(metrics.winningTrades) || 0;
+          trendData.push(netPnL);
+          if (netPnL > 0) { currentStreak++; maxStreak = Math.max(maxStreak, currentStreak); }
+          else { currentStreak = 0; }
+          if (Array.isArray(tags)) {
+            tags.forEach((tag: string) => {
+              if (tag.toLowerCase().includes('fomo') && !fomoDates.includes(dateKey)) {
+                fomoDates.push(dateKey);
+                fomoCount++;
+              }
+            });
+          }
+        }
+      });
+    return {
+      totalPnL,
+      totalTrades,
+      winRate: totalTrades > 0 ? Math.round(winningTrades / totalTrades * 100) : 0,
+      fomoCount,
+      streak: maxStreak,
+      trendData,
+      fomoDates,
+      dateCount: Object.keys(mirrorData).length,
+    };
+  }, [mirrorData]);
+
+  // Use live mirror stats if available; fall back to stored metadata for old posts
+  const stats = mirrorStats ?? m;
+  const isProfit = (stats.totalPnL || 0) >= 0;
+  const trendData: number[] = stats.trendData || [];
 
   const maxT = Math.max(...trendData, 0);
   const minT = Math.min(...trendData, 0);
@@ -2652,7 +2697,7 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
     <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          {m.dateCount || 0} Trading Days{fromLabel ? ` · ${fromLabel}` : ''}{fromLabel && toLabel ? ' – ' : ''}{toLabel}
+          {stats.dateCount || m.dateCount || 0} Trading Days{fromLabel ? ` · ${fromLabel}` : ''}{fromLabel && toLabel ? ' – ' : ''}{toLabel}
         </div>
         <div className="flex items-center gap-2">
           {m.ownerUserId && (
@@ -2684,7 +2729,7 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
                 onSelectDateForHeatmap={() => {}}
               />
             </div>
-            {fomoHighlight && m.fomoDates && m.fomoDates.length > 0 && (() => {
+            {fomoHighlight && stats.fomoDates && stats.fomoDates.length > 0 && (() => {
               void scrollTrigger;
               if (!fomoButtonRef.current || !heatmapContainerRef.current) return null;
               const scrollableEl = heatmapContainerRef.current;
@@ -2697,7 +2742,7 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
               const buttonCenterX = buttonRect.left - containerRect.left + scrollLeft + buttonRect.width / 2;
               const buttonCenterY = buttonRect.top - containerRect.top + scrollTop + buttonRect.height / 2;
               const paths: JSX.Element[] = [];
-              (m.fomoDates as string[]).forEach((date: string, index: number) => {
+              (stats.fomoDates as string[]).forEach((date: string, index: number) => {
                 const cellEl = scrollableEl.querySelector(`[data-date="${date}"]`);
                 if (cellEl) {
                   const cellRect = cellEl.getBoundingClientRect();
@@ -2757,7 +2802,7 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
           <div className="flex items-center gap-2 mt-1 text-[9px] text-gray-400">
             <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500" /><span>Loss</span></div>
             <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500" /><span>Profit</span></div>
-            {m.fomoCount > 0 && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-yellow-400" /><span>FOMO</span></div>}
+            {(stats.fomoCount || 0) > 0 && <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-yellow-400" /><span>FOMO</span></div>}
           </div>
         </div>
       )}
@@ -2766,7 +2811,7 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
         <div className="flex items-center justify-around text-white">
           <div className="flex flex-col items-center gap-0.5">
             <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
-            <div className="text-sm font-bold leading-none">{isProfit ? '+' : '-'}₹{(Math.abs(m.totalPnL || 0) / 1000).toFixed(1)}K</div>
+            <div className="text-sm font-bold leading-none">{isProfit ? '+' : '-'}₹{(Math.abs(stats.totalPnL || 0) / 1000).toFixed(1)}K</div>
           </div>
           <div className="w-px h-8 bg-white/20" />
           <div className="flex flex-col items-center gap-0.5">
@@ -2783,17 +2828,17 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
             title={`Tap to ${fomoHighlight ? 'hide' : 'show'} FOMO trading days`}
           >
             <div className="text-[9px] font-medium opacity-90 uppercase tracking-wide">FOMO</div>
-            <div className="text-sm font-bold leading-none">{m.fomoCount || 0}</div>
+            <div className="text-sm font-bold leading-none">{stats.fomoCount || 0}</div>
           </button>
           <div className="w-px h-8 bg-white/20" />
           <div className="flex flex-col items-center gap-0.5">
             <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
-            <div className="text-sm font-bold leading-none">{m.winRate || 0}%</div>
+            <div className="text-sm font-bold leading-none">{stats.winRate || 0}%</div>
           </div>
           <div className="w-px h-8 bg-white/20" />
           <div className="flex flex-col items-center gap-0.5">
             <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
-            <div className="text-sm font-bold leading-none">{m.streak || 0}</div>
+            <div className="text-sm font-bold leading-none">{stats.streak || 0}</div>
           </div>
         </div>
       </div>

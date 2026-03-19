@@ -6759,21 +6759,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       Object.keys(journals).forEach(dateKey => {
         if (from && dateKey < from) return;
         if (to && dateKey > to) return;
-
-        const dayData = journals[dateKey];
-        const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-        if (!metrics) return;
-
-        result[dateKey] = {
-          performanceMetrics: {
-            netPnL: Number(metrics.netPnL) || 0,
-            totalTrades: Number(metrics.totalTrades) || 0,
-            winningTrades: Number(metrics.winningTrades) || 0,
-            losingTrades: Number(metrics.losingTrades) || 0,
-          },
-        };
+        result[dateKey] = journals[dateKey];
       });
 
+      console.log(`📡 Mirror: ${Object.keys(result).length} entries for userId=${ownerUserId} (${from || '*'} → ${to || '*'})`);
       res.json(result);
     } catch (error) {
       console.error('❌ Error fetching heatmap mirror:', error);

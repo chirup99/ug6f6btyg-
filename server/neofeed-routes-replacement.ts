@@ -516,7 +516,7 @@ export function registerNeoFeedAwsRoutes(app: any) {
     console.log(`🚀 [${requestId}] Creating post on AWS DynamoDB`);
     
     try {
-      const { userId, content, stockMentions, sentiment, tags, hasImage, imageUrl, isAudioPost, selectedPostIds, selectedPosts, authorUsername, authorDisplayName, authorAvatar } = req.body;
+      const { userId, content, stockMentions, sentiment, tags, hasImage, imageUrl, isAudioPost, selectedPostIds, selectedPosts, authorUsername, authorDisplayName, authorAvatar, metadata } = req.body;
 
       if (!content || content.trim().length === 0) {
         return res.status(400).json({ error: 'Post content is required' });
@@ -535,7 +535,7 @@ export function registerNeoFeedAwsRoutes(app: any) {
         }
       }
 
-      const postData = {
+      const postData: any = {
         content: content.trim(),
         authorUsername: (authorUsername || 'anonymous').toLowerCase(),
         authorDisplayName: authorDisplayName || 'User',
@@ -550,6 +550,10 @@ export function registerNeoFeedAwsRoutes(app: any) {
         selectedPostIds: selectedPostIds || [],
         selectedPosts: selectedPosts || []
       };
+
+      if (metadata && typeof metadata === 'object') {
+        postData.metadata = metadata;
+      }
 
       const createdPost = await createUserPost(postData);
       console.log(`✅ [${requestId}] Post created on AWS: ${createdPost.id}`);

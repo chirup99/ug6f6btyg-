@@ -3371,7 +3371,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                   <div>
                     <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">TOTAL P&L</div>
                     <div className={`text-sm font-bold ${post.metadata.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      ₹{Math.floor(post.metadata.pnl).toLocaleString()}
+                      {post.metadata.pnl >= 0 ? '+' : '-'}₹{Math.abs(Math.floor(post.metadata.pnl)).toLocaleString()}
                     </div>
                   </div>
                   <div>

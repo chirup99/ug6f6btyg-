@@ -149,13 +149,22 @@ function CommentContent({ content }: { content: string }) {
   return <>{parts}</>;
 }
 
-// Inline Comment Section Component - minimal plain comment input
+// Inline Comment Section Component - compact with comments list and delete
 function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onCommentDeleted }: { post: FeedPost; isVisible: boolean; onClose: () => void; onCommentAdded?: () => void; onCommentDeleted?: () => void }) {
   const [comment, setComment] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { getUsername, getUserDisplayName } = useCurrentUser();
+
+  const currentUsername = getUsername() || localStorage.getItem('currentUsername') || '';
+
+  const { data: comments = [] } = useQuery<any[]>({
+    queryKey: [`/api/social-posts/${post.id}/comments`],
+    queryFn: () => fetch(`/api/social-posts/${post.id}/comments`).then(r => r.json()),
+    enabled: isVisible,
+    staleTime: 30000,
+  });
 
   const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setComment(e.target.value);
@@ -168,59 +177,105 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
     }
   };
 
-  // Add comment mutation using AWS DynamoDB
   const commentMutation = useMutation({
     mutationFn: async (content: string) => {
       const username = getUsername() || localStorage.getItem('currentUsername') || 'anonymous';
       const displayName = getUserDisplayName() || username;
-      const avatar: string | null = null; // Avatar fetched from profile if needed
-      
       const response = await fetch(`/api/social-posts/${post.id}/comments/aws`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          content,
-          authorUsername: username,
-          authorDisplayName: displayName,
-          authorAvatar: avatar
-        })
+        body: JSON.stringify({ content, authorUsername: username, authorDisplayName: displayName, authorAvatar: null })
       });
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to add comment');
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to add comment');
       }
       return response.json();
     },
     onSuccess: () => {
-      if (onCommentAdded) {
-        onCommentAdded();
-      }
-      
+      if (onCommentAdded) onCommentAdded();
       queryClient.invalidateQueries({ queryKey: [`/api/social-posts/${post.id}/comments`] });
       queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
       setComment('');
-      toast({ description: "Comment added!" });
     },
     onError: (error: any) => {
-      toast({ 
-        description: error.message || "Failed to add comment", 
-        variant: "destructive" 
+      toast({ description: error.message || "Failed to add comment", variant: "destructive" });
+    }
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      const username = getUsername() || localStorage.getItem('currentUsername') || '';
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorUsername: username })
       });
+      if (!response.ok) throw new Error('Failed to delete');
+      return response.json();
+    },
+    onSuccess: () => {
+      if (onCommentDeleted) onCommentDeleted();
+      queryClient.invalidateQueries({ queryKey: [`/api/social-posts/${post.id}/comments`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
+    },
+    onError: () => {
+      toast({ description: "Failed to delete comment", variant: "destructive" });
     }
   });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (comment.trim()) {
-      commentMutation.mutate(comment.trim());
-    }
+    if (comment.trim()) commentMutation.mutate(comment.trim());
   };
 
   if (!isVisible) return null;
 
   return (
-    <div className="border-t border-gray-200 dark:border-gray-700 pt-3 overflow-x-hidden" data-testid={`comment-section-${post.id}`}>
-      {/* Add New Comment Form */}
+    <div className="border-t border-gray-200 dark:border-gray-700 pt-2 overflow-x-hidden" data-testid={`comment-section-${post.id}`}>
+      {/* Comments list */}
+      {comments.length > 0 && (
+        <div className="mb-2 space-y-1.5 max-h-48 overflow-y-auto">
+          {comments.map((c: any) => {
+            const commentId = c.id || c.commentId;
+            const isOwn = currentUsername && c.authorUsername === currentUsername;
+            return (
+              <div key={commentId} className="flex items-start gap-1.5 group px-1">
+                <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center overflow-hidden mt-0.5">
+                  {c.authorAvatar ? (
+                    <img src={c.authorAvatar} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase">
+                      {(c.authorDisplayName || c.authorUsername || '?')[0]}
+                    </span>
+                  )}
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-2.5 py-1.5">
+                    <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 mr-1">
+                      {c.authorDisplayName || c.authorUsername}
+                    </span>
+                    <span className="text-[11px] text-gray-700 dark:text-gray-300 break-words">{c.content}</span>
+                  </div>
+                  <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-2">{formatCommentTimestamp(c.createdAt)}</span>
+                </div>
+                {isOwn && (
+                  <button
+                    onClick={() => deleteMutation.mutate(commentId)}
+                    disabled={deleteMutation.isPending}
+                    className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all flex-shrink-0 mt-1.5 p-0.5"
+                    data-testid={`button-delete-comment-${commentId}`}
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add comment form */}
       <form onSubmit={handleSubmit} className="relative">
         <div className="flex items-center gap-2 px-1">
           <Textarea
@@ -229,7 +284,7 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
             value={comment}
             onChange={handleCommentChange}
             onKeyDown={handleKeyDown}
-            className="min-h-[36px] max-h-[80px] text-sm bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 resize-none rounded-lg pr-10 py-2"
+            className="min-h-[34px] max-h-[72px] text-sm bg-gray-50 dark:bg-gray-800 border-gray-200 dark:border-gray-600 resize-none rounded-2xl py-2 leading-tight"
             disabled={commentMutation.isPending}
             data-testid={`input-comment-${post.id}`}
           />
@@ -237,13 +292,13 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
             type="submit" 
             size="icon"
             disabled={!comment.trim() || commentMutation.isPending}
-            className="h-8 w-8 flex-shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-40"
+            className="h-7 w-7 flex-shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-40"
             data-testid={`button-submit-comment-${post.id}`}
           >
             {commentMutation.isPending ? (
-              <div className="animate-spin rounded-full h-3.5 w-3.5 border-b-2 border-white"></div>
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
             ) : (
-              <Send className="h-3.5 w-3.5" />
+              <Send className="h-3 w-3" />
             )}
           </Button>
         </div>
@@ -1530,7 +1585,7 @@ function ImageCropModal({
         <div className="flex flex-col items-center gap-3">
           <div 
             ref={containerRef}
-            className={`relative overflow-hidden bg-muted ${containerClass} cursor-move flex items-center justify-center`}
+            className={`relative overflow-hidden bg-muted ${containerClass} cursor-move`}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -1544,12 +1599,16 @@ function ImageCropModal({
               alt="Preview"
               className="select-none pointer-events-none"
               style={{
-                transform: `translate(${position.x}px, ${position.y}px) scale(${scale})`,
-                maxWidth: 'none',
-                maxHeight: 'none',
+                position: 'absolute',
+                top: '50%',
+                left: '50%',
+                transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${scale})`,
                 minWidth: '100%',
                 minHeight: '100%',
-                objectFit: 'cover',
+                width: 'auto',
+                height: 'auto',
+                maxWidth: 'none',
+                maxHeight: 'none',
               }}
               draggable={false}
             />

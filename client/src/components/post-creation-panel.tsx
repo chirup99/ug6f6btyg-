@@ -427,7 +427,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
                   onKeyDown={(e) => {
                     if (e.key === 'Enter' && !e.shiftKey) {
                       e.preventDefault();
-                      if (content.trim() && selectedTextSnippets.length < 5) {
+                      if (content.trim() && selectedTextSnippets.length < 3) {
                         addTextCardSnippet();
                       }
                     }
@@ -438,7 +438,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
                   data-testid="textarea-audio-content"
                 />
                 {/* + Button in bottom right corner */}
-                {content.trim() && selectedTextSnippets.length < 5 && (
+                {content.trim() && selectedTextSnippets.length < 3 && (
                   <Button
                     type="button"
                     size="icon"
@@ -459,7 +459,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
             {selectedTextSnippets.length > 0 ? (
               <div className="space-y-3">
                 <Label className="text-center text-gray-800 dark:text-gray-200 font-medium text-base">
-                  Selected Posts ({selectedTextSnippets.length}/5)
+                  Selected Posts ({selectedTextSnippets.length}/3)
                 </Label>
                 <StackedSwipeableCards 
                   snippets={selectedTextSnippets}
@@ -479,7 +479,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
                   </h3>
                 </div>
                 <p className="text-sm text-purple-700 dark:text-purple-300">
-                  Click on any post below to add it to your audio minicast (up to 5 posts). 
+                  Click on any post below to add it to your audio minicast (up to 3 posts). 
                   Your selected posts will be combined with your thoughts into an audio experience.
                 </p>
                 {/* Cards Icon with Hand Click Indicator - Bottom Right */}

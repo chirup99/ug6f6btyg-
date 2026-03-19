@@ -31692,7 +31692,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
 
                     {/* Heatmap Calendar */}
-                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl pt-3 pb-2 overflow-x-auto">
+                    <div className="bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-xl pt-3 pb-2 overflow-x-auto [&::-webkit-scrollbar]:h-1.5 [&::-webkit-scrollbar-track]:bg-slate-100 [&::-webkit-scrollbar-track]:rounded-full [&::-webkit-scrollbar-thumb]:bg-violet-500 [&::-webkit-scrollbar-thumb]:rounded-full dark:[&::-webkit-scrollbar-track]:bg-slate-800">
                       <div className="flex gap-3 px-3 min-w-max">
                         {months.map(({ year, month, label }) => {
                           const firstDay = new Date(year, month, 1).getDay();
@@ -31767,8 +31767,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           </svg>
                         </div>
                         <div className="w-px h-8 bg-white/20" />
-                        <div className="flex flex-col items-center gap-0.5">
-                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">FOMO</div>
+                        <div className="flex flex-col items-center gap-0.5 bg-white/20 rounded-2xl px-4 py-1.5 border border-white/40 shadow-inner">
+                          <div className="text-[9px] font-medium opacity-90 uppercase tracking-wide">FOMO</div>
                           <div className="text-sm font-bold leading-none">{fomoCount}</div>
                         </div>
                         <div className="w-px h-8 bg-white/20" />

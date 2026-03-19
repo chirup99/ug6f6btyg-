@@ -31355,11 +31355,116 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     }).join(' ')
                   : `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
 
+                // Build pnl map for heatmap
+                const pnlMap: Record<string, number> = {};
+                const maxAbsPnL = Math.max(...dates.map(d => {
+                  const dayData = filteredData[d];
+                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                  return Math.abs(metrics?.netPnL || 0);
+                }), 1);
+
+                dates.forEach(dateKey => {
+                  const dayData = filteredData[dateKey];
+                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                  if (metrics) pnlMap[dateKey] = metrics.netPnL || 0;
+                });
+
+                // Get month range for heatmap
+                const startDate = dates[0] ? new Date(dates[0]) : new Date();
+                const endDate = dates[dates.length - 1] ? new Date(dates[dates.length - 1]) : new Date();
+                startDate.setDate(1);
+
+                const months: { year: number; month: number; label: string }[] = [];
+                const cur = new Date(startDate);
+                while (cur <= endDate || (cur.getFullYear() === endDate.getFullYear() && cur.getMonth() === endDate.getMonth())) {
+                  months.push({ year: cur.getFullYear(), month: cur.getMonth(), label: cur.toLocaleDateString('en-US', { month: 'short' }) });
+                  cur.setMonth(cur.getMonth() + 1);
+                  if (months.length > 12) break;
+                }
+
+                const getDotColor = (dateKey: string) => {
+                  if (!(dateKey in pnlMap)) return null;
+                  const pnl = pnlMap[dateKey];
+                  const intensity = Math.min(Math.abs(pnl) / maxAbsPnL, 1);
+                  if (pnl > 0) {
+                    if (intensity > 0.66) return '#15803d';
+                    if (intensity > 0.33) return '#22c55e';
+                    return '#86efac';
+                  } else {
+                    if (intensity > 0.66) return '#b91c1c';
+                    if (intensity > 0.33) return '#ef4444';
+                    return '#fca5a5';
+                  }
+                };
+
+                const DOW = ['S','M','T','W','T','F','S'];
+
                 return (
                   <div className="space-y-2">
                     <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
                       {dates.length} trading days · {fromLabel} – {toLabel}
                     </div>
+
+                    {/* Heatmap Calendar */}
+                    <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-3 overflow-x-auto">
+                      <div className="flex gap-4 min-w-max">
+                        {months.map(({ year, month, label }) => {
+                          const firstDay = new Date(year, month, 1).getDay();
+                          const daysInMonth = new Date(year, month + 1, 0).getDate();
+                          const cells: (number | null)[] = Array(firstDay).fill(null);
+                          for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+                          while (cells.length % 7 !== 0) cells.push(null);
+                          const weeks: (number | null)[][] = [];
+                          for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
+                          return (
+                            <div key={`${year}-${month}`} className="flex flex-col gap-0.5">
+                              <div className="text-[9px] font-semibold text-slate-500 dark:text-slate-400 mb-1">{label}</div>
+                              <div className="flex gap-0.5">
+                                {DOW.map((d, i) => (
+                                  <div key={i} className="w-4 text-center text-[7px] text-slate-400 font-medium leading-none mb-0.5">{d}</div>
+                                ))}
+                              </div>
+                              {weeks.map((week, wi) => (
+                                <div key={wi} className="flex gap-0.5">
+                                  {week.map((day, di) => {
+                                    if (!day) return <div key={di} className="w-4 h-4" />;
+                                    const dateKey = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                                    const color = getDotColor(dateKey);
+                                    return (
+                                      <div
+                                        key={di}
+                                        className="w-4 h-4 rounded-full flex items-center justify-center"
+                                        style={{ backgroundColor: color || '#e2e8f0' }}
+                                        title={color ? `${dateKey}: ₹${(pnlMap[dateKey] / 1000).toFixed(1)}K` : dateKey}
+                                      />
+                                    );
+                                  })}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      {/* Legend */}
+                      <div className="flex items-center justify-between mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                        <div className="flex items-center gap-1">
+                          <span className="text-[8px] text-slate-400 font-medium">Loss</span>
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#fca5a5] inline-block" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#ef4444] inline-block" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#b91c1c] inline-block" />
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#86efac] inline-block" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#22c55e] inline-block" />
+                          <span className="w-2.5 h-2.5 rounded-full bg-[#15803d] inline-block" />
+                          <span className="text-[8px] text-slate-400 font-medium">Profit</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Stats Bar */}
                     <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg px-3 py-2">
                       <div className="flex items-center justify-around text-white gap-1">
                         <div className="flex flex-col items-center">

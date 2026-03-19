@@ -30905,37 +30905,46 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                       {/* Column 2: Performance Trend */}
                       <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
-                        <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center justify-between mb-1">
                           <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Trend</div>
-                          <div className={`text-[9px] px-1.5 py-0.5 rounded ${isProfitable ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
-                            {isProfitable ? 'Profitable' : 'Loss'}
+                          <div className={`text-[10px] font-bold ${isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                            {isProfitable ? '+' : ''}{(totalPnL / 1000).toFixed(1)}K
                           </div>
                         </div>
                         {trendData.length > 0 ? (
-                          <div className="h-20 w-full">
+                          <div className="h-24 w-full">
                             {(() => {
-                              // Convert trend data to chart format
                               const chartData = trendData.map((pnl, idx) => ({
                                 day: `${idx + 1}`,
                                 value: pnl,
                                 pnl: pnl,
                               }));
+                              const strokeColor = isProfitable ? '#16a34a' : '#dc2626';
+                              const gradientColor = isProfitable ? 'rgb(22, 163, 74)' : 'rgb(220, 38, 38)';
 
-                              
-  return (
+                              return (
                                 <ResponsiveContainer width="100%" height="100%">
                                   <AreaChart
                                     data={chartData}
-                                    margin={{ top: 5, right: 5, left: 0, bottom: 5 }}
+                                    margin={{ top: 4, right: 44, left: 0, bottom: 4 }}
                                   >
                                     <defs>
                                       <linearGradient id="reportTrendGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="0%" stopColor="rgb(107, 114, 128)" stopOpacity={0.4} />
-                                        <stop offset="100%" stopColor="rgb(107, 114, 128)" stopOpacity={0.05} />
+                                        <stop offset="0%" stopColor={gradientColor} stopOpacity={0.35} />
+                                        <stop offset="100%" stopColor={gradientColor} stopOpacity={0.03} />
                                       </linearGradient>
                                     </defs>
-                                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={false} />
-                                    <YAxis orientation="right" axisLine={false} tickLine={false} tick={{ fontSize: 7, fill: "#64748b" }} tickFormatter={(value) => `₹${(value/1000).toFixed(1)}k`} domain={['auto', 'auto']} />
+                                    <XAxis dataKey="day" axisLine={false} tickLine={false} tick={false} width={0} />
+                                    <YAxis
+                                      orientation="right"
+                                      axisLine={false}
+                                      tickLine={false}
+                                      width={42}
+                                      tick={{ fontSize: 8, fill: "#64748b" }}
+                                      tickFormatter={(value) => `${value >= 0 ? '+' : ''}₹${(value / 1000).toFixed(1)}k`}
+                                      domain={['auto', 'auto']}
+                                      tickCount={4}
+                                    />
                                     <Tooltip
                                       contentStyle={{
                                         background: 'var(--background)',
@@ -30945,20 +30954,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         padding: '6px 10px',
                                       }}
                                       formatter={(value: any) => [
-                                        `${value >= 0 ? '₹' : '-₹'}${Math.abs(value).toLocaleString()}`,
+                                        `${value >= 0 ? '+₹' : '-₹'}${Math.abs(value).toLocaleString()}`,
                                         'P&L',
                                       ]}
                                     />
                                     <Area
-                                      type="natural"
+                                      type="monotone"
                                       dataKey="value"
-                                      stroke={isProfitable ? '#16a34a' : '#dc2626'}
+                                      stroke={strokeColor}
                                       strokeWidth={2}
                                       fill="url(#reportTrendGradient)"
                                       dot={false}
                                       activeDot={{
                                         r: 4,
-                                        fill: isProfitable ? '#16a34a' : '#dc2626',
+                                        fill: strokeColor,
                                         stroke: 'white',
                                         strokeWidth: 2,
                                       }}
@@ -30972,7 +30981,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             })()}
                           </div>
                         ) : (
-                          <div className="h-28 flex items-center justify-center text-gray-400 text-xs">
+                          <div className="h-24 flex items-center justify-center text-gray-400 text-xs">
                             No data
                           </div>
                         )}

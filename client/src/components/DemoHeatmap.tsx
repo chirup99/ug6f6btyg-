@@ -189,6 +189,15 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
       setIsUsingExternalData(true);
       setIsLoading(false);
       
+      // Auto-navigate to the year of the latest data entry
+      const latestYear = Object.keys(tradingDataByDate)
+        .filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k))
+        .sort()
+        .pop()?.slice(0, 4);
+      if (latestYear) {
+        setCurrentDate(new Date(parseInt(latestYear, 10), 0, 1));
+      }
+      
       // Emit data to parent component
       if (onDataUpdate) {
         onDataUpdate(tradingDataByDate);
@@ -225,6 +234,12 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
         console.log("✅ DemoHeatmap: Processed complete dataset with", Object.keys(processedData).length, "dates");
         setHeatmapData(processedData);
         setIsLoading(false);
+        
+        // Auto-navigate to the year of the latest data entry
+        const latestYear = Object.keys(processedData).sort().pop()?.slice(0, 4);
+        if (latestYear) {
+          setCurrentDate(new Date(parseInt(latestYear, 10), 0, 1));
+        }
         
         // Emit data to parent component
         if (onDataUpdate) {
@@ -1048,6 +1063,15 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
   const handleExitRangeSelectMode = () => {
     setIsRangeSelectMode(false);
     setSelectedDatesForRange([]);
+  };
+
+  // Find the latest year from a dataset of YYYY-MM-DD keyed data
+  const getLatestYearFromData = (data: Record<string, any>): number | null => {
+    const keys = Object.keys(data);
+    if (keys.length === 0) return null;
+    const sorted = keys.filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
+    if (sorted.length === 0) return null;
+    return parseInt(sorted[sorted.length - 1].slice(0, 4), 10);
   };
 
   // Count only dates with actual trading data (non-zero P&L)

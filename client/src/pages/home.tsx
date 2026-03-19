@@ -30446,126 +30446,78 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             }
           }}
         >
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-hidden flex flex-col" data-testid="dialog-share-tradebook">
-            <DialogHeader className="flex-shrink-0">
-              <div className="flex items-start justify-between w-full gap-4">
-                {/* Left side: PERALA and tagline */}
-                <div className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center shadow-lg bg-white dark:bg-slate-800">
-                      <img 
-                        src="/logo.png" 
-                        alt="PERALA Logo" 
-                        className="w-full h-full object-contain" 
-                      />
-                    </div>
-                    <h1 className="text-2xl font-bold tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-slate-900 to-slate-700 dark:from-white dark:to-slate-300">PERALA</h1>
+          <DialogContent className="w-full sm:max-w-xl max-h-[95dvh] sm:max-h-[88vh] overflow-hidden flex flex-col gap-0 p-0" data-testid="dialog-share-tradebook">
+            {/* Compact header */}
+            <DialogHeader className="flex-shrink-0 px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-between gap-3">
+                {/* Brand mark */}
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0 bg-white dark:bg-slate-800 shadow-sm">
+                    <img src="/logo.png" alt="PERALA" className="w-full h-full object-contain" />
                   </div>
-                  <div className="flex items-center gap-1.5 mt-0.5">
-                    <p className="text-[10px] font-medium uppercase tracking-[0.2em] text-slate-500 dark:text-slate-400">Break the Loop, Find Your Edge</p>
-                    <svg 
-                      width="24" 
-                      height="12" 
-                      viewBox="0 0 24 12" 
-                      fill="none" 
-                      xmlns="http://www.w3.org/2000/svg"
-                      className="text-purple-600 dark:text-purple-400 opacity-80"
-                    >
-                      <path 
-                        d="M11 5.2C10.2 4 9 3 7.5 3C4.5 3 3 4.5 3 6C3 7.5 4.5 9 7.5 9C10.5 9 12 6 12 6" 
-                        stroke="currentColor" 
-                        strokeWidth="1.5" 
-                        strokeLinecap="round" 
-                      />
-                      <path 
-                        d="M12 6C12 6 13.5 9 16.5 9C19.5 9 21 7.5 21 6C21 5.6 20.9 5.2 20.7 4.8" 
-                        stroke="currentColor" 
-                        strokeWidth="1.5" 
-                        strokeLinecap="round" 
-                      />
-                      <path 
-                        d="M17.8 3.3C17.4 3.1 16.9 3 16.5 3C13.5 3 12 6 12 6" 
-                        stroke="currentColor" 
-                        strokeWidth="1.5" 
-                        strokeLinecap="round" 
-                      />
-                      <path 
-                        d="M21 2L23 1" 
-                        stroke="currentColor" 
-                        strokeWidth="1.5" 
-                        strokeLinecap="round" 
-                        className="animate-pulse"
-                      />
-                    </svg>
+                  <div className="min-w-0">
+                    <DialogTitle className="text-sm font-semibold leading-none">Trading Report</DialogTitle>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                      {isSharedReportMode && sharedReportData?.reportData?.username
+                        ? sharedReportData.reportData.username
+                        : (currentUser?.displayName || currentUser?.email || currentUser?.userId || 'Guest')}
+                    </p>
                   </div>
                 </div>
-                <div className="flex flex-col items-end text-right gap-2">
-                  <DialogTitle className="text-lg font-semibold">MY trading report</DialogTitle>
 
-                  {/* UserID */}
-                  <p className="text-xs text-muted-foreground text-right">
-                    userID: {isSharedReportMode && sharedReportData?.reportData?.username 
-                      ? sharedReportData.reportData.username 
-                      : (currentUser?.displayName || currentUser?.email || currentUser?.userId || 'Guest')}
-                  </p>
-
-                  {/* Link icon button - Only show for owners (not in shared report mode) */}
-                  {!isSharedReportMode && (
-                    <div className="flex flex-col items-end gap-1">
-                      {!shareableUrl ? (
+                {/* Share actions */}
+                {!isSharedReportMode && (
+                  <div className="flex items-center gap-1.5 flex-shrink-0">
+                    {!shareableUrl ? (
+                      <Button
+                        size="icon"
+                        onClick={handleCreateShareableLink}
+                        disabled={isCreatingShareableLink}
+                        className="bg-green-600 hover:bg-green-700 h-7 w-7"
+                        data-testid="button-create-shareable-link"
+                      >
+                        {isCreatingShareableLink ? (
+                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          <Link2 className="w-3 h-3" />
+                        )}
+                      </Button>
+                    ) : (
+                      <>
                         <Button
                           size="icon"
-                          onClick={handleCreateShareableLink}
-                          disabled={isCreatingShareableLink}
-                          className="bg-green-600 hover:bg-green-700 h-8 w-8"
-                          data-testid="button-create-shareable-link"
+                          variant="outline"
+                          className="bg-green-600 hover:bg-green-700 text-white border-green-600 h-7 w-7"
+                          onClick={() => {
+                            navigator.clipboard.writeText(shareableUrl);
+                            toast({ title: "Link copied!", description: "Shareable URL copied to clipboard" });
+                          }}
+                          data-testid="button-copy-shareable-url"
                         >
-                          {isCreatingShareableLink ? (
-                            <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                          ) : (
-                            <Link2 className="w-4 h-4" />
-                          )}
+                          <Copy className="w-3 h-3" />
                         </Button>
-                      ) : (
-                        <div className="flex items-center gap-2">
-                          <Button
-                            size="icon"
-                            variant="outline"
-                            className="bg-green-600 hover:bg-green-700 text-white h-8 w-8"
-                            onClick={() => {
-                              navigator.clipboard.writeText(shareableUrl);
-                              toast({
-                                title: "Link copied!",
-                                description: "Shareable URL copied to clipboard",
-                              });
-                            }}
-                            data-testid="button-copy-shareable-url"
-                          >
-                            <Copy className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            className="h-8 w-8"
-                            onClick={() => window.open(shareableUrl, '_blank')}
-                            data-testid="button-open-shareable-url"
-                          >
-                            <ExternalLink className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7"
+                          onClick={() => window.open(shareableUrl, '_blank')}
+                          data-testid="button-open-shareable-url"
+                        >
+                          <ExternalLink className="w-3 h-3" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
               </div>
             </DialogHeader>
 
-            <div className="flex-1 overflow-auto space-y-4 scrollbar-hide">
+            <div className="flex-1 overflow-auto scrollbar-hide px-4 py-3 space-y-3">
               {/* Heatmap Container with ref for curved lines */}
               <div className="relative">
                 <div 
                   ref={reportDialogHeatmapContainerRef}
-                  className="max-h-96 overflow-auto border border-gray-200 scrollbar-hide dark:border-gray-700 rounded-lg"
+                  className="max-h-52 sm:max-h-72 overflow-auto border border-slate-200 scrollbar-hide dark:border-slate-700 rounded-lg"
                 >
                   <DemoHeatmap
                     tradingDataByDate={isSharedReportMode && sharedReportData?.reportData?.tradingDataByDate 
@@ -30842,7 +30794,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
               })()}
 
               {/* Analytics Row: Total P&L, Performance Trend, Top Tags */}
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {(() => {
                   const filteredData = isSharedReportMode && sharedReportData?.reportData?.tradingDataByDate 
                     ? sharedReportData.reportData.tradingDataByDate 
@@ -30924,24 +30876,24 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   return (
                     <>
                       {/* Column 1: Total P&L - Minimalistic Card */}
-                      <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800 shadow-lg">
-                        <div className="mb-4">
-                          <div className="text-[11px] text-slate-600 dark:text-slate-400 uppercase font-semibold mb-2">Total P&L</div>
-                          <div className={`text-2xl font-bold ${isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
+                        <div className="mb-2.5">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold mb-1">Total P&L</div>
+                          <div className={`text-xl font-bold ${isProfitable ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
                             {isProfitable ? '+' : ''}₹{(Math.abs(totalPnL) / 1000).toFixed(1)}K
                           </div>
                         </div>
-                        <div className="space-y-2.5">
-                          <div className="flex justify-start text-[12px]">
-                            <span className="text-slate-600 dark:text-slate-400">Total Trades</span>
-                            <span className="font-medium text-slate-900 dark:text-slate-100">{totalTrades}</span>
+                        <div className="space-y-1.5">
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-slate-500 dark:text-slate-400">Trades</span>
+                            <span className="font-medium text-slate-800 dark:text-slate-200">{totalTrades}</span>
                           </div>
-                          <div className="flex justify-start text-[12px]">
-                            <span className="text-slate-600 dark:text-slate-400">Success Rate</span>
-                            <span className="font-medium text-slate-900 dark:text-slate-100">{successRate.toFixed(1)}%</span>
+                          <div className="flex justify-between text-[11px]">
+                            <span className="text-slate-500 dark:text-slate-400">Win Rate</span>
+                            <span className="font-medium text-slate-800 dark:text-slate-200">{successRate.toFixed(1)}%</span>
                           </div>
-                          <div className="mt-3">
-                            <div className="h-1.5 bg-slate-200 dark:bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className="mt-2">
+                            <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                               <div 
                                 className={`h-full rounded-full transition-all ${isProfitable ? 'bg-emerald-500' : 'bg-red-500'}`}
                                 style={{ width: `${successRate}%` }}
@@ -30952,15 +30904,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
 
                       {/* Column 2: Performance Trend */}
-                      <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800 shadow-lg">
-                        <div className="flex items-start justify-start mb-3">
-                          <div className="text-[11px] text-gray-600 dark:text-gray-400 uppercase font-semibold">Performance Trend</div>
-                          <div className={`text-[10px] px-2 py-1 rounded ${isProfitable ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
-                            {isProfitable ? 'Profitable' : 'Not Profitable'}
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-[10px] text-slate-500 dark:text-slate-400 uppercase font-semibold">Trend</div>
+                          <div className={`text-[9px] px-1.5 py-0.5 rounded ${isProfitable ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'}`}>
+                            {isProfitable ? 'Profitable' : 'Loss'}
                           </div>
                         </div>
                         {trendData.length > 0 ? (
-                          <div className="h-28 w-full">
+                          <div className="h-20 w-full">
                             {(() => {
                               // Convert trend data to chart format
                               const chartData = trendData.map((pnl, idx) => ({

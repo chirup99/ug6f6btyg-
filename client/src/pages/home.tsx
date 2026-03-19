@@ -30973,23 +30973,25 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
 
                       {/* Column 3: Loss Tags */}
-                      <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-slate-200 dark:border-slate-800 shadow-lg">
-                        <div className="text-[11px] text-gray-600 dark:text-gray-400 uppercase font-semibold mb-3">Loss Tags</div>
+                      <div className="bg-white dark:bg-slate-900 rounded-lg p-3 border border-slate-200 dark:border-slate-800 shadow-lg">
+                        <div className="text-[10px] text-gray-600 dark:text-gray-400 uppercase font-semibold mb-2">Loss Tags</div>
                         {lossTags.length > 0 ? (
-                          <div className="bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-md p-3 space-y-2 max-h-32 overflow-y-auto">
+                          <div className="space-y-1">
                             {lossTags.map(({ tag, lossAmount }) => (
                               <div
                                 key={tag}
-                                className="flex items-center justify-start px-2.5 py-1.5 bg-red-100 dark:bg-red-900/50 border border-red-300 dark:border-red-700 rounded-md"
+                                className="flex items-center justify-between px-2 py-1 bg-red-50 dark:bg-red-950/40 border border-red-100 dark:border-red-900/60 rounded"
                                 data-testid={`tag-loss-${tag}`}
                               >
-                                <span className="text-[12px] font-medium text-red-800 dark:text-red-300 capitalize truncate">{tag}</span>
-                                <span className="text-[11px] font-bold text-red-600 dark:text-red-400 ml-2 flex-shrink-0">-₹{lossAmount.toLocaleString('en-IN')}</span>
+                                <span className="text-[10px] font-medium text-red-700 dark:text-red-300 capitalize truncate">{tag}</span>
+                                <span className="text-[10px] font-bold text-red-600 dark:text-red-400 ml-1.5 flex-shrink-0">
+                                  {'-₹'}{lossAmount >= 100000 ? `${(lossAmount / 100000).toFixed(1)}L` : lossAmount >= 1000 ? `${(lossAmount / 1000).toFixed(1)}K` : lossAmount.toFixed(0)}
+                                </span>
                               </div>
                             ))}
                           </div>
                         ) : (
-                          <div className="text-[12px] text-gray-500 dark:text-gray-400 italic py-3">No loss tags</div>
+                          <div className="text-[10px] text-gray-500 dark:text-gray-400 italic py-2">No loss tags</div>
                         )}
                       </div>
                     </>

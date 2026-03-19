@@ -88,21 +88,10 @@ function getPnLColor(pnl: number): string {
 
 export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0 }: DemoHeatmapProps) {
   const { currentUser } = useCurrentUser();
-  const [currentDate, setCurrentDate] = useState(() => {
-    // If external data provided (personal mode), start at that data's latest year
-    if (tradingDataByDate && Object.keys(tradingDataByDate).length > 0) {
-      const latestKey = Object.keys(tradingDataByDate)
-        .filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k))
-        .sort()
-        .pop();
-      if (latestKey) return new Date(parseInt(latestKey.slice(0, 4), 10), 0, 1);
-    }
-    // Demo mode: default to 2025 (auto-nav will correct after fetch)
-    return new Date(2025, 0, 1);
-  });
+  const [currentDate, setCurrentDate] = useState(new Date(2025, 0, 1));
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isUsingExternalData, setIsUsingExternalData] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isRangeSelectMode, setIsRangeSelectMode] = useState(false);
@@ -1106,7 +1095,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
           </span>
         </div>
         <span className="text-[10px] text-gray-600 dark:text-gray-400">
-          {selectedRange 
+          {isLoading ? "Loading..." : selectedRange 
             ? `${countDatesWithData(filteredData)} of ${countDatesWithData(heatmapData)} dates`
             : `${countDatesWithData(heatmapData)} dates`
           }

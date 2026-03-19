@@ -6507,47 +6507,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Journal Database API endpoints with AWS DynamoDB as PRIMARY storage
   // Migration complete: AWS DynamoDB is now the source of truth
 
-  // In-memory cache for instant subsequent loads (stale-while-revalidate)
-  let journalAllDatesCache: Record<string, any> | null = null;
-  let journalCacheLastFetch = 0;
-  const JOURNAL_CACHE_TTL = 30 * 1000; // 30 seconds
-
-  const refreshJournalCache = async () => {
-    try {
-      const allData = await awsDynamoDBService.getAllJournalData();
-      if (allData) {
-        journalAllDatesCache = allData;
-        journalCacheLastFetch = Date.now();
-      }
-    } catch (e) {
-      // silently ignore background refresh errors
-    }
-  };
-
-  // ✅ JOURNAL ALL-DATES: Instant from cache, background refresh from AWS DynamoDB
+  // ✅ JOURNAL ALL-DATES: AWS DynamoDB ONLY (no demo data fallback)
   app.get('/api/journal/all-dates', async (req, res) => {
-    const now = Date.now();
-    const cacheAge = now - journalCacheLastFetch;
-
-    // Serve from cache instantly if available
-    if (journalAllDatesCache !== null) {
-      res.json(journalAllDatesCache);
-      // Refresh in background if cache is stale
-      if (cacheAge > JOURNAL_CACHE_TTL) {
-        refreshJournalCache();
-      }
-      return;
-    }
-
-    // First load: fetch from DynamoDB and populate cache
     try {
+      console.log('📊 Fetching journal data: AWS DynamoDB ONLY...');
+
       const allData = await awsDynamoDBService.getAllJournalData();
-      journalAllDatesCache = allData && Object.keys(allData).length > 0 ? allData : {};
-      journalCacheLastFetch = Date.now();
-      res.json(journalAllDatesCache);
+
+      if (allData && Object.keys(allData).length > 0) {
+        console.log(`✅ AWS DynamoDB: Loaded ${Object.keys(allData).length} journal entries`);
+        return res.json(allData);
+      }
+
+      console.log('ℹ️ AWS DynamoDB: No data found, returning empty object');
+      res.json({});
     } catch (error) {
       console.error('❌ AWS DynamoDB error:', error);
-      res.json(journalAllDatesCache ?? {});
+      console.log('ℹ️ Returning empty object (no fallback demo data)');
+      res.json({});
     }
   });
 
@@ -6618,7 +6595,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (saveSuccess) {
         console.log(`✅ AWS DynamoDB save successful for ${key}`);
-        journalAllDatesCache = null; // Invalidate cache so next fetch is fresh
         res.json({ success: true, message: 'Journal data saved successfully to AWS' });
       } else {
         console.log(`⚠️ AWS DynamoDB save failed for ${key}`);
@@ -6644,7 +6620,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       if (updateSuccess) {
         console.log(`✅ AWS DynamoDB update successful for ${date}`);
-        journalAllDatesCache = null; // Invalidate cache so next fetch is fresh
         res.json({ success: true, message: 'Journal data updated successfully' });
       } else {
         console.log(`⚠️ AWS DynamoDB update failed for ${date}`);

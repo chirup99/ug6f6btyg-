@@ -1386,25 +1386,27 @@ function ProfileHeader() {
             <p className="text-gray-900 dark:text-white mb-4 text-base">{bio}</p>
           )}
 
-          <div className="flex flex-wrap gap-4 text-gray-600 dark:text-gray-400 text-sm mb-4">
+          <div className="flex flex-wrap gap-3 text-gray-500 dark:text-gray-400 text-sm mb-4">
+            {(profileData?.location) && (
+              <div className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{profileData.location}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>India</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              <span>Joined {new Date().getFullYear()}</span>
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Joined {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : new Date().getFullYear()}</span>
             </div>
           </div>
 
-          <div className="flex gap-4 text-sm mb-4">
+          <div className="flex gap-5 text-sm mb-4">
             <button 
               className="hover:underline"
               onClick={() => setShowFollowingDialog(true)}
               data-testid="button-show-following"
             >
               <span className="font-bold text-gray-900 dark:text-white">{following}</span>
-              <span className="text-gray-600 dark:text-gray-400 ml-1">Following</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">Following</span>
             </button>
             <button 
               className="hover:underline"
@@ -1412,99 +1414,100 @@ function ProfileHeader() {
               data-testid="button-show-followers"
             >
               <span className="font-bold text-gray-900 dark:text-white">{followers}</span>
-              <span className="text-gray-600 dark:text-gray-400 ml-1">Followers</span>
+              <span className="text-gray-500 dark:text-gray-400 ml-1">Followers</span>
             </button>
           </div>
 
-          <div className="flex gap-8 border-b border-gray-200 dark:border-gray-700">
-            {[`Posts ${postCount > 0 ? `(${postCount})` : ''}`, 'Media', 'Likes'].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab.split(' ')[0])}
-                className={`pb-3 px-2 font-medium transition-colors relative ${
-                  activeTab === tab.split(' ')[0]
-                    ? 'text-gray-900 dark:text-white'
-                    : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                }`}
-                data-testid={`button-tab-${tab.split(' ')[0].toLowerCase()}`}
-              >
-                {tab}
-                {activeTab === tab.split(' ')[0] && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-600 rounded-t-full"></div>
-                )}
-              </button>
-            ))}
+          <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700 -mx-4 px-4">
+            {(['Posts', 'Audio', 'Bullish', 'Bearish', 'Media', 'Likes'] as const).map((tab) => {
+              const label = tab === 'Posts' && postCount > 0 ? `Posts (${postCount})` : tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`pb-3 px-3 font-medium text-sm whitespace-nowrap transition-colors relative flex-shrink-0 ${
+                    activeTab === tab
+                      ? 'text-gray-900 dark:text-white'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                  data-testid={`button-tab-${tab.toLowerCase()}`}
+                >
+                  {label}
+                  {activeTab === tab && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full"></div>
+                  )}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>
 
-      {/* User Posts Display */}
-      {activeTab === 'Posts' && (
-        <div className="space-y-4 mb-6">
-          {postsLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <Card key={i} className="p-4 animate-pulse">
-                  <div className="flex gap-3">
-                    <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24 mb-2"></div>
-                      <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-full mb-1"></div>
-                      <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-                    </div>
+      {/* Tab Content */}
+      {(() => {
+        const postSkeletons = (
+          <div className="space-y-3">
+            {[1, 2, 3].map(i => (
+              <Card key={i} className="p-4 animate-pulse border-0 shadow-none bg-muted/30">
+                <div className="flex gap-3">
+                  <div className="w-9 h-9 bg-muted rounded-full flex-shrink-0"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 bg-muted rounded w-28"></div>
+                    <div className="h-3 bg-muted rounded w-full"></div>
+                    <div className="h-3 bg-muted rounded w-2/3"></div>
                   </div>
-                </Card>
-              ))}
-            </div>
-          ) : userPosts.length === 0 ? (
-            <Card className="p-8 text-center">
-              <p className="text-gray-500 dark:text-gray-400">No posts yet. Share your first trading insight!</p>
-            </Card>
-          ) : (
-            userPosts.map((post) => (
-              <PostCard 
-                key={post.id} 
-                post={post as FeedPost}
-                currentUserUsername={username}
-              />
-            ))
-          )}
-        </div>
-      )}
+                </div>
+              </Card>
+            ))}
+          </div>
+        );
 
-      {/* User Liked Posts Display */}
-      {activeTab === 'Likes' && (
-        <div className="space-y-4 mb-6">
-          {postsLoading ? (
-            <div className="space-y-4">
-              {[1, 2, 3].map(i => (
-                <Card key={i} className="p-4 animate-pulse">
-                  <div className="flex gap-3">
-                    <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
-                    <div className="flex-1">
-                      <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24 mb-2"></div>
-                      <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-full mb-1"></div>
-                      <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-                    </div>
-                  </div>
-                </Card>
+        const emptyState = (icon: React.ReactNode, message: string) => (
+          <div className="py-14 text-center text-gray-400 dark:text-gray-500">
+            <div className="mb-3 flex justify-center opacity-40">{icon}</div>
+            <p className="text-sm">{message}</p>
+          </div>
+        );
+
+        const renderPosts = (posts: typeof userPosts, emptyMsg: string) => {
+          if (postsLoading) return postSkeletons;
+          if (posts.length === 0) return emptyState(<MessageCircle className="w-10 h-10" />, emptyMsg);
+          return (
+            <div className="space-y-2 mb-6">
+              {posts.map((post) => (
+                <PostCard key={post.id} post={post as FeedPost} currentUserUsername={username} />
               ))}
             </div>
-          ) : likedPosts.length === 0 ? (
-            <Card className="p-8 text-center">
-              <p className="text-gray-500 dark:text-gray-400">No liked posts yet. Like posts by tapping the voting button!</p>
-            </Card>
-          ) : (
-            likedPosts.map((post) => (
-              <PostCard 
-                key={post.id} 
-                post={post as FeedPost}
-                currentUserUsername={username}
-              />
-            ))
-          )}
-        </div>
-      )}
+          );
+        };
+
+        const audioPosts = userPosts.filter(p => (p as any).isAudioPost);
+        const bullishPosts = userPosts.filter(p => (p as any).sentiment === 'bullish');
+        const bearishPosts = userPosts.filter(p => (p as any).sentiment === 'bearish');
+        const mediaPosts = userPosts.filter(p => (p as any).hasImage || (p as any).imageUrl);
+
+        if (activeTab === 'Posts') return renderPosts(userPosts.filter(p => !(p as any).isAudioPost), 'No posts yet. Share your first trading insight!');
+        if (activeTab === 'Audio') return renderPosts(audioPosts, 'No audio minicasts yet.');
+        if (activeTab === 'Bullish') return renderPosts(bullishPosts, 'No bullish posts yet.');
+        if (activeTab === 'Bearish') return renderPosts(bearishPosts, 'No bearish posts yet.');
+        if (activeTab === 'Media') {
+          if (postsLoading) return postSkeletons;
+          if (mediaPosts.length === 0) return emptyState(<Camera className="w-10 h-10" />, 'No media posts yet.');
+          return (
+            <div className="grid grid-cols-3 gap-1 mb-6">
+              {mediaPosts.map((post) => (
+                <div key={post.id} className="aspect-square bg-muted rounded overflow-hidden">
+                  {(post as any).imageUrl && (
+                    <img src={(post as any).imageUrl} alt="" className="w-full h-full object-cover" />
+                  )}
+                </div>
+              ))}
+            </div>
+          );
+        }
+        if (activeTab === 'Likes') return renderPosts(likedPosts, 'No liked posts yet. Like posts by tapping the voting button!');
+        return null;
+      })()}
 
       {/* Edit Profile Dialog */}
       <EditProfileDialog
@@ -1993,72 +1996,77 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>Edit Profile</DialogTitle>
-        </DialogHeader>
-        <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-2">Username</label>
+      <DialogContent className="max-w-sm p-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-800">
+          <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm transition-colors" data-testid="button-cancel-profile">
+            Cancel
+          </button>
+          <h2 className="text-sm font-semibold text-gray-900 dark:text-white">Edit Profile</h2>
+          <button
+            onClick={handleSave}
+            disabled={!canSave || checkingUsername}
+            className="text-sm font-semibold text-blue-600 dark:text-blue-400 disabled:opacity-40 hover:text-blue-700 transition-colors"
+            data-testid="button-save-profile"
+          >
+            {saving ? 'Saving…' : checkingUsername ? 'Checking…' : 'Save'}
+          </button>
+        </div>
+
+        {/* Fields */}
+        <div className="px-5 py-4 space-y-5">
+          {/* Display Name */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Name</label>
+            <Input
+              value={displayName}
+              onChange={(e) => setDisplayName(e.target.value)}
+              placeholder="Your display name"
+              className="border-0 border-b border-gray-200 dark:border-gray-700 rounded-none px-0 focus-visible:ring-0 focus-visible:border-blue-500 bg-transparent text-sm"
+              data-testid="input-displayname"
+            />
+          </div>
+
+          {/* Username */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Username</label>
             <div className="relative">
               <Input
                 value={username}
                 onChange={(e) => setUsername(e.target.value.toLowerCase())}
-                placeholder="Enter username"
-                className="pr-10"
+                placeholder="username"
+                className="border-0 border-b border-gray-200 dark:border-gray-700 rounded-none px-0 pr-7 focus-visible:ring-0 focus-visible:border-blue-500 bg-transparent text-sm"
                 data-testid="input-username"
               />
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {checkingUsername && (
-                  <Loader2 className="h-4 w-4 animate-spin text-gray-400" data-testid="icon-checking-username" />
-                )}
-                {!checkingUsername && isUsernameChanged && usernameAvailable === true && (
-                  <CheckCircle className="h-4 w-4 text-green-500" data-testid="icon-username-available" />
-                )}
-                {!checkingUsername && isUsernameChanged && usernameAvailable === false && (
-                  <X className="h-4 w-4 text-red-500" data-testid="icon-username-unavailable" />
-                )}
+              <div className="absolute right-0 top-1/2 -translate-y-1/2">
+                {checkingUsername && <Loader2 className="h-3.5 w-3.5 animate-spin text-gray-400" data-testid="icon-checking-username" />}
+                {!checkingUsername && isUsernameChanged && usernameAvailable === true && <CheckCircle className="h-3.5 w-3.5 text-green-500" data-testid="icon-username-available" />}
+                {!checkingUsername && isUsernameChanged && usernameAvailable === false && <X className="h-3.5 w-3.5 text-red-500" data-testid="icon-username-unavailable" />}
               </div>
             </div>
             {usernameMessage && isUsernameChanged && (
-              <p 
-                className={`text-xs mt-1 ${usernameAvailable ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}
-                data-testid="text-username-message"
-              >
-                {usernameMessage === "Username is available" ? "Available" : usernameMessage === "Username is already taken" ? "Not Available" : usernameMessage}
+              <p className={`text-xs ${usernameAvailable ? 'text-green-600 dark:text-green-400' : 'text-red-500'}`} data-testid="text-username-message">
+                {usernameMessage === "Username is available" ? "Available" : usernameMessage === "Username is already taken" ? "Already taken" : usernameMessage}
               </p>
             )}
           </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Display Name</label>
-            <Input
-              value={displayName}
-              onChange={(e) => setDisplayName(e.target.value)}
-              placeholder="Enter display name"
-              data-testid="input-displayname"
-            />
-          </div>
-          <div>
-            <label className="block text-sm font-medium mb-2">Bio</label>
+
+          {/* Bio */}
+          <div className="space-y-1.5">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Bio</label>
             <Textarea
               value={bio}
               onChange={(e) => setBio(e.target.value)}
-              placeholder="Tell us about yourself"
+              placeholder="Tell traders about yourself…"
               rows={3}
+              className="border-0 border-b border-gray-200 dark:border-gray-700 rounded-none px-0 focus-visible:ring-0 focus-visible:border-blue-500 bg-transparent text-sm resize-none"
               data-testid="textarea-bio"
             />
           </div>
-          <p className="text-xs text-gray-500 dark:text-gray-400 italic">
-            To change your profile or cover photo, use the camera buttons on your profile header above.
+
+          <p className="text-xs text-gray-400 dark:text-gray-500">
+            Update your profile or cover photo using the camera icons on your profile.
           </p>
-          <div className="flex gap-2 justify-end">
-            <Button variant="outline" onClick={onClose} disabled={saving} data-testid="button-cancel-profile">
-              Cancel
-            </Button>
-            <Button onClick={handleSave} disabled={!canSave || checkingUsername} data-testid="button-save-profile">
-              {saving ? "Saving..." : checkingUsername ? "Checking..." : "Save Profile"}
-            </Button>
-          </div>
         </div>
       </DialogContent>
     </Dialog>
@@ -3845,9 +3853,9 @@ function ViewUserProfile({
   const [isFollowLoading, setIsFollowLoading] = useState(false);
   const [showFollowersDialog, setShowFollowersDialog] = useState(false);
   const [showFollowingDialog, setShowFollowingDialog] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const [, setLocation] = useLocation();
 
   // Fetch user profile data
   const { data: profileData, isLoading: profileLoading } = useQuery({
@@ -3871,15 +3879,16 @@ function ViewUserProfile({
     staleTime: 60000,
   });
 
-  // Fetch user posts
+  // Fetch user posts directly for this user
   const { data: allPosts = [], isLoading: postsLoading } = useQuery({
-    queryKey: ['/api/social-posts'],
+    queryKey: [`/api/social-posts/by-user/${username}`],
     queryFn: async (): Promise<SocialPost[]> => {
-      const response = await fetch('/api/social-posts');
+      const response = await fetch(`/api/social-posts/by-user/${username}`);
       if (!response.ok) throw new Error('Failed to fetch posts');
       return response.json();
     },
-    staleTime: 120000,
+    staleTime: 60000,
+    enabled: !!username,
   });
 
   // Fetch followers list
@@ -3925,11 +3934,8 @@ function ViewUserProfile({
     checkFollowStatus();
   }, [username, currentUserUsername]);
 
-  // Filter posts for this user
-  const userPosts = allPosts.filter(post => 
-    post.authorUsername?.toLowerCase() === username?.toLowerCase() ||
-    post.authorDisplayName?.toLowerCase() === profileData?.displayName?.toLowerCase()
-  );
+  // Posts are already filtered by user from the API
+  const userPosts = allPosts;
 
   // Handle follow/unfollow
   const handleFollowToggle = async () => {
@@ -4075,7 +4081,7 @@ function ViewUserProfile({
               <Button
                 variant="outline"
                 className="rounded-full px-5 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
-                onClick={() => setLocation('/settings')}
+                onClick={() => setShowEditProfile(true)}
                 data-testid="button-edit-profile"
               >
                 Edit profile
@@ -4109,14 +4115,16 @@ function ViewUserProfile({
           )}
 
           {/* Location and Join Date */}
-          <div className="flex flex-wrap items-center gap-4 text-gray-500 dark:text-gray-400 text-sm mb-3">
+          <div className="flex flex-wrap items-center gap-3 text-gray-500 dark:text-gray-400 text-sm mb-3">
+            {profileData?.location && (
+              <div className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{profileData.location}</span>
+              </div>
+            )}
             <div className="flex items-center gap-1">
-              <MapPin className="w-4 h-4" />
-              <span>India</span>
-            </div>
-            <div className="flex items-center gap-1">
-              <Calendar className="w-4 h-4" />
-              <span>Joined {new Date().getFullYear()}</span>
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Joined {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : new Date().getFullYear()}</span>
             </div>
           </div>
 
@@ -4140,22 +4148,22 @@ function ViewUserProfile({
             </button>
           </div>
 
-          {/* Tabs: Posts, Media, Likes */}
-          <div className="flex border-b border-gray-200 dark:border-gray-700">
-            {['Posts', 'Media', 'Likes'].map((tab) => (
+          {/* Tabs: scrollable */}
+          <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700 -mx-4 px-4">
+            {(['Posts', 'Audio', 'Bullish', 'Bearish', 'Media'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`pb-3 px-4 font-medium transition-colors relative ${
+                className={`pb-3 px-3 font-medium text-sm whitespace-nowrap transition-colors relative flex-shrink-0 ${
                   activeTab === tab
                     ? 'text-gray-900 dark:text-white'
-                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                    : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
                 }`}
                 data-testid={`button-profile-tab-${tab.toLowerCase()}`}
               >
                 {tab}
                 {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-1 bg-blue-500 rounded-t-full"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full"></div>
                 )}
               </button>
             ))}
@@ -4163,84 +4171,120 @@ function ViewUserProfile({
         </div>
       </div>
 
-      {/* User Posts */}
+      {/* Tab Content */}
       <div className="max-w-4xl mx-auto px-4">
-        {activeTab === 'Posts' && (
-          <div className="space-y-4 mb-6">
-            {postsLoading ? (
-              <div className="space-y-4">
-                {[1, 2, 3].map(i => (
-                  <Card key={i} className="p-4 animate-pulse">
-                    <div className="flex gap-3">
-                      <div className="w-10 h-10 bg-gray-300 dark:bg-gray-700 rounded-full"></div>
-                      <div className="flex-1">
-                        <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-24 mb-2"></div>
-                        <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-full mb-1"></div>
-                        <div className="h-3 bg-gray-300 dark:bg-gray-700 rounded w-3/4"></div>
-                      </div>
+        {(() => {
+          const postSkeletons = (
+            <div className="space-y-3 mt-2">
+              {[1, 2, 3].map(i => (
+                <Card key={i} className="p-4 animate-pulse border-0 shadow-none bg-muted/30">
+                  <div className="flex gap-3">
+                    <div className="w-9 h-9 bg-muted rounded-full flex-shrink-0"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-3.5 bg-muted rounded w-28"></div>
+                      <div className="h-3 bg-muted rounded w-full"></div>
+                      <div className="h-3 bg-muted rounded w-2/3"></div>
                     </div>
-                  </Card>
-                ))}
-              </div>
-            ) : userPosts.length === 0 ? (
-              <Card className="p-8 text-center">
-                <p className="text-gray-500 dark:text-gray-400">No posts yet.</p>
-              </Card>
-            ) : (
-              userPosts.map((post) => (
-                <PostCard
-                  key={post.id}
-                  post={{
-                    id: post.id.toString(),
-                    content: post.content,
-                    authorUsername: post.authorUsername,
-                    authorDisplayName: post.authorDisplayName,
-                    authorAvatar: post.authorAvatar,
-                    authorVerified: post.authorVerified,
-                    createdAt: post.createdAt,
-                    likes: post.likes || 0,
-                    comments: post.comments || 0,
-                    reposts: post.reposts || 0,
-                    imageUrl: post.imageUrl,
-                    hasMedia: post.hasImage,
-                    metadata: post.metadata,
-                    ticker: post.stockMentions?.[0] ? `$${post.stockMentions[0]}` : '',
-                    sentiment: post.sentiment as 'bullish' | 'bearish' | 'neutral' | null,
-                    tags: post.tags || [],
-                    stockMentions: post.stockMentions || [],
-                    user: {
-                      initial: (post.authorDisplayName || 'U')[0].toUpperCase(),
-                      username: post.authorDisplayName || '',
-                      handle: post.authorUsername || '',
-                      verified: post.authorVerified || false,
-                      online: true,
-                      avatar: post.authorAvatar || undefined,
-                    },
-                    metrics: {
+                  </div>
+                </Card>
+              ))}
+            </div>
+          );
+
+          const emptyState = (icon: React.ReactNode, message: string) => (
+            <div className="py-14 text-center text-gray-400 dark:text-gray-500">
+              <div className="mb-3 flex justify-center opacity-40">{icon}</div>
+              <p className="text-sm">{message}</p>
+            </div>
+          );
+
+          const renderPosts = (posts: typeof userPosts, emptyMsg: string) => {
+            if (postsLoading) return postSkeletons;
+            if (posts.length === 0) return emptyState(<MessageCircle className="w-10 h-10" />, emptyMsg);
+            return (
+              <div className="space-y-2 mt-2 mb-6">
+                {posts.map((post) => (
+                  <PostCard
+                    key={post.id}
+                    post={{
+                      id: post.id.toString(),
+                      content: post.content,
+                      authorUsername: post.authorUsername,
+                      authorDisplayName: post.authorDisplayName,
+                      authorAvatar: post.authorAvatar,
+                      authorVerified: post.authorVerified,
+                      createdAt: post.createdAt,
+                      likes: post.likes || 0,
                       comments: post.comments || 0,
                       reposts: post.reposts || 0,
-                      likes: post.likes || 0,
-                    },
-                  } as FeedPost}
-                  currentUserUsername={currentUserUsername}
-                />
-              ))
-            )}
-          </div>
-        )}
+                      imageUrl: post.imageUrl,
+                      hasMedia: post.hasImage,
+                      metadata: post.metadata,
+                      ticker: post.stockMentions?.[0] ? `$${post.stockMentions[0]}` : '',
+                      sentiment: post.sentiment as 'bullish' | 'bearish' | 'neutral' | null,
+                      tags: post.tags || [],
+                      stockMentions: post.stockMentions || [],
+                      user: {
+                        initial: (post.authorDisplayName || 'U')[0].toUpperCase(),
+                        username: post.authorDisplayName || '',
+                        handle: post.authorUsername || '',
+                        verified: post.authorVerified || false,
+                        online: true,
+                        avatar: post.authorAvatar || undefined,
+                      },
+                      metrics: {
+                        comments: post.comments || 0,
+                        reposts: post.reposts || 0,
+                        likes: post.likes || 0,
+                      },
+                    } as FeedPost}
+                    currentUserUsername={currentUserUsername}
+                  />
+                ))}
+              </div>
+            );
+          };
 
-        {activeTab === 'Media' && (
-          <Card className="p-8 text-center">
-            <p className="text-gray-500 dark:text-gray-400">No media posts yet.</p>
-          </Card>
-        )}
+          const audioPosts = userPosts.filter(p => (p as any).isAudioPost);
+          const bullishPosts = userPosts.filter(p => (p as any).sentiment === 'bullish');
+          const bearishPosts = userPosts.filter(p => (p as any).sentiment === 'bearish');
+          const mediaPosts = userPosts.filter(p => (p as any).hasImage || (p as any).imageUrl);
 
-        {activeTab === 'Likes' && (
-          <Card className="p-8 text-center">
-            <p className="text-gray-500 dark:text-gray-400">Liked posts will appear here.</p>
-          </Card>
-        )}
+          if (activeTab === 'Posts') return renderPosts(userPosts.filter(p => !(p as any).isAudioPost), 'No posts yet.');
+          if (activeTab === 'Audio') return renderPosts(audioPosts, 'No audio minicasts yet.');
+          if (activeTab === 'Bullish') return renderPosts(bullishPosts, 'No bullish posts yet.');
+          if (activeTab === 'Bearish') return renderPosts(bearishPosts, 'No bearish posts yet.');
+          if (activeTab === 'Media') {
+            if (postsLoading) return postSkeletons;
+            if (mediaPosts.length === 0) return emptyState(<Camera className="w-10 h-10" />, 'No media posts yet.');
+            return (
+              <div className="grid grid-cols-3 gap-1 mt-2 mb-6">
+                {mediaPosts.map((post) => (
+                  <div key={post.id} className="aspect-square bg-muted rounded overflow-hidden">
+                    {(post as any).imageUrl && (
+                      <img src={(post as any).imageUrl} alt="" className="w-full h-full object-cover" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            );
+          }
+          return null;
+        })()}
       </div>
+
+      {/* Edit Profile Dialog (own profile only) */}
+      {showEditProfile && (
+        <EditProfileDialog
+          isOpen={showEditProfile}
+          onClose={() => setShowEditProfile(false)}
+          profileData={profileData}
+          onSuccess={() => {
+            setShowEditProfile(false);
+            queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/profile`] });
+          }}
+        />
+      )}
 
       {/* Followers Dialog */}
       <Dialog open={showFollowersDialog} onOpenChange={setShowFollowersDialog}>

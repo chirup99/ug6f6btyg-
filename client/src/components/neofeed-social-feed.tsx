@@ -2460,6 +2460,121 @@ function AnalysisPanel({ ticker, isOpen, onClose }: { ticker: string; isOpen: bo
   );
 }
 
+function TradeInsightCard({ post, onViewUserProfile }: { post: FeedPost; onViewUserProfile?: (username: string) => void }) {
+  const m = post.metadata || {};
+  const chartData: number[] = Array.isArray(m.chartData) ? m.chartData : [];
+  const pnl: number = m.pnl ?? 0;
+  const trades: number = m.trades ?? 0;
+  const winRate: number = m.winRate ?? 0;
+  const date: string = m.date || '';
+  const isProfit = pnl >= 0;
+
+  const svgW = 320, svgH = 80;
+  const maxVal = Math.max(...chartData, 0);
+  const minVal = Math.min(...chartData, 0);
+  const range = maxVal - minVal || 1;
+
+  const svgPoints = chartData.length > 1
+    ? chartData.map((val, i) => {
+        const x = (i / (chartData.length - 1)) * svgW;
+        const y = svgH - ((val - minVal) / range) * svgH;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(' ')
+    : null;
+
+  const areaPath = svgPoints
+    ? `M 0,${svgH} L ${svgPoints.replace(/ /g, ' L ')} L ${svgW},${svgH} Z`
+    : null;
+
+  const displayName = post.user?.username || post.authorDisplayName || 'Unknown';
+  const username = post.user?.handle || post.authorUsername || 'user';
+  const avatar = post.user?.avatar || post.authorAvatar;
+  const timestamp = post.timestamp || (post.createdAt
+    ? new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '');
+
+  return (
+    <Card className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 shadow-sm mb-3 rounded-xl overflow-hidden">
+      <div className="px-4 pt-4 pb-1">
+        <span className="text-[11px] font-bold text-gray-800 dark:text-zinc-200 uppercase tracking-wider">{date}</span>
+      </div>
+      <div className="flex border-b border-gray-100 dark:border-zinc-800/60" style={{ height: '110px' }}>
+        <div className="flex-1 px-3 pb-2 pt-1 relative">
+          {svgPoints ? (
+            <svg
+              width="100%"
+              height="100%"
+              viewBox={`0 0 ${svgW} ${svgH}`}
+              preserveAspectRatio="none"
+              className="overflow-visible"
+            >
+              <defs>
+                <linearGradient id={`ti-grad-${post.id}`} x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stopColor={isProfit ? '#22c55e' : '#ef4444'} stopOpacity="0.15" />
+                  <stop offset="100%" stopColor={isProfit ? '#22c55e' : '#ef4444'} stopOpacity="0" />
+                </linearGradient>
+              </defs>
+              {areaPath && <path d={areaPath} fill={`url(#ti-grad-${post.id})`} />}
+              <polyline
+                points={svgPoints}
+                fill="none"
+                stroke={isProfit ? '#22c55e' : '#ef4444'}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <div className="h-px w-full bg-gray-200 dark:bg-zinc-700" />
+            </div>
+          )}
+        </div>
+        <div className="w-[118px] flex-shrink-0 border-l border-gray-100 dark:border-zinc-800/60 bg-gray-50/40 dark:bg-zinc-900/20 flex flex-col justify-center gap-2.5 px-4 py-3">
+          <div>
+            <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">TOTAL P&L</div>
+            <div className={`text-sm font-bold ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
+              {isProfit ? '+' : '-'}₹{Math.abs(Math.floor(pnl)).toLocaleString()}
+            </div>
+          </div>
+          <div>
+            <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">TRADES</div>
+            <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">{trades}</div>
+          </div>
+          <div>
+            <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-0.5">WIN RATE</div>
+            <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">{winRate}%</div>
+          </div>
+        </div>
+      </div>
+      {post.content && (
+        <div className="px-4 pt-3 pb-1">
+          <p className="text-sm text-gray-700 dark:text-zinc-300 leading-relaxed">{post.content}</p>
+        </div>
+      )}
+      <div className="px-4 py-3 flex items-center justify-between">
+        <button
+          onClick={() => username && onViewUserProfile && onViewUserProfile(username)}
+          className="flex items-center gap-2 hover:opacity-75 transition-opacity"
+          data-testid={`button-profile-ti-${post.id}`}
+        >
+          <Avatar className="w-7 h-7 border border-gray-200 dark:border-zinc-700">
+            {avatar && <AvatarImage src={avatar} />}
+            <AvatarFallback className="bg-blue-600 text-white text-xs font-bold">
+              {displayName.charAt(0).toUpperCase()}
+            </AvatarFallback>
+          </Avatar>
+          <div className="flex flex-col items-start">
+            <span className="text-xs font-semibold text-gray-800 dark:text-zinc-200 leading-tight">{displayName}</span>
+            <span className="text-[10px] text-gray-400 dark:text-zinc-500 leading-tight">@{username}</span>
+          </div>
+        </button>
+        <span className="text-[10px] text-gray-400 dark:text-zinc-500">{timestamp}</span>
+      </div>
+    </Card>
+  );
+}
+
 function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: string | number }) {
   const [fomoActive, setFomoActive] = useState(false);
   const isProfit = (m.totalPnL || 0) >= 0;

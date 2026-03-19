@@ -2942,6 +2942,7 @@ export default function Home() {
         const trendData: number[] = [];
         const fomoDates: string[] = [];
 
+        const tradingDays: { date: string; pnl: number; isFomo: boolean }[] = [];
         dates.forEach(dateKey => {
           const dayData = filteredData[dateKey];
           const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
@@ -2954,14 +2955,17 @@ export default function Home() {
             trendData.push(netPnL);
             if (netPnL > 0) { currentStreak++; maxStreak = Math.max(maxStreak, currentStreak); }
             else { currentStreak = 0; }
+            let dayFomo = false;
             if (Array.isArray(tags)) {
               tags.forEach((tag: string) => {
                 if (tag.toLowerCase().includes('fomo') && !fomoDates.includes(dateKey)) {
                   fomoDates.push(dateKey);
                   fomoCount++;
+                  dayFomo = true;
                 }
               });
             }
+            tradingDays.push({ date: dateKey, pnl: netPnL, isFomo: dayFomo });
           }
         });
 
@@ -2978,6 +2982,7 @@ export default function Home() {
           trendData,
           fomoDates,
           dateCount: dates.length,
+          tradingDays,
         };
       }
 

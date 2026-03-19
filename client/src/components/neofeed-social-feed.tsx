@@ -2576,10 +2576,9 @@ function TradeInsightCard({ post, onViewUserProfile }: { post: FeedPost; onViewU
 }
 
 function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: string | number }) {
-  const [fomoActive, setFomoActive] = useState(false);
   const isProfit = (m.totalPnL || 0) >= 0;
   const trendData: number[] = m.trendData || [];
-  const fomoDates: string[] = m.fomoDates || [];
+  const tradingDays: { date: string; pnl: number; isFomo: boolean }[] = m.tradingDays || [];
 
   const maxT = Math.max(...trendData, 0);
   const minT = Math.min(...trendData, 0);
@@ -2596,17 +2595,103 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
   const fromLabel = m.fromDate ? new Date(m.fromDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
   const toLabel = m.toDate ? new Date(m.toDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '';
 
+  const maxAbsPnL = Math.max(...tradingDays.map(d => Math.abs(d.pnl)), 1);
+
+  const monthGroups: { label: string; days: { date: string; pnl: number; isFomo: boolean }[] }[] = [];
+  tradingDays.forEach(day => {
+    const d = new Date(day.date);
+    const label = d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
+    const existing = monthGroups.find(g => g.label === label);
+    if (existing) { existing.days.push(day); }
+    else { monthGroups.push({ label, days: [day] }); }
+  });
+
+  const getDotSize = (pnl: number) => {
+    const ratio = Math.abs(pnl) / maxAbsPnL;
+    if (ratio > 0.66) return 11;
+    if (ratio > 0.33) return 9;
+    return 7;
+  };
+
   return (
     <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
-      <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest px-4 pt-3 pb-1">
-        {m.dateCount || 0} Trading Days{fromLabel ? ` · ${fromLabel}` : ''}{fromLabel && toLabel ? ' – ' : ''}{toLabel}
+      <div className="flex items-center justify-between px-4 pt-3 pb-1">
+        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
+          {m.dateCount || 0} Trading Days{fromLabel ? ` · ${fromLabel}` : ''}{fromLabel && toLabel ? ' – ' : ''}{toLabel}
+        </div>
+        <div className="text-[9px] text-gray-400 font-medium">{new Date(m.toDate || Date.now()).getFullYear()}</div>
       </div>
+
+      {tradingDays.length > 0 && (
+        <div className="px-4 pb-2">
+          <div className="overflow-x-auto scrollbar-thin scrollbar-thumb-gray-200 dark:scrollbar-thumb-zinc-700">
+            <div className="flex gap-4 min-w-max pb-1">
+              {monthGroups.map(group => (
+                <div key={group.label} className="flex flex-col gap-1">
+                  <div className="text-[9px] font-semibold text-gray-400 dark:text-zinc-500 uppercase tracking-wide">
+                    {group.label.split(' ')[0]}
+                  </div>
+                  <div className="flex flex-col gap-[3px]">
+                    {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((dow, wi) => (
+                      <div key={wi} className="flex gap-[3px] items-center">
+                        <span className="text-[7px] text-gray-300 dark:text-zinc-600 w-2">{dow}</span>
+                        {group.days
+                          .filter(day => new Date(day.date).getDay() === wi)
+                          .map(day => {
+                            const size = getDotSize(day.pnl);
+                            const isGain = day.pnl >= 0;
+                            const title = `${new Date(day.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}: ${isGain ? '+' : ''}₹${Math.round(day.pnl).toLocaleString()}${day.isFomo ? ' (FOMO)' : ''}`;
+                            return (
+                              <div
+                                key={day.date}
+                                title={title}
+                                style={{ width: size, height: size }}
+                                className={`rounded-full flex-shrink-0 ${
+                                  day.isFomo
+                                    ? 'bg-yellow-400 dark:bg-yellow-500'
+                                    : isGain
+                                    ? 'bg-emerald-500 dark:bg-emerald-400'
+                                    : 'bg-red-500 dark:bg-red-400'
+                                }`}
+                              />
+                            );
+                          })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+          <div className="flex items-center justify-between mt-1">
+            <div className="flex items-center gap-2 text-[9px] text-gray-400">
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-red-500" />
+                <div className="w-2.5 h-2.5 rounded-full bg-red-500" />
+                <span>Loss</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <div className="w-2 h-2 rounded-full bg-emerald-500" />
+                <div className="w-2.5 h-2.5 rounded-full bg-emerald-500" />
+                <span>Profit</span>
+              </div>
+              {m.fomoCount > 0 && (
+                <div className="flex items-center gap-1">
+                  <div className="w-2 h-2 rounded-full bg-yellow-400" />
+                  <span>FOMO</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="bg-gradient-to-r from-violet-500 to-purple-600 mx-3 mb-3 rounded-lg px-3 py-2">
         <div className="flex items-center justify-around text-white gap-1">
           <div className="flex flex-col items-center">
             <div className="text-[9px] opacity-80">P&L</div>
             <div className="text-xs font-bold">
-              {isProfit ? '+' : ''}₹{(Math.abs(m.totalPnL || 0) / 1000).toFixed(1)}K
+              {isProfit ? '+' : '-'}₹{(Math.abs(m.totalPnL || 0) / 1000).toFixed(1)}K
             </div>
           </div>
           <div className="flex flex-col items-center">
@@ -2615,15 +2700,10 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
               <path d={trendPath} fill="none" stroke="white" strokeWidth="1.5" opacity="0.9" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <button
-            className={`flex flex-col items-center px-1.5 py-0.5 rounded transition-all ${fomoActive ? 'bg-white/30 ring-1 ring-white/50' : 'hover:bg-white/10'}`}
-            onClick={() => setFomoActive(v => !v)}
-            title="Click to see FOMO trading days"
-            data-testid={`button-fomo-${postId}`}
-          >
+          <div className="flex flex-col items-center">
             <div className="text-[9px] opacity-80">FOMO</div>
             <div className="text-xs font-bold">{m.fomoCount || 0}</div>
-          </button>
+          </div>
           <div className="flex flex-col items-center">
             <div className="text-[9px] opacity-80">Win%</div>
             <div className="text-xs font-bold">{m.winRate || 0}%</div>
@@ -2634,21 +2714,6 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
           </div>
         </div>
       </div>
-      {fomoActive && fomoDates.length > 0 && (
-        <div className="px-3 pb-3">
-          <div className="text-[9px] font-semibold text-violet-500 dark:text-violet-400 mb-1.5 uppercase tracking-wide">FOMO Days</div>
-          <div className="flex flex-wrap gap-1.5">
-            {fomoDates.map(d => (
-              <span key={d} className="text-[10px] bg-violet-100 dark:bg-violet-900/30 text-violet-700 dark:text-violet-300 border border-violet-200 dark:border-violet-800 rounded px-1.5 py-0.5 font-medium">
-                {new Date(d).toLocaleDateString('en-US', { day: 'numeric', month: 'short' })}
-              </span>
-            ))}
-          </div>
-        </div>
-      )}
-      {fomoActive && fomoDates.length === 0 && (
-        <div className="px-3 pb-3 text-[10px] text-slate-400">No FOMO trades recorded in this period.</div>
-      )}
     </div>
   );
 }
@@ -3387,6 +3452,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             </div>
           )}
           <div className="relative">
+            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && (
             <p 
               className={`text-gray-900 dark:text-white leading-relaxed mb-2 xl:mb-3 text-base font-medium ${
                 isAudioMode ? 'cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors rounded-lg p-2 -m-2' : ''
@@ -3397,9 +3463,10 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 ? post.content
                 : `${post.content.substring(0, MAX_TEXT_LENGTH)}...`}
             </p>
+            )}
             
             {/* Expand/Collapse button for long text */}
-            {post.content.length > MAX_TEXT_LENGTH && (
+            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && post.content.length > MAX_TEXT_LENGTH && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium mt-1 transition-colors"

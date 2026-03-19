@@ -2707,27 +2707,6 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt }: { metadata: any
 
   return (
     <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
-      <div className="flex items-center justify-between px-4 pt-3 pb-1">
-        <div className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">
-          {stats.dateCount || m.dateCount || 0} Trading Days{fromLabel ? ` · ${fromLabel}` : ''}{fromLabel && toLabel ? ' – ' : ''}{toLabel}
-        </div>
-        <div className="flex items-center gap-2">
-          {m.ownerUserId && (
-            <span className="text-[9px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded font-medium">live mirror</span>
-          )}
-          {expiryCountdown && (
-            expiryCountdown.expired ? (
-              <span className="text-[9px] bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 px-1.5 py-0.5 rounded font-medium">expired</span>
-            ) : (
-              <span className="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">
-                {expiryCountdown.hoursLeft}h left
-              </span>
-            )
-          )}
-          {!expiryCountdown && <div className="text-[9px] text-gray-400 font-medium">{new Date(m.toDate || Date.now()).getFullYear()}</div>}
-        </div>
-      </div>
-
       {mirrorLoading ? (
         <div className="px-4 pb-3 flex items-center gap-2 text-xs text-gray-400">
           <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />

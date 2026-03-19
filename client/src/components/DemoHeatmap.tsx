@@ -181,9 +181,9 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
       .filter(k => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return false;
         const d = data[k];
-        const hasTrades = (d?.tradeHistory?.length || 0) > 0 || (d?.tradingData?.tradeHistory?.length || 0) > 0;
-        const hasPnL = (d?.performanceMetrics?.totalTrades || 0) > 0 || (d?.tradingData?.performanceMetrics?.totalTrades || 0) > 0;
-        return hasTrades || hasPnL;
+        const tradeCount = (d?.tradeHistory?.length || 0) + (d?.tradingData?.tradeHistory?.length || 0);
+        const netPnL = Math.abs(d?.performanceMetrics?.netPnL || d?.tradingData?.performanceMetrics?.netPnL || 0);
+        return tradeCount > 0 || netPnL > 0;
       })
       .sort();
     // Fall back to any date if no meaningful data found
@@ -654,18 +654,12 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
     return filtered;
   };
 
-  // Generate calendar data spanning all years with data (dynamic multi-year support)
+  // Generate all 12 months for the currently viewed year
   const generateMonthsData = () => {
-    const dataKeys = Object.keys(heatmapData).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
-    const startYear = dataKeys.length > 0 ? parseInt(dataKeys[0].slice(0, 4)) : currentDate.getFullYear();
-    const endYear = dataKeys.length > 0 ? parseInt(dataKeys[dataKeys.length - 1].slice(0, 4)) : currentDate.getFullYear();
-    const startMonth = 0;
-    const endMonth = 11;
-
+    const year = currentDate.getFullYear();
     const months = [];
-    
-    for (let year = startYear; year <= endYear; year++) {
-      for (let monthIndex = startMonth; monthIndex <= endMonth; monthIndex++) {
+
+    for (let monthIndex = 0; monthIndex <= 11; monthIndex++) {
         const monthName = new Date(year, monthIndex, 1).toLocaleString('en-US', { month: 'short' });
         const firstDay = new Date(year, monthIndex, 1);
         const lastDay = new Date(year, monthIndex + 1, 0);
@@ -687,7 +681,6 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
         }
         
         months.push({ name: monthName, year, dayRows: dayColumns });
-      }
     }
     
     return months;
@@ -1093,13 +1086,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
           <span>
             {selectedRange 
               ? `${selectedRange.from.getFullYear()}${selectedRange.from.getFullYear() !== selectedRange.to.getFullYear() ? `-${selectedRange.to.getFullYear()}` : ''}`
-              : (() => {
-                  const dataKeys = Object.keys(heatmapData).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort();
-                  if (dataKeys.length === 0) return currentDate.getFullYear();
-                  const minYear = parseInt(dataKeys[0].slice(0, 4));
-                  const maxYear = parseInt(dataKeys[dataKeys.length - 1].slice(0, 4));
-                  return minYear === maxYear ? minYear : `${minYear}-${maxYear}`;
-                })()
+              : currentDate.getFullYear()
             }
           </span>
         </div>

@@ -92,6 +92,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
+  const [isUsingExternalData, setIsUsingExternalData] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isRangeSelectMode, setIsRangeSelectMode] = useState(false);
   const [isDeleteMode, setIsDeleteMode] = useState(false);
@@ -178,13 +179,14 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
     // ✅ DEMO MODE: Always fetch complete data from API, ignore parent data
     // ✅ PUBLIC MODE: Use provided data if substantial (>10 dates), otherwise fetch
     const externalDataCount = tradingDataByDate ? Object.keys(tradingDataByDate).length : 0;
-    const isPublicModeWithData = isPublicView && externalDataCount > 10;
+    const isPublicModeWithData = isPublicView && externalDataCount > 0;
     
-    // In public view with substantial data, use it directly
+    // In public view with any data provided, use it directly (personal mode in report dialog)
     if (isPublicModeWithData) {
       console.log("🔓 DemoHeatmap: Using provided tradingDataByDate (public/secure mode)");
       console.log(`✅ DemoHeatmap: ${externalDataCount} dates provided externally`);
       setHeatmapData(tradingDataByDate);
+      setIsUsingExternalData(true);
       setIsLoading(false);
       
       // Emit data to parent component
@@ -193,6 +195,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
       }
       return;
     }
+    setIsUsingExternalData(false);
     
     // In demo/personal mode: ALWAYS fetch complete data from API (ignore parent data)
     console.log(`🔥 DemoHeatmap: AUTO-FETCHING COMPLETE AWS data... (refreshKey: ${refreshKey}${externalDataCount > 0 ? `, ignoring ${externalDataCount} partial parent dates` : ''})`);
@@ -232,7 +235,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
         console.error("❌ DemoHeatmap: Fetch error:", error);
         setIsLoading(false);
       });
-  }, [refreshKey, refreshTrigger, isPublicView]); // Remove tradingDataByDate from deps to ignore parent updates in demo mode
+  }, [refreshKey, refreshTrigger, isPublicView, tradingDataByDate]); // tradingDataByDate included so public-mode updates reflect immediately
 
   // Calculate badge positions dynamically when badges render
   useEffect(() => {
@@ -1059,7 +1062,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
     <div className="flex flex-col gap-2 p-3 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 select-none overflow-visible">
       <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 flex items-center justify-between gap-2">
         <div className="flex items-center gap-2">
-          <span className="text-gray-400 dark:text-gray-500">demo</span>
+          {!isUsingExternalData && <span className="text-gray-400 dark:text-gray-500">demo</span>}
           <span>
             {selectedRange 
               ? `${selectedRange.from.getFullYear()}${selectedRange.from.getFullYear() !== selectedRange.to.getFullYear() ? `-${selectedRange.to.getFullYear()}` : ''}`

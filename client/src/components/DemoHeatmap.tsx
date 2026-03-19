@@ -88,7 +88,8 @@ function getPnLColor(pnl: number): string {
 
 export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0 }: DemoHeatmapProps) {
   const { currentUser } = useCurrentUser();
-  const [currentDate, setCurrentDate] = useState(new Date());
+  // Default to December of last year so the calendar shows the correct year before data loads
+  const [currentDate, setCurrentDate] = useState(new Date(new Date().getFullYear() - 1, 11, 1));
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -177,19 +178,19 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
   // Fetch data OR use provided tradingDataByDate - SECURE for public view
   // Helper: find the last date key that has actual trading data
   function findLastDataDate(data: Record<string, any>): string | undefined {
-    const datesWithData = Object.keys(data)
+    // Only count dates that have actual trade history records (not just metadata/stray entries)
+    const datesWithTrades = Object.keys(data)
       .filter(k => {
         if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return false;
         const d = data[k];
         const tradeCount = (d?.tradeHistory?.length || 0) + (d?.tradingData?.tradeHistory?.length || 0);
-        const netPnL = Math.abs(d?.performanceMetrics?.netPnL || d?.tradingData?.performanceMetrics?.netPnL || 0);
-        return tradeCount > 0 || netPnL > 0;
+        return tradeCount > 0;
       })
       .sort();
-    // Fall back to any date if no meaningful data found
-    return datesWithData.length > 0
-      ? datesWithData[datesWithData.length - 1]
-      : Object.keys(data).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().pop();
+    // Fall back to any valid date key only if no dates have actual trades
+    return datesWithTrades.length > 0
+      ? datesWithTrades[datesWithTrades.length - 1]
+      : undefined;
   };
 
   // Effect for PUBLIC mode: use provided tradingDataByDate directly

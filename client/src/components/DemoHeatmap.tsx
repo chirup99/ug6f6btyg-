@@ -175,84 +175,85 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
   const [fomoLinePositions, setFomoLinePositions] = useState<Array<{ x1: number; y1: number; x2: number; y2: number }> | null>(null);
 
   // Fetch data OR use provided tradingDataByDate - SECURE for public view
+  // Helper: find the last date key that has actual trading data
+  function findLastDataDate(data: Record<string, any>): string | undefined {
+    const datesWithData = Object.keys(data)
+      .filter(k => {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(k)) return false;
+        const d = data[k];
+        const hasTrades = (d?.tradeHistory?.length || 0) > 0 || (d?.tradingData?.tradeHistory?.length || 0) > 0;
+        const hasPnL = (d?.performanceMetrics?.totalTrades || 0) > 0 || (d?.tradingData?.performanceMetrics?.totalTrades || 0) > 0;
+        return hasTrades || hasPnL;
+      })
+      .sort();
+    // Fall back to any date if no meaningful data found
+    return datesWithData.length > 0
+      ? datesWithData[datesWithData.length - 1]
+      : Object.keys(data).filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k)).sort().pop();
+  };
+
+  // Effect for PUBLIC mode: use provided tradingDataByDate directly
   useEffect(() => {
-    // ✅ DEMO MODE: Always fetch complete data from API, ignore parent data
-    // ✅ PUBLIC MODE: Use provided data if substantial (>10 dates), otherwise fetch
+    if (!isPublicView) return;
     const externalDataCount = tradingDataByDate ? Object.keys(tradingDataByDate).length : 0;
-    const isPublicModeWithData = isPublicView && externalDataCount > 0;
-    
-    // In public view with any data provided, use it directly (personal mode in report dialog)
-    if (isPublicModeWithData) {
-      console.log("🔓 DemoHeatmap: Using provided tradingDataByDate (public/secure mode)");
-      console.log(`✅ DemoHeatmap: ${externalDataCount} dates provided externally`);
-      setHeatmapData(tradingDataByDate);
-      setIsUsingExternalData(true);
-      setIsLoading(false);
-      
-      // Auto-navigate to the month/year of the latest data entry
-      const latestDateKey = Object.keys(tradingDataByDate)
-        .filter(k => /^\d{4}-\d{2}-\d{2}$/.test(k))
-        .sort()
-        .pop();
-      if (latestDateKey) {
-        const [yr, mo] = latestDateKey.split('-').map(Number);
-        setCurrentDate(new Date(yr, mo - 1, 1));
-      }
-      
-      // Emit data to parent component
-      if (onDataUpdate) {
-        onDataUpdate(tradingDataByDate);
-      }
-      return;
+    if (externalDataCount === 0) return;
+
+    console.log("🔓 DemoHeatmap: Using provided tradingDataByDate (public/secure mode)");
+    setHeatmapData(tradingDataByDate);
+    setIsUsingExternalData(true);
+    setIsLoading(false);
+
+    const latestDateKey = findLastDataDate(tradingDataByDate);
+    if (latestDateKey) {
+      const [yr, mo] = latestDateKey.split('-').map(Number);
+      setCurrentDate(new Date(yr, mo - 1, 1));
     }
+
+    if (onDataUpdate) onDataUpdate(tradingDataByDate);
+  }, [isPublicView, tradingDataByDate]); // Only re-run when public mode data changes
+
+  // Effect for DEMO mode: fetch from API (never re-runs due to parent tradingDataByDate changes)
+  useEffect(() => {
+    if (isPublicView) return;
     setIsUsingExternalData(false);
-    
-    // In demo/personal mode: ALWAYS fetch complete data from API (ignore parent data)
-    console.log(`🔥 DemoHeatmap: AUTO-FETCHING COMPLETE AWS data... (refreshKey: ${refreshKey}${externalDataCount > 0 ? `, ignoring ${externalDataCount} partial parent dates` : ''})`);
-    // ✅ CRITICAL FIX: Clear old data IMMEDIATELY before fetching to prevent stale cache display
+
+    console.log(`🔥 DemoHeatmap: Fetching demo data from API... (refreshKey: ${refreshKey})`);
     setHeatmapData({});
     setIsLoading(true);
-    
+
     fetch('/api/journal/all-dates')
       .then(res => res.json())
       .then(data => {
-        console.log("✅ DemoHeatmap: Raw AWS data received:", data);
-        console.log("✅ DemoHeatmap: Total dates loaded:", Object.keys(data).length);
-        
-        // Process each date to calculate P&L
+        console.log("✅ DemoHeatmap: Raw data received, total keys:", Object.keys(data).length);
+
         const processedData: Record<string, any> = {};
         Object.keys(data).forEach(key => {
-          // Extract date from key (format: journal_YYYY-MM-DD)
           const dateMatch = key.match(/(\d{4}-\d{2}-\d{2})/);
           if (dateMatch) {
             const dateKey = dateMatch[1];
             processedData[dateKey] = data[key];
-            const pnl = calculatePnL(data[key]);
-            console.log(`📊 DemoHeatmap: ${dateKey} = ₹${pnl.toFixed(2)}`);
           }
         });
-        
-        console.log("✅ DemoHeatmap: Processed complete dataset with", Object.keys(processedData).length, "dates");
+
+        console.log("✅ DemoHeatmap: Processed", Object.keys(processedData).length, "dates");
         setHeatmapData(processedData);
         setIsLoading(false);
-        
-        // Auto-navigate to the month/year of the latest data entry
-        const latestDateKey = Object.keys(processedData).sort().pop();
+
+        // Navigate to the last date that has ACTUAL trading data (skips stray empty entries)
+        const latestDateKey = findLastDataDate(processedData);
         if (latestDateKey) {
           const [yr, mo] = latestDateKey.split('-').map(Number);
+          console.log(`📅 DemoHeatmap: Auto-navigating to ${latestDateKey} (${yr}-${mo})`);
           setCurrentDate(new Date(yr, mo - 1, 1));
         }
-        
-        // Emit data to parent component
-        if (onDataUpdate) {
-          onDataUpdate(processedData);
-        }
+
+        if (onDataUpdate) onDataUpdate(processedData);
       })
       .catch(error => {
         console.error("❌ DemoHeatmap: Fetch error:", error);
         setIsLoading(false);
       });
-  }, [refreshKey, refreshTrigger, isPublicView, tradingDataByDate]); // tradingDataByDate included so public-mode updates reflect immediately
+  }, [refreshKey, refreshTrigger, isPublicView]); // tradingDataByDate NOT in deps — prevents flicker
 
   // Calculate badge positions dynamically when badges render
   useEffect(() => {

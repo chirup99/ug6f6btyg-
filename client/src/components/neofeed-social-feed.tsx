@@ -2461,13 +2461,44 @@ function AnalysisPanel({ ticker, isOpen, onClose }: { ticker: string; isOpen: bo
   );
 }
 
-function TradeInsightCard({ post, onViewUserProfile }: { post: FeedPost; onViewUserProfile?: (username: string) => void }) {
+function TradeInsightCard({ post }: { post: FeedPost }) {
   const m = post.metadata || {};
-  const chartData: number[] = Array.isArray(m.chartData) ? m.chartData : [];
-  const pnl: number = m.pnl ?? 0;
-  const trades: number = m.trades ?? 0;
-  const winRate: number = m.winRate ?? 0;
-  const date: string = m.date || '';
+  const [mirrorData, setMirrorData] = useState<Record<string, any> | null>(null);
+  const [mirrorLoading, setMirrorLoading] = useState(false);
+
+  useEffect(() => {
+    if (!m.ownerUserId || !m.date) return;
+    setMirrorLoading(true);
+    const params = new URLSearchParams({ from: m.date, to: m.date });
+    fetch(`/api/journal/heatmap-mirror/${m.ownerUserId}?${params.toString()}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => { if (data) setMirrorData(data); })
+      .catch(() => {})
+      .finally(() => setMirrorLoading(false));
+  }, [m.ownerUserId, m.date]);
+
+  const liveStats = useMemo(() => {
+    if (!mirrorData) return null;
+    const dayData = mirrorData[m.date] || {};
+    const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+    const tradeHistory: any[] = dayData?.tradeHistory || [];
+    let cumulative = 0;
+    const chartData = tradeHistory.map((t: any) => {
+      const p = typeof t.pnl === 'number' ? t.pnl : parseFloat(String(t.pnl || '0').replace(/[₹+,]/g, '')) || 0;
+      cumulative += p;
+      return cumulative;
+    });
+    const totalPnL = metrics?.netPnL ?? dayData?.profitLossAmount ?? 0;
+    const totalTrades = metrics?.totalTrades ?? dayData?.totalTrades ?? tradeHistory.length;
+    const winRate = totalTrades > 0 ? Math.round((metrics?.winningTrades || 0) / totalTrades * 100) : 0;
+    return { chartData, pnl: totalPnL, trades: totalTrades, winRate };
+  }, [mirrorData, m.date]);
+
+  const chartData: number[] = liveStats?.chartData ?? (Array.isArray(m.chartData) ? m.chartData : []);
+  const pnl: number = liveStats?.pnl ?? m.pnl ?? 0;
+  const trades: number = liveStats?.trades ?? m.trades ?? 0;
+  const winRate: number = liveStats?.winRate ?? m.winRate ?? 0;
+  const dateLabel: string = m.dateLabel || m.date || '';
   const isProfit = pnl >= 0;
 
   const svgW = 320, svgH = 80;
@@ -2487,28 +2518,23 @@ function TradeInsightCard({ post, onViewUserProfile }: { post: FeedPost; onViewU
     ? `M 0,${svgH} L ${svgPoints.replace(/ /g, ' L ')} L ${svgW},${svgH} Z`
     : null;
 
-  const displayName = post.user?.username || post.authorDisplayName || 'Unknown';
-  const username = post.user?.handle || post.authorUsername || 'user';
-  const avatar = post.user?.avatar || post.authorAvatar;
-  const timestamp = post.timestamp || (post.createdAt
-    ? new Date(post.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    : '');
-
   return (
-    <Card className="bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800 shadow-sm mb-3 rounded-xl overflow-hidden">
-      <div className="px-4 pt-4 pb-1">
-        <span className="text-[11px] font-bold text-gray-800 dark:text-zinc-200 uppercase tracking-wider">{date}</span>
+    <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
+      <div className="flex items-center justify-between px-4 pt-3 pb-1">
+        <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{dateLabel}</span>
+        {m.ownerUserId && (
+          <span className="text-[9px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded font-medium">live mirror</span>
+        )}
       </div>
-      <div className="flex border-b border-gray-100 dark:border-zinc-800/60" style={{ height: '110px' }}>
-        <div className="flex-1 px-3 pb-2 pt-1 relative">
-          {svgPoints ? (
-            <svg
-              width="100%"
-              height="100%"
-              viewBox={`0 0 ${svgW} ${svgH}`}
-              preserveAspectRatio="none"
-              className="overflow-visible"
-            >
+      <div className="flex" style={{ height: '110px' }}>
+        <div className="flex-1 px-3 pb-3 pt-1 relative">
+          {mirrorLoading ? (
+            <div className="w-full h-full flex items-center justify-center gap-2 text-xs text-gray-400">
+              <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
+              Loading...
+            </div>
+          ) : svgPoints ? (
+            <svg width="100%" height="100%" viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none" className="overflow-visible">
               <defs>
                 <linearGradient id={`ti-grad-${post.id}`} x1="0" y1="0" x2="0" y2="1">
                   <stop offset="0%" stopColor={isProfit ? '#22c55e' : '#ef4444'} stopOpacity="0.15" />
@@ -2516,14 +2542,7 @@ function TradeInsightCard({ post, onViewUserProfile }: { post: FeedPost; onViewU
                 </linearGradient>
               </defs>
               {areaPath && <path d={areaPath} fill={`url(#ti-grad-${post.id})`} />}
-              <polyline
-                points={svgPoints}
-                fill="none"
-                stroke={isProfit ? '#22c55e' : '#ef4444'}
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              />
+              <polyline points={svgPoints} fill="none" stroke={isProfit ? '#22c55e' : '#ef4444'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -2548,41 +2567,35 @@ function TradeInsightCard({ post, onViewUserProfile }: { post: FeedPost; onViewU
           </div>
         </div>
       </div>
-      {post.content && (
-        <div className="px-4 pt-3 pb-1">
-          <p className="text-sm text-gray-700 dark:text-zinc-300 leading-relaxed">{post.content}</p>
-        </div>
-      )}
-      <div className="px-4 py-3 flex items-center justify-between">
-        <button
-          onClick={() => username && onViewUserProfile && onViewUserProfile(username)}
-          className="flex items-center gap-2 hover:opacity-75 transition-opacity"
-          data-testid={`button-profile-ti-${post.id}`}
-        >
-          <Avatar className="w-7 h-7 border border-gray-200 dark:border-zinc-700">
-            {avatar && <AvatarImage src={avatar} />}
-            <AvatarFallback className="bg-blue-600 text-white text-xs font-bold">
-              {displayName.charAt(0).toUpperCase()}
-            </AvatarFallback>
-          </Avatar>
-          <div className="flex flex-col items-start">
-            <span className="text-xs font-semibold text-gray-800 dark:text-zinc-200 leading-tight">{displayName}</span>
-            <span className="text-[10px] text-gray-400 dark:text-zinc-500 leading-tight">@{username}</span>
-          </div>
-        </button>
-        <span className="text-[10px] text-gray-400 dark:text-zinc-500">{timestamp}</span>
-      </div>
-    </Card>
+    </div>
   );
 }
 
-function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: string | number }) {
+function RangeReportCard({ metadata: m, postId, postCreatedAt }: { metadata: any; postId: string | number; postCreatedAt?: string | Date }) {
   const [fomoHighlight, setFomoHighlight] = useState(false);
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const fomoButtonRef = useRef<HTMLButtonElement>(null);
   const heatmapContainerRef = useRef<HTMLDivElement>(null);
   const [mirrorData, setMirrorData] = useState<Record<string, any> | null>(null);
   const [mirrorLoading, setMirrorLoading] = useState(false);
+
+  // 24hr countdown: expiry = createdAt + 24hr, refreshed every 1hr
+  const [expiryCountdown, setExpiryCountdown] = useState<{ hoursLeft: number; expired: boolean } | null>(null);
+  useEffect(() => {
+    if (!postCreatedAt) return;
+    const compute = () => {
+      const created = new Date(postCreatedAt).getTime();
+      const expiry = created + 24 * 60 * 60 * 1000;
+      const now = Date.now();
+      const msLeft = expiry - now;
+      if (msLeft <= 0) { setExpiryCountdown({ hoursLeft: 0, expired: true }); return; }
+      const hoursLeft = Math.ceil(msLeft / (60 * 60 * 1000));
+      setExpiryCountdown({ hoursLeft, expired: false });
+    };
+    compute();
+    const interval = setInterval(compute, 60 * 60 * 1000);
+    return () => clearInterval(interval);
+  }, [postCreatedAt]);
 
   // Mirror fetch: load heatmap data live from the owner's journal
   useEffect(() => {
@@ -2703,7 +2716,16 @@ function RangeReportCard({ metadata: m, postId }: { metadata: any; postId: strin
           {m.ownerUserId && (
             <span className="text-[9px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded font-medium">live mirror</span>
           )}
-          <div className="text-[9px] text-gray-400 font-medium">{new Date(m.toDate || Date.now()).getFullYear()}</div>
+          {expiryCountdown && (
+            expiryCountdown.expired ? (
+              <span className="text-[9px] bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 px-1.5 py-0.5 rounded font-medium">expired</span>
+            ) : (
+              <span className="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">
+                {expiryCountdown.hoursLeft}h left
+              </span>
+            )
+          )}
+          {!expiryCountdown && <div className="text-[9px] text-gray-400 font-medium">{new Date(m.toDate || Date.now()).getFullYear()}</div>}
         </div>
       </div>
 
@@ -3521,63 +3543,11 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
         <div className="mb-2 xl:mb-4">
           {/* Range Report Card */}
           {post.metadata?.type === 'range_report' && (
-            <RangeReportCard metadata={post.metadata} postId={post.id} />
+            <RangeReportCard metadata={post.metadata} postId={post.id} postCreatedAt={post.createdAt} />
           )}
 
           {post.metadata?.type === 'trade_insight' && (
-            <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
-              <div className="flex h-[140px]">
-                {/* Left side: Date and Chart */}
-                <div className="flex-1 p-4 flex flex-col">
-                  <div className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider mb-2">
-                    {post.metadata.date}
-                  </div>
-                  <div className="flex-1 w-full min-h-0 relative">
-                    {post.metadata.chartData && post.metadata.chartData.length > 0 ? (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <LineChart data={post.metadata.chartData.map((val: number, i: number) => ({ val, i }))}>
-                          <defs>
-                            <linearGradient id={`pnlGradient-neofeed-${post.id}`} x1="0" y1="0" x2="0" y2="1">
-                              <stop offset="5%" stopColor={post.metadata.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0.1}/>
-                              <stop offset="95%" stopColor={post.metadata.pnl >= 0 ? "#22c55e" : "#ef4444"} stopOpacity={0}/>
-                            </linearGradient>
-                          </defs>
-                          <Line 
-                            type="monotone" 
-                            dataKey="val" 
-                            stroke={post.metadata.pnl >= 0 ? "#22c55e" : "#ef4444"} 
-                            strokeWidth={2} 
-                            dot={false}
-                            animationDuration={1000}
-                          />
-                        </LineChart>
-                      </ResponsiveContainer>
-                    ) : (
-                      <div className="h-full flex items-center justify-center text-[10px] text-gray-400">
-                        No chart data
-                      </div>
-                    )}
-                  </div>
-                </div>
-                {/* Right side: Stats */}
-                <div className="w-[120px] bg-gray-50/50 dark:bg-zinc-900/20 border-l border-gray-100 dark:border-zinc-800/50 p-4 flex flex-col justify-center space-y-3">
-                  <div>
-                    <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">TOTAL P&L</div>
-                    <div className={`text-sm font-bold ${post.metadata.pnl >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                      {post.metadata.pnl >= 0 ? '+' : '-'}₹{Math.abs(Math.floor(post.metadata.pnl)).toLocaleString()}
-                    </div>
-                  </div>
-                  <div>
-                    <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">TRADES</div>
-                    <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">{post.metadata.trades}</div>
-                  </div>
-                  <div>
-                    <div className="text-[8px] font-bold text-gray-400 uppercase tracking-widest mb-1">WIN RATE</div>
-                    <div className="text-xs font-semibold text-gray-700 dark:text-zinc-300">{post.metadata.winRate}%</div>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <TradeInsightCard post={post} />
           )}
           <div className="relative">
             {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && (

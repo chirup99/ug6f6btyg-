@@ -3195,11 +3195,8 @@ export default function Home() {
 
         metadata = {
           type: 'trade_insight',
-          date: formattedDate,
-          pnl: totalPnL,
-          trades: totalTrades,
-          winRate: Math.round(winRate),
-          chartData: chartData.length > 0 ? chartData : [0],
+          date: dateKey,
+          dateLabel: formattedDate,
         };
       } else if (reportPostMode === 'range') {
         const filteredData = getFilteredHeatmapData();
@@ -3253,7 +3250,7 @@ export default function Home() {
       const user = await getCognitoUser();
       if (!user?.userId) throw new Error('Not authenticated');
 
-      if (metadata.type === 'range_report') {
+      if (metadata.type === 'range_report' || metadata.type === 'trade_insight') {
         metadata.ownerUserId = user.userId;
       }
 

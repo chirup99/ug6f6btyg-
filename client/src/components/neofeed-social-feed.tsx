@@ -2986,15 +2986,6 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt }: { metadata: any
 
   return (
     <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
-      {expiryCountdown && (
-        <div className="flex justify-end px-3 pt-2">
-          {expiryCountdown.expired ? (
-            <span className="text-[9px] bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 px-1.5 py-0.5 rounded font-medium">expired</span>
-          ) : (
-            <span className="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">{expiryCountdown.hoursLeft}h left</span>
-          )}
-        </div>
-      )}
       {mirrorLoading ? (
         <div className="px-4 pb-3 flex items-center gap-2 text-xs text-gray-400">
           <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
@@ -3157,6 +3148,22 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
   const [repostCount, setRepostCount] = useState(post.metrics?.reposts || post.reposts || 0);
   const [commentCount, setCommentCount] = useState(post.metrics?.comments || post.comments || 0);
   
+  // Range report countdown: shown in post header
+  const [rangeCountdown, setRangeCountdown] = useState<{ hoursLeft: number; expired: boolean } | null>(null);
+  useEffect(() => {
+    if (post.metadata?.type !== 'range_report' || !post.createdAt) return;
+    const compute = () => {
+      const created = new Date(post.createdAt as string).getTime();
+      const expiry = created + 24 * 60 * 60 * 1000;
+      const msLeft = expiry - Date.now();
+      if (msLeft <= 0) { setRangeCountdown({ hoursLeft: 0, expired: true }); return; }
+      setRangeCountdown({ hoursLeft: Math.ceil(msLeft / (60 * 60 * 1000)), expired: false });
+    };
+    compute();
+    const id = setInterval(compute, 60 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [post.metadata?.type, post.createdAt]);
+
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -3761,6 +3768,14 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 <Mic className="w-3 h-3" />
                 <span>Select text</span>
               </div>
+            )}
+            {/* Range report countdown badge */}
+            {rangeCountdown && (
+              rangeCountdown.expired ? (
+                <span className="text-[9px] bg-gray-100 dark:bg-zinc-800 text-gray-400 dark:text-zinc-500 px-1.5 py-0.5 rounded font-medium">expired</span>
+              ) : (
+                <span className="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">{rangeCountdown.hoursLeft}h left</span>
+              )
             )}
             {/* 3-dot menu - only show for user's own posts */}
             {isOwnPost && (

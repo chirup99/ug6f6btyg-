@@ -1472,7 +1472,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                         <img
                           src={card.image}
                           alt=""
-                          className="absolute bottom-0 right-[-2px] h-[112px] w-auto object-contain object-bottom"
+                          className="absolute inset-0 w-full h-full object-contain object-bottom"
                           style={{ animation: 'blPulse 3s ease-in-out infinite' }}
                         />
                       </div>

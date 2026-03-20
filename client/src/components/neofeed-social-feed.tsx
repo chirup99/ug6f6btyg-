@@ -1166,6 +1166,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   const [activeRuleIndex, setActiveRuleIndex] = useState(() => new Date().getDay() % MINDSET_CARDS.length);
   const [ruleExiting, setRuleExiting] = useState(false);
   const [cardsPrivate, setCardsPrivate] = useState(false);
+  const [ruleTouchStartX, setRuleTouchStartX] = useState<number | null>(null);
 
   const cycleRule = () => {
     if (ruleExiting) return;
@@ -1174,6 +1175,28 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
       setActiveRuleIndex(i => (i + 1) % MINDSET_CARDS.length);
       setRuleExiting(false);
     }, 280);
+  };
+
+  const cyclePrevRule = () => {
+    if (ruleExiting) return;
+    setRuleExiting(true);
+    setTimeout(() => {
+      setActiveRuleIndex(i => (i - 1 + MINDSET_CARDS.length) % MINDSET_CARDS.length);
+      setRuleExiting(false);
+    }, 280);
+  };
+
+  const handleRuleTouchStart = (e: React.TouchEvent) => {
+    setRuleTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleRuleTouchEnd = (e: React.TouchEvent) => {
+    if (ruleTouchStartX === null) return;
+    const delta = e.changedTouches[0].clientX - ruleTouchStartX;
+    if (Math.abs(delta) > 40) {
+      delta < 0 ? cycleRule() : cyclePrevRule();
+    }
+    setRuleTouchStartX(null);
   };
 
   useEffect(() => {
@@ -1430,12 +1453,15 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
               const card = MINDSET_CARDS[activeRuleIndex];
               return (
                 <div
-                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${card.bg} shadow-md overflow-hidden z-10`}
+                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${card.bg} shadow-md overflow-hidden z-10 cursor-pointer select-none`}
                   style={{
                     opacity: ruleExiting ? 0 : 1,
                     transform: ruleExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
                     transition: 'opacity 280ms, transform 280ms',
                   }}
+                  onTouchStart={handleRuleTouchStart}
+                  onTouchEnd={handleRuleTouchEnd}
+                  onClick={cycleRule}
                 >
                   {/* Bruce Lee image — only on bruce-lee cards, uses card-specific image */}
                   {card.showBruceLee && (
@@ -1459,12 +1485,12 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   )}
 
                   {/* Card content */}
-                  <div className={`flex items-center h-full px-4 gap-0 ${card.showBruceLee ? 'pr-[82px]' : 'pr-4'}`}>
+                  <div className={`flex items-center h-full px-3 gap-0 ${card.showBruceLee ? 'pr-[82px]' : 'pr-3'}`}>
                     <div className="flex-1 min-w-0">
-                      <p className={`text-[8px] uppercase tracking-widest font-bold mb-1 ${card.dark ? 'text-yellow-500/70' : 'text-white/65'}`}>
+                      <p className={`text-[7px] uppercase tracking-widest font-bold mb-0.5 ${card.dark ? 'text-yellow-500/70' : 'text-white/65'}`}>
                         {card.label}
                       </p>
-                      <p className={`text-[13px] font-semibold leading-snug line-clamp-2 ${card.dark ? 'text-white' : 'text-white'}`}>
+                      <p className={`text-[10px] font-semibold leading-tight ${card.dark ? 'text-white' : 'text-white'}`}>
                         &ldquo;{card.quote}&rdquo;
                       </p>
                     </div>

@@ -2491,25 +2491,38 @@ function TradeInsightCard({ post }: { post: FeedPost }) {
   const minVal = Math.min(...chartData, 0);
   const range = maxVal - minVal || 1;
 
-  const svgPoints = chartData.length > 1
-    ? chartData.map((val, i) => {
-        const x = (i / (chartData.length - 1)) * svgW;
-        const y = svgH - ((val - minVal) / range) * svgH;
-        return `${x.toFixed(1)},${y.toFixed(1)}`;
-      }).join(' ')
+  // Build smooth cubic bezier path through data points (Catmull-Rom spline)
+  const chartPoints = chartData.length > 1
+    ? chartData.map((val, i) => ({
+        x: (i / (chartData.length - 1)) * svgW,
+        y: svgH - ((val - minVal) / range) * svgH,
+      }))
     : null;
 
-  const areaPath = svgPoints
-    ? `M 0,${svgH} L ${svgPoints.replace(/ /g, ' L ')} L ${svgW},${svgH} Z`
+  const smoothLinePath = chartPoints
+    ? chartPoints.reduce((d, pt, i) => {
+        if (i === 0) return `M ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+        const prev = chartPoints[i - 1];
+        const prevPrev = i >= 2 ? chartPoints[i - 2] : prev;
+        const next = i < chartPoints.length - 1 ? chartPoints[i + 1] : pt;
+        const cp1x = prev.x + (pt.x - prevPrev.x) / 5;
+        const cp1y = prev.y + (pt.y - prevPrev.y) / 5;
+        const cp2x = pt.x - (next.x - prev.x) / 5;
+        const cp2y = pt.y - (next.y - prev.y) / 5;
+        return `${d} C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+      }, '')
     : null;
+
+  const areaPath = smoothLinePath && chartPoints
+    ? `M 0,${svgH} L ${chartPoints[0].x.toFixed(1)},${chartPoints[0].y.toFixed(1)} ${smoothLinePath.replace(/^M [0-9.,]+ /, '')} L ${svgW},${svgH} Z`
+    : null;
+
+  const animId = `ti-anim-${post.id}`;
 
   return (
     <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{dateLabel}</span>
-        {m.ownerUserId && (
-          <span className="text-[9px] bg-violet-100 dark:bg-violet-900/30 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded font-medium">live mirror</span>
-        )}
       </div>
       <div className="flex" style={{ height: '110px' }}>
         <div className="flex-1 px-3 pb-3 pt-1 relative">
@@ -2518,16 +2531,43 @@ function TradeInsightCard({ post }: { post: FeedPost }) {
               <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
               Loading...
             </div>
-          ) : svgPoints ? (
+          ) : smoothLinePath ? (
             <svg width="100%" height="100%" viewBox={`0 0 ${svgW} ${svgH}`} preserveAspectRatio="none" className="overflow-visible">
               <defs>
                 <linearGradient id={`ti-grad-${post.id}`} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={isProfit ? '#22c55e' : '#ef4444'} stopOpacity="0.15" />
+                  <stop offset="0%" stopColor={isProfit ? '#22c55e' : '#ef4444'} stopOpacity="0.18" />
                   <stop offset="100%" stopColor={isProfit ? '#22c55e' : '#ef4444'} stopOpacity="0" />
                 </linearGradient>
+                <style>{`
+                  @keyframes ${animId}-draw {
+                    from { stroke-dashoffset: 2000; opacity: 0.4; }
+                    to { stroke-dashoffset: 0; opacity: 1; }
+                  }
+                  @keyframes ${animId}-fade {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                  }
+                `}</style>
               </defs>
-              {areaPath && <path d={areaPath} fill={`url(#ti-grad-${post.id})`} />}
-              <polyline points={svgPoints} fill="none" stroke={isProfit ? '#22c55e' : '#ef4444'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+              {areaPath && (
+                <path
+                  d={areaPath}
+                  fill={`url(#ti-grad-${post.id})`}
+                  style={{ animation: `${animId}-fade 1s ease-out 0.3s both` }}
+                />
+              )}
+              <path
+                d={smoothLinePath}
+                fill="none"
+                stroke={isProfit ? '#22c55e' : '#ef4444'}
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                style={{
+                  strokeDasharray: 2000,
+                  animation: `${animId}-draw 1.2s cubic-bezier(0.4,0,0.2,1) both`,
+                }}
+              />
             </svg>
           ) : (
             <div className="w-full h-full flex items-center justify-center">
@@ -3514,7 +3554,11 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             <TradeInsightCard post={post} />
           )}
           <div className="relative">
-            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && post.content !== 'trading-report' && !post.content?.toLowerCase().includes('trading report') && (
+            {(() => {
+              const isJournalPost = post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight';
+              const isReportContent = post.content?.trim().toLowerCase().replace(/[-\s]/g, '') === 'tradingreport' || post.content?.trim().toLowerCase() === 'trading-report';
+              if (isJournalPost || isReportContent) return null;
+              return (
             <p 
               className={`text-gray-900 dark:text-white leading-snug mb-1.5 xl:mb-3 text-sm xl:text-base font-medium ${
                 isAudioMode ? 'cursor-pointer hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors rounded-lg p-2 -m-2' : ''
@@ -3525,10 +3569,11 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 ? post.content
                 : `${post.content.substring(0, MAX_TEXT_LENGTH)}...`}
             </p>
-            )}
+              );
+            })()}
             
             {/* Expand/Collapse button for long text */}
-            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && post.content !== 'trading-report' && !post.content?.toLowerCase().includes('trading report') && post.content.length > MAX_TEXT_LENGTH && (
+            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && !['trading-report','trading report'].includes(post.content?.trim().toLowerCase()) && post.content.length > MAX_TEXT_LENGTH && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium mt-1 transition-colors"

@@ -4640,31 +4640,12 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
     return normalized;
   };
 
-  // Remove duplicates: ID-based and enhanced content-based deduplication
-  // Note: Reposts are NOT filtered as duplicates - they have the same content but are separate posts with their own engagement
+  // Remove duplicates: ID-based deduplication only - show all posts including similar content
   const seenIds = new Set<string>();
-  const seenContent = new Set<string>();
   const allFeedData: FeedPost[] = rawFeedData.filter(post => {
-    // ID-based deduplication
     const postId = post.id.toString();
-    if (seenIds.has(postId)) {
-      return false;
-    }
+    if (seenIds.has(postId)) return false;
     seenIds.add(postId);
-
-    // Skip content-based deduplication for reposts (they intentionally have same content as original)
-    if (post.isRepost) {
-      return true;
-    }
-
-    // Enhanced content-based deduplication that ignores source variations (only for non-reposts)
-    const normalizedContent = normalizeContentForDeduplication(post.content);
-    if (seenContent.has(normalizedContent)) {
-      console.log(`🚫 Duplicate content filtered: "${post.content.substring(0, 100)}..."`);
-      return false;
-    }
-    seenContent.add(normalizedContent);
-
     return true;
   });
 

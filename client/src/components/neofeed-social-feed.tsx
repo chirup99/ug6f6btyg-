@@ -126,9 +126,10 @@ function formatCommentTimestamp(dateStr: string): string {
 
 interface UserAvatarCtx {
   getAvatar: (username: string | undefined | null) => string | null;
+  setAvatar: (username: string, url: string | null) => void;
 }
 
-const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null });
+const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null, setAvatar: () => {} });
 
 function UserAvatarProvider({ children }: { children: ReactNode }) {
   const cacheRef = useRef<Map<string, string | null>>(new Map());
@@ -171,14 +172,24 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
     return null;
   }, [flush]);
 
+  // Instantly push a new avatar URL into the cache and re-render all consumers.
+  // Call this right after a successful profile picture upload so every post/comment
+  // shows the new image without waiting for a page refresh.
+  const setAvatar = useCallback((username: string, url: string | null) => {
+    if (!username) return;
+    cacheRef.current.set(username.toLowerCase(), url);
+    setCacheRev(v => v + 1);
+  }, []);
+
   // cacheRev in the dep array ensures a new value object is created after each fetch,
   // which causes all context consumers to re-render and pick up fresh avatar URLs.
-  const value = useMemo(() => ({ getAvatar }), [getAvatar, cacheRev]); // eslint-disable-line react-hooks/exhaustive-deps
+  const value = useMemo(() => ({ getAvatar, setAvatar }), [getAvatar, setAvatar, cacheRev]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <UserAvatarContext.Provider value={value}>{children}</UserAvatarContext.Provider>;
 }
 
 const useUserAvatar = () => useContext(UserAvatarContext).getAvatar;
+const useSetAvatar  = () => useContext(UserAvatarContext).setAvatar;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Render comment content with clickable @mentions
@@ -944,6 +955,7 @@ function ProfileHeader() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const getAvatar = useUserAvatar();
+  const setAvatar = useSetAvatar();
 
   // Simple profile fetch - heavily cached to load instantly when switching tabs
   const { data: profileData, isLoading } = useQuery({
@@ -1124,6 +1136,12 @@ function ProfileHeader() {
       if (!updateResponse.ok) throw new Error('Failed to update profile');
       
       toast({ description: `${imageType === 'profile' ? 'Profile' : 'Cover'} photo updated successfully!` });
+
+      // Instantly push the new profile pic into the avatar cache so every post/comment
+      // everywhere updates immediately without requiring a page refresh.
+      if (imageType === 'profile' && username) {
+        setAvatar(username, url);
+      }
       
       // Bust every profile-related cache — mirror logic returns the fresh image on next fetch
       queryClient.invalidateQueries({ queryKey: ['my-profile'] });

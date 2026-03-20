@@ -337,20 +337,20 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
   const [activeProfileId, setActiveProfileId] = useState<number>(1);
 
   return (
-    <Card className="w-full max-w-md mx-auto bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 shadow-sm transition-none">
-      <CardHeader className="border-b border-gray-200 dark:border-gray-700 transition-none">
-        <CardTitle className="flex items-center justify-between text-gray-900 dark:text-white">
+    <Card className="w-full bg-background border border-border shadow-none rounded-xl transition-none">
+      <CardHeader className="border-b border-border pb-3 pt-4 px-4 transition-none">
+        <CardTitle className="flex items-center justify-between text-foreground">
           <div className="flex items-center gap-2">
-            <div className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 transition-none">
+            <div className="p-1.5 rounded-lg bg-muted transition-none">
               {viewMode === 'post' ? (
-                <Sparkles className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                <Sparkles className="h-4 w-4 text-muted-foreground" />
               ) : viewMode === 'audio' ? (
                 <Radio className="h-4 w-4 text-purple-500 dark:text-purple-400" />
               ) : (
-                <MessageCircle className="h-4 w-4 text-gray-700 dark:text-gray-300" />
+                <MessageCircle className="h-4 w-4 text-muted-foreground" />
               )}
             </div>
-            <span className="text-lg font-bold">
+            <span className="text-base font-semibold tracking-tight">
               {viewMode === 'audio' && isAudioMode ? 'Audio MiniCast' : viewMode === 'post' ? 'Create Post' : 'Messages'}
             </span>
           </div>
@@ -412,13 +412,13 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
           </div>
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4 xl:space-y-6 p-4 xl:p-6 max-h-[calc(100vh-280px)] overflow-y-auto">
+      <CardContent className="space-y-4 p-4 max-h-[calc(100vh-220px)] overflow-y-auto thin-scrollbar">
         {viewMode === 'audio' ? (
           /* Audio MiniCast Form */
           <form onSubmit={handleSubmit} className="space-y-4">
             {/* Content Input with + Button */}
             <div className="space-y-2">
-              <Label htmlFor="audio-content" className="text-gray-800 dark:text-gray-200 font-medium text-base">What's on your mind?</Label>
+              <Label htmlFor="audio-content" className="text-sm font-medium text-foreground">What's on your mind?</Label>
               <div className="relative">
                 <Textarea
                   id="audio-content"
@@ -434,7 +434,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
                   }}
                   placeholder="Your thoughts will be converted to audio... (Press Enter to add card, Shift+Enter for new line)"
                   maxLength={500}
-                  className="min-h-[120px] resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-purple-500 focus:ring-purple-500 pr-12"
+                  className="min-h-[100px] resize-none bg-muted/40 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary pr-12"
                   data-testid="textarea-audio-content"
                 />
                 {/* + Button in bottom right corner */}
@@ -458,7 +458,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
             {/* Selected Posts Display - Shows both text cards AND selected posts from feed */}
             {selectedTextSnippets.length > 0 ? (
               <div className="space-y-3">
-                <Label className="text-center text-gray-800 dark:text-gray-200 font-medium text-base">
+                <Label className="text-center text-sm font-medium text-foreground">
                   Selected Posts ({selectedTextSnippets.length}/3)
                 </Label>
                 <StackedSwipeableCards 
@@ -531,7 +531,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
           <form onSubmit={handleSubmit} className="space-y-4">
           {/* Content Input */}
           <div className="space-y-2">
-            <Label htmlFor="content" className="text-gray-800 dark:text-gray-200 font-medium text-base">What's on your mind?</Label>
+            <Label htmlFor="content" className="text-sm font-medium text-foreground">What's on your mind?</Label>
             <Textarea
               id="content"
               ref={textareaRef}
@@ -539,7 +539,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
               onChange={handleContentChange}
               placeholder="Share your trading insights..."
               maxLength={500}
-              className="min-h-[120px] resize-none bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
+              className="min-h-[100px] resize-none bg-muted/40 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
               data-testid="textarea-post-content"
             />
             <div className="text-xs text-gray-600 dark:text-gray-400 text-right">
@@ -549,7 +549,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
 
           {/* Stock Selection - Dropdown with search */}
           <div className="space-y-2">
-            <Label className="text-gray-800 dark:text-gray-200 font-medium text-base">Stock Mentions</Label>
+            <Label className="text-sm font-medium text-foreground">Stock Mentions</Label>
             <div className="relative" ref={stockSearchRef}>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -559,7 +559,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
                   onChange={(e) => { setStockSearchQuery(e.target.value); setShowStockDropdown(true); }}
                   onFocus={() => setShowStockDropdown(true)}
                   placeholder="Search stocks..."
-                  className="pl-10 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:border-blue-500"
+                  className="pl-10 bg-muted/40 border-border text-foreground focus:border-primary"
                   data-testid="input-stock-search"
                 />
               </div>
@@ -613,9 +613,9 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
 
           {/* Sentiment Selection */}
           <div className="space-y-2">
-            <Label className="text-gray-800 dark:text-gray-200 font-medium text-base">Market Sentiment</Label>
+            <Label className="text-sm font-medium text-foreground">Market Sentiment</Label>
             <Select value={sentiment} onValueChange={setSentiment}>
-              <SelectTrigger className="bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white focus:border-blue-500" data-testid="select-sentiment">
+              <SelectTrigger className="bg-muted/40 border-border text-foreground focus:border-primary" data-testid="select-sentiment">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent className="bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700">
@@ -633,7 +633,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
 
           {/* Image Upload */}
           <div className="space-y-2 flex flex-col">
-            <Label className="text-gray-800 dark:text-gray-200 font-medium text-base">Images (Optional)</Label>
+            <Label className="text-sm font-medium text-foreground">Images (Optional)</Label>
             <div className="h-80 rounded-lg border border-gray-200 dark:border-gray-700 bg-gradient-to-b from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 overflow-hidden">
               <MultipleImageUpload
                 images={uploadedImages}

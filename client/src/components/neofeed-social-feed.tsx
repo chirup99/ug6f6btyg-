@@ -4892,13 +4892,13 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
       )}
       
       {/* Main Content Area with Post Creation Panel on Right */}
-      <div className="flex-1 flex gap-4 xl:gap-6 px-4 py-2 md:py-3 max-w-7xl mx-auto w-full">
+      <div className="flex gap-5 xl:gap-6 px-4 py-2 md:py-3 max-w-7xl mx-auto w-full">
         {/* Social Feed Posts - Left Side */}
-        <div className="flex-1 min-w-0 max-w-[620px]">
+        <div className="flex-[3] min-w-0">
           {/* Show Profile Header when Profile filter is selected */}
           {selectedFilter === 'Profile' && <ProfileHeader />}
           
-          <div className="space-y-2 xl:space-y-4">
+          <div className="space-y-2 xl:space-y-3">
             {feedData.map((post) => (
               <PostCard key={post.id} post={post} currentUserUsername={currentUserUsername} onViewUserProfile={setViewingUserProfile} />
             ))}
@@ -4917,9 +4917,9 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
         </div>
 
         {/* Post Creation Panel - Right Side (Desktop Only) */}
-        <div className="hidden md:flex flex-1 min-w-0 max-w-sm xl:max-w-md flex-shrink-0">
+        <div className="hidden md:flex flex-[2] min-w-[300px] max-w-[460px] flex-shrink-0">
           <div className={`sticky z-30 transition-all duration-300 w-full ${
-            showAppBar ? 'top-[140px] xl:top-[200px]' : 'top-[140px] xl:top-[160px]'
+            showAppBar ? 'top-[120px]' : 'top-[76px]'
           }`}>
             <PostCreationPanel />
           </div>

@@ -1325,151 +1325,122 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
       />
 
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 mb-6">
-        <div className="px-5 pt-5 pb-0">
-          {/* 3-Column Profile Layout */}
-          <div className="grid grid-cols-3 gap-5 items-start mb-5">
+        <div className="px-5 pt-4 pb-0">
 
-            {/* ── Column 1: Avatar + Identity ── */}
-            <div className="flex flex-col items-center text-center gap-3">
-              <div
-                className="relative group cursor-pointer"
-                onClick={() => profileInputRef.current?.click()}
-                data-testid="button-edit-profile-pic"
-              >
-                <Avatar className="w-24 h-24 border-2 border-gray-200 dark:border-gray-700 shadow-md">
-                  {profilePicUrl ? (
-                    <AvatarImage src={profilePicUrl} className="object-cover" />
-                  ) : (
-                    <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-3xl font-bold">
-                      {initials}
-                    </AvatarFallback>
-                  )}
-                </Avatar>
-                <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                  <Camera className="w-5 h-5 text-white" />
-                </div>
+          {/* ── Row 1: Compact identity + stats ── */}
+          <div className="flex items-center gap-3 mb-3">
+            {/* Avatar */}
+            <div
+              className="relative group cursor-pointer flex-shrink-0"
+              onClick={() => profileInputRef.current?.click()}
+              data-testid="button-edit-profile-pic"
+            >
+              <Avatar className="w-14 h-14 border-2 border-gray-100 dark:border-gray-700 shadow-sm">
+                {profilePicUrl ? (
+                  <AvatarImage src={profilePicUrl} className="object-cover" />
+                ) : (
+                  <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-xl font-bold">
+                    {initials}
+                  </AvatarFallback>
+                )}
+              </Avatar>
+              <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                <Camera className="w-4 h-4 text-white" />
               </div>
-              <div>
-                <h2 className="font-bold text-base text-gray-900 dark:text-white flex items-center justify-center gap-1">
+            </div>
+
+            {/* Name + handle + bio */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <h2 className="font-bold text-[15px] text-gray-900 dark:text-white leading-tight truncate">
                   {displayName || username}
-                  {profileData?.verified && (
-                    <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
-                  )}
                 </h2>
-                <p className="text-xs text-gray-400 dark:text-gray-500">@{username}</p>
-                {profileData?.location && (
-                  <p className="text-[11px] text-gray-400 mt-0.5 flex items-center justify-center gap-1">
-                    <MapPin className="w-3 h-3" />{profileData.location}
-                  </p>
-                )}
-                {bio && (
-                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-snug line-clamp-2">{bio}</p>
+                {profileData?.verified && (
+                  <CheckCircle className="w-3.5 h-3.5 text-blue-500 fill-current flex-shrink-0" />
                 )}
               </div>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500">@{username}{profileData?.location ? ` · ${profileData.location}` : ''}</p>
+              {bio && (
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug line-clamp-1">{bio}</p>
+              )}
             </div>
 
-            {/* ── Column 2: Monthly Yield + Rule Cards ── */}
-            <div className="flex flex-col gap-2.5">
-              {/* Monthly Yield card */}
-              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/50 px-3.5 py-2.5">
-                <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Monthly Yield</p>
-                <div className="flex items-end gap-2">
-                  <span className={`text-xl font-bold leading-none ${monthlyYield >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {monthlyYield >= 0 ? '+' : ''}{monthlyYield.toFixed(1)}%
-                  </span>
-                  <span className="text-[9px] text-gray-400 mb-0.5">{totalTrades} trades · {winRate}% WR</span>
+            {/* Stats + Edit */}
+            <div className="flex-shrink-0 flex flex-col items-end gap-2">
+              <div className="flex items-center gap-3">
+                <button className="text-center" onClick={() => setShowFollowingDialog(true)} data-testid="button-show-following">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{formatCount(following)}</p>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Following</p>
+                </button>
+                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+                <button className="text-center" onClick={() => setShowFollowersDialog(true)} data-testid="button-show-followers">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{formatCount(followers)}</p>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Followers</p>
+                </button>
+                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
+                <div className="text-center">
+                  <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{formatCount(postCount)}</p>
+                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Posts</p>
                 </div>
               </div>
-
-              {/* Stacked animated rule cards */}
-              <div className="relative h-[118px]">
-                {[2, 1].map((offset) => {
-                  const cardIdx = (activeRuleIndex + offset) % TRADING_QUOTES.length;
-                  const color = RULE_CARD_COLORS[cardIdx % RULE_CARD_COLORS.length];
-                  return (
-                    <div
-                      key={offset}
-                      className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${color.bg}`}
-                      style={{
-                        opacity: offset === 2 ? 0.4 : 0.7,
-                        transform: `rotate(${offset === 2 ? '-4deg' : '-2deg'}) translateY(${offset === 2 ? '6px' : '3px'})`,
-                        transformOrigin: 'center bottom',
-                        zIndex: offset === 2 ? 1 : 2,
-                      }}
-                    />
-                  );
-                })}
-                <div
-                  className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${RULE_CARD_COLORS[activeRuleIndex % RULE_CARD_COLORS.length].bg} shadow-md flex flex-col justify-between p-3.5 z-10`}
-                  style={{
-                    opacity: ruleExiting ? 0 : 1,
-                    transform: ruleExiting ? 'translateY(-10px) scale(0.96)' : 'translateY(0) scale(1)',
-                    transition: 'opacity 280ms, transform 280ms',
-                  }}
-                >
-                  <div className="flex items-start justify-between">
-                    <p className="text-[8px] uppercase tracking-[0.15em] text-white/70 font-bold">Trading Rule</p>
-                    <button
-                      onClick={cycleRule}
-                      className="text-white/80 hover:text-white bg-white/20 hover:bg-white/30 rounded-full p-1 transition-colors"
-                      data-testid="button-cycle-rule"
-                    >
-                      <Pencil className="w-3 h-3" />
-                    </button>
-                  </div>
-                  <p className="text-[13px] font-semibold text-white leading-snug">
-                    &ldquo;{TRADING_QUOTES[activeRuleIndex]}&rdquo;
-                  </p>
-                  <div className="flex items-center gap-1">
-                    {TRADING_QUOTES.map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-1 rounded-full transition-all duration-300 ${i === activeRuleIndex ? 'w-4 bg-white' : 'w-1 bg-white/40'}`}
-                      />
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* ── Column 3: Stats + Action Button ── */}
-            <div className="flex flex-col gap-3.5">
-              <button
-                className="text-left group"
-                onClick={() => setShowFollowingDialog(true)}
-                data-testid="button-show-following"
-              >
-                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">Following</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors leading-tight">
-                  {formatCount(following)}
-                </p>
-              </button>
-
-              <button
-                className="text-left group"
-                onClick={() => setShowFollowersDialog(true)}
-                data-testid="button-show-followers"
-              >
-                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">Followers</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors leading-tight">
-                  {formatCount(followers)}
-                </p>
-              </button>
-
-              <div>
-                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">Posts</p>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
-                  {formatCount(postCount)}
-                </p>
-              </div>
-
               <Button
-                className="w-full rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-sm hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors mt-auto"
+                className="h-7 px-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[11px] font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors"
                 onClick={() => setShowEditProfile(true)}
                 data-testid="button-edit-profile"
               >
                 Edit Profile
               </Button>
+            </div>
+          </div>
+
+          {/* ── Row 2: Full-width stacked rule card ── */}
+          <div className="relative h-[86px] mb-3">
+            {[2, 1].map((offset) => {
+              const cardIdx = (activeRuleIndex + offset) % TRADING_QUOTES.length;
+              const color = RULE_CARD_COLORS[cardIdx % RULE_CARD_COLORS.length];
+              return (
+                <div
+                  key={offset}
+                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${color.bg}`}
+                  style={{
+                    opacity: offset === 2 ? 0.35 : 0.65,
+                    transform: `translateY(${offset === 2 ? '-6px' : '-3px'}) scaleX(${offset === 2 ? 0.96 : 0.98})`,
+                    zIndex: offset === 2 ? 1 : 2,
+                  }}
+                />
+              );
+            })}
+            <div
+              className={`absolute inset-0 rounded-xl bg-gradient-to-r ${RULE_CARD_COLORS[activeRuleIndex % RULE_CARD_COLORS.length].bg} shadow-md flex items-center gap-3 px-4 z-10`}
+              style={{
+                opacity: ruleExiting ? 0 : 1,
+                transform: ruleExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
+                transition: 'opacity 280ms, transform 280ms',
+              }}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-[8px] uppercase tracking-widest text-white/60 font-bold mb-1">Trading Rule</p>
+                <p className="text-[13px] font-semibold text-white leading-snug line-clamp-2">
+                  &ldquo;{TRADING_QUOTES[activeRuleIndex]}&rdquo;
+                </p>
+              </div>
+              <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={cycleRule}
+                  className="text-white/80 hover:text-white bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors"
+                  data-testid="button-cycle-rule"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <div className="flex items-center gap-1">
+                  {TRADING_QUOTES.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-1 rounded-full transition-all duration-300 ${i === activeRuleIndex ? 'w-3 bg-white' : 'w-1 bg-white/35'}`}
+                    />
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
 

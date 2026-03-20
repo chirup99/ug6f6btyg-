@@ -841,25 +841,29 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
     <>
       <div id="neofeed-sticky-header" className="bg-background border-b border-border sticky top-0 z-50">
         
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          {/* Header row: search bar left, icons right */}
-          <div className="flex items-center gap-3 mb-4">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
-              <Input
-                placeholder="Search stocks"
-                value={searchQuery}
-                onChange={handleInputChange}
-                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                className="pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
-                data-testid="input-neo-feed-search"
-              />
-            </div>
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                <Bell className="h-5 w-5" />
-              </Button>
-              <UserProfileDropdown />
+        <div className="max-w-7xl mx-auto px-4 pt-3 pb-0">
+          {/* Header row: search bar left, icons right — hides on scroll */}
+          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
+            showAppBar ? 'max-h-16 opacity-100 mb-3' : 'max-h-0 opacity-0 mb-0'
+          }`}>
+            <div className="flex items-center gap-3">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
+                <Input
+                  placeholder="Search stocks"
+                  value={searchQuery}
+                  onChange={handleInputChange}
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  className="pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  data-testid="input-neo-feed-search"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-shrink-0">
+                <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                  <Bell className="h-5 w-5" />
+                </Button>
+                <UserProfileDropdown />
+              </div>
             </div>
           </div>
 

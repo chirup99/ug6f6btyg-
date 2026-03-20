@@ -1095,16 +1095,48 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   const initials = displayName ? displayName.charAt(0).toUpperCase() : username.charAt(0).toUpperCase();
   const userId = profileData?.userId;
 
-  const TRADING_QUOTES = [
-    "Trade the plan, not the emotion",
-    "Cut losses fast — let profits run",
-    "Discipline beats intelligence every time",
-    "The market rewards patience, not haste",
-    "Risk management is the real edge",
-    "Focus on process — results will follow",
-    "One bad trade doesn't define you; revenge trading does",
+  const MINDSET_CARDS = [
+    {
+      type: 'bruce-lee',
+      label: "Trader's Mindset",
+      quote: "Be like water — adapt to what the market gives you. Never force a trade.",
+      showBruceLee: true,
+      bg: 'from-gray-950 via-[#1a1200] to-gray-900',
+      dark: true,
+    },
+    {
+      type: 'bruce-lee',
+      label: 'Be Like Water',
+      quote: "Empty your mind of bias. A trader who clings to a position clings to a loss.",
+      showBruceLee: true,
+      bg: 'from-[#0d1117] via-[#1c1400] to-[#0d1117]',
+      dark: true,
+    },
+    {
+      type: 'loss-psychology',
+      label: 'Loss Psychology',
+      quote: "A loss is tuition — pay it and move on. Revenge trading is the real enemy.",
+      showBruceLee: false,
+      bg: 'from-rose-600 to-red-700',
+      dark: false,
+    },
+    {
+      type: 'noise',
+      label: 'Ignore the Noise',
+      quote: "Consuming too much information creates paralysis. Block the noise — trust your system.",
+      showBruceLee: false,
+      bg: 'from-slate-600 to-slate-800',
+      dark: false,
+    },
+    {
+      type: 'rules',
+      label: 'Follow the Rules',
+      quote: "Your rules exist because your past self was rational. Don't let emotions override them.",
+      showBruceLee: false,
+      bg: 'from-violet-600 to-indigo-700',
+      dark: false,
+    },
   ];
-  const tradingQuote = TRADING_QUOTES[new Date().getDay() % TRADING_QUOTES.length];
 
   const { data: journalRaw = {} } = useQuery({
     queryKey: ['profile-journal-perf', userId],
@@ -1152,25 +1184,15 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
     return String(n);
   };
 
-  const [activeRuleIndex, setActiveRuleIndex] = useState(() => new Date().getDay() % TRADING_QUOTES.length);
+  const [activeRuleIndex, setActiveRuleIndex] = useState(() => new Date().getDay() % MINDSET_CARDS.length);
   const [ruleExiting, setRuleExiting] = useState(false);
   const [cardsPrivate, setCardsPrivate] = useState(false);
-
-  const RULE_CARD_COLORS = [
-    { bg: 'from-violet-500 to-indigo-600', light: 'bg-violet-50 dark:bg-violet-900/20' },
-    { bg: 'from-emerald-500 to-teal-600', light: 'bg-emerald-50 dark:bg-emerald-900/20' },
-    { bg: 'from-rose-500 to-pink-600', light: 'bg-rose-50 dark:bg-rose-900/20' },
-    { bg: 'from-amber-500 to-orange-600', light: 'bg-amber-50 dark:bg-amber-900/20' },
-    { bg: 'from-blue-500 to-cyan-600', light: 'bg-blue-50 dark:bg-blue-900/20' },
-    { bg: 'from-fuchsia-500 to-purple-600', light: 'bg-fuchsia-50 dark:bg-fuchsia-900/20' },
-    { bg: 'from-lime-500 to-green-600', light: 'bg-lime-50 dark:bg-lime-900/20' },
-  ];
 
   const cycleRule = () => {
     if (ruleExiting) return;
     setRuleExiting(true);
     setTimeout(() => {
-      setActiveRuleIndex(i => (i + 1) % TRADING_QUOTES.length);
+      setActiveRuleIndex(i => (i + 1) % MINDSET_CARDS.length);
       setRuleExiting(false);
     }, 280);
   };
@@ -1399,75 +1421,90 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
             </div>
           </div>
 
-          {/* ── Row 2: Trading Rule card with Bruce Lee ── */}
-          <div className="relative h-[90px] mb-3">
-            {/* Stacked background cards */}
+          {/* ── Mindset Card (5-card auto-cycle) ── */}
+          <style>{`
+            @keyframes blPulse {
+              0%, 100% { filter: drop-shadow(0 0 8px rgba(234,179,8,0.35)) brightness(1); transform: scale(1); }
+              50% { filter: drop-shadow(0 0 18px rgba(234,179,8,0.7)) brightness(1.08); transform: scale(1.04); }
+            }
+          `}</style>
+          <div className="relative h-[92px] mb-3">
+            {/* Stacked shadow cards behind */}
             {[2, 1].map((offset) => {
-              const cardIdx = (activeRuleIndex + offset) % TRADING_QUOTES.length;
-              const color = RULE_CARD_COLORS[cardIdx % RULE_CARD_COLORS.length];
+              const cardIdx = (activeRuleIndex + offset) % MINDSET_CARDS.length;
+              const card = MINDSET_CARDS[cardIdx];
               return (
                 <div
                   key={offset}
-                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${color.bg}`}
+                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${card.bg}`}
                   style={{
-                    opacity: offset === 2 ? 0.35 : 0.65,
-                    transform: `translateY(${offset === 2 ? '-6px' : '-3px'}) scaleX(${offset === 2 ? 0.96 : 0.98})`,
+                    opacity: offset === 2 ? 0.32 : 0.6,
+                    transform: `translateY(${offset === 2 ? '-7px' : '-3.5px'}) scaleX(${offset === 2 ? 0.95 : 0.98})`,
                     zIndex: offset === 2 ? 1 : 2,
                   }}
                 />
               );
             })}
-            {/* Main card */}
-            <div
-              className={`absolute inset-0 rounded-xl bg-gradient-to-r ${RULE_CARD_COLORS[activeRuleIndex % RULE_CARD_COLORS.length].bg} shadow-md overflow-hidden z-10`}
-              style={{
-                opacity: ruleExiting ? 0 : 1,
-                transform: ruleExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
-                transition: 'opacity 280ms, transform 280ms',
-              }}
-            >
-              {/* Bruce Lee tiny image on the right — overflows bottom for dramatic effect */}
-              <div className="absolute right-0 top-0 bottom-0 w-[72px] overflow-hidden pointer-events-none">
-                <img
-                  src="/bruce-lee-card.png"
-                  alt=""
-                  className="absolute bottom-0 right-[-4px] h-[108px] w-auto object-contain object-bottom opacity-90"
+
+            {/* Active main card */}
+            {(() => {
+              const card = MINDSET_CARDS[activeRuleIndex];
+              return (
+                <div
+                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${card.bg} shadow-md overflow-hidden z-10`}
                   style={{
-                    filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.4))',
-                    animation: 'blPulse 3s ease-in-out infinite',
+                    opacity: ruleExiting ? 0 : 1,
+                    transform: ruleExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
+                    transition: 'opacity 280ms, transform 280ms',
                   }}
-                />
-              </div>
-              {/* Fade edge so text doesn't clash with image */}
-              <div className="absolute right-[40px] top-0 bottom-0 w-10 bg-gradient-to-r from-transparent to-black/20 pointer-events-none" />
-              {/* Quote content */}
-              <div className="flex items-center h-full px-4 pr-[78px] gap-0">
-                <div className="flex-1 min-w-0">
-                  <p className="text-[8px] uppercase tracking-widest text-white/60 font-bold mb-1">Trading Rule</p>
-                  <p className="text-[13px] font-semibold text-white leading-snug line-clamp-2">
-                    &ldquo;{TRADING_QUOTES[activeRuleIndex]}&rdquo;
-                  </p>
-                </div>
-                {/* Dot indicators only, no pencil */}
-                <div className="flex flex-col items-center justify-end pb-2 flex-shrink-0 self-end">
-                  <div className="flex items-center gap-1">
-                    {TRADING_QUOTES.map((_, i) => (
-                      <div
-                        key={i}
-                        className={`h-1 rounded-full transition-all duration-300 ${i === activeRuleIndex ? 'w-3 bg-white' : 'w-1 bg-white/35'}`}
-                      />
-                    ))}
+                >
+                  {/* Bruce Lee image — only on bruce-lee cards */}
+                  {card.showBruceLee && (
+                    <>
+                      {/* Gold ambient glow */}
+                      <div className="absolute right-0 top-0 bottom-0 w-[90px] bg-gradient-to-l from-yellow-500/25 via-yellow-400/10 to-transparent pointer-events-none" />
+                      <div className="absolute right-0 top-0 bottom-0 w-[80px] overflow-hidden pointer-events-none">
+                        <img
+                          src="/bruce-lee-card.png"
+                          alt=""
+                          className="absolute bottom-0 right-[-2px] h-[112px] w-auto object-contain object-bottom"
+                          style={{ animation: 'blPulse 3s ease-in-out infinite' }}
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  {/* Fade edge before image area */}
+                  {card.showBruceLee && (
+                    <div className="absolute right-[44px] top-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-black/15 pointer-events-none" />
+                  )}
+
+                  {/* Card content */}
+                  <div className={`flex items-center h-full px-4 gap-0 ${card.showBruceLee ? 'pr-[82px]' : 'pr-4'}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className={`text-[8px] uppercase tracking-widest font-bold mb-1 ${card.dark ? 'text-yellow-500/70' : 'text-white/65'}`}>
+                        {card.label}
+                      </p>
+                      <p className={`text-[13px] font-semibold leading-snug line-clamp-2 ${card.dark ? 'text-white' : 'text-white'}`}>
+                        &ldquo;{card.quote}&rdquo;
+                      </p>
+                    </div>
+                    {/* Dot indicators */}
+                    <div className="flex flex-col items-center justify-end pb-1.5 flex-shrink-0 self-end ml-2">
+                      <div className="flex items-center gap-1">
+                        {MINDSET_CARDS.map((_, i) => (
+                          <div
+                            key={i}
+                            className={`h-1 rounded-full transition-all duration-300 ${i === activeRuleIndex ? 'w-3 bg-white' : 'w-1 bg-white/30'}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
-            </div>
+              );
+            })()}
           </div>
-          <style>{`
-            @keyframes blPulse {
-              0%, 100% { filter: drop-shadow(0 0 6px rgba(0,0,0,0.35)); transform: scale(1); }
-              50% { filter: drop-shadow(0 0 14px rgba(255,220,80,0.45)); transform: scale(1.04); }
-            }
-          `}</style>
 
           {/* ── Trading Metric Cards Row ── */}
           {(() => {

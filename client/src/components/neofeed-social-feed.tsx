@@ -1394,55 +1394,97 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
             </div>
           </div>
 
-          {/* ── Row 2: Bruce Lee "Be Like Water" card ── */}
-          <div className="relative rounded-xl overflow-hidden mb-3 shadow-md" style={{ height: '86px' }}>
+          {/* ── Row 2: Full-width stacked rule card ── */}
+          <div className="relative h-[86px] mb-3">
+            {[2, 1].map((offset) => {
+              const cardIdx = (activeRuleIndex + offset) % TRADING_QUOTES.length;
+              const color = RULE_CARD_COLORS[cardIdx % RULE_CARD_COLORS.length];
+              return (
+                <div
+                  key={offset}
+                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${color.bg}`}
+                  style={{
+                    opacity: offset === 2 ? 0.35 : 0.65,
+                    transform: `translateY(${offset === 2 ? '-6px' : '-3px'}) scaleX(${offset === 2 ? 0.96 : 0.98})`,
+                    zIndex: offset === 2 ? 1 : 2,
+                  }}
+                />
+              );
+            })}
+            <div
+              className={`absolute inset-0 rounded-xl bg-gradient-to-r ${RULE_CARD_COLORS[activeRuleIndex % RULE_CARD_COLORS.length].bg} shadow-md flex items-center gap-3 px-4 z-10`}
+              style={{
+                opacity: ruleExiting ? 0 : 1,
+                transform: ruleExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
+                transition: 'opacity 280ms, transform 280ms',
+              }}
+            >
+              <div className="flex-1 min-w-0">
+                <p className="text-[8px] uppercase tracking-widest text-white/60 font-bold mb-1">Trading Rule</p>
+                <p className="text-[13px] font-semibold text-white leading-snug line-clamp-2">
+                  &ldquo;{TRADING_QUOTES[activeRuleIndex]}&rdquo;
+                </p>
+              </div>
+              <div className="flex flex-col items-center gap-2 flex-shrink-0">
+                <button
+                  onClick={cycleRule}
+                  className="text-white/80 hover:text-white bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors"
+                  data-testid="button-cycle-rule"
+                >
+                  <Pencil className="w-3 h-3" />
+                </button>
+                <div className="flex items-center gap-1">
+                  {TRADING_QUOTES.map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-1 rounded-full transition-all duration-300 ${i === activeRuleIndex ? 'w-3 bg-white' : 'w-1 bg-white/35'}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── Row 3: Bruce Lee "Be Like Water" card ── */}
+          <div className="relative rounded-xl overflow-hidden mb-3 shadow-lg" style={{ height: '100px' }}>
             {/* Dark cinematic background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-900 to-yellow-950" />
-            {/* Subtle gold shimmer overlay */}
-            <div className="absolute inset-0 bg-gradient-to-br from-yellow-500/10 via-transparent to-yellow-600/5" />
+            <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-[#1a1200] to-gray-950" />
+            {/* Gold glow behind image */}
+            <div className="absolute right-0 top-0 bottom-0 w-[120px] bg-gradient-to-l from-yellow-600/30 via-yellow-500/10 to-transparent" />
             {/* Water ripple lines */}
-            <svg className="absolute inset-0 w-full h-full opacity-10" viewBox="0 0 300 86" preserveAspectRatio="none">
-              <path d="M0,43 Q75,30 150,43 Q225,56 300,43" fill="none" stroke="#eab308" strokeWidth="1" />
-              <path d="M0,55 Q75,42 150,55 Q225,68 300,55" fill="none" stroke="#eab308" strokeWidth="0.7" />
-              <path d="M0,31 Q75,18 150,31 Q225,44 300,31" fill="none" stroke="#eab308" strokeWidth="0.5" />
+            <svg className="absolute inset-0 w-full h-full opacity-[0.08]" viewBox="0 0 300 100" preserveAspectRatio="none">
+              <path d="M0,50 Q75,35 150,50 Q225,65 300,50" fill="none" stroke="#eab308" strokeWidth="1.2" />
+              <path d="M0,65 Q75,50 150,65 Q225,80 300,65" fill="none" stroke="#eab308" strokeWidth="0.8" />
+              <path d="M0,35 Q75,20 150,35 Q225,50 300,35" fill="none" stroke="#eab308" strokeWidth="0.6" />
             </svg>
-            {/* Bruce Lee punch silhouette */}
-            <div className="absolute right-0 top-0 bottom-0 w-[90px] flex items-center justify-end pr-2 opacity-90">
-              <svg viewBox="0 0 80 86" className="h-full w-auto" fill="none">
-                {/* Body silhouette - fighting stance punch */}
-                <g fill="#ca8a04" opacity="0.85">
-                  {/* Head */}
-                  <ellipse cx="52" cy="12" rx="8" ry="9" />
-                  {/* Neck */}
-                  <rect x="49" y="20" width="6" height="5" rx="2" />
-                  {/* Torso - angled forward stance */}
-                  <path d="M38 25 L58 25 L62 52 L34 52 Z" rx="2" />
-                  {/* Extended punching arm */}
-                  <path d="M38 30 L8 34 L6 42 L36 40 Z" rx="3" />
-                  {/* Fist */}
-                  <rect x="2" y="32" width="10" height="12" rx="3" />
-                  {/* Back arm */}
-                  <path d="M58 30 L68 38 L65 44 L56 37 Z" rx="2" />
-                  {/* Front leg */}
-                  <path d="M38 52 L34 76 L42 76 L44 52 Z" rx="2" />
-                  {/* Back leg */}
-                  <path d="M56 52 L60 76 L68 76 L62 52 Z" rx="2" />
-                </g>
-                {/* Motion lines from fist */}
-                <g stroke="#fbbf24" strokeWidth="1.2" opacity="0.6" strokeLinecap="round">
-                  <line x1="2" y1="34" x2="-6" y2="32" />
-                  <line x1="2" y1="38" x2="-8" y2="38" />
-                  <line x1="2" y1="42" x2="-6" y2="44" />
-                </g>
-              </svg>
+            {/* Bruce Lee animated image */}
+            <div className="absolute right-0 top-0 bottom-0 w-[110px] overflow-hidden">
+              <img
+                src="/bruce-lee-card.png"
+                alt="Bruce Lee"
+                className="absolute bottom-0 right-0 h-[130px] w-auto object-contain object-bottom"
+                style={{
+                  filter: 'drop-shadow(0 0 12px rgba(234,179,8,0.5))',
+                  animation: 'bruceLeePulse 3s ease-in-out infinite',
+                }}
+              />
+              <style>{`
+                @keyframes bruceLeePulse {
+                  0%, 100% { filter: drop-shadow(0 0 10px rgba(234,179,8,0.4)); transform: scale(1); }
+                  50% { filter: drop-shadow(0 0 20px rgba(234,179,8,0.75)); transform: scale(1.03); }
+                }
+              `}</style>
             </div>
             {/* Content */}
-            <div className="absolute inset-0 flex flex-col justify-center pl-4 pr-[96px]">
-              <p className="text-[8px] uppercase tracking-widest text-yellow-500/80 font-bold mb-1">Mindset</p>
-              <p className="text-[13px] font-bold text-white leading-snug">
+            <div className="absolute inset-0 flex flex-col justify-center pl-4 pr-[118px]">
+              <p className="text-[8px] uppercase tracking-widest text-yellow-500/70 font-bold mb-1.5">Trader's Mindset</p>
+              <p className="text-[14px] font-bold text-white leading-tight">
                 &ldquo;Be like water.&rdquo;
               </p>
-              <p className="text-[10px] text-yellow-400/70 mt-0.5 leading-tight">Adapt to the market — flow, don't force.</p>
+              <p className="text-[10px] text-yellow-400/60 mt-1 leading-tight font-medium">
+                Adapt. Flow. Never force the trade.
+              </p>
+              <p className="text-[9px] text-gray-500 mt-1">— Bruce Lee</p>
             </div>
           </div>
 

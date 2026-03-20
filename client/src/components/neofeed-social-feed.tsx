@@ -1166,7 +1166,8 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   const [activeRuleIndex, setActiveRuleIndex] = useState(() => new Date().getDay() % MINDSET_CARDS.length);
   const [ruleExiting, setRuleExiting] = useState(false);
   const [cardsPrivate, setCardsPrivate] = useState(false);
-  const [ruleTouchStartX, setRuleTouchStartX] = useState<number | null>(null);
+  const ruleTouchStartXRef = React.useRef<number | null>(null);
+  const ruleSwipedRef = React.useRef(false);
 
   const cycleRule = () => {
     if (ruleExiting) return;
@@ -1187,16 +1188,26 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   };
 
   const handleRuleTouchStart = (e: React.TouchEvent) => {
-    setRuleTouchStartX(e.touches[0].clientX);
+    ruleTouchStartXRef.current = e.touches[0].clientX;
+    ruleSwipedRef.current = false;
   };
 
   const handleRuleTouchEnd = (e: React.TouchEvent) => {
-    if (ruleTouchStartX === null) return;
-    const delta = e.changedTouches[0].clientX - ruleTouchStartX;
+    if (ruleTouchStartXRef.current === null) return;
+    const delta = e.changedTouches[0].clientX - ruleTouchStartXRef.current;
     if (Math.abs(delta) > 40) {
-      delta < 0 ? cycleRule() : cyclePrevRule();
+      ruleSwipedRef.current = true;
+      delta < 0 ? cyclePrevRule() : cycleRule();
     }
-    setRuleTouchStartX(null);
+    ruleTouchStartXRef.current = null;
+  };
+
+  const handleRuleClick = () => {
+    if (ruleSwipedRef.current) {
+      ruleSwipedRef.current = false;
+      return;
+    }
+    cycleRule();
   };
 
   useEffect(() => {
@@ -1461,7 +1472,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   }}
                   onTouchStart={handleRuleTouchStart}
                   onTouchEnd={handleRuleTouchEnd}
-                  onClick={cycleRule}
+                  onClick={handleRuleClick}
                 >
                   {/* Bruce Lee image — only on bruce-lee cards, uses card-specific image */}
                   {card.showBruceLee && (

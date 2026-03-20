@@ -4694,17 +4694,12 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
         (window as any).pauseBannerYouTube();
       }
       
-      // Update App Bar - Only show when at the top (top 50px)
-      if (currentScrollY < 50) {
+      // App Bar + Bottom Nav - show on scroll up, hide on scroll down
+      if (currentScrollY < lastScrollYRef.current || currentScrollY < 10) {
         setShowAppBar(true);
-      } else {
-        setShowAppBar(false);
-      }
-      
-      // Update Bottom Nav - Show on scroll up, hide on scroll down
-      if (currentScrollY < lastScrollYRef.current) {
         setShowBottomNav(true);
       } else if (currentScrollY > lastScrollYRef.current) {
+        setShowAppBar(false);
         setShowBottomNav(false);
       }
       

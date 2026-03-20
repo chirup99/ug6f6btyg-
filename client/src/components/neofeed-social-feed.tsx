@@ -13,7 +13,8 @@ import {
   Copy, ExternalLink, X, Send, Bot, Trash2, User, MapPin, Calendar,
   ChevronDown, ChevronUp, ArrowLeft, Check, Layers, Mic, Newspaper,
   Users, UserPlus, ThumbsUp, Loader2, Camera, ZoomIn, ZoomOut, Move,
-  Link as LinkIcon, Facebook, MessageCircle as WhatsApp, Send as Telegram, Linkedin
+  Link as LinkIcon, Facebook, MessageCircle as WhatsApp, Send as Telegram, Linkedin,
+  Info
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip, BarChart, Bar, Cell } from 'recharts';
 import { Button } from './ui/button';
@@ -1151,6 +1152,26 @@ function ProfileHeader() {
     return String(n);
   };
 
+  const [showDemoYield, setShowDemoYield] = useState(false);
+  const [showDemoTooltip, setShowDemoTooltip] = useState(false);
+
+  const DEMO_MONTHS = [
+    { label: 'Oct', pnl: 8200 },
+    { label: 'Nov', pnl: -3400 },
+    { label: 'Dec', pnl: 12600 },
+    { label: 'Jan', pnl: 5900 },
+    { label: 'Feb', pnl: -1800 },
+    { label: 'Mar', pnl: 9400 },
+  ];
+  const DEMO_YIELD = 18.5;
+  const DEMO_WIN_RATE = 67;
+  const DEMO_TRADES = 42;
+
+  const displayMonths   = showDemoYield ? DEMO_MONTHS : last6Months;
+  const displayYield    = showDemoYield ? DEMO_YIELD : monthlyYield;
+  const displayWinRate  = showDemoYield ? DEMO_WIN_RATE : winRate;
+  const displayTrades   = showDemoYield ? DEMO_TRADES : totalTrades;
+
   // Handle image selection for editing
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover') => {
     const file = e.target.files?.[0];
@@ -1325,18 +1346,57 @@ function ProfileHeader() {
 
               {/* Row 2 — Performance Trend from Journal */}
               <div className="rounded-xl bg-gray-50 dark:bg-gray-800/70 border border-gray-100 dark:border-gray-700/60 p-3.5">
-                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold mb-1">
-                  Monthly Yield
-                </p>
+                {/* Header row: label + toggle */}
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">
+                      Monthly Yield
+                    </p>
+                    {showDemoYield && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowDemoTooltip(v => !v)}
+                          className="text-amber-400 hover:text-amber-500 transition-colors"
+                          data-testid="button-demo-info"
+                        >
+                          <Info className="w-3 h-3" />
+                        </button>
+                        {showDemoTooltip && (
+                          <div className="absolute left-0 top-5 z-50 w-40 rounded-lg bg-gray-900 dark:bg-gray-700 text-white text-[10px] px-2.5 py-2 shadow-xl leading-snug">
+                            <p className="font-semibold text-amber-300 mb-0.5">Demo Data</p>
+                            <p className="text-gray-300">Sample figures for illustration only — not your real trading data.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  {/* My Data / Demo toggle pill */}
+                  <div className="flex items-center bg-gray-200 dark:bg-gray-700 rounded-full p-0.5 gap-0.5">
+                    <button
+                      onClick={() => { setShowDemoYield(false); setShowDemoTooltip(false); }}
+                      className={`text-[9px] font-semibold px-2 py-0.5 rounded-full transition-all ${!showDemoYield ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                      data-testid="button-yield-my-data"
+                    >
+                      Mine
+                    </button>
+                    <button
+                      onClick={() => setShowDemoYield(true)}
+                      className={`text-[9px] font-semibold px-2 py-0.5 rounded-full transition-all ${showDemoYield ? 'bg-amber-400 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                      data-testid="button-yield-demo"
+                    >
+                      Demo
+                    </button>
+                  </div>
+                </div>
                 <div className="flex items-end gap-3">
-                  <span className={`text-xl font-bold leading-none ${monthlyYield >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {monthlyYield >= 0 ? '+' : ''}{monthlyYield.toFixed(1)}%
+                  <span className={`text-xl font-bold leading-none ${displayYield >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {displayYield >= 0 ? '+' : ''}{displayYield.toFixed(1)}%
                   </span>
                   <div className="flex-1 h-9">
                     <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={last6Months} barCategoryGap="25%" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                      <BarChart data={displayMonths} barCategoryGap="25%" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
                         <Bar dataKey="pnl" radius={[2, 2, 0, 0]}>
-                          {last6Months.map((entry, idx) => (
+                          {displayMonths.map((entry, idx) => (
                             <Cell key={idx} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.85} />
                           ))}
                         </Bar>
@@ -1345,18 +1405,18 @@ function ProfileHeader() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 mt-1.5">
-                  {winRate > 0 && (
+                  {displayWinRate > 0 && (
                     <span className="text-[10px] text-gray-400 flex items-center gap-1">
                       <TrendingUp className="w-3 h-3 text-emerald-500" />
-                      {winRate}% win rate
+                      {displayWinRate}% win rate
                     </span>
                   )}
-                  {totalTrades > 0 && (
+                  {displayTrades > 0 && (
                     <span className="text-[10px] text-gray-400">
-                      {totalTrades} trades
+                      {displayTrades} trades
                     </span>
                   )}
-                  {totalTrades === 0 && (
+                  {!showDemoYield && displayTrades === 0 && (
                     <span className="text-[10px] text-gray-400 flex items-center gap-1">
                       <Activity className="w-3 h-3" /> Discipline tracked
                     </span>

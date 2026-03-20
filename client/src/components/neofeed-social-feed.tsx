@@ -942,7 +942,7 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
   );
 }
 
-function ProfileHeader() {
+function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void }) {
   const [activeTab, setActiveTab] = useState('Posts');
   const [showEditProfile, setShowEditProfile] = useState(false);
   const [showFollowersDialog, setShowFollowersDialog] = useState(false);
@@ -1471,7 +1471,7 @@ function ProfileHeader() {
               return (
                 <button
                   key={tab}
-                  onClick={() => setActiveTab(tab)}
+                  onClick={() => { setActiveTab(tab); onTabChange?.(tab); }}
                   className={`pb-3 px-3 font-medium text-sm whitespace-nowrap transition-colors relative flex-shrink-0 ${
                     activeTab === tab
                       ? 'text-gray-900 dark:text-white'
@@ -1490,70 +1490,6 @@ function ProfileHeader() {
         </div>
       </div>
 
-      {/* Tab Content */}
-      {(() => {
-        const postSkeletons = (
-          <div className="space-y-3">
-            {[1, 2, 3].map(i => (
-              <Card key={i} className="p-4 animate-pulse border-0 shadow-none bg-muted/30">
-                <div className="flex gap-3">
-                  <div className="w-9 h-9 bg-muted rounded-full flex-shrink-0"></div>
-                  <div className="flex-1 space-y-2">
-                    <div className="h-3.5 bg-muted rounded w-28"></div>
-                    <div className="h-3 bg-muted rounded w-full"></div>
-                    <div className="h-3 bg-muted rounded w-2/3"></div>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
-        );
-
-        const emptyState = (icon: React.ReactNode, message: string) => (
-          <div className="py-14 text-center text-gray-400 dark:text-gray-500">
-            <div className="mb-3 flex justify-center opacity-40">{icon}</div>
-            <p className="text-sm">{message}</p>
-          </div>
-        );
-
-        const renderPosts = (posts: typeof userPosts, emptyMsg: string) => {
-          if (postsLoading) return postSkeletons;
-          if (posts.length === 0) return emptyState(<MessageCircle className="w-10 h-10" />, emptyMsg);
-          return (
-            <div className="space-y-2 mb-6">
-              {posts.map((post) => (
-                <PostCard key={post.id} post={post as FeedPost} currentUserUsername={username} />
-              ))}
-            </div>
-          );
-        };
-
-        const audioPosts = userPosts.filter(p => (p as any).isAudioPost);
-        const bullishPosts = userPosts.filter(p => (p as any).sentiment === 'bullish');
-        const bearishPosts = userPosts.filter(p => (p as any).sentiment === 'bearish');
-        const mediaPosts = userPosts.filter(p => (p as any).hasImage || (p as any).imageUrl);
-
-        if (activeTab === 'Posts') return renderPosts(userPosts.filter(p => !(p as any).isAudioPost), 'No posts yet. Share your first trading insight!');
-        if (activeTab === 'Audio') return renderPosts(audioPosts, 'No audio minicasts yet.');
-        if (activeTab === 'Bullish') return renderPosts(bullishPosts, 'No bullish posts yet.');
-        if (activeTab === 'Bearish') return renderPosts(bearishPosts, 'No bearish posts yet.');
-        if (activeTab === 'Media') {
-          if (postsLoading) return postSkeletons;
-          if (mediaPosts.length === 0) return emptyState(<Camera className="w-10 h-10" />, 'No media posts yet.');
-          return (
-            <div className="grid grid-cols-3 gap-1 mb-6">
-              {mediaPosts.map((post) => (
-                <div key={post.id} className="aspect-square bg-muted rounded overflow-hidden">
-                  {(post as any).imageUrl && (
-                    <img src={(post as any).imageUrl} alt="" className="w-full h-full object-cover" />
-                  )}
-                </div>
-              ))}
-            </div>
-          );
-        }
-        return null;
-      })()}
 
       {/* Edit Profile Dialog */}
       <EditProfileDialog
@@ -4438,6 +4374,7 @@ function ViewUserProfile({
 
 function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void }) {
   const [selectedFilter, setSelectedFilter] = useState<string>('All');
+  const [profileActiveTab, setProfileActiveTab] = useState<string>('Posts');
   const [isAtTop, setIsAtTop] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfileDialog, setShowProfileDialog] = useState(false);
@@ -4626,6 +4563,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   const handleFilterChange = (filter: string) => {
     setSelectedFilter(filter);
     setPageNumber(1);
+    if (filter === 'Profile') setProfileActiveTab('Posts');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -4745,19 +4683,36 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
 
   // Apply filter tabs to search results - using real username from DynamoDB state
   // Use case-insensitive matching for Profile filter to handle username case variations
+  // Filter out auto-generated/bot posts with unknown format (finance_news bot, auto-generated news)
+  const isUnknownFormatPost = (post: FeedPost) => {
+    const username = post.authorUsername?.toLowerCase() || post.user?.handle?.toLowerCase() || '';
+    const content = post.content?.toLowerCase() || '';
+    if (username === 'finance_news' || username === 'news_bot' || username === 'auto_news') return true;
+    if (content.includes('market volatility news latest developments in market volatility news')) return true;
+    return false;
+  };
+  const validSearchFilteredData = searchFilteredData.filter(post => !isUnknownFormatPost(post));
+
   let filteredData: FeedPost[] = selectedFilter === 'All' 
-    ? searchFilteredData
+    ? validSearchFilteredData
     : selectedFilter === 'Symbol' 
-    ? searchFilteredData.filter(post => post.stockMentions && post.stockMentions.length > 0)
+    ? validSearchFilteredData.filter(post => post.stockMentions && post.stockMentions.length > 0)
     : selectedFilter === 'Bullish'
-    ? searchFilteredData.filter(post => post.sentiment === 'bullish')
+    ? validSearchFilteredData.filter(post => post.sentiment === 'bullish')
     : selectedFilter === 'Bearish'
-    ? searchFilteredData.filter(post => post.sentiment === 'bearish')
+    ? validSearchFilteredData.filter(post => post.sentiment === 'bearish')
     : selectedFilter === 'Profile'
-    ? searchFilteredData.filter(post => 
-        post.authorUsername?.toLowerCase() === currentUserUsername?.toLowerCase() || 
-        post.user?.handle?.toLowerCase() === currentUserUsername?.toLowerCase())
-    : searchFilteredData.filter(post => post.tags?.some(tag => tag.toLowerCase().includes(selectedFilter.toLowerCase())));
+    ? (() => {
+        const profilePosts = validSearchFilteredData.filter(post => 
+          post.authorUsername?.toLowerCase() === currentUserUsername?.toLowerCase() || 
+          post.user?.handle?.toLowerCase() === currentUserUsername?.toLowerCase());
+        if (profileActiveTab === 'Audio') return profilePosts.filter(p => p.isAudioPost);
+        if (profileActiveTab === 'Bullish') return profilePosts.filter(p => p.sentiment === 'bullish');
+        if (profileActiveTab === 'Bearish') return profilePosts.filter(p => p.sentiment === 'bearish');
+        if (profileActiveTab === 'Media') return profilePosts.filter(p => p.hasMedia || !!p.imageUrl);
+        return profilePosts.filter(p => !p.isAudioPost); // Posts tab (default)
+      })()
+    : validSearchFilteredData.filter(post => post.tags?.some(tag => tag.toLowerCase().includes(selectedFilter.toLowerCase())));
 
   // Sort posts - memoized to prevent re-sorting on every render
   const feedData: FeedPost[] = useMemo(() => {
@@ -4907,7 +4862,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
       {/* Profile Header - Full width row, only on Profile tab */}
       {selectedFilter === 'Profile' && (
         <div className="px-4 py-2 md:py-3 max-w-7xl mx-auto w-full">
-          <ProfileHeader />
+          <ProfileHeader onTabChange={(tab) => setProfileActiveTab(tab)} />
         </div>
       )}
       

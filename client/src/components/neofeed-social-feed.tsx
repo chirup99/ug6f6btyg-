@@ -1167,7 +1167,6 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   const [ruleExiting, setRuleExiting] = useState(false);
   const [cardsPrivate, setCardsPrivate] = useState(false);
   const ruleTouchStartXRef = useRef<number | null>(null);
-  const ruleSwipedRef = useRef(false);
 
   const cycleRule = () => {
     if (ruleExiting) return;
@@ -1189,26 +1188,17 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
   const handleRuleTouchStart = (e: React.TouchEvent) => {
     ruleTouchStartXRef.current = e.touches[0].clientX;
-    ruleSwipedRef.current = false;
   };
 
   const handleRuleTouchEnd = (e: React.TouchEvent) => {
     if (ruleTouchStartXRef.current === null) return;
     const delta = e.changedTouches[0].clientX - ruleTouchStartXRef.current;
     if (Math.abs(delta) > 40) {
-      ruleSwipedRef.current = true;
       delta < 0 ? cyclePrevRule() : cycleRule();
     }
     ruleTouchStartXRef.current = null;
   };
 
-  const handleRuleClick = () => {
-    if (ruleSwipedRef.current) {
-      ruleSwipedRef.current = false;
-      return;
-    }
-    cycleRule();
-  };
 
   useEffect(() => {
     const timer = setInterval(cycleRule, 4000);
@@ -1464,7 +1454,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
               const card = MINDSET_CARDS[activeRuleIndex];
               return (
                 <div
-                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${card.bg} shadow-md overflow-hidden z-10 cursor-pointer select-none`}
+                  className={`absolute inset-0 rounded-xl bg-gradient-to-r ${card.bg} shadow-md overflow-hidden z-10 select-none`}
                   style={{
                     opacity: ruleExiting ? 0 : 1,
                     transform: ruleExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
@@ -1473,7 +1463,6 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   }}
                   onTouchStart={handleRuleTouchStart}
                   onTouchEnd={handleRuleTouchEnd}
-                  onClick={handleRuleClick}
                 >
                   {/* Bruce Lee image — only on bruce-lee cards, uses card-specific image */}
                   {card.showBruceLee && (

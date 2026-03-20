@@ -1166,8 +1166,8 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   const [activeRuleIndex, setActiveRuleIndex] = useState(() => new Date().getDay() % MINDSET_CARDS.length);
   const [ruleExiting, setRuleExiting] = useState(false);
   const [cardsPrivate, setCardsPrivate] = useState(false);
-  const ruleTouchStartXRef = React.useRef<number | null>(null);
-  const ruleSwipedRef = React.useRef(false);
+  const ruleTouchStartXRef = useRef<number | null>(null);
+  const ruleSwipedRef = useRef(false);
 
   const cycleRule = () => {
     if (ruleExiting) return;

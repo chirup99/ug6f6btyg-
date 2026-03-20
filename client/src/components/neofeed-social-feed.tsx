@@ -4683,27 +4683,17 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
 
   // Apply filter tabs to search results - using real username from DynamoDB state
   // Use case-insensitive matching for Profile filter to handle username case variations
-  // Filter out auto-generated/bot posts with unknown format (finance_news bot, auto-generated news)
-  const isUnknownFormatPost = (post: FeedPost) => {
-    const username = post.authorUsername?.toLowerCase() || post.user?.handle?.toLowerCase() || '';
-    const content = post.content?.toLowerCase() || '';
-    if (username === 'finance_news' || username === 'news_bot' || username === 'auto_news') return true;
-    if (content.includes('market volatility news latest developments in market volatility news')) return true;
-    return false;
-  };
-  const validSearchFilteredData = searchFilteredData.filter(post => !isUnknownFormatPost(post));
-
   let filteredData: FeedPost[] = selectedFilter === 'All' 
-    ? validSearchFilteredData
+    ? searchFilteredData
     : selectedFilter === 'Symbol' 
-    ? validSearchFilteredData.filter(post => post.stockMentions && post.stockMentions.length > 0)
+    ? searchFilteredData.filter(post => post.stockMentions && post.stockMentions.length > 0)
     : selectedFilter === 'Bullish'
-    ? validSearchFilteredData.filter(post => post.sentiment === 'bullish')
+    ? searchFilteredData.filter(post => post.sentiment === 'bullish')
     : selectedFilter === 'Bearish'
-    ? validSearchFilteredData.filter(post => post.sentiment === 'bearish')
+    ? searchFilteredData.filter(post => post.sentiment === 'bearish')
     : selectedFilter === 'Profile'
     ? (() => {
-        const profilePosts = validSearchFilteredData.filter(post => 
+        const profilePosts = searchFilteredData.filter(post => 
           post.authorUsername?.toLowerCase() === currentUserUsername?.toLowerCase() || 
           post.user?.handle?.toLowerCase() === currentUserUsername?.toLowerCase());
         if (profileActiveTab === 'Audio') return profilePosts.filter(p => p.isAudioPost);
@@ -4712,7 +4702,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
         if (profileActiveTab === 'Media') return profilePosts.filter(p => p.hasMedia || !!p.imageUrl);
         return profilePosts.filter(p => !p.isAudioPost); // Posts tab (default)
       })()
-    : validSearchFilteredData.filter(post => post.tags?.some(tag => tag.toLowerCase().includes(selectedFilter.toLowerCase())));
+    : searchFilteredData.filter(post => post.tags?.some(tag => tag.toLowerCase().includes(selectedFilter.toLowerCase())));
 
   // Sort posts - memoized to prevent re-sorting on every render
   const feedData: FeedPost[] = useMemo(() => {

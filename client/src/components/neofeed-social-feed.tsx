@@ -839,7 +839,7 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
 
   return (
     <>
-      <div className="bg-background border-b border-border sticky top-0 z-50">
+      <div id="neofeed-sticky-header" className="bg-background border-b border-border sticky top-0 z-50">
         
         <div className="max-w-7xl mx-auto px-4 py-4">
           {/* App Header - Hides on scroll */}
@@ -4450,6 +4450,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   const [showAppBar, setShowAppBar] = useState(true);
   const [showBottomNav, setShowBottomNav] = useState(true);
   const lastScrollYRef = useRef(0);
+  const [headerHeight, setHeaderHeight] = useState(130);
   const [showMobileCreatePost, setShowMobileCreatePost] = useState(false);
   const [showMobileAudioMinicast, setShowMobileAudioMinicast] = useState(false);
   const [showMobileMessages, setShowMobileMessages] = useState(false);
@@ -4501,7 +4502,21 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
       window.removeEventListener('scroll', handleScroll);
     };
   }, []);
-  
+
+  // Track sticky header height so create post panel never goes under it
+  useEffect(() => {
+    const header = document.getElementById('neofeed-sticky-header');
+    if (!header) return;
+    const observer = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setHeaderHeight(Math.ceil(entry.contentRect.height));
+      }
+    });
+    observer.observe(header);
+    setHeaderHeight(Math.ceil(header.getBoundingClientRect().height));
+    return () => observer.disconnect();
+  }, []);
+
   // Fetch posts with stable caching to prevent flickering
   const { data: posts = [], isLoading, error, isFetching } = useQuery({
     queryKey: ['/api/social-posts'],
@@ -4918,9 +4933,10 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
 
         {/* Post Creation Panel - Right Side (Desktop Only) */}
         <div className="hidden md:flex flex-[2] min-w-[300px] max-w-[460px] flex-shrink-0">
-          <div className={`sticky z-30 transition-all duration-300 w-full ${
-            showAppBar ? 'top-[120px]' : 'top-[76px]'
-          }`}>
+          <div
+            className="sticky z-30 transition-[top] duration-300 w-full"
+            style={{ top: `${headerHeight + 12}px` }}
+          >
             <PostCreationPanel />
           </div>
         </div>

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, memo, JSX } from 'react';
+import { useState, useRef, useEffect, useMemo, memo, JSX, createContext, useContext, useCallback, type ReactNode } from 'react';
 import { DemoHeatmap } from './DemoHeatmap';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
@@ -119,6 +119,68 @@ function formatCommentTimestamp(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
+// ─── Live avatar mirror context ──────────────────────────────────────────────
+// Instead of relying on the stale authorAvatar stored in each post/comment/follow
+// record, we always fetch the CURRENT profilePicUrl from the user's profile.
+// getAvatar(username) returns the live URL (or null while loading / not found).
+
+interface UserAvatarCtx {
+  getAvatar: (username: string | undefined | null) => string | null;
+}
+
+const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null });
+
+function UserAvatarProvider({ children }: { children: ReactNode }) {
+  const cacheRef = useRef<Map<string, string | null>>(new Map());
+  const pendingRef = useRef<Set<string>>(new Set());
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // cacheRev increments each time the cache is populated — forces context consumers to re-render
+  const [cacheRev, setCacheRev] = useState(0);
+
+  const flush = useCallback(() => {
+    const toFetch = Array.from(pendingRef.current);
+    pendingRef.current.clear();
+    if (toFetch.length === 0) return;
+
+    fetch('/api/users/avatars-batch', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ usernames: toFetch }),
+    })
+      .then(r => (r.ok ? r.json() : {}))
+      .then((data: Record<string, { profilePicUrl: string | null }>) => {
+        for (const u of toFetch) cacheRef.current.set(u, null);
+        for (const [u, info] of Object.entries(data)) {
+          cacheRef.current.set(u.toLowerCase(), info?.profilePicUrl || null);
+        }
+        setCacheRev(v => v + 1);
+      })
+      .catch(() => {
+        for (const u of toFetch) cacheRef.current.set(u, null);
+        setCacheRev(v => v + 1);
+      });
+  }, []);
+
+  const getAvatar = useCallback((username: string | undefined | null): string | null => {
+    if (!username) return null;
+    const key = username.toLowerCase();
+    if (cacheRef.current.has(key)) return cacheRef.current.get(key) ?? null;
+    pendingRef.current.add(key);
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(flush, 80);
+    return null;
+  }, [flush]);
+
+  // cacheRev in the dep array ensures a new value object is created after each fetch,
+  // which causes all context consumers to re-render and pick up fresh avatar URLs.
+  const value = useMemo(() => ({ getAvatar }), [getAvatar, cacheRev]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  return <UserAvatarContext.Provider value={value}>{children}</UserAvatarContext.Provider>;
+}
+
+const useUserAvatar = () => useContext(UserAvatarContext).getAvatar;
+// ─────────────────────────────────────────────────────────────────────────────
+
 // Render comment content with clickable @mentions
 function CommentContent({ content }: { content: string }) {
   const mentionPattern = /@(\w+)/g;
@@ -155,6 +217,7 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { getUsername, getUserDisplayName } = useCurrentUser();
+  const getAvatar = useUserAvatar();
 
   const currentUsername = getUsername() || localStorage.getItem('currentUsername') || '';
 
@@ -241,13 +304,17 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
             return (
               <div key={commentId} className="flex items-start gap-1.5 group px-1">
                 <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center overflow-hidden mt-0.5">
-                  {c.authorAvatar ? (
-                    <img src={c.authorAvatar} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase">
-                      {(c.authorDisplayName || c.authorUsername || '?')[0]}
-                    </span>
-                  )}
+                  {(() => {
+                    const liveUrl = getAvatar(c.authorUsername);
+                    const commentAvatarUrl = liveUrl || c.authorAvatar;
+                    return commentAvatarUrl && !commentAvatarUrl.includes('ui-avatars.com') ? (
+                      <img src={commentAvatarUrl} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase">
+                        {(c.authorDisplayName || c.authorUsername || '?')[0]}
+                      </span>
+                    );
+                  })()}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-2.5 py-1.5">
@@ -876,6 +943,7 @@ function ProfileHeader() {
   const coverInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const getAvatar = useUserAvatar();
 
   // Simple profile fetch - heavily cached to load instantly when switching tabs
   const { data: profileData, isLoading } = useQuery({
@@ -1352,13 +1420,17 @@ function ProfileHeader() {
                   data-testid={`follower-${follower.id}`}
                 >
                   <Avatar className="w-10 h-10">
-                    {follower.avatar ? (
-                      <AvatarImage src={follower.avatar} />
-                    ) : (
-                      <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
-                        {(follower.displayName || follower.username || 'U').charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    )}
+                    {(() => {
+                      const liveUrl = getAvatar(follower.username);
+                      const avatarUrl = liveUrl || follower.avatar;
+                      return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
+                        <AvatarImage src={avatarUrl} />
+                      ) : (
+                        <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
+                          {(follower.displayName || follower.username || 'U').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      );
+                    })()}
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900 dark:text-white">{follower.displayName || follower.username}</p>
@@ -1394,13 +1466,17 @@ function ProfileHeader() {
                   data-testid={`following-${user.id}`}
                 >
                   <Avatar className="w-10 h-10">
-                    {user.avatar ? (
-                      <AvatarImage src={user.avatar} />
-                    ) : (
-                      <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
-                        {(user.displayName || user.username || 'U').charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    )}
+                    {(() => {
+                      const liveUrl = getAvatar(user.username);
+                      const avatarUrl = liveUrl || user.avatar;
+                      return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
+                        <AvatarImage src={avatarUrl} />
+                      ) : (
+                        <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
+                          {(user.displayName || user.username || 'U').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      );
+                    })()}
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900 dark:text-white">{user.displayName || user.username}</p>
@@ -2647,6 +2723,7 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt }: { metadata: any
 }
 
 const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserProfile }: { post: FeedPost; currentUserUsername?: string; onViewUserProfile?: (username: string) => void }) {
+  const getAvatar = useUserAvatar();
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [liked, setLiked] = useState(false);
   const [downtrended, setDowntrended] = useState(false);
@@ -3163,8 +3240,10 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           <div className="flex items-center gap-2 xl:gap-3">
             <div className="relative">
               {(() => {
-                const avatarUrl = post.authorAvatar || post.user?.avatar;
-                const isValidAvatar = avatarUrl && avatarUrl.includes('s3.') && !avatarUrl.includes('ui-avatars.com');
+                const liveUrl = getAvatar(post.authorUsername || post.user?.handle);
+                const storedUrl = post.authorAvatar || post.user?.avatar;
+                const avatarUrl = liveUrl || storedUrl;
+                const isValidAvatar = avatarUrl && !avatarUrl.includes('ui-avatars.com') && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'));
                 return (
                   <Avatar className="w-7 h-7 xl:w-9 xl:h-9 border border-border">
                     {isValidAvatar ? (
@@ -3634,6 +3713,7 @@ function ViewUserProfile({
   const [showEditProfile, setShowEditProfile] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const getAvatar = useUserAvatar();
 
   // Fetch user profile data
   const { data: profileData, isLoading: profileLoading } = useQuery({
@@ -4098,13 +4178,17 @@ function ViewUserProfile({
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 >
                   <Avatar className="w-10 h-10">
-                    {follower.avatar ? (
-                      <AvatarImage src={follower.avatar} />
-                    ) : (
-                      <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
-                        {(follower.displayName || follower.username || 'U').charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    )}
+                    {(() => {
+                      const liveUrl = getAvatar(follower.username);
+                      const avatarUrl = liveUrl || follower.avatar;
+                      return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
+                        <AvatarImage src={avatarUrl} />
+                      ) : (
+                        <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
+                          {(follower.displayName || follower.username || 'U').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      );
+                    })()}
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900 dark:text-white">{follower.displayName || follower.username}</p>
@@ -4139,13 +4223,17 @@ function ViewUserProfile({
                   className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
                 >
                   <Avatar className="w-10 h-10">
-                    {user.avatar ? (
-                      <AvatarImage src={user.avatar} />
-                    ) : (
-                      <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
-                        {(user.displayName || user.username || 'U').charAt(0).toUpperCase()}
-                      </AvatarFallback>
-                    )}
+                    {(() => {
+                      const liveUrl = getAvatar(user.username);
+                      const avatarUrl = liveUrl || user.avatar;
+                      return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
+                        <AvatarImage src={avatarUrl} />
+                      ) : (
+                        <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
+                          {(user.displayName || user.username || 'U').charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      );
+                    })()}
                   </Avatar>
                   <div className="flex-1">
                     <p className="font-semibold text-gray-900 dark:text-white">{user.displayName || user.username}</p>
@@ -4748,11 +4836,13 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   );
 }
 
-// Wrap with AudioModeProvider for audio minicast functionality
+// Wrap with AudioModeProvider + UserAvatarProvider for audio minicast + mirror avatar logic
 export default function NeoFeedSocialFeed({ onBackClick }: { onBackClick?: () => void }) {
   return (
     <AudioModeProvider>
-      <NeoFeedSocialFeedComponent onBackClick={onBackClick} />
+      <UserAvatarProvider>
+        <NeoFeedSocialFeedComponent onBackClick={onBackClick} />
+      </UserAvatarProvider>
     </AudioModeProvider>
   );
 }

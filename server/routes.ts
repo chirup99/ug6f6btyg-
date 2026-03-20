@@ -8397,6 +8397,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Batch avatar mirror endpoint – returns the CURRENT profilePicUrl for a list of usernames.
+  // Used by the frontend mirror logic so every post/comment/follower always shows the live pic.
+  app.post('/api/users/avatars-batch', async (req, res) => {
+    try {
+      const { usernames } = req.body;
+      if (!Array.isArray(usernames) || usernames.length === 0) {
+        return res.json({});
+      }
+      // Cap to 50 usernames per request
+      const limited = usernames.slice(0, 50).map((u: string) => u.toLowerCase());
+
+      const { getUserProfileByUsername } = await import('./neofeed-dynamodb-migration');
+      const results = await Promise.allSettled(limited.map(u => getUserProfileByUsername(u)));
+
+      const out: Record<string, { profilePicUrl: string | null; coverPicUrl: string | null }> = {};
+      results.forEach((r, i) => {
+        const username = limited[i];
+        if (r.status === 'fulfilled' && r.value) {
+          out[username] = {
+            profilePicUrl: r.value.profilePicUrl || null,
+            coverPicUrl: r.value.coverPicUrl || null,
+          };
+        } else {
+          out[username] = { profilePicUrl: null, coverPicUrl: null };
+        }
+      });
+
+      res.json(out);
+    } catch (error: any) {
+      console.error('❌ avatars-batch error:', error.message);
+      res.json({});
+    }
+  });
+
   // Check signin data using SEPARATE signin database - EXACT same pattern as NIFTY data retrieval
   app.get('/api/check-signin-data', async (req, res) => {
     try {

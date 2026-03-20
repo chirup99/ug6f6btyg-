@@ -11,7 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 
 interface PersonalHeatmapProps {
   userId: string | null;
-  onDateSelect: (date: Date, firebaseData: any) => void;
+  onDateSelect: (date: Date, tradeData: any) => void;
   selectedDate: Date | null;
   onDataUpdate?: (data: Record<string, any>) => void;
   onRangeChange?: (range: { from: Date; to: Date } | null) => void;
@@ -27,9 +27,9 @@ interface PersonalHeatmapProps {
 function calculatePnL(data: any): number {
   if (!data) return 0;
 
-  // ✅ CRITICAL FIX: Handle Firebase wrapped data structure
-  // Firebase stores data as: { date, userId, tradingData: { performanceMetrics: { netPnL } } }
-  // Try wrapped structure first (Firebase format)
+  // ✅ CRITICAL FIX: Handle DynamoDB wrapped data structure
+  // DynamoDB stores data as: { date, userId, tradingData: { performanceMetrics: { netPnL } } }
+  // Try wrapped structure first (DynamoDB format)
   if (data.tradingData?.performanceMetrics?.netPnL !== undefined) {
     return data.tradingData.performanceMetrics.netPnL;
   }
@@ -44,7 +44,7 @@ function calculatePnL(data: any): number {
     return data.profitLossAmount;
   }
 
-  // Try calculating from wrapped tradeHistory (Firebase format)
+  // Try calculating from wrapped tradeHistory (DynamoDB format)
   if (data.tradingData?.tradeHistory && Array.isArray(data.tradingData.tradeHistory)) {
     let totalPnL = 0;
     data.tradingData.tradeHistory.forEach((trade: any) => {
@@ -236,7 +236,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
 
   const filteredHeatmapData = getFilteredData();
 
-  // HANDLE DATE CLICK - FETCH FRESH DATA FROM FIREBASE OR SELECT FOR EDIT/RANGE
+  // HANDLE DATE CLICK - FETCH FRESH DATA FROM DYNAMODB OR SELECT FOR EDIT/RANGE
   const handleDateClick = async (date: Date) => {
     if (!userId) return;
 
@@ -315,19 +315,19 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
       // because the header uses heatmapData[currentDate.toISOString().split('T')[0]]
     }
 
-    console.log(`🔥 PersonalHeatmap: Date clicked: ${dateKey}, fetching FRESH data from Firebase...`);
+    console.log(`🔥 PersonalHeatmap: Date clicked: ${dateKey}, fetching FRESH data from DynamoDB...`);
 
     try {
-      // FETCH FRESH DATA FROM FIREBASE FOR THIS SPECIFIC DATE
+      // FETCH FRESH DATA FROM DYNAMODB FOR THIS SPECIFIC DATE
       const response = await fetch(`/api/user-journal/${userId}/${dateKey}`);
       const freshData = await response.json();
 
-      console.log(`✅ PersonalHeatmap: Fresh Firebase data for ${dateKey}:`, freshData);
+      console.log(`✅ PersonalHeatmap: Fresh DynamoDB data for ${dateKey}:`, freshData);
 
       // Update the selected date
       setCurrentDate(date);
 
-      // Pass the FRESH FIREBASE DATA to parent component
+      // Pass the FRESH DYNAMODB DATA to parent component
       onDateSelect(date, freshData);
 
     } catch (error) {
@@ -389,13 +389,13 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
         description: `Removing all data for ${selectedDateForDelete}`,
       });
 
-      // Delete data from Firebase using DELETE endpoint
+      // Delete data from DynamoDB using DELETE endpoint
       const deleteResponse = await fetch(`/api/user-journal/${userId}/${selectedDateForDelete}`, {
         method: 'DELETE',
       });
 
       if (!deleteResponse.ok) {
-        throw new Error('Failed to delete data from Firebase');
+        throw new Error('Failed to delete data from DynamoDB');
       }
 
       console.log(`✅ Personal data deleted successfully for ${selectedDateForDelete}`);
@@ -506,7 +506,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
       });
 
       // Force heatmap refresh by incrementing refreshKey
-      // This triggers the useEffect to re-fetch all data from Firebase
+      // This triggers the useEffect to re-fetch all data from DynamoDB
       console.log('🔄 Triggering heatmap refresh after relocation...');
       setRefreshKey(prev => prev + 1);
 
@@ -1076,7 +1076,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                           // Get data from COMPLETE heatmapData (show all dates)
                           const data = heatmapData[dateKey];
 
-                          // Calculate P&L from FIREBASE DATA ONLY
+                          // Calculate P&L from DYNAMODB DATA ONLY
                           const netPnL = calculatePnL(data);
 
                           // Only show P&L colors if date is within range AND has data, otherwise show grey

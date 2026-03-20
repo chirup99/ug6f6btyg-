@@ -1876,7 +1876,6 @@ function MicroAnimationsDemoPage() {
 // BUT: In development mode (localhost), always use relative URLs to avoid CORS issues
 const isDevelopmentMode = window.location.hostname === 'localhost' || 
                           window.location.hostname === '127.0.0.1' ||
-                          window.location.hostname.includes('replit.dev') ||
                           window.location.port === '5000';
 
 const API_BASE_URL = isDevelopmentMode ? '' : (import.meta.env.VITE_API_URL || '');
@@ -12616,7 +12615,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             console.log("🏷️ Loaded tags from journal-database:", tags);
           }
 
-          // ✅ ONLY USE REAL FIREBASE TRADE HISTORY - NO HARDCODED/CONSTRUCTED DATA
+          // ✅ ONLY USE REAL DYNAMODB TRADE HISTORY - NO HARDCODED/CONSTRUCTED DATA
           if (
             journalData.tradeHistory &&
             Array.isArray(journalData.tradeHistory) &&
@@ -12628,7 +12627,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
               journalData.tradeHistory.length,
               "trades",
             );
-            console.log("📊 Trade data source: FIREBASE (no hardcoded data)");
+            console.log("📊 Trade data source: DYNAMODB (no hardcoded data)");
 
             // Extract symbols with most trades
             const symbols = extractTradedSymbols(journalData.tradeHistory);

@@ -957,8 +957,23 @@ function ProfileHeader() {
   const getAvatar = useUserAvatar();
   const setAvatar = useSetAvatar();
 
-  // Simple profile fetch - heavily cached to load instantly when switching tabs
-  const { data: profileData, isLoading } = useQuery({
+  // Build placeholder from localStorage so the profile header renders instantly on mount,
+  // with no skeleton flash, before the network fetch completes.
+  const localStoragePlaceholder = (() => {
+    const username = localStorage.getItem('currentUsername');
+    if (!username) return null;
+    return {
+      username,
+      displayName: localStorage.getItem('currentDisplayName') || localStorage.getItem('currentUserName') || username,
+      profilePicUrl: localStorage.getItem('currentUserProfilePicUrl') || null,
+      bio: null,
+      location: null,
+      coverPicUrl: null,
+    };
+  })();
+
+  // Profile fetch — with placeholderData so isLoading is always false on mount
+  const { data: profileData } = useQuery({
     queryKey: ['my-profile'],
     queryFn: async () => {
       const idToken = await getCognitoToken();
@@ -970,7 +985,8 @@ function ProfileHeader() {
       const data = await response.json();
       return data.profile || null;
     },
-    staleTime: 30 * 1000, // 30 seconds — allows near-instant reflection of profile updates
+    placeholderData: localStoragePlaceholder,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnMount: false,
     refetchOnWindowFocus: false,
@@ -1171,18 +1187,6 @@ function ProfileHeader() {
       setUploading(false);
     }
   };
-
-  if (isLoading) {
-    return (
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 mb-6 animate-pulse">
-        <div className="h-48 bg-gray-300 dark:bg-gray-700"></div>
-        <div className="pt-20 px-4 pb-4">
-          <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-48 mb-2"></div>
-          <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-32"></div>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>
@@ -2897,7 +2901,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
     
     if (!fullText || fullText.trim().length === 0) return;
     
-    // Keep post.id as string (Firebase IDs are strings)
+    // Keep post.id as string (DynamoDB IDs are strings)
     const postIdValue = typeof post.id === 'string' ? post.id : String(post.id);
     
     addTextSnippet({
@@ -4405,7 +4409,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
             queryClient.setQueryData(['my-profile'], profileData.profile);
           }
 
-          // Store real username from Firebase for Profile filter
+          // Store real username from DynamoDB for Profile filter
           if (profileData.profile?.username) {
             setCurrentUserUsername(profileData.profile.username);
             
@@ -4565,7 +4569,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
     );
   }
 
-  // Apply filter tabs to search results - using real Firebase username from state
+  // Apply filter tabs to search results - using real username from DynamoDB state
   // Use case-insensitive matching for Profile filter to handle username case variations
   let filteredData: FeedPost[] = selectedFilter === 'All' 
     ? searchFilteredData

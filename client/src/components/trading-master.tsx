@@ -2316,7 +2316,7 @@ Risk Warning: Past performance does not guarantee future results. Trade responsi
   // Strategy testing state - individual loading per strategy
   const [testingStrategies, setTestingStrategies] = useState<Set<number>>(new Set());
   
-  // WebSocket streaming for NIFTY 50 price (30s updates - OPTIMIZED FOR REPLIT COSTS)
+  // WebSocket streaming for NIFTY 50 price (30s updates - OPTIMIZED FOR AWS COSTS)
   const [streamingPrice, setStreamingPrice] = useState<number | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
   const wsRef = useRef<WebSocket | null>(null);

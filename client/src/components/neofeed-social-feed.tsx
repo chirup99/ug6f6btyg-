@@ -14,7 +14,7 @@ import {
   ChevronDown, ChevronUp, ArrowLeft, Check, Layers, Mic, Newspaper,
   Users, UserPlus, ThumbsUp, Loader2, Camera, ZoomIn, ZoomOut, Move,
   Link as LinkIcon, Facebook, MessageCircle as WhatsApp, Send as Telegram, Linkedin,
-  Info, Pencil, Award, Flame, Lock, Unlock, BookOpen, Target as TargetIcon, Zap
+  Info, Pencil, Award, Flame, Lock, Unlock, BookOpen, Target as TargetIcon, Zap, Eye
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip, BarChart, Bar, Cell } from 'recharts';
 import { Button } from './ui/button';
@@ -1575,11 +1575,58 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   </button>
                 </div>
 
+                {!cardsPrivate && (
+                  <p className="text-[8px] text-blue-400 dark:text-blue-500 mb-1.5 flex items-center gap-1">
+                    <Eye className="w-2.5 h-2.5" /> Visible to everyone · tap a card to open journal
+                  </p>
+                )}
+
                 <div className={`overflow-hidden transition-all duration-300 ease-in-out ${cardsPrivate ? 'max-h-0 opacity-0 pb-0' : 'max-h-[200px] opacity-100 pb-4'}`}>
                 <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5">
 
-                  {/* Monthly Yield */}
-                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                  {/* 1 · Journal Streak */}
+                  <div
+                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
+                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
+                  >
+                    <div className="flex items-center gap-1 mb-1">
+                      <Flame className="w-3 h-3 text-orange-500" />
+                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Streak</p>
+                    </div>
+                    <p className="text-base font-bold leading-none text-orange-500 mb-1.5">{currentStreak} days</p>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 7 }).map((_, i) => (
+                        <div key={i} className={`flex-1 h-4 rounded-sm transition-colors ${i < Math.min(currentStreak, 7) ? 'bg-orange-400' : 'bg-gray-100 dark:bg-gray-700'}`} />
+                      ))}
+                    </div>
+                    <p className="text-[8px] text-gray-400 mt-1">Journal streak</p>
+                  </div>
+
+                  {/* 2 · Journal Entries */}
+                  <div
+                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
+                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
+                  >
+                    <div className="flex items-center gap-1 mb-1">
+                      <BookOpen className="w-3 h-3 text-teal-500" />
+                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Journal</p>
+                    </div>
+                    <p className="text-base font-bold leading-none text-teal-600 dark:text-teal-400 mb-2">{totalTrades} entries</p>
+                    <div className="flex gap-0.5 items-end h-6">
+                      {last6Months.map((m, i) => {
+                        const maxPnl = Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1);
+                        const h = Math.max(20, (Math.abs(m.pnl) / maxPnl) * 100);
+                        return <div key={i} className="flex-1 rounded-sm bg-teal-400/70 dark:bg-teal-600/70" style={{ height: `${h}%` }} title={m.label} />;
+                      })}
+                    </div>
+                    <p className="text-[8px] text-gray-400 mt-1">Logged trades</p>
+                  </div>
+
+                  {/* 3 · Monthly Yield */}
+                  <div
+                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
+                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
+                  >
                     <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Yield</p>
                     <p className={`text-base font-bold leading-none mb-2 ${isYieldPos ? 'text-emerald-500' : 'text-red-500'}`}>
                       {isYieldPos ? '+' : ''}{monthlyYield.toFixed(1)}%
@@ -1599,91 +1646,46 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                     <p className="text-[8px] text-gray-400 mt-1">{totalTrades} trades</p>
                   </div>
 
-                  {/* Target — circular progress */}
-                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-
+                  {/* 4 · Monthly Target */}
+                  <div
+                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
+                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
+                  >
                     <div className="flex items-center gap-1 mb-1">
                       <TargetIcon className="w-3 h-3 text-blue-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Target</p>
                     </div>
                     <div className="flex items-center gap-2">
-                      <svg width="46" height="46" viewBox="0 0 46 46">
+                      <svg width="40" height="40" viewBox="0 0 46 46">
                         <circle cx="23" cy="23" r={R} fill="none" stroke="#e5e7eb" strokeWidth="4" />
                         <circle cx="23" cy="23" r={R} fill="none"
                           stroke={targetProgress >= 100 ? '#10b981' : '#3b82f6'}
-                          strokeWidth="4"
-                          strokeLinecap="round"
+                          strokeWidth="4" strokeLinecap="round"
                           strokeDasharray={`${dash} ${CIRC}`}
                           strokeDashoffset={CIRC * 0.25}
                           style={{ transition: 'stroke-dasharray 0.6s ease' }}
                         />
-                        <text x="23" y="27" textAnchor="middle" fontSize="9" fontWeight="700"
-                          fill={targetProgress >= 100 ? '#10b981' : '#3b82f6'}>
+                        <text x="23" y="27" textAnchor="middle" fontSize="9" fontWeight="700" fill={targetProgress >= 100 ? '#10b981' : '#3b82f6'}>
                           {Math.round(targetProgress)}%
                         </text>
                       </svg>
                       <div>
-                        <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">
-                          {monthlyYield >= 0 ? '+' : ''}{monthlyYield.toFixed(1)}%
-                        </p>
-                        <p className="text-[9px] text-gray-400 mt-0.5">of {MONTHLY_TARGET_PCT}% goal</p>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">{monthlyYield >= 0 ? '+' : ''}{monthlyYield.toFixed(1)}%</p>
+                        <p className="text-[9px] text-gray-400 mt-0.5">of {MONTHLY_TARGET_PCT}%</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* Journal Streak */}
-                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-
-                    <div className="flex items-center gap-1 mb-1">
-                      <Flame className="w-3 h-3 text-orange-500" />
-                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Streak</p>
-                    </div>
-                    <p className="text-base font-bold leading-none text-orange-500 mb-1.5">
-                      {currentStreak} days
-                    </p>
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: 7 }).map((_, i) => (
-                        <div key={i}
-                          className={`flex-1 h-4 rounded-sm transition-colors ${i < Math.min(currentStreak, 7) ? 'bg-orange-400' : 'bg-gray-100 dark:bg-gray-700'}`}
-                        />
-                      ))}
-                    </div>
-                    <p className="text-[8px] text-gray-400 mt-1">Journal streak</p>
-                  </div>
-
-                  {/* Journal Count */}
-                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-
-                    <div className="flex items-center gap-1 mb-1">
-                      <BookOpen className="w-3 h-3 text-teal-500" />
-                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Journal</p>
-                    </div>
-                    <p className="text-base font-bold leading-none text-teal-600 dark:text-teal-400 mb-2">
-                      {totalTrades} entries
-                    </p>
-                    <div className="flex gap-0.5 items-end h-6">
-                      {last6Months.map((m, i) => {
-                        const maxPnl = Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1);
-                        const h = Math.max(20, (Math.abs(m.pnl) / maxPnl) * 100);
-                        return (
-                          <div key={i} className="flex-1 rounded-sm bg-teal-400/70 dark:bg-teal-600/70"
-                            style={{ height: `${h}%` }} title={m.label} />
-                        );
-                      })}
-                    </div>
-                    <p className="text-[8px] text-gray-400 mt-1">Logged trades</p>
-                  </div>
-
-                  {/* Discipline / Win Streak */}
-                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-
+                  {/* 5 · Discipline */}
+                  <div
+                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
+                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
+                  >
                     <div className="flex items-center gap-1 mb-1">
                       <Award className="w-3 h-3 text-violet-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Discipline</p>
                     </div>
-                    <p className="text-base font-bold leading-none mb-2 text-violet-600 dark:text-violet-400">
-                      {currentStreak} wins
-                    </p>
+                    <p className="text-base font-bold leading-none mb-2 text-violet-600 dark:text-violet-400">{currentStreak} wins</p>
                     {disciplinePath ? (
                       <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
                         <defs>
@@ -1695,57 +1697,10 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                         <path d={disciplinePath} fill="none" stroke="url(#disc-grad2)" strokeWidth="1.8" strokeLinecap="round" />
                       </svg>
                     ) : (
-                      <div className="h-6 flex items-center">
-                        <div className="h-px w-full bg-violet-200 dark:bg-violet-800" />
-                      </div>
+                      <div className="h-6 flex items-center"><div className="h-px w-full bg-violet-200 dark:bg-violet-800" /></div>
                     )}
                     <p className="text-[8px] text-gray-400 mt-1">Win streak trend</p>
                   </div>
-
-                  {/* Trend / P&L */}
-                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-
-                    <div className="flex items-center gap-1 mb-1">
-                      <Zap className="w-3 h-3 text-orange-500" />
-                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Trend</p>
-                    </div>
-                    <p className={`text-base font-bold leading-none mb-2 ${isTrendPos ? 'text-emerald-500' : 'text-red-500'}`}>
-                      {isTrendPos ? '↑' : '↓'} {winRate}% WR
-                    </p>
-                    {trendPath ? (
-                      <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
-                        <path d={trendPath} fill="none" stroke={isTrendPos ? '#f97316' : '#ef4444'} strokeWidth="1.8" strokeLinecap="round" />
-                      </svg>
-                    ) : (
-                      <div className="h-6 flex items-center">
-                        <div className="h-px w-full bg-orange-200 dark:bg-orange-800" />
-                      </div>
-                    )}
-                    <p className="text-[8px] text-gray-400 mt-1">Cumulative P&L</p>
-                  </div>
-
-                  {/* Best Trade (Displaced) */}
-                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-
-                    <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Best Month</p>
-                    <p className={`text-base font-bold leading-none mb-2 ${bestMonthPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                      {bestMonthPnl >= 0 ? '+' : ''}₹{Math.abs(bestMonthPnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
-                    </p>
-                    <div className="flex gap-0.5 items-end h-6">
-                      {last6Months.map((m, i) => {
-                        const maxVal = Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1);
-                        const h = Math.max(15, (Math.abs(m.pnl) / maxVal) * 100);
-                        return (
-                          <div key={i}
-                            className={`flex-1 rounded-sm transition-colors ${m.pnl === bestMonthPnl ? 'bg-emerald-500' : m.pnl >= 0 ? 'bg-emerald-200 dark:bg-emerald-900/50' : 'bg-red-200 dark:bg-red-900/50'}`}
-                            style={{ height: `${h}%` }}
-                          />
-                        );
-                      })}
-                    </div>
-                    <p className="text-[8px] text-gray-400 mt-1">Peak performance</p>
-                  </div>
-
 
                 </div>
                 </div>

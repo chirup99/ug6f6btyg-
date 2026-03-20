@@ -842,51 +842,24 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
       <div id="neofeed-sticky-header" className="bg-background border-b border-border sticky top-0 z-50">
         
         <div className="max-w-7xl mx-auto px-4 py-4">
-          {/* App Header - Hides on scroll */}
-          <div className={`overflow-hidden transition-all duration-300 ease-in-out ${
-            showAppBar ? 'max-h-20 opacity-100 mb-4' : 'max-h-0 opacity-0 mb-0'
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 bg-muted rounded-lg flex items-center justify-center border border-border">
-                  <div className="text-foreground font-bold text-sm">⚡</div>
-                </div>
-                <div>
-                  <h1 className="text-foreground font-bold text-xl">NeoFeed</h1>
-                  <p className="text-muted-foreground text-sm font-medium">AI-Powered Trading Network</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-               
-                <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <Bell className="h-5 w-5" />
-                </Button>
-                <UserProfileDropdown />
-              </div>
+          {/* Header row: search bar left, icons right */}
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
+              <Input
+                placeholder="Search stocks"
+                value={searchQuery}
+                onChange={handleInputChange}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className="pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                data-testid="input-neo-feed-search"
+              />
             </div>
-          </div>
-
-          {/* AI-Enhanced Search Bar */}
-          <div className="relative mb-4">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
-            <Input
-              placeholder="Search stocks"
-              value={searchQuery}
-              onChange={handleInputChange}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-              className="pl-10 pr-20 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
-              data-testid="input-neo-feed-search"
-            />
-            <div className="absolute right-1 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
-              {searchQuery.trim() && (
-                <Button
-                  onClick={handleSearch}
-                  size="sm"
-                  className="h-7 w-7 p-0 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-md flex items-center justify-center"
-                >
-                  <Search className="h-3.5 w-3.5" />
-                </Button>
-              )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
+                <Bell className="h-5 w-5" />
+              </Button>
+              <UserProfileDropdown />
             </div>
           </div>
 

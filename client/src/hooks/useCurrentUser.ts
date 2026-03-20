@@ -28,13 +28,13 @@ export function useCurrentUser() {
     initializeCognito();
     
     const loadUserData = async () => {
+      localStorage.removeItem('currentUserProfilePicUrl');
       const savedUserId = localStorage.getItem('currentUserId');
       const savedUserEmail = localStorage.getItem('currentUserEmail');
       const savedUsername = localStorage.getItem('currentUsername');
       const savedDisplayName = localStorage.getItem('currentDisplayName') || localStorage.getItem('currentUserName');
       const savedDob = localStorage.getItem('currentUserDob');
       const savedLocation = localStorage.getItem('currentUserLocation');
-      const savedProfilePicUrl = localStorage.getItem('currentUserProfilePicUrl');
       
       setCurrentUser({
         userId: savedUserId,
@@ -43,7 +43,7 @@ export function useCurrentUser() {
         displayName: savedDisplayName,
         dob: savedDob,
         location: savedLocation,
-        profilePicUrl: savedProfilePicUrl
+        profilePicUrl: null
       });
 
       if (savedUserId && savedUserEmail) {
@@ -74,7 +74,7 @@ export function useCurrentUser() {
                   profile.profilePicUrl
                 );
               } else {
-                updateUser(savedUserId, savedUserEmail, null, savedDisplayName, savedDob, savedLocation, savedProfilePicUrl);
+                updateUser(savedUserId, savedUserEmail, null, savedDisplayName, savedDob, savedLocation, null);
               }
             }
           }
@@ -128,12 +128,6 @@ export function useCurrentUser() {
       localStorage.removeItem('currentUserLocation');
     }
 
-    if (profilePicUrl) {
-      localStorage.setItem('currentUserProfilePicUrl', profilePicUrl);
-    } else {
-      localStorage.removeItem('currentUserProfilePicUrl');
-    }
-    
     setCurrentUser({ 
       userId, 
       email,
@@ -151,7 +145,6 @@ export function useCurrentUser() {
     localStorage.setItem('currentUserName', displayName);
     if (dob) localStorage.setItem('currentUserDob', dob);
     if (location) localStorage.setItem('currentUserLocation', location);
-    if (profilePicUrl) localStorage.setItem('currentUserProfilePicUrl', profilePicUrl);
 
     setCurrentUser(prev => ({
       ...prev,
@@ -175,6 +168,7 @@ export function useCurrentUser() {
     localStorage.removeItem('currentUsername');
     localStorage.removeItem('currentDisplayName');
     localStorage.removeItem('currentUserName');
+    localStorage.removeItem('currentUserProfilePicUrl');
     setCurrentUser({ 
       userId: null, 
       email: null,

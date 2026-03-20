@@ -959,13 +959,15 @@ function ProfileHeader() {
 
   // Build placeholder from localStorage so the profile header renders instantly on mount,
   // with no skeleton flash, before the network fetch completes.
+  // NOTE: profilePicUrl and coverPicUrl are intentionally NOT read from localStorage —
+  // they are always fetched fresh from AWS/DynamoDB (same pattern for both).
   const localStoragePlaceholder = (() => {
     const username = localStorage.getItem('currentUsername');
     if (!username) return null;
     return {
       username,
       displayName: localStorage.getItem('currentDisplayName') || localStorage.getItem('currentUserName') || username,
-      profilePicUrl: localStorage.getItem('currentUserProfilePicUrl') || null,
+      profilePicUrl: null,
       bio: null,
       location: null,
       coverPicUrl: null,

@@ -11,7 +11,7 @@ declare global {
 }
 import { Switch, Route, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -260,6 +260,29 @@ function MainLayout({ children }: { children: React.ReactNode }) {
 
   const { currentUser, getUserDisplayName, isLoggedIn } = useCurrentUser();
   const currentUserDisplayName = getUserDisplayName();
+
+  // Mirror the same ['my-profile'] query used by the social feed so the vertical
+  // sidebar avatar updates instantly when the user changes their profile picture.
+  const { data: verticalSidebarProfile } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: async () => {
+      const token = await getCognitoToken();
+      if (!token) return null;
+      const res = await fetch('/api/user/profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.profile || null;
+    },
+    enabled: !!currentUser?.userId,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Use live-fetched pic, falling back to what useCurrentUser loaded from localStorage
+  const verticalSidebarPicUrl = verticalSidebarProfile?.profilePicUrl ?? currentUser?.profilePicUrl ?? null;
   
   const navigation = [
     {
@@ -314,7 +337,7 @@ function MainLayout({ children }: { children: React.ReactNode }) {
                 data-testid="button-profile-menu-toggle"
               >
                 <Avatar className="w-10 h-10 rounded-lg border border-white/10">
-                  <AvatarImage src={currentUser?.profilePicUrl || undefined} />
+                  <AvatarImage src={verticalSidebarPicUrl ?? undefined} />
                   <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold text-sm rounded-lg">
                     {currentUserDisplayName.charAt(0).toUpperCase()}
                   </AvatarFallback>

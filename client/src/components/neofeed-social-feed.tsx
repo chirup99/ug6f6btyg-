@@ -1101,15 +1101,17 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
       label: "Trader's Mindset",
       quote: "Be like water — adapt to what the market gives you. Never force a trade.",
       showBruceLee: true,
+      image: '/bruce-lee-card.png',
       bg: 'from-gray-950 via-[#1a1200] to-gray-900',
       dark: true,
     },
     {
       type: 'bruce-lee',
-      label: 'Be Like Water',
-      quote: "Empty your mind of bias. A trader who clings to a position clings to a loss.",
+      label: 'Your Greatest Enemy Is Within',
+      quote: "Fear, greed, and ego destroy more traders than any bad setup ever will.",
       showBruceLee: true,
-      bg: 'from-[#0d1117] via-[#1c1400] to-[#0d1117]',
+      image: '/bruce-lee-enemy-within.png',
+      bg: 'from-[#0d0500] via-[#2a1400] to-[#0d0800]',
       dark: true,
     },
     {
@@ -1458,14 +1460,14 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                     transition: 'opacity 280ms, transform 280ms',
                   }}
                 >
-                  {/* Bruce Lee image — only on bruce-lee cards */}
+                  {/* Bruce Lee image — only on bruce-lee cards, uses card-specific image */}
                   {card.showBruceLee && (
                     <>
                       {/* Gold ambient glow */}
                       <div className="absolute right-0 top-0 bottom-0 w-[90px] bg-gradient-to-l from-yellow-500/25 via-yellow-400/10 to-transparent pointer-events-none" />
                       <div className="absolute right-0 top-0 bottom-0 w-[80px] overflow-hidden pointer-events-none">
                         <img
-                          src="/bruce-lee-card.png"
+                          src={card.image}
                           alt=""
                           className="absolute bottom-0 right-[-2px] h-[112px] w-auto object-contain object-bottom"
                           style={{ animation: 'blPulse 3s ease-in-out infinite' }}

@@ -2524,7 +2524,7 @@ function TradeInsightCard({ post }: { post: FeedPost }) {
       <div className="flex items-center justify-between px-4 pt-3 pb-1">
         <span className="text-[10px] font-bold text-gray-500 dark:text-zinc-400 uppercase tracking-wider">{dateLabel}</span>
       </div>
-      <div className="flex" style={{ height: '110px' }}>
+      <div className="flex" style={{ height: '140px' }}>
         <div className="flex-1 px-3 pb-3 pt-1 relative">
           {mirrorLoading ? (
             <div className="w-full h-full flex items-center justify-center gap-2 text-xs text-gray-400">
@@ -3641,7 +3641,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
 
           {/* Tags */}
           <div className="flex flex-wrap gap-2">
-            {post.tags?.map((tag, index) => (
+            {post.tags?.filter(tag => tag.toLowerCase().replace(/[-\s]/g, '') !== 'tradingreport').map((tag, index) => (
               <span key={`${post.id}-tag-${index}-${tag}`} className="text-blue-600 dark:text-blue-400 text-sm hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer transition-colors">
                 {tag}
               </span>

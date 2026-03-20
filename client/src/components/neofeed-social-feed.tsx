@@ -1469,6 +1469,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                     opacity: ruleExiting ? 0 : 1,
                     transform: ruleExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
                     transition: 'opacity 280ms, transform 280ms',
+                    touchAction: 'none',
                   }}
                   onTouchStart={handleRuleTouchStart}
                   onTouchEnd={handleRuleTouchEnd}

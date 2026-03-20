@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ArrowRight, Eye, EyeOff } from "lucide-react";
-import faceVideo from "../assets/landing-page-face.mp4";
 import { useToast } from "@/hooks/use-toast";
 import {
   cognitoSignIn,
@@ -82,8 +81,6 @@ export default function Landing() {
   const [showPerformanceWindow, setShowPerformanceWindow] = useState(false);
   const [showPerformanceTrend, setShowPerformanceTrend] = useState(false);
   const [showTradingNotes, setShowTradingNotes] = useState(false);
-  const [showGifFrame, setShowGifFrame] = useState(false);
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [showTagsDropdown, setShowTagsDropdown] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([
     "FOMO",
@@ -155,7 +152,7 @@ export default function Landing() {
       const resetTimer = setTimeout(
         () => {
           setShowTradingNotes(false);
-          setShowGifFrame(true);
+          setShowAccessInfo(true);
           // Reset sequence state
           setTypedNote("");
           setShowTagsDropdown(false);
@@ -165,23 +162,6 @@ export default function Landing() {
       return () => clearTimeout(resetTimer);
     }
   }, [showTradingNotes]);
-
-  useEffect(() => {
-    if (showGifFrame) {
-      const timer = setTimeout(() => {
-        setShowGifFrame(false);
-        setShowAccessInfo(true);
-      }, 3900);
-      return () => clearTimeout(timer);
-    }
-  }, [showGifFrame]);
-
-  useEffect(() => {
-    if (showGifFrame && videoRef.current) {
-      videoRef.current.currentTime = 0;
-      videoRef.current.play().catch(() => {});
-    }
-  }, [showGifFrame]);
 
   useEffect(() => {
     if (showTradingNotes) {
@@ -1040,7 +1020,7 @@ export default function Landing() {
         <div className="text-center relative flex flex-col items-center justify-center p-0 m-0 overflow-hidden">
           {/* Tradebook Preview - Always visible or transitions in */}
           <div
-            className={`${showAccessInfo || showGifFrame ? "h-0 opacity-0 pointer-events-none" : "h-auto opacity-100"} w-full flex justify-center p-0 m-0 transition-all duration-700 ease-in-out transform ${showAccessInfo || showGifFrame ? "translate-y-4 scale-95" : "translate-y-0 scale-100"}`}
+            className={`${showAccessInfo ? "h-0 opacity-0 pointer-events-none" : "h-auto opacity-100"} w-full flex justify-center p-0 m-0 transition-all duration-700 ease-in-out transform ${showAccessInfo ? "translate-y-4 scale-95" : "translate-y-0 scale-100"}`}
           >
             <div className="w-full max-w-[280px] h-[160px] bg-gray-900/80 rounded-lg border border-gray-800 shadow-2xl relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-b from-purple-500/5 to-transparent" />
@@ -1732,22 +1712,6 @@ export default function Landing() {
             </div>
           </div>
 
-          {/* GIF/Video Frame - Shown after trading notes and before early access */}
-          <div
-            className={`${!showGifFrame ? "h-0 opacity-0 pointer-events-none" : "h-auto opacity-100"} p-0 m-0 transition-all duration-500 ease-in-out transform ${!showGifFrame ? "-translate-y-4 scale-95" : "translate-y-0 scale-100"}`}
-          >
-            <div className="bg-gray-900/50 p-2 rounded-2xl border border-gray-800/50 backdrop-blur-sm overflow-hidden w-[280px] h-[160px] mx-auto flex items-center justify-center">
-              <video
-                ref={videoRef}
-                src={faceVideo}
-                autoPlay
-                loop
-                muted
-                playsInline
-                className="w-full h-full object-cover rounded-xl"
-              />
-            </div>
-          </div>
 
           {/* Access Info - Hides after 1 second */}
           <div

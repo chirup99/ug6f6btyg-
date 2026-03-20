@@ -1670,17 +1670,6 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                     <p className="text-[8px] text-gray-400 mt-1">Peak performance</p>
                   </div>
 
-                  {/* Demo — always public */}
-                  <div className="flex-shrink-0 w-[140px] rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/60 dark:border-amber-700/40 shadow-sm p-3">
-                    <p className="text-[8px] uppercase tracking-widest text-amber-500 font-bold mb-1">Demo</p>
-                    <p className="text-base font-bold leading-none mb-2 text-emerald-500">+18.5%</p>
-                    {demoPath && (
-                      <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
-                        <path d={demoPath} fill="none" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="4 2" />
-                      </svg>
-                    )}
-                    <p className="text-[8px] text-amber-500/80 mt-1">Sample performance</p>
-                  </div>
 
                 </div>
               </>

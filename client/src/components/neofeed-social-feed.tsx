@@ -1714,7 +1714,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
           {/* ── Tabs ── */}
           <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700 -mx-5 px-5">
-            {(['Posts', 'Audio', 'Bullish', 'Bearish', 'Media'] as const).map((tab) => {
+            {(['Posts', 'Audio', 'Bullish', 'Bearish'] as const).map((tab) => {
               const label = tab === 'Posts' && postCount > 0 ? `Posts (${postCount})` : tab;
               return (
                 <button
@@ -4424,7 +4424,7 @@ function ViewUserProfile({
 
           {/* Tabs: scrollable */}
           <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700 -mx-4 px-4">
-            {(['Posts', 'Audio', 'Bullish', 'Bearish', 'Media'] as const).map((tab) => (
+            {(['Posts', 'Audio', 'Bullish', 'Bearish'] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -4522,27 +4522,10 @@ function ViewUserProfile({
           const audioPosts = userPosts.filter(p => (p as any).isAudioPost);
           const bullishPosts = userPosts.filter(p => (p as any).sentiment === 'bullish');
           const bearishPosts = userPosts.filter(p => (p as any).sentiment === 'bearish');
-          const mediaPosts = userPosts.filter(p => (p as any).hasImage || (p as any).imageUrl);
-
           if (activeTab === 'Posts') return renderPosts(userPosts.filter(p => !(p as any).isAudioPost), 'No posts yet.');
           if (activeTab === 'Audio') return renderPosts(audioPosts, 'No audio minicasts yet.');
           if (activeTab === 'Bullish') return renderPosts(bullishPosts, 'No bullish posts yet.');
           if (activeTab === 'Bearish') return renderPosts(bearishPosts, 'No bearish posts yet.');
-          if (activeTab === 'Media') {
-            if (postsLoading) return postSkeletons;
-            if (mediaPosts.length === 0) return emptyState(<Camera className="w-10 h-10" />, 'No media posts yet.');
-            return (
-              <div className="grid grid-cols-3 gap-1 mt-2 mb-6">
-                {mediaPosts.map((post) => (
-                  <div key={post.id} className="aspect-square bg-muted rounded overflow-hidden">
-                    {(post as any).imageUrl && (
-                      <img src={(post as any).imageUrl} alt="" className="w-full h-full object-cover" />
-                    )}
-                  </div>
-                ))}
-              </div>
-            );
-          }
           return null;
         })()}
       </div>

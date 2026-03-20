@@ -240,15 +240,7 @@ export function UserProfileDropdown() {
             className="relative h-10 w-10 rounded-full p-0 hover:bg-gray-100 dark:hover:bg-gray-700"
             data-testid="button-profile-avatar"
           >
-            <Avatar className="h-10 w-10 border-2 border-gray-200 dark:border-gray-600">
-              {profile?.avatar ? (
-                <img src={profile.avatar} alt={displayName} className="h-full w-full object-cover" />
-              ) : (
-                <AvatarFallback className="bg-gradient-to-br from-blue-500 to-purple-500 text-white font-semibold text-sm">
-                  {getInitials(displayName)}
-                </AvatarFallback>
-              )}
-            </Avatar>
+            <img src="/logo.png" alt="Perala" className="h-10 w-10 rounded-full object-contain" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent

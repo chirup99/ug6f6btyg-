@@ -1167,6 +1167,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   const [ruleExiting, setRuleExiting] = useState(false);
   const [cardsPrivate, setCardsPrivate] = useState(false);
   const ruleTouchStartXRef = useRef<number | null>(null);
+  const ruleSwipedRef = useRef(false);
 
   const cycleRule = () => {
     if (ruleExiting) return;
@@ -1188,12 +1189,14 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
   const handleRuleTouchStart = (e: React.TouchEvent) => {
     ruleTouchStartXRef.current = e.touches[0].clientX;
+    ruleSwipedRef.current = false;
   };
 
   const handleRuleTouchEnd = (e: React.TouchEvent) => {
     if (ruleTouchStartXRef.current === null) return;
     const delta = e.changedTouches[0].clientX - ruleTouchStartXRef.current;
     if (Math.abs(delta) > 40) {
+      ruleSwipedRef.current = true;
       delta < 0 ? cyclePrevRule() : cycleRule();
     }
     ruleTouchStartXRef.current = null;
@@ -1463,6 +1466,12 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   }}
                   onTouchStart={handleRuleTouchStart}
                   onTouchEnd={handleRuleTouchEnd}
+                  onClick={(e) => {
+                    if (ruleSwipedRef.current) { ruleSwipedRef.current = false; return; }
+                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                    const tapX = e.clientX - rect.left;
+                    if (tapX < rect.width / 2) cyclePrevRule(); else cycleRule();
+                  }}
                 >
                   {/* Bruce Lee image — only on bruce-lee cards, uses card-specific image */}
                   {card.showBruceLee && (

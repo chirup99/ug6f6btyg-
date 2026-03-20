@@ -8379,10 +8379,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const filename = `${imageType}-${timestamp}.${safeExt}`;
           const filePath = pathModule.default.join(uploadsDir, filename);
           fsModule.default.writeFileSync(filePath, file.data);
-          // Build a public URL using the Replit dev domain if available
-          const devDomain = process.env.REPLIT_DEV_DOMAIN;
-          const baseUrl = devDomain ? `https://${devDomain}` : '';
-          uploadedUrl = `${baseUrl}/uploads/profiles/${userId}/${filename}`;
+          // Always store a relative path so it works across any domain / Replit restart
+          uploadedUrl = `/uploads/profiles/${userId}/${filename}`;
           console.log(`✅ ${imageType} image saved locally:`, uploadedUrl);
         } catch (localError: any) {
           console.error('❌ Local file save failed:', localError.message);
@@ -8411,13 +8409,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { getUserProfileByUsername } = await import('./neofeed-dynamodb-migration');
       const results = await Promise.allSettled(limited.map(u => getUserProfileByUsername(u)));
 
+      // Normalize a stored image URL to a relative path so it survives Replit domain changes
+      const normalizeImgUrl = (url: string | null | undefined): string | null => {
+        if (!url) return null;
+        if (url.startsWith('/uploads/')) return url;
+        try {
+          const p = new URL(url);
+          if (p.pathname.startsWith('/uploads/')) return p.pathname;
+        } catch {}
+        return url;
+      };
+
       const out: Record<string, { profilePicUrl: string | null; coverPicUrl: string | null }> = {};
       results.forEach((r, i) => {
         const username = limited[i];
         if (r.status === 'fulfilled' && r.value) {
           out[username] = {
-            profilePicUrl: r.value.profilePicUrl || null,
-            coverPicUrl: r.value.coverPicUrl || null,
+            profilePicUrl: normalizeImgUrl(r.value.profilePicUrl),
+            coverPicUrl: normalizeImgUrl(r.value.coverPicUrl),
           };
         } else {
           out[username] = { profilePicUrl: null, coverPicUrl: null };

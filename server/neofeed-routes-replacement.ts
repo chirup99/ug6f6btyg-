@@ -1300,7 +1300,9 @@ export function registerNeoFeedAwsRoutes(app: any) {
         const followers = await getFollowersCount(username);
         const following = await getFollowingCount(username);
         res.json({ 
-          ...profile, 
+          ...profile,
+          profilePicUrl: normalizeImageUrl(profile.profilePicUrl),
+          coverPicUrl: normalizeImageUrl(profile.coverPicUrl),
           followers, 
           following 
         });
@@ -1454,6 +1456,24 @@ export function registerNeoFeedAwsRoutes(app: any) {
     }
   });
 
+  // Normalize a stored image URL: convert old absolute Replit/localhost URLs to relative paths
+  // so profile/cover pics survive domain changes between Replit sessions
+  function normalizeImageUrl(url: string | null | undefined): string | null {
+    if (!url) return null;
+    // Already a relative path — good
+    if (url.startsWith('/uploads/')) return url;
+    // Strip any absolute origin and keep just the /uploads/... path
+    try {
+      const parsed = new URL(url);
+      if (parsed.pathname.startsWith('/uploads/')) {
+        return parsed.pathname;
+      }
+    } catch {
+      // not a valid URL — return as-is
+    }
+    return url;
+  }
+
   app.get('/api/user/profile', async (req: any, res: any) => {
     try {
       const user = await getAuthenticatedUser(req);
@@ -1472,12 +1492,13 @@ export function registerNeoFeedAwsRoutes(app: any) {
         bio: profile?.bio || '',
         location: profile?.location || '',
         dob: profile?.dob || '',
-        profilePicUrl: profile?.profilePicUrl || null,
-        coverPicUrl: profile?.coverPicUrl || null,
-        ...profile
+        ...profile,
+        // Normalize stored URLs so old absolute Replit domain links resolve correctly
+        profilePicUrl: normalizeImageUrl(profile?.profilePicUrl),
+        coverPicUrl: normalizeImageUrl(profile?.coverPicUrl),
       };
 
-      console.log(`✅ /api/user/profile: Returning profile for ${user.userId}, username=${responseProfile.username}`);
+      console.log(`✅ /api/user/profile: Returning profile for ${user.userId}, username=${responseProfile.username}, profilePic=${responseProfile.profilePicUrl || 'NONE'}`);
       res.json({ success: true, profile: responseProfile });
     } catch (error: any) {
       console.error('❌ Error fetching user profile:', error);

@@ -15,7 +15,7 @@ import {
   Users, UserPlus, ThumbsUp, Loader2, Camera, ZoomIn, ZoomOut, Move,
   Link as LinkIcon, Facebook, MessageCircle as WhatsApp, Send as Telegram, Linkedin
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip, BarChart, Bar, Cell } from 'recharts';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent } from './ui/card';
@@ -1091,8 +1091,65 @@ function ProfileHeader() {
   const followers = stats?.followersCount || stats?.followers || 0;
   const following = stats?.followingCount || stats?.following || 0;
   const profilePicUrl = profileData?.profilePicUrl;
-  const coverPicUrl = profileData?.coverPicUrl;
   const initials = displayName ? displayName.charAt(0).toUpperCase() : username.charAt(0).toUpperCase();
+  const userId = profileData?.userId;
+
+  const TRADING_QUOTES = [
+    "Trade the plan, not the emotion",
+    "Cut losses fast — let profits run",
+    "Discipline beats intelligence every time",
+    "The market rewards patience, not haste",
+    "Risk management is the real edge",
+    "Focus on process — results will follow",
+    "One bad trade doesn't define you; revenge trading does",
+  ];
+  const tradingQuote = TRADING_QUOTES[new Date().getDay() % TRADING_QUOTES.length];
+
+  const { data: journalRaw = {} } = useQuery({
+    queryKey: ['profile-journal-perf', userId],
+    queryFn: async () => {
+      if (!userId) return {};
+      const response = await fetch(`/api/user-journal/${userId}/public`);
+      if (!response.ok) return {};
+      return response.json();
+    },
+    enabled: !!userId,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const { last6Months, monthlyYield, totalTrades, winRate } = useMemo(() => {
+    const now = new Date();
+    const months: { label: string; pnl: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('en', { month: 'short' });
+      let pnl = 0;
+      Object.entries(journalRaw as Record<string, any>).forEach(([date, day]) => {
+        if (date.startsWith(key)) pnl += Number(day?.performanceMetrics?.netPnL) || 0;
+      });
+      months.push({ label, pnl });
+    }
+    const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    let thisMonthPnl = 0;
+    let totalW = 0, totalL = 0, allTrades = 0;
+    Object.entries(journalRaw as Record<string, any>).forEach(([date, day]) => {
+      if (date.startsWith(currentKey)) thisMonthPnl += Number(day?.performanceMetrics?.netPnL) || 0;
+      totalW += Number(day?.performanceMetrics?.winningTrades) || 0;
+      totalL += Number(day?.performanceMetrics?.losingTrades) || 0;
+      allTrades += Number(day?.performanceMetrics?.totalTrades) || 0;
+    });
+    const totalAbsPnl = months.reduce((s, m) => s + Math.abs(m.pnl), 0);
+    const yieldPct = totalAbsPnl > 0 ? (thisMonthPnl / totalAbsPnl) * 100 : 0;
+    const wr = (totalW + totalL) > 0 ? Math.round((totalW / (totalW + totalL)) * 100) : 0;
+    return { last6Months: months, monthlyYield: yieldPct, totalTrades: allTrades, winRate: wr };
+  }, [journalRaw]);
+
+  const formatCount = (n: number) => {
+    if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
+    if (n >= 1000) return (n / 1000).toFixed(n >= 10000 ? 0 : 1) + 'K';
+    return String(n);
+  };
 
   // Handle image selection for editing
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover') => {
@@ -1210,105 +1267,147 @@ function ProfileHeader() {
         data-testid="input-profile-image-hidden"
       />
 
-      <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 mb-6">
-        {/* Cover Photo */}
-        <div className={`h-48 relative overflow-visible ${coverPicUrl ? 'bg-black' : 'bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500'}`}>
-          {coverPicUrl && (
-            <img src={coverPicUrl} alt="Cover" className="w-full h-full object-contain" />
-          )}
-          {/* Cover Edit Button - Twitter style camera icon */}
-          <button
-            onClick={() => coverInputRef.current?.click()}
-            className="absolute top-4 right-4 bg-black/50 hover:bg-black/70 text-white rounded-full p-2 transition-colors"
-            disabled={uploading}
-            data-testid="button-edit-cover"
-          >
-            <Camera className="w-5 h-5" />
-          </button>
-          {/* Profile Picture - overlapping cover */}
-          <div className="absolute -bottom-16 left-4 z-20">
-            <div className="relative group">
-              <Avatar className="w-32 h-32 border-4 border-white dark:border-gray-800 overflow-hidden">
-                {profilePicUrl ? (
-                  <AvatarImage src={profilePicUrl} />
-                ) : (
-                  <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white text-4xl font-bold">
-                    {initials}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-              {/* Profile Picture Edit Button - Twitter style camera icon */}
-              <button
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 mb-6">
+        <div className="px-5 pt-5 pb-0">
+          {/* 3-Column Profile Layout */}
+          <div className="grid grid-cols-3 gap-5 items-start mb-5">
+
+            {/* ── Column 1: Avatar + Identity ── */}
+            <div className="flex flex-col items-center text-center gap-3">
+              <div
+                className="relative group cursor-pointer"
                 onClick={() => profileInputRef.current?.click()}
-                className="absolute inset-0 flex items-center justify-center bg-black/40 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                disabled={uploading}
                 data-testid="button-edit-profile-pic"
               >
-                <Camera className="w-8 h-8 text-white" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Profile Info */}
-        <div className="pt-24 px-4 pb-4">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <h1 className="text-gray-900 dark:text-white font-bold text-2xl flex items-center gap-2">
-                {displayName || username}
-                {profileData?.verified && (
-                  <CheckCircle className="w-6 h-6 text-blue-600 dark:text-blue-400 fill-current" />
-                )}
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400">@{username}</p>
-            </div>
-            <Button 
-              variant="outline" 
-              className="rounded-full px-6 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
-              onClick={() => setShowEditProfile(true)}
-              data-testid="button-edit-profile"
-            >
-              Edit profile
-            </Button>
-          </div>
-
-          {bio && (
-            <p className="text-gray-900 dark:text-white mb-4 text-base">{bio}</p>
-          )}
-
-          <div className="flex flex-wrap gap-3 text-gray-500 dark:text-gray-400 text-sm mb-4">
-            {(profileData?.location) && (
-              <div className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5" />
-                <span>{profileData.location}</span>
+                <Avatar className="w-24 h-24 border-2 border-gray-200 dark:border-gray-700 shadow-md">
+                  {profilePicUrl ? (
+                    <AvatarImage src={profilePicUrl} className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-3xl font-bold">
+                      {initials}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Camera className="w-5 h-5 text-white" />
+                </div>
               </div>
-            )}
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Joined {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : new Date().getFullYear()}</span>
+              <div>
+                <h2 className="font-bold text-base text-gray-900 dark:text-white flex items-center justify-center gap-1">
+                  {displayName || username}
+                  {profileData?.verified && (
+                    <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
+                  )}
+                </h2>
+                <p className="text-xs text-gray-400 dark:text-gray-500">@{username}</p>
+                {profileData?.location && (
+                  <p className="text-[11px] text-gray-400 mt-0.5 flex items-center justify-center gap-1">
+                    <MapPin className="w-3 h-3" />{profileData.location}
+                  </p>
+                )}
+                {bio && (
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-snug line-clamp-2">{bio}</p>
+                )}
+              </div>
+            </div>
+
+            {/* ── Column 2: Quote + Performance ── */}
+            <div className="flex flex-col gap-3">
+              {/* Row 1 — Trading Psychology Quote */}
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/70 border border-gray-100 dark:border-gray-700/60 p-3.5">
+                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold mb-1.5">
+                  Trading Rule
+                </p>
+                <p className="text-sm font-medium italic text-gray-800 dark:text-gray-100 leading-snug">
+                  &ldquo;{tradingQuote}&rdquo;
+                </p>
+              </div>
+
+              {/* Row 2 — Performance Trend from Journal */}
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/70 border border-gray-100 dark:border-gray-700/60 p-3.5">
+                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold mb-1">
+                  Monthly Yield
+                </p>
+                <div className="flex items-end gap-3">
+                  <span className={`text-xl font-bold leading-none ${monthlyYield >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {monthlyYield >= 0 ? '+' : ''}{monthlyYield.toFixed(1)}%
+                  </span>
+                  <div className="flex-1 h-9">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={last6Months} barCategoryGap="25%" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                        <Bar dataKey="pnl" radius={[2, 2, 0, 0]}>
+                          {last6Months.map((entry, idx) => (
+                            <Cell key={idx} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.85} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 mt-1.5">
+                  {winRate > 0 && (
+                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-emerald-500" />
+                      {winRate}% win rate
+                    </span>
+                  )}
+                  {totalTrades > 0 && (
+                    <span className="text-[10px] text-gray-400">
+                      {totalTrades} trades
+                    </span>
+                  )}
+                  {totalTrades === 0 && (
+                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                      <Activity className="w-3 h-3" /> Discipline tracked
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Column 3: Stats + Action Button ── */}
+            <div className="flex flex-col gap-3.5">
+              <button
+                className="text-left group"
+                onClick={() => setShowFollowingDialog(true)}
+                data-testid="button-show-following"
+              >
+                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">Following</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors leading-tight">
+                  {formatCount(following)}
+                </p>
+              </button>
+
+              <button
+                className="text-left group"
+                onClick={() => setShowFollowersDialog(true)}
+                data-testid="button-show-followers"
+              >
+                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">Followers</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors leading-tight">
+                  {formatCount(followers)}
+                </p>
+              </button>
+
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">Posts</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+                  {formatCount(postCount)}
+                </p>
+              </div>
+
+              <Button
+                className="w-full rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-sm hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors mt-auto"
+                onClick={() => setShowEditProfile(true)}
+                data-testid="button-edit-profile"
+              >
+                Edit Profile
+              </Button>
             </div>
           </div>
 
-          <div className="flex gap-5 text-sm mb-4">
-            <button 
-              className="hover:underline"
-              onClick={() => setShowFollowingDialog(true)}
-              data-testid="button-show-following"
-            >
-              <span className="font-bold text-gray-900 dark:text-white">{following}</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-1">Following</span>
-            </button>
-            <button 
-              className="hover:underline"
-              onClick={() => setShowFollowersDialog(true)}
-              data-testid="button-show-followers"
-            >
-              <span className="font-bold text-gray-900 dark:text-white">{followers}</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-1">Followers</span>
-            </button>
-          </div>
-
-          <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700 -mx-4 px-4">
+          {/* ── Tabs ── */}
+          <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700 -mx-5 px-5">
             {(['Posts', 'Audio', 'Bullish', 'Bearish', 'Media'] as const).map((tab) => {
               const label = tab === 'Posts' && postCount > 0 ? `Posts (${postCount})` : tab;
               return (
@@ -1324,7 +1423,7 @@ function ProfileHeader() {
                 >
                   {label}
                   {activeTab === tab && (
-                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full"></div>
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full" />
                   )}
                 </button>
               );

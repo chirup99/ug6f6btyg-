@@ -1288,180 +1288,205 @@ function ProfileHeader() {
         data-testid="input-profile-image-hidden"
       />
 
-      <div className="bg-background border-b border-border mb-6">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 mb-6">
+        <div className="px-5 pt-5 pb-0">
+          {/* 3-Column Profile Layout */}
+          <div className="grid grid-cols-3 gap-5 items-start mb-5">
 
-        {/* ── Cover Banner ── */}
-        <div
-          className="relative h-36 cursor-pointer group overflow-hidden"
-          onClick={() => coverInputRef.current?.click()}
-          data-testid="button-edit-cover"
-        >
-          {profileData?.coverPicUrl ? (
-            <img src={profileData.coverPicUrl} alt="Cover" className="w-full h-full object-cover" />
-          ) : (
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-800 via-slate-700 to-slate-500 dark:from-slate-900 dark:via-slate-800 dark:to-slate-600" />
-          )}
-          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity gap-2">
-            <Camera className="w-5 h-5 text-white" />
-            <span className="text-white text-sm font-medium">Edit Cover</span>
-          </div>
-        </div>
-
-        <div className="px-5 pb-0">
-
-          {/* ── Avatar + Edit Button Row ── */}
-          <div className="flex items-end justify-between -mt-10 mb-4">
-            <div
-              className="relative group cursor-pointer"
-              onClick={() => profileInputRef.current?.click()}
-              data-testid="button-edit-profile-pic"
-            >
-              <Avatar className="w-20 h-20 border-4 border-background shadow-md">
-                {profilePicUrl ? (
-                  <AvatarImage src={profilePicUrl} className="object-cover" />
-                ) : (
-                  <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-2xl font-bold">
-                    {initials}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-              <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
-                <Camera className="w-4 h-4 text-white" />
-              </div>
-            </div>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-full px-5 font-semibold text-sm border-border text-foreground hover:bg-muted"
-              onClick={() => setShowEditProfile(true)}
-              data-testid="button-edit-profile"
-            >
-              Edit Profile
-            </Button>
-          </div>
-
-          {/* ── Name / Handle / Bio / Location ── */}
-          <div className="mb-3">
-            <div className="flex items-center gap-1.5 mb-0.5">
-              <h2 className="font-bold text-lg text-foreground leading-tight">
-                {displayName || username}
-              </h2>
-              {profileData?.verified && (
-                <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
-              )}
-            </div>
-            <p className="text-sm text-muted-foreground mb-1.5">@{username}</p>
-            {bio && (
-              <p className="text-sm text-foreground leading-snug mb-1.5">{bio}</p>
-            )}
-            {profileData?.location && (
-              <p className="text-sm text-muted-foreground flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 flex-shrink-0" />{profileData.location}
-              </p>
-            )}
-          </div>
-
-          {/* ── Stats Row ── */}
-          <div className="flex items-center gap-5 mb-4">
-            <button
-              className="group"
-              onClick={() => setShowFollowingDialog(true)}
-              data-testid="button-show-following"
-            >
-              <span className="font-bold text-foreground group-hover:underline">{formatCount(following)}</span>
-              <span className="text-muted-foreground text-sm ml-1">Following</span>
-            </button>
-            <button
-              className="group"
-              onClick={() => setShowFollowersDialog(true)}
-              data-testid="button-show-followers"
-            >
-              <span className="font-bold text-foreground group-hover:underline">{formatCount(followers)}</span>
-              <span className="text-muted-foreground text-sm ml-1">Followers</span>
-            </button>
-            <div>
-              <span className="font-bold text-foreground">{formatCount(postCount)}</span>
-              <span className="text-muted-foreground text-sm ml-1">Posts</span>
-            </div>
-          </div>
-
-          {/* ── Trading Info Row ── */}
-          <div className="grid grid-cols-2 gap-3 mb-5">
-            {/* Quote */}
-            <div className="rounded-xl bg-muted/40 border border-border p-3">
-              <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold mb-1.5">Trading Rule</p>
-              <p className="text-xs font-medium text-foreground italic leading-snug">&ldquo;{tradingQuote}&rdquo;</p>
-            </div>
-
-            {/* Monthly Yield */}
-            <div className="rounded-xl bg-muted/40 border border-border p-3">
-              <div className="flex items-center justify-between mb-1.5">
-                <p className="text-[9px] uppercase tracking-widest text-muted-foreground font-semibold">Monthly Yield</p>
-                <div className="flex items-center bg-muted rounded-full p-0.5 gap-0.5">
-                  <button
-                    onClick={() => { setShowDemoYield(false); setShowDemoTooltip(false); }}
-                    className={`text-[8px] font-semibold px-1.5 py-0.5 rounded-full transition-all ${!showDemoYield ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground'}`}
-                    data-testid="button-yield-my-data"
-                  >Mine</button>
-                  <button
-                    onClick={() => setShowDemoYield(true)}
-                    className={`text-[8px] font-semibold px-1.5 py-0.5 rounded-full transition-all ${showDemoYield ? 'bg-amber-400 text-white shadow-sm' : 'text-muted-foreground'}`}
-                    data-testid="button-yield-demo"
-                  >Demo</button>
-                </div>
-              </div>
-              <div className="flex items-end gap-2">
-                <span className={`text-lg font-bold leading-none ${displayYield >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                  {displayYield >= 0 ? '+' : ''}{displayYield.toFixed(1)}%
-                </span>
-                <div className="flex-1 h-7">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={displayMonths} barCategoryGap="20%" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
-                      <Bar dataKey="pnl" radius={[2, 2, 0, 0]}>
-                        {displayMonths.map((entry, idx) => (
-                          <Cell key={idx} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.85} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 mt-1">
-                {displayWinRate > 0 && (
-                  <span className="text-[10px] text-muted-foreground flex items-center gap-1">
-                    <TrendingUp className="w-3 h-3 text-emerald-500" />{displayWinRate}% win
-                  </span>
-                )}
-                {displayTrades > 0 && (
-                  <span className="text-[10px] text-muted-foreground">{displayTrades} trades</span>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* ── Tabs ── */}
-        <div className="flex overflow-x-auto scrollbar-hide border-b border-border px-5">
-          {(['Posts', 'Audio', 'Bullish', 'Bearish', 'Media'] as const).map((tab) => {
-            const label = tab === 'Posts' && postCount > 0 ? `Posts (${postCount})` : tab;
-            return (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`pb-3 px-3 font-medium text-sm whitespace-nowrap transition-colors relative flex-shrink-0 ${
-                  activeTab === tab
-                    ? 'text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                }`}
-                data-testid={`button-tab-${tab.toLowerCase()}`}
+            {/* ── Column 1: Avatar + Identity ── */}
+            <div className="flex flex-col items-center text-center gap-3">
+              <div
+                className="relative group cursor-pointer"
+                onClick={() => profileInputRef.current?.click()}
+                data-testid="button-edit-profile-pic"
               >
-                {label}
-                {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+                <Avatar className="w-24 h-24 border-2 border-gray-200 dark:border-gray-700 shadow-md">
+                  {profilePicUrl ? (
+                    <AvatarImage src={profilePicUrl} className="object-cover" />
+                  ) : (
+                    <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-3xl font-bold">
+                      {initials}
+                    </AvatarFallback>
+                  )}
+                </Avatar>
+                <div className="absolute inset-0 bg-black/50 rounded-full opacity-0 group-hover:opacity-100 flex items-center justify-center transition-opacity">
+                  <Camera className="w-5 h-5 text-white" />
+                </div>
+              </div>
+              <div>
+                <h2 className="font-bold text-base text-gray-900 dark:text-white flex items-center justify-center gap-1">
+                  {displayName || username}
+                  {profileData?.verified && (
+                    <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
+                  )}
+                </h2>
+                <p className="text-xs text-gray-400 dark:text-gray-500">@{username}</p>
+                {profileData?.location && (
+                  <p className="text-[11px] text-gray-400 mt-0.5 flex items-center justify-center gap-1">
+                    <MapPin className="w-3 h-3" />{profileData.location}
+                  </p>
                 )}
+                {bio && (
+                  <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1 leading-snug line-clamp-2">{bio}</p>
+                )}
+              </div>
+            </div>
+
+            {/* ── Column 2: Quote + Performance ── */}
+            <div className="flex flex-col gap-3">
+              {/* Row 1 — Trading Psychology Quote */}
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/70 border border-gray-100 dark:border-gray-700/60 p-3.5">
+                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold mb-1.5">
+                  Trading Rule
+                </p>
+                <p className="text-sm font-medium italic text-gray-800 dark:text-gray-100 leading-snug">
+                  &ldquo;{tradingQuote}&rdquo;
+                </p>
+              </div>
+
+              {/* Row 2 — Performance Trend from Journal */}
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/70 border border-gray-100 dark:border-gray-700/60 p-3.5">
+                <div className="flex items-center justify-between mb-1.5">
+                  <div className="flex items-center gap-1.5">
+                    <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">
+                      Monthly Yield
+                    </p>
+                    {showDemoYield && (
+                      <div className="relative">
+                        <button
+                          onClick={() => setShowDemoTooltip(v => !v)}
+                          className="text-amber-400 hover:text-amber-500 transition-colors"
+                          data-testid="button-demo-info"
+                        >
+                          <Info className="w-3 h-3" />
+                        </button>
+                        {showDemoTooltip && (
+                          <div className="absolute left-0 top-5 z-50 w-40 rounded-lg bg-gray-900 dark:bg-gray-700 text-white text-[10px] px-2.5 py-2 shadow-xl leading-snug">
+                            <p className="font-semibold text-amber-300 mb-0.5">Demo Data</p>
+                            <p className="text-gray-300">Sample figures for illustration only — not your real trading data.</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex items-center bg-gray-200 dark:bg-gray-700 rounded-full p-0.5 gap-0.5">
+                    <button
+                      onClick={() => { setShowDemoYield(false); setShowDemoTooltip(false); }}
+                      className={`text-[9px] font-semibold px-2 py-0.5 rounded-full transition-all ${!showDemoYield ? 'bg-white dark:bg-gray-900 text-gray-900 dark:text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                      data-testid="button-yield-my-data"
+                    >
+                      Mine
+                    </button>
+                    <button
+                      onClick={() => setShowDemoYield(true)}
+                      className={`text-[9px] font-semibold px-2 py-0.5 rounded-full transition-all ${showDemoYield ? 'bg-amber-400 text-white shadow-sm' : 'text-gray-500 dark:text-gray-400'}`}
+                      data-testid="button-yield-demo"
+                    >
+                      Demo
+                    </button>
+                  </div>
+                </div>
+                <div className="flex items-end gap-3">
+                  <span className={`text-xl font-bold leading-none ${displayYield >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {displayYield >= 0 ? '+' : ''}{displayYield.toFixed(1)}%
+                  </span>
+                  <div className="flex-1 h-9">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={displayMonths} barCategoryGap="25%" margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+                        <Bar dataKey="pnl" radius={[2, 2, 0, 0]}>
+                          {displayMonths.map((entry, idx) => (
+                            <Cell key={idx} fill={entry.pnl >= 0 ? '#10b981' : '#ef4444'} fillOpacity={0.85} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3 mt-1.5">
+                  {displayWinRate > 0 && (
+                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-emerald-500" />
+                      {displayWinRate}% win rate
+                    </span>
+                  )}
+                  {displayTrades > 0 && (
+                    <span className="text-[10px] text-gray-400">
+                      {displayTrades} trades
+                    </span>
+                  )}
+                  {!showDemoYield && displayTrades === 0 && (
+                    <span className="text-[10px] text-gray-400 flex items-center gap-1">
+                      <Activity className="w-3 h-3" /> Discipline tracked
+                    </span>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* ── Column 3: Stats + Action Button ── */}
+            <div className="flex flex-col gap-3.5">
+              <button
+                className="text-left group"
+                onClick={() => setShowFollowingDialog(true)}
+                data-testid="button-show-following"
+              >
+                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">Following</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors leading-tight">
+                  {formatCount(following)}
+                </p>
               </button>
-            );
-          })}
+
+              <button
+                className="text-left group"
+                onClick={() => setShowFollowersDialog(true)}
+                data-testid="button-show-followers"
+              >
+                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">Followers</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white group-hover:text-blue-500 transition-colors leading-tight">
+                  {formatCount(followers)}
+                </p>
+              </button>
+
+              <div>
+                <p className="text-[9px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-semibold">Posts</p>
+                <p className="text-3xl font-bold text-gray-900 dark:text-white leading-tight">
+                  {formatCount(postCount)}
+                </p>
+              </div>
+
+              <Button
+                className="w-full rounded-xl bg-gray-900 dark:bg-white text-white dark:text-gray-900 font-semibold text-sm hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors mt-auto"
+                onClick={() => setShowEditProfile(true)}
+                data-testid="button-edit-profile"
+              >
+                Edit Profile
+              </Button>
+            </div>
+          </div>
+
+          {/* ── Tabs ── */}
+          <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700 -mx-5 px-5">
+            {(['Posts', 'Audio', 'Bullish', 'Bearish', 'Media'] as const).map((tab) => {
+              const label = tab === 'Posts' && postCount > 0 ? `Posts (${postCount})` : tab;
+              return (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`pb-3 px-3 font-medium text-sm whitespace-nowrap transition-colors relative flex-shrink-0 ${
+                    activeTab === tab
+                      ? 'text-gray-900 dark:text-white'
+                      : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                  }`}
+                  data-testid={`button-tab-${tab.toLowerCase()}`}
+                >
+                  {label}
+                  {activeTab === tab && (
+                    <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -4879,13 +4904,20 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
         </div>
       )}
       
-      {/* Main Content Area with Post Creation Panel on Right */}
+      {/* Main Content Area */}
       <div className="flex gap-5 xl:gap-6 px-4 py-2 md:py-3 max-w-7xl mx-auto w-full">
-        {/* Social Feed Posts - Left Side */}
+        {/* Social Feed Posts - Left / Full-width on Profile */}
         <div className="flex-[3] min-w-0">
-          {/* Show Profile Header when Profile filter is selected */}
-          {selectedFilter === 'Profile' && <ProfileHeader />}
-          
+          {/* Profile tab: header + create post panel below, full-width */}
+          {selectedFilter === 'Profile' && (
+            <>
+              <ProfileHeader />
+              <div className="mb-4">
+                <PostCreationPanel />
+              </div>
+            </>
+          )}
+
           <div className="space-y-2 xl:space-y-3">
             {feedData.map((post) => (
               <PostCard key={post.id} post={post} currentUserUsername={currentUserUsername} onViewUserProfile={setViewingUserProfile} />
@@ -4904,15 +4936,17 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
           </div>
         </div>
 
-        {/* Post Creation Panel - Right Side (Desktop Only) */}
-        <div className="hidden md:flex flex-[2] min-w-[300px] max-w-[460px] flex-shrink-0">
-          <div
-            className="sticky z-30 transition-[top] duration-300 w-full"
-            style={{ top: `${headerHeight + 12}px` }}
-          >
-            <PostCreationPanel />
+        {/* Post Creation Panel - Right Side (Desktop Only, hidden on Profile tab) */}
+        {selectedFilter !== 'Profile' && (
+          <div className="hidden md:flex flex-[2] min-w-[300px] max-w-[460px] flex-shrink-0">
+            <div
+              className="sticky z-30 transition-[top] duration-300 w-full"
+              style={{ top: `${headerHeight + 12}px` }}
+            >
+              <PostCreationPanel />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* Profile Setup Dialog - Only shows if user doesn't have username or DOB */}

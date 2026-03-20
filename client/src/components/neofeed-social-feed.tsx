@@ -4908,14 +4908,9 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
       <div className="flex gap-5 xl:gap-6 px-4 py-2 md:py-3 max-w-7xl mx-auto w-full">
         {/* Social Feed Posts - Left / Full-width on Profile */}
         <div className="flex-[3] min-w-0">
-          {/* Profile tab: header + create post panel below, full-width */}
+          {/* Profile tab: header only in left column */}
           {selectedFilter === 'Profile' && (
-            <>
-              <ProfileHeader />
-              <div className="mb-4">
-                <PostCreationPanel />
-              </div>
-            </>
+            <ProfileHeader />
           )}
 
           <div className="space-y-2 xl:space-y-3">
@@ -4936,8 +4931,8 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
           </div>
         </div>
 
-        {/* Post Creation Panel - Right Side (Desktop Only, hidden on Profile tab) */}
-        {selectedFilter !== 'Profile' && (
+        {/* Post Creation Panel - Right Side (Desktop Only) */}
+        {(
           <div className="hidden md:flex flex-[2] min-w-[300px] max-w-[460px] flex-shrink-0">
             <div
               className="sticky z-30 transition-[top] duration-300 w-full"

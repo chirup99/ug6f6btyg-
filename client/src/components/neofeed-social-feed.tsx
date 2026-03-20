@@ -1145,6 +1145,8 @@ function ProfileHeader() {
       
       // Bust every profile-related cache — mirror logic returns the fresh image on next fetch
       queryClient.invalidateQueries({ queryKey: ['my-profile'] });
+      // Also bust the dropdown's independent query so the nav avatar updates too
+      queryClient.invalidateQueries({ queryKey: ['user-profile-dropdown'] });
       queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
       queryClient.invalidateQueries({ queryKey: ['/api/social-posts/news'] });
       queryClient.invalidateQueries({ queryKey: ['/api/social-posts/audio'] });
@@ -3229,13 +3231,17 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
         .filter((p): p is { id: string | number; content: string } => p !== null);
     }
     
+    // Use the mirror cache for the audio card avatar the same way as regular PostCards
+    const audioPostUsername = post.user?.handle || post.authorUsername || '';
+    const liveAudioAvatar = getAvatar(audioPostUsername) || post.authorAvatar || post.user?.avatar || undefined;
+
     return (
       <AudioMinicastCard
         content={post.content}
         author={{
           displayName: post.user?.username || post.authorDisplayName || 'Unknown User',
-          username: post.user?.handle || post.authorUsername || 'user',
-          avatar: post.authorAvatar || post.user?.avatar || undefined
+          username: audioPostUsername,
+          avatar: liveAudioAvatar
         }}
         selectedPostIds={post.selectedPostIds}
         selectedPosts={selectedPosts}

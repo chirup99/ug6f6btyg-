@@ -493,7 +493,9 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
         <div className="p-4 flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50">
           {(() => {
             const avatarUrl = author.avatar;
-            const isValidAvatar = avatarUrl && avatarUrl.includes('s3.') && !avatarUrl.includes('ui-avatars.com');
+            const isValidAvatar = avatarUrl &&
+              (avatarUrl.startsWith('http') || avatarUrl.startsWith('/')) &&
+              !avatarUrl.includes('ui-avatars.com');
             return (
               <div className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-400 to-blue-500 flex items-center justify-center text-white font-semibold overflow-hidden">
                 {isValidAvatar ? (

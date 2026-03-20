@@ -14,7 +14,7 @@ import {
   ChevronDown, ChevronUp, ArrowLeft, Check, Layers, Mic, Newspaper,
   Users, UserPlus, ThumbsUp, Loader2, Camera, ZoomIn, ZoomOut, Move,
   Link as LinkIcon, Facebook, MessageCircle as WhatsApp, Send as Telegram, Linkedin,
-  Info, Pencil, Award, Flame
+  Info, Pencil, Award, Flame, Lock, Unlock, BookOpen, Target as TargetIcon, Zap
 } from 'lucide-react';
 import { LineChart, Line, XAxis, YAxis, ResponsiveContainer, ReferenceLine, Tooltip, BarChart, Bar, Cell } from 'recharts';
 import { Button } from './ui/button';
@@ -1154,6 +1154,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
   const [activeRuleIndex, setActiveRuleIndex] = useState(() => new Date().getDay() % TRADING_QUOTES.length);
   const [ruleExiting, setRuleExiting] = useState(false);
+  const [cardsPrivate, setCardsPrivate] = useState(false);
 
   const RULE_CARD_COLORS = [
     { bg: 'from-violet-500 to-indigo-600', light: 'bg-violet-50 dark:bg-violet-900/20' },
@@ -1463,89 +1464,226 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
             const demoPath = miniLinePath(DEMO_TREND);
             const isYieldPos = monthlyYield >= 0;
             const isTrendPos = (weeklyTrendData[weeklyTrendData.length - 1] ?? 0) >= 0;
+
+            const MONTHLY_TARGET_PCT = 5.0;
+            const targetProgress = Math.min(100, Math.max(0, (monthlyYield / MONTHLY_TARGET_PCT) * 100));
+            const R = 18; const CIRC = 2 * Math.PI * R;
+            const dash = (targetProgress / 100) * CIRC;
+
+            const currentStreak = disciplineData.length > 0 ? disciplineData[disciplineData.length - 1] : 0;
+            const bestMonthPnl = last6Months.length > 0 ? Math.max(...last6Months.map(m => m.pnl)) : 0;
+
+            const PrivateMask = () => (
+              <div className="absolute inset-0 rounded-2xl bg-gray-100/90 dark:bg-gray-800/90 backdrop-blur-sm flex flex-col items-center justify-center gap-1 z-20">
+                <Lock className="w-4 h-4 text-gray-400" />
+                <p className="text-[9px] text-gray-400 font-semibold">Private</p>
+              </div>
+            );
+
             return (
-              <div className="flex gap-3 overflow-x-auto scrollbar-hide pb-4 pt-2 -mx-5 px-5">
-                {/* Monthly Yield */}
-                <div className="flex-shrink-0 w-[150px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3.5">
-                  <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Monthly Yield</p>
-                  <p className={`text-lg font-bold leading-none mb-2 ${isYieldPos ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {isYieldPos ? '+' : ''}{monthlyYield.toFixed(1)}%
-                  </p>
-                  {yieldPath ? (
-                    <svg width="100%" height="28" viewBox="0 0 80 28" preserveAspectRatio="none">
-                      <path d={yieldPath} fill="none" stroke={isYieldPos ? '#10b981' : '#ef4444'} strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                  ) : (
-                    <div className="flex gap-1 items-end h-7">
-                      {last6Months.map((m, i) => (
-                        <div key={i} className={`flex-1 rounded-sm ${m.pnl >= 0 ? 'bg-emerald-400' : 'bg-red-400'}`}
-                          style={{ height: `${Math.max(20, Math.abs(m.pnl) / Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1) * 100)}%` }} />
+              <>
+                {/* Row header with privacy toggle */}
+                <div className="flex items-center justify-between mb-2 pt-1">
+                  <p className="text-[9px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Performance</p>
+                  <button
+                    onClick={() => setCardsPrivate(v => !v)}
+                    className={`flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
+                      cardsPrivate
+                        ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
+                        : 'bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400'
+                    }`}
+                    data-testid="button-toggle-cards-private"
+                  >
+                    {cardsPrivate ? <Lock className="w-2.5 h-2.5" /> : <Unlock className="w-2.5 h-2.5" />}
+                    {cardsPrivate ? 'Private' : 'Public'}
+                  </button>
+                </div>
+
+                <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-4 -mx-5 px-5">
+
+                  {/* Monthly Yield */}
+                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                    {cardsPrivate && <PrivateMask />}
+                    <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Yield</p>
+                    <p className={`text-base font-bold leading-none mb-2 ${isYieldPos ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {isYieldPos ? '+' : ''}{monthlyYield.toFixed(1)}%
+                    </p>
+                    {yieldPath ? (
+                      <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
+                        <path d={yieldPath} fill="none" stroke={isYieldPos ? '#10b981' : '#ef4444'} strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      <div className="flex gap-0.5 items-end h-6">
+                        {last6Months.map((m, i) => (
+                          <div key={i} className={`flex-1 rounded-sm ${m.pnl >= 0 ? 'bg-emerald-400' : 'bg-red-400'}`}
+                            style={{ height: `${Math.max(20, Math.abs(m.pnl) / Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1) * 100)}%` }} />
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-[8px] text-gray-400 mt-1">{totalTrades} trades</p>
+                  </div>
+
+                  {/* Target — circular progress */}
+                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                    {cardsPrivate && <PrivateMask />}
+                    <div className="flex items-center gap-1 mb-1">
+                      <TargetIcon className="w-3 h-3 text-blue-500" />
+                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Target</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <svg width="46" height="46" viewBox="0 0 46 46">
+                        <circle cx="23" cy="23" r={R} fill="none" stroke="#e5e7eb" strokeWidth="4" />
+                        <circle cx="23" cy="23" r={R} fill="none"
+                          stroke={targetProgress >= 100 ? '#10b981' : '#3b82f6'}
+                          strokeWidth="4"
+                          strokeLinecap="round"
+                          strokeDasharray={`${dash} ${CIRC}`}
+                          strokeDashoffset={CIRC * 0.25}
+                          style={{ transition: 'stroke-dasharray 0.6s ease' }}
+                        />
+                        <text x="23" y="27" textAnchor="middle" fontSize="9" fontWeight="700"
+                          fill={targetProgress >= 100 ? '#10b981' : '#3b82f6'}>
+                          {Math.round(targetProgress)}%
+                        </text>
+                      </svg>
+                      <div>
+                        <p className="text-xs font-bold text-gray-900 dark:text-white leading-none">
+                          {monthlyYield >= 0 ? '+' : ''}{monthlyYield.toFixed(1)}%
+                        </p>
+                        <p className="text-[9px] text-gray-400 mt-0.5">of {MONTHLY_TARGET_PCT}% goal</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Journal Streak */}
+                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                    {cardsPrivate && <PrivateMask />}
+                    <div className="flex items-center gap-1 mb-1">
+                      <Flame className="w-3 h-3 text-orange-500" />
+                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Streak</p>
+                    </div>
+                    <p className="text-base font-bold leading-none text-orange-500 mb-1.5">
+                      {currentStreak} days
+                    </p>
+                    <div className="flex gap-0.5">
+                      {Array.from({ length: 7 }).map((_, i) => (
+                        <div key={i}
+                          className={`flex-1 h-4 rounded-sm transition-colors ${i < Math.min(currentStreak, 7) ? 'bg-orange-400' : 'bg-gray-100 dark:bg-gray-700'}`}
+                        />
                       ))}
                     </div>
-                  )}
-                  <p className="text-[9px] text-gray-400 mt-1.5">{totalTrades} trades</p>
-                </div>
-
-                {/* Discipline Card */}
-                <div className="flex-shrink-0 w-[150px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3.5">
-                  <div className="flex items-center gap-1 mb-1">
-                    <Award className="w-3 h-3 text-violet-500" />
-                    <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Discipline</p>
+                    <p className="text-[8px] text-gray-400 mt-1">Journal streak</p>
                   </div>
-                  <p className="text-lg font-bold leading-none mb-2 text-violet-600 dark:text-violet-400">
-                    {disciplineData.length > 0 ? disciplineData[disciplineData.length - 1] : 0} streak
-                  </p>
-                  {disciplinePath ? (
-                    <svg width="100%" height="28" viewBox="0 0 80 28" preserveAspectRatio="none">
-                      <defs>
-                        <linearGradient id="disc-grad" x1="0" y1="0" x2="1" y2="0">
-                          <stop offset="0%" stopColor="#8b5cf6" />
-                          <stop offset="100%" stopColor="#6366f1" />
-                        </linearGradient>
-                      </defs>
-                      <path d={disciplinePath} fill="none" stroke="url(#disc-grad)" strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                  ) : (
-                    <div className="h-7 flex items-center">
-                      <div className="h-px w-full bg-violet-200 dark:bg-violet-800" />
-                    </div>
-                  )}
-                  <p className="text-[9px] text-gray-400 mt-1.5">Win streak trend</p>
-                </div>
 
-                {/* Trend Card */}
-                <div className="flex-shrink-0 w-[150px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3.5">
-                  <div className="flex items-center gap-1 mb-1">
-                    <Flame className="w-3 h-3 text-orange-500" />
-                    <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Trend</p>
+                  {/* Journal Count */}
+                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                    {cardsPrivate && <PrivateMask />}
+                    <div className="flex items-center gap-1 mb-1">
+                      <BookOpen className="w-3 h-3 text-teal-500" />
+                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Journal</p>
+                    </div>
+                    <p className="text-base font-bold leading-none text-teal-600 dark:text-teal-400 mb-2">
+                      {totalTrades} entries
+                    </p>
+                    <div className="flex gap-0.5 items-end h-6">
+                      {last6Months.map((m, i) => {
+                        const maxPnl = Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1);
+                        const h = Math.max(20, (Math.abs(m.pnl) / maxPnl) * 100);
+                        return (
+                          <div key={i} className="flex-1 rounded-sm bg-teal-400/70 dark:bg-teal-600/70"
+                            style={{ height: `${h}%` }} title={m.label} />
+                        );
+                      })}
+                    </div>
+                    <p className="text-[8px] text-gray-400 mt-1">Logged trades</p>
                   </div>
-                  <p className={`text-lg font-bold leading-none mb-2 ${isTrendPos ? 'text-emerald-500' : 'text-red-500'}`}>
-                    {isTrendPos ? '↑' : '↓'} {winRate}% WR
-                  </p>
-                  {trendPath ? (
-                    <svg width="100%" height="28" viewBox="0 0 80 28" preserveAspectRatio="none">
-                      <path d={trendPath} fill="none" stroke={isTrendPos ? '#f97316' : '#ef4444'} strokeWidth="1.8" strokeLinecap="round" />
-                    </svg>
-                  ) : (
-                    <div className="h-7 flex items-center">
-                      <div className="h-px w-full bg-orange-200 dark:bg-orange-800" />
-                    </div>
-                  )}
-                  <p className="text-[9px] text-gray-400 mt-1.5">Cumulative P&L</p>
-                </div>
 
-                {/* Demo Card */}
-                <div className="flex-shrink-0 w-[150px] rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/60 dark:border-amber-700/40 shadow-sm p-3.5">
-                  <p className="text-[8px] uppercase tracking-widest text-amber-500 font-bold mb-1">Demo</p>
-                  <p className="text-lg font-bold leading-none mb-2 text-emerald-500">+18.5%</p>
-                  {demoPath && (
-                    <svg width="100%" height="28" viewBox="0 0 80 28" preserveAspectRatio="none">
-                      <path d={demoPath} fill="none" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="4 2" />
-                    </svg>
-                  )}
-                  <p className="text-[9px] text-amber-500/80 mt-1.5">Sample performance</p>
+                  {/* Discipline / Win Streak */}
+                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                    {cardsPrivate && <PrivateMask />}
+                    <div className="flex items-center gap-1 mb-1">
+                      <Award className="w-3 h-3 text-violet-500" />
+                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Discipline</p>
+                    </div>
+                    <p className="text-base font-bold leading-none mb-2 text-violet-600 dark:text-violet-400">
+                      {currentStreak} wins
+                    </p>
+                    {disciplinePath ? (
+                      <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="disc-grad2" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor="#8b5cf6" />
+                            <stop offset="100%" stopColor="#6366f1" />
+                          </linearGradient>
+                        </defs>
+                        <path d={disciplinePath} fill="none" stroke="url(#disc-grad2)" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      <div className="h-6 flex items-center">
+                        <div className="h-px w-full bg-violet-200 dark:bg-violet-800" />
+                      </div>
+                    )}
+                    <p className="text-[8px] text-gray-400 mt-1">Win streak trend</p>
+                  </div>
+
+                  {/* Trend / P&L */}
+                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                    {cardsPrivate && <PrivateMask />}
+                    <div className="flex items-center gap-1 mb-1">
+                      <Zap className="w-3 h-3 text-orange-500" />
+                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Trend</p>
+                    </div>
+                    <p className={`text-base font-bold leading-none mb-2 ${isTrendPos ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {isTrendPos ? '↑' : '↓'} {winRate}% WR
+                    </p>
+                    {trendPath ? (
+                      <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
+                        <path d={trendPath} fill="none" stroke={isTrendPos ? '#f97316' : '#ef4444'} strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    ) : (
+                      <div className="h-6 flex items-center">
+                        <div className="h-px w-full bg-orange-200 dark:bg-orange-800" />
+                      </div>
+                    )}
+                    <p className="text-[8px] text-gray-400 mt-1">Cumulative P&L</p>
+                  </div>
+
+                  {/* Best Trade (Displaced) */}
+                  <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                    {cardsPrivate && <PrivateMask />}
+                    <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Best Month</p>
+                    <p className={`text-base font-bold leading-none mb-2 ${bestMonthPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                      {bestMonthPnl >= 0 ? '+' : ''}₹{Math.abs(bestMonthPnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                    </p>
+                    <div className="flex gap-0.5 items-end h-6">
+                      {last6Months.map((m, i) => {
+                        const maxVal = Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1);
+                        const h = Math.max(15, (Math.abs(m.pnl) / maxVal) * 100);
+                        return (
+                          <div key={i}
+                            className={`flex-1 rounded-sm transition-colors ${m.pnl === bestMonthPnl ? 'bg-emerald-500' : m.pnl >= 0 ? 'bg-emerald-200 dark:bg-emerald-900/50' : 'bg-red-200 dark:bg-red-900/50'}`}
+                            style={{ height: `${h}%` }}
+                          />
+                        );
+                      })}
+                    </div>
+                    <p className="text-[8px] text-gray-400 mt-1">Peak performance</p>
+                  </div>
+
+                  {/* Demo — always public */}
+                  <div className="flex-shrink-0 w-[140px] rounded-2xl bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border border-amber-200/60 dark:border-amber-700/40 shadow-sm p-3">
+                    <p className="text-[8px] uppercase tracking-widest text-amber-500 font-bold mb-1">Demo</p>
+                    <p className="text-base font-bold leading-none mb-2 text-emerald-500">+18.5%</p>
+                    {demoPath && (
+                      <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
+                        <path d={demoPath} fill="none" stroke="#10b981" strokeWidth="1.8" strokeLinecap="round" strokeDasharray="4 2" />
+                      </svg>
+                    )}
+                    <p className="text-[8px] text-amber-500/80 mt-1">Sample performance</p>
+                  </div>
+
                 </div>
-              </div>
+              </>
             );
           })()}
 

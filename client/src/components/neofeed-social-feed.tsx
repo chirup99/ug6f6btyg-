@@ -1577,7 +1577,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
                 {!cardsPrivate && (
                   <p className="text-[8px] text-blue-400 dark:text-blue-500 mb-1.5 flex items-center gap-1">
-                    <Eye className="w-2.5 h-2.5" /> Visible to everyone · tap a card to open journal
+                    <Eye className="w-2.5 h-2.5" /> Visible to everyone
                   </p>
                 )}
 
@@ -1585,10 +1585,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                 <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5">
 
                   {/* 1 · Journal Streak */}
-                  <div
-                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
-                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
-                  >
+                  <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
                     <div className="flex items-center gap-1 mb-1">
                       <Flame className="w-3 h-3 text-orange-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Streak</p>
@@ -1603,10 +1600,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   </div>
 
                   {/* 2 · Journal Entries */}
-                  <div
-                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
-                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
-                  >
+                  <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
                     <div className="flex items-center gap-1 mb-1">
                       <BookOpen className="w-3 h-3 text-teal-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Journal</p>
@@ -1623,10 +1617,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   </div>
 
                   {/* 3 · Monthly Yield */}
-                  <div
-                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
-                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
-                  >
+                  <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
                     <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Yield</p>
                     <p className={`text-base font-bold leading-none mb-2 ${isYieldPos ? 'text-emerald-500' : 'text-red-500'}`}>
                       {isYieldPos ? '+' : ''}{monthlyYield.toFixed(1)}%
@@ -1647,10 +1638,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   </div>
 
                   {/* 4 · Monthly Target */}
-                  <div
-                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
-                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
-                  >
+                  <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
                     <div className="flex items-center gap-1 mb-1">
                       <TargetIcon className="w-3 h-3 text-blue-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Target</p>
@@ -1677,10 +1665,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   </div>
 
                   {/* 5 · Discipline */}
-                  <div
-                    className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 cursor-pointer active:scale-95 transition-transform"
-                    onClick={() => { setActiveTab('Posts'); onTabChange?.('Posts'); }}
-                  >
+                  <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
                     <div className="flex items-center gap-1 mb-1">
                       <Award className="w-3 h-3 text-violet-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Discipline</p>

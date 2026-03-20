@@ -2674,7 +2674,30 @@ export default function Home() {
 
   // Get current user data from AWS DynamoDB
   const { currentUser } = useCurrentUser();
-  
+
+  // Mirror the same ['my-profile'] query used by the social feed so the sidebar avatar
+  // stays in sync without a page refresh whenever the user updates their profile picture.
+  const { data: sidebarProfile } = useQuery({
+    queryKey: ['my-profile'],
+    queryFn: async () => {
+      const token = await getCognitoToken();
+      if (!token) return null;
+      const res = await fetch('/api/user/profile', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.profile || null;
+    },
+    enabled: !!currentUser?.userId,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: false,
+  });
+
+  // Use the live-fetched pic, falling back to what useCurrentUser loaded from localStorage
+  const sidebarProfilePicUrl = sidebarProfile?.profilePicUrl ?? currentUser?.profilePicUrl ?? null;
+
   // Check if current user is the primary owner
   const isPrimaryOwner = currentUser?.email?.toLowerCase() === PRIMARY_OWNER_EMAIL.toLowerCase();
 
@@ -15486,7 +15509,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         {/* User Profile Section - Horizontal Layout */}
                         <div className="flex items-center gap-4 pb-2">
                           <Avatar className="w-14 h-14 border-2 border-white/20">
-                            <AvatarImage src={currentUser?.profilePicUrl} />
+                            <AvatarImage src={sidebarProfilePicUrl ?? undefined} />
                             <AvatarFallback className="bg-gradient-to-br from-purple-500 to-blue-500 text-white font-semibold text-xl">
                               {(currentUser?.displayName || currentUser?.username || "U").charAt(0).toUpperCase()}
                             </AvatarFallback>

@@ -2849,7 +2849,7 @@ function TradeInsightCard({ post }: { post: FeedPost }) {
   );
 }
 
-function RangeReportCard({ metadata: m, postId, postCreatedAt }: { metadata: any; postId: string | number; postCreatedAt?: string | Date }) {
+function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { metadata: any; postId: string | number; postCreatedAt?: string | Date; stripped?: boolean }) {
   const [fomoHighlight, setFomoHighlight] = useState(false);
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const fomoButtonRef = useRef<HTMLButtonElement>(null);
@@ -2984,19 +2984,19 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt }: { metadata: any
     return 7;
   };
 
-  return (
-    <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
+  const inner = (
+    <>
       {mirrorLoading ? (
-        <div className="px-4 pb-3 flex items-center gap-2 text-xs text-gray-400">
+        <div className={`flex items-center gap-2 text-xs text-gray-400 ${stripped ? 'px-0 pb-2' : 'px-4 pb-3'}`}>
           <div className="w-3 h-3 border-2 border-violet-400 border-t-transparent rounded-full animate-spin" />
           Loading heatmap...
         </div>
       ) : heatmapData ? (
-        <div className="px-4 pb-2">
+        <div className={stripped ? 'pb-2' : 'px-4 pb-2'}>
           <div className="relative">
             <div
               ref={heatmapContainerRef}
-              className="max-h-48 overflow-auto scrollbar-hide border border-slate-100 dark:border-zinc-800 rounded-lg"
+              className={`max-h-48 overflow-auto scrollbar-hide ${stripped ? '' : 'border border-slate-100 dark:border-zinc-800 rounded-lg'}`}
             >
               <DemoHeatmap
                 tradingDataByDate={heatmapData}
@@ -3086,7 +3086,7 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt }: { metadata: any
         </div>
       )}
 
-      <div className="bg-gradient-to-r from-violet-500 to-purple-600 mx-2 mb-2 rounded-lg px-2.5 py-2">
+      <div className={`bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg px-2.5 py-2 ${stripped ? 'mb-0' : 'mx-2 mb-2'}`}>
         <div className="flex items-center justify-around text-white">
           <div className="flex flex-col items-center gap-0.5">
             <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
@@ -3121,6 +3121,13 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt }: { metadata: any
           </div>
         </div>
       </div>
+    </>
+  );
+
+  if (stripped) return inner;
+  return (
+    <div className="mb-4 bg-white dark:bg-zinc-950 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm">
+      {inner}
     </div>
   );
 }
@@ -3651,6 +3658,54 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
         postId={post.id?.toString()}
         isOwner={isOwnPost}
       />
+    );
+  }
+
+  // ── Range Report Post: flat card with no action bar ──
+  if (post.metadata?.type === 'range_report') {
+    const liveUrl = getAvatar(post.authorUsername || post.user?.handle);
+    const storedUrl = post.authorAvatar || post.user?.avatar;
+    const avatarUrl = liveUrl || storedUrl;
+    const isValidAvatar = avatarUrl && !avatarUrl.includes('ui-avatars.com') && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'));
+    return (
+      <Card className="bg-card border border-border shadow-none mb-2 rounded-xl overflow-hidden transition-none">
+        <CardContent className="p-2.5 xl:p-4 pb-0 transition-none">
+          {/* Header */}
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-2">
+              <Avatar className="w-7 h-7 border border-border flex-shrink-0">
+                {isValidAvatar ? (
+                  <AvatarImage src={avatarUrl} alt={post.authorDisplayName || post.authorUsername} className="object-cover" />
+                ) : null}
+                <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs">
+                  {post.user?.initial || post.authorDisplayName?.charAt(0) || post.authorUsername?.charAt(0) || 'U'}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <button
+                  onClick={() => {
+                    const username = post.user?.handle || post.authorUsername || '';
+                    if (username) onViewUserProfile ? onViewUserProfile(username) : (window.location.href = `/user/${username}`);
+                  }}
+                  className="text-foreground font-semibold text-sm hover:underline leading-none"
+                >
+                  {post.user?.username || post.authorDisplayName || post.authorUsername || 'Unknown'}
+                </button>
+                <p className="text-muted-foreground text-xs leading-none mt-0.5">@{post.user?.handle || post.authorUsername}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-1.5">
+              {rangeCountdown && (
+                rangeCountdown.expired
+                  ? <span className="text-[9px] bg-gray-100 dark:bg-zinc-800 text-gray-400 px-1.5 py-0.5 rounded font-medium">expired</span>
+                  : <span className="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">{rangeCountdown.hoursLeft}h left</span>
+              )}
+            </div>
+          </div>
+        </CardContent>
+        {/* Heatmap + Stats — no padding, fills the card */}
+        <RangeReportCard metadata={post.metadata} postId={post.id} postCreatedAt={post.createdAt} stripped={true} />
+      </Card>
     );
   }
 

@@ -1539,11 +1539,11 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   </button>
                 </div>
 
-                <div className="flex gap-2.5 overflow-x-auto scrollbar-hide pb-4 -mx-5 px-5">
+                <div className={`overflow-hidden transition-all duration-300 ease-in-out ${cardsPrivate ? 'max-h-0 opacity-0 pb-0' : 'max-h-[200px] opacity-100 pb-4'}`}>
+                <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5">
 
                   {/* Monthly Yield */}
                   <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    {cardsPrivate && <PrivateMask />}
                     <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Yield</p>
                     <p className={`text-base font-bold leading-none mb-2 ${isYieldPos ? 'text-emerald-500' : 'text-red-500'}`}>
                       {isYieldPos ? '+' : ''}{monthlyYield.toFixed(1)}%
@@ -1565,7 +1565,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
                   {/* Target — circular progress */}
                   <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    {cardsPrivate && <PrivateMask />}
+
                     <div className="flex items-center gap-1 mb-1">
                       <TargetIcon className="w-3 h-3 text-blue-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Target</p>
@@ -1597,7 +1597,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
                   {/* Journal Streak */}
                   <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    {cardsPrivate && <PrivateMask />}
+
                     <div className="flex items-center gap-1 mb-1">
                       <Flame className="w-3 h-3 text-orange-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Streak</p>
@@ -1617,7 +1617,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
                   {/* Journal Count */}
                   <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    {cardsPrivate && <PrivateMask />}
+
                     <div className="flex items-center gap-1 mb-1">
                       <BookOpen className="w-3 h-3 text-teal-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Journal</p>
@@ -1640,7 +1640,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
                   {/* Discipline / Win Streak */}
                   <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    {cardsPrivate && <PrivateMask />}
+
                     <div className="flex items-center gap-1 mb-1">
                       <Award className="w-3 h-3 text-violet-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Discipline</p>
@@ -1668,7 +1668,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
                   {/* Trend / P&L */}
                   <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    {cardsPrivate && <PrivateMask />}
+
                     <div className="flex items-center gap-1 mb-1">
                       <Zap className="w-3 h-3 text-orange-500" />
                       <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Trend</p>
@@ -1690,7 +1690,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
                   {/* Best Trade (Displaced) */}
                   <div className="relative flex-shrink-0 w-[140px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    {cardsPrivate && <PrivateMask />}
+
                     <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Best Month</p>
                     <p className={`text-base font-bold leading-none mb-2 ${bestMonthPnl >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
                       {bestMonthPnl >= 0 ? '+' : ''}₹{Math.abs(bestMonthPnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
@@ -1711,6 +1711,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   </div>
 
 
+                </div>
                 </div>
               </>
             );

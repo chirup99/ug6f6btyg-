@@ -1368,49 +1368,59 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
               </div>
             </div>
 
-            {/* ── Column 2: Stacked Trading Rule Cards ── */}
-            <div className="flex flex-col gap-3">
+            {/* ── Column 2: Monthly Yield + Rule Cards ── */}
+            <div className="flex flex-col gap-2.5">
+              {/* Monthly Yield card */}
+              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/50 px-3.5 py-2.5">
+                <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Monthly Yield</p>
+                <div className="flex items-end gap-2">
+                  <span className={`text-xl font-bold leading-none ${monthlyYield >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                    {monthlyYield >= 0 ? '+' : ''}{monthlyYield.toFixed(1)}%
+                  </span>
+                  <span className="text-[9px] text-gray-400 mb-0.5">{totalTrades} trades · {winRate}% WR</span>
+                </div>
+              </div>
+
               {/* Stacked animated rule cards */}
-              <div className="relative h-[130px]">
-                {/* Card stack back layers */}
+              <div className="relative h-[118px]">
                 {[2, 1].map((offset) => {
                   const cardIdx = (activeRuleIndex + offset) % TRADING_QUOTES.length;
                   const color = RULE_CARD_COLORS[cardIdx % RULE_CARD_COLORS.length];
                   return (
                     <div
                       key={offset}
-                      className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${color.bg} opacity-${offset === 2 ? '40' : '70'}`}
+                      className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${color.bg}`}
                       style={{
-                        transform: `rotate(${offset === 2 ? '-5deg' : '-2.5deg'}) translateY(${offset === 2 ? '8px' : '4px'})`,
+                        opacity: offset === 2 ? 0.4 : 0.7,
+                        transform: `rotate(${offset === 2 ? '-4deg' : '-2deg'}) translateY(${offset === 2 ? '6px' : '3px'})`,
                         transformOrigin: 'center bottom',
                         zIndex: offset === 2 ? 1 : 2,
                       }}
                     />
                   );
                 })}
-                {/* Front card */}
                 <div
-                  className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${RULE_CARD_COLORS[activeRuleIndex % RULE_CARD_COLORS.length].bg} shadow-lg flex flex-col justify-between p-4 z-10 transition-all duration-280`}
+                  className={`absolute inset-0 rounded-2xl bg-gradient-to-br ${RULE_CARD_COLORS[activeRuleIndex % RULE_CARD_COLORS.length].bg} shadow-md flex flex-col justify-between p-3.5 z-10`}
                   style={{
                     opacity: ruleExiting ? 0 : 1,
-                    transform: ruleExiting ? 'translateY(-12px) scale(0.96)' : 'translateY(0) scale(1)',
+                    transform: ruleExiting ? 'translateY(-10px) scale(0.96)' : 'translateY(0) scale(1)',
+                    transition: 'opacity 280ms, transform 280ms',
                   }}
                 >
                   <div className="flex items-start justify-between">
-                    <p className="text-[9px] uppercase tracking-[0.15em] text-white/70 font-bold">Trading Rule</p>
+                    <p className="text-[8px] uppercase tracking-[0.15em] text-white/70 font-bold">Trading Rule</p>
                     <button
                       onClick={cycleRule}
-                      className="text-white/80 hover:text-white transition-colors bg-white/20 hover:bg-white/30 rounded-full p-1"
-                      title="Pick next rule"
+                      className="text-white/80 hover:text-white bg-white/20 hover:bg-white/30 rounded-full p-1 transition-colors"
                       data-testid="button-cycle-rule"
                     >
                       <Pencil className="w-3 h-3" />
                     </button>
                   </div>
-                  <p className="text-sm font-semibold text-white leading-snug mt-2">
+                  <p className="text-[13px] font-semibold text-white leading-snug">
                     &ldquo;{TRADING_QUOTES[activeRuleIndex]}&rdquo;
                   </p>
-                  <div className="flex items-center gap-1 mt-2">
+                  <div className="flex items-center gap-1">
                     {TRADING_QUOTES.map((_, i) => (
                       <div
                         key={i}
@@ -1419,14 +1429,6 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                     ))}
                   </div>
                 </div>
-              </div>
-
-              {/* Trading Psychology Quote */}
-              <div className="rounded-xl bg-gray-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-700/50 px-3.5 py-2.5">
-                <p className="text-[8px] uppercase tracking-[0.12em] text-gray-400 dark:text-gray-500 font-bold mb-1">Psychology</p>
-                <p className="text-[11px] text-gray-600 dark:text-gray-300 italic leading-snug">
-                  &ldquo;{TRADING_QUOTES[(activeRuleIndex + 3) % TRADING_QUOTES.length]}&rdquo;
-                </p>
               </div>
             </div>
 

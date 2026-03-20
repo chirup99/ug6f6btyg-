@@ -4903,16 +4903,18 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
           <LiveBanner />
         </div>
       )}
+
+      {/* Profile Header - Full width row, only on Profile tab */}
+      {selectedFilter === 'Profile' && (
+        <div className="px-4 py-2 md:py-3 max-w-7xl mx-auto w-full">
+          <ProfileHeader />
+        </div>
+      )}
       
       {/* Main Content Area */}
       <div className="flex gap-5 xl:gap-6 px-4 py-2 md:py-3 max-w-7xl mx-auto w-full">
-        {/* Social Feed Posts - Left / Full-width on Profile */}
+        {/* Social Feed Posts - Left column */}
         <div className="flex-[3] min-w-0">
-          {/* Profile tab: header only in left column */}
-          {selectedFilter === 'Profile' && (
-            <ProfileHeader />
-          )}
-
           <div className="space-y-2 xl:space-y-3">
             {feedData.map((post) => (
               <PostCard key={post.id} post={post} currentUserUsername={currentUserUsername} onViewUserProfile={setViewingUserProfile} />

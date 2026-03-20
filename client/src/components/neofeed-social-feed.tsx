@@ -1175,6 +1175,11 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
     }, 280);
   };
 
+  useEffect(() => {
+    const timer = setInterval(cycleRule, 4000);
+    return () => clearInterval(timer);
+  }, [ruleExiting]);
+
   const DEMO_MONTHS = [
     { label: 'Oct', pnl: 8200 },
     { label: 'Nov', pnl: -3400 },
@@ -1394,8 +1399,9 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
             </div>
           </div>
 
-          {/* ── Row 2: Full-width stacked rule card ── */}
-          <div className="relative h-[86px] mb-3">
+          {/* ── Row 2: Trading Rule card with Bruce Lee ── */}
+          <div className="relative h-[90px] mb-3">
+            {/* Stacked background cards */}
             {[2, 1].map((offset) => {
               const cardIdx = (activeRuleIndex + offset) % TRADING_QUOTES.length;
               const color = RULE_CARD_COLORS[cardIdx % RULE_CARD_COLORS.length];
@@ -1411,82 +1417,57 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                 />
               );
             })}
+            {/* Main card */}
             <div
-              className={`absolute inset-0 rounded-xl bg-gradient-to-r ${RULE_CARD_COLORS[activeRuleIndex % RULE_CARD_COLORS.length].bg} shadow-md flex items-center gap-3 px-4 z-10`}
+              className={`absolute inset-0 rounded-xl bg-gradient-to-r ${RULE_CARD_COLORS[activeRuleIndex % RULE_CARD_COLORS.length].bg} shadow-md overflow-hidden z-10`}
               style={{
                 opacity: ruleExiting ? 0 : 1,
                 transform: ruleExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)',
                 transition: 'opacity 280ms, transform 280ms',
               }}
             >
-              <div className="flex-1 min-w-0">
-                <p className="text-[8px] uppercase tracking-widest text-white/60 font-bold mb-1">Trading Rule</p>
-                <p className="text-[13px] font-semibold text-white leading-snug line-clamp-2">
-                  &ldquo;{TRADING_QUOTES[activeRuleIndex]}&rdquo;
-                </p>
+              {/* Bruce Lee tiny image on the right — overflows bottom for dramatic effect */}
+              <div className="absolute right-0 top-0 bottom-0 w-[72px] overflow-hidden pointer-events-none">
+                <img
+                  src="/bruce-lee-card.png"
+                  alt=""
+                  className="absolute bottom-0 right-[-4px] h-[108px] w-auto object-contain object-bottom opacity-90"
+                  style={{
+                    filter: 'drop-shadow(0 0 8px rgba(0,0,0,0.4))',
+                    animation: 'blPulse 3s ease-in-out infinite',
+                  }}
+                />
               </div>
-              <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                <button
-                  onClick={cycleRule}
-                  className="text-white/80 hover:text-white bg-white/20 hover:bg-white/30 rounded-full p-1.5 transition-colors"
-                  data-testid="button-cycle-rule"
-                >
-                  <Pencil className="w-3 h-3" />
-                </button>
-                <div className="flex items-center gap-1">
-                  {TRADING_QUOTES.map((_, i) => (
-                    <div
-                      key={i}
-                      className={`h-1 rounded-full transition-all duration-300 ${i === activeRuleIndex ? 'w-3 bg-white' : 'w-1 bg-white/35'}`}
-                    />
-                  ))}
+              {/* Fade edge so text doesn't clash with image */}
+              <div className="absolute right-[40px] top-0 bottom-0 w-10 bg-gradient-to-r from-transparent to-black/20 pointer-events-none" />
+              {/* Quote content */}
+              <div className="flex items-center h-full px-4 pr-[78px] gap-0">
+                <div className="flex-1 min-w-0">
+                  <p className="text-[8px] uppercase tracking-widest text-white/60 font-bold mb-1">Trading Rule</p>
+                  <p className="text-[13px] font-semibold text-white leading-snug line-clamp-2">
+                    &ldquo;{TRADING_QUOTES[activeRuleIndex]}&rdquo;
+                  </p>
+                </div>
+                {/* Dot indicators only, no pencil */}
+                <div className="flex flex-col items-center justify-end pb-2 flex-shrink-0 self-end">
+                  <div className="flex items-center gap-1">
+                    {TRADING_QUOTES.map((_, i) => (
+                      <div
+                        key={i}
+                        className={`h-1 rounded-full transition-all duration-300 ${i === activeRuleIndex ? 'w-3 bg-white' : 'w-1 bg-white/35'}`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-
-          {/* ── Row 3: Bruce Lee "Be Like Water" card ── */}
-          <div className="relative rounded-xl overflow-hidden mb-3 shadow-lg" style={{ height: '100px' }}>
-            {/* Dark cinematic background */}
-            <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-[#1a1200] to-gray-950" />
-            {/* Gold glow behind image */}
-            <div className="absolute right-0 top-0 bottom-0 w-[120px] bg-gradient-to-l from-yellow-600/30 via-yellow-500/10 to-transparent" />
-            {/* Water ripple lines */}
-            <svg className="absolute inset-0 w-full h-full opacity-[0.08]" viewBox="0 0 300 100" preserveAspectRatio="none">
-              <path d="M0,50 Q75,35 150,50 Q225,65 300,50" fill="none" stroke="#eab308" strokeWidth="1.2" />
-              <path d="M0,65 Q75,50 150,65 Q225,80 300,65" fill="none" stroke="#eab308" strokeWidth="0.8" />
-              <path d="M0,35 Q75,20 150,35 Q225,50 300,35" fill="none" stroke="#eab308" strokeWidth="0.6" />
-            </svg>
-            {/* Bruce Lee animated image */}
-            <div className="absolute right-0 top-0 bottom-0 w-[110px] overflow-hidden">
-              <img
-                src="/bruce-lee-card.png"
-                alt="Bruce Lee"
-                className="absolute bottom-0 right-0 h-[130px] w-auto object-contain object-bottom"
-                style={{
-                  filter: 'drop-shadow(0 0 12px rgba(234,179,8,0.5))',
-                  animation: 'bruceLeePulse 3s ease-in-out infinite',
-                }}
-              />
-              <style>{`
-                @keyframes bruceLeePulse {
-                  0%, 100% { filter: drop-shadow(0 0 10px rgba(234,179,8,0.4)); transform: scale(1); }
-                  50% { filter: drop-shadow(0 0 20px rgba(234,179,8,0.75)); transform: scale(1.03); }
-                }
-              `}</style>
-            </div>
-            {/* Content */}
-            <div className="absolute inset-0 flex flex-col justify-center pl-4 pr-[118px]">
-              <p className="text-[8px] uppercase tracking-widest text-yellow-500/70 font-bold mb-1.5">Trader's Mindset</p>
-              <p className="text-[14px] font-bold text-white leading-tight">
-                &ldquo;Be like water.&rdquo;
-              </p>
-              <p className="text-[10px] text-yellow-400/60 mt-1 leading-tight font-medium">
-                Adapt. Flow. Never force the trade.
-              </p>
-              <p className="text-[9px] text-gray-500 mt-1">— Bruce Lee</p>
-            </div>
-          </div>
+          <style>{`
+            @keyframes blPulse {
+              0%, 100% { filter: drop-shadow(0 0 6px rgba(0,0,0,0.35)); transform: scale(1); }
+              50% { filter: drop-shadow(0 0 14px rgba(255,220,80,0.45)); transform: scale(1.04); }
+            }
+          `}</style>
 
           {/* ── Trading Metric Cards Row ── */}
           {(() => {

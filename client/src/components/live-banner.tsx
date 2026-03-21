@@ -476,60 +476,57 @@ export function LiveBanner() {
           </div>
         )}
 
-        {/* === SLIDE 2: Term Insurance Emotional Promotion === */}
+        {/* === SLIDE 2: Term Insurance — Minimalist Banner === */}
         {currentIndex === 2 && (
-          <div className="absolute inset-0 bg-gradient-to-r from-blue-950 via-indigo-900 to-slate-900 flex items-stretch px-3 py-2 gap-3 overflow-hidden">
-            {/* Background decorative rings */}
-            <div className="absolute -right-8 -top-8 w-32 h-32 rounded-full border border-blue-400/10 pointer-events-none" />
-            <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full border border-blue-400/15 pointer-events-none" />
-            <div className="absolute -left-6 -bottom-6 w-24 h-24 rounded-full bg-indigo-500/10 blur-xl pointer-events-none" />
+          <div className="absolute inset-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
+            {/* Subtle background accent blobs */}
+            <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-indigo-600/10 blur-2xl pointer-events-none" />
+            <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
+            {/* Thin top accent line */}
+            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
 
-            {/* Left: Shield Icon Block */}
-            <div className="flex flex-col items-center justify-center w-16 shrink-0 gap-1.5">
-              <div className="relative flex items-center justify-center">
-                <div className="absolute w-12 h-12 rounded-full bg-blue-500/20 animate-pulse" />
-                <div className="relative w-10 h-10 rounded-full bg-gradient-to-br from-blue-400 to-indigo-500 flex items-center justify-center shadow-lg shadow-blue-500/30">
-                  <ShieldCheck className="w-5 h-5 text-white" strokeWidth={2} />
+            {/* Content: single row, compact for all screen sizes */}
+            <div className="absolute inset-0 flex items-center px-3 gap-2.5">
+
+              {/* Icon */}
+              <div className="shrink-0 w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
+                <ShieldCheck className="w-4 h-4 text-indigo-300" strokeWidth={1.5} />
+              </div>
+
+              {/* Text block */}
+              <div className="flex-1 min-w-0 flex flex-col gap-0.5">
+                {/* Top row: label + tagline */}
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  <span className="text-[8px] font-semibold text-indigo-300 uppercase tracking-widest leading-none">
+                    Term Insurance
+                  </span>
+                  <span className="hidden xs:inline text-[7px] text-slate-500 leading-none">·</span>
+                  <span className="hidden xs:flex items-center gap-0.5 text-[8px] text-rose-300/80 font-medium leading-none">
+                    <Heart className="w-2 h-2 fill-rose-400 text-rose-400" />
+                    Protect Your Family
+                  </span>
                 </div>
+                {/* Main quote — truncates on very small screens */}
+                <p className="text-[9px] sm:text-[10px] leading-snug text-slate-300 font-medium line-clamp-1 sm:line-clamp-2">
+                  "Even if you're not there tomorrow, your love will still take care of your family."
+                </p>
+                {/* Sub-text: hidden on very small screens */}
+                <p className="hidden sm:block text-[8px] leading-tight text-slate-500">
+                  Secure your family's future · Regulated by Govt. of India
+                </p>
               </div>
-              <div className="flex items-center gap-0.5">
-                <Heart className="w-2.5 h-2.5 text-rose-400 fill-rose-400" />
-                <Users className="w-3 h-3 text-blue-300" />
-              </div>
-            </div>
 
-            {/* Center: Emotional message */}
-            <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
-              <div className="flex items-center gap-1.5 mb-0.5">
-                <span className="text-[8px] font-bold text-blue-300 uppercase tracking-widest px-1.5 py-0.5 bg-blue-500/20 border border-blue-400/30 rounded-md">
-                  Insurance Awareness
-                </span>
-                <span className="flex items-center gap-0.5 text-[8px] text-rose-300 font-semibold">
-                  <Heart className="w-2 h-2 fill-rose-400 text-rose-400" />
-                  Protect Your Family
-                </span>
-              </div>
-              <p className="text-[10px] leading-snug text-slate-200 font-medium italic line-clamp-2">
-                "Term insurance is the promise that even if you're not there tomorrow, your love will still take care of your family."
-              </p>
-              <p className="text-[9px] leading-tight text-slate-400 mt-0.5">
-                Secure your family's future today — because love means planning ahead.
-              </p>
-            </div>
-
-            {/* Right: CTA — Government portal */}
-            <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+              {/* CTA Button */}
               <a
-                href="https://www.irdai.gov.in"
+                href="https://irdai.gov.in/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 hover:from-blue-400 hover:to-indigo-500 transition-all active:scale-95"
+                className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-2 sm:px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 hover:border-indigo-400/50 transition-all active:scale-95 group"
                 data-testid="button-insurance-portal"
               >
-                <span className="text-[9px] font-bold text-white whitespace-nowrap">More Details</span>
-                <span className="text-[7px] text-blue-200 whitespace-nowrap">irdai.gov.in</span>
+                <span className="text-[9px] font-semibold text-indigo-200 group-hover:text-white whitespace-nowrap transition-colors">Learn More</span>
+                <span className="text-[7px] text-indigo-400/70 whitespace-nowrap">irdai.gov.in</span>
               </a>
-              <span className="text-[7px] text-slate-500 text-center leading-tight">Govt. of India<br />Official Portal</span>
             </div>
           </div>
         )}

@@ -502,7 +502,7 @@ export function LiveBanner() {
             <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
               <div className="flex items-center gap-1.5 mb-0.5">
                 <span className="text-[8px] font-bold text-blue-300 uppercase tracking-widest px-1.5 py-0.5 bg-blue-500/20 border border-blue-400/30 rounded-md">
-                  Term Insurance
+                  Insurance Awareness
                 </span>
                 <span className="flex items-center gap-0.5 text-[8px] text-rose-300 font-semibold">
                   <Heart className="w-2 h-2 fill-rose-400 text-rose-400" />
@@ -512,21 +512,24 @@ export function LiveBanner() {
               <p className="text-[10px] leading-snug text-slate-200 font-medium italic line-clamp-2">
                 "Term insurance is the promise that even if you're not there tomorrow, your love will still take care of your family."
               </p>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-[9px] text-blue-300 font-semibold">Starting ₹12/day</span>
-                <span className="w-px h-3 bg-white/20" />
-                <span className="text-[9px] text-emerald-400 font-semibold">1 Crore+ Cover</span>
-                <span className="w-px h-3 bg-white/20" />
-                <span className="text-[9px] text-slate-400">Tax Benefit u/s 80C</span>
-              </div>
+              <p className="text-[9px] leading-tight text-slate-400 mt-0.5">
+                Secure your family's future today — because love means planning ahead.
+              </p>
             </div>
 
-            {/* Right: CTA */}
-            <div className="flex flex-col items-center justify-center gap-1.5 shrink-0">
-              <div className="px-2.5 py-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 cursor-pointer hover:from-blue-400 hover:to-indigo-500 transition-all active:scale-95" data-testid="button-insurance-cta">
-                <span className="text-[9px] font-bold text-white whitespace-nowrap">Get Free Quote</span>
-              </div>
-              <span className="text-[8px] text-slate-500 text-center leading-tight">No medical<br />required</span>
+            {/* Right: CTA — Government portal */}
+            <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+              <a
+                href="https://www.irdai.gov.in"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 hover:from-blue-400 hover:to-indigo-500 transition-all active:scale-95"
+                data-testid="button-insurance-portal"
+              >
+                <span className="text-[9px] font-bold text-white whitespace-nowrap">More Details</span>
+                <span className="text-[7px] text-blue-200 whitespace-nowrap">irdai.gov.in</span>
+              </a>
+              <span className="text-[7px] text-slate-500 text-center leading-tight">Govt. of India<br />Official Portal</span>
             </div>
           </div>
         )}

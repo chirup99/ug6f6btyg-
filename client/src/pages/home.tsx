@@ -25052,6 +25052,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               onRangeChange={handleDateRangeChange}
                               highlightedDates={activeTagHighlight}
                               refreshTrigger={personalHeatmapRevision}
+                              onFeedPost={(mode) => {
+                                setReportPostMode(mode);
+                                if (mode === 'selected') {
+                                  setReportPostSelectedDate(heatmapSelectedDate || new Date().toISOString().split('T')[0]);
+                                }
+                                setShowReportPostDialog(true);
+                              }}
                             />
                           )}
                         </div>
@@ -30920,61 +30927,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 {/* Share actions */}
                 {!isSharedReportMode && (
                   <div className="flex items-center gap-1.5 flex-shrink-0">
-                    {/* Post to NeoFeed button with picker popover */}
-                    <Popover open={showReportPostPickerPopover} onOpenChange={setShowReportPostPickerPopover}>
-                      <PopoverTrigger asChild>
-                        <Button
-                          size="icon"
-                          className="bg-violet-600 hover:bg-violet-700 h-7 w-7"
-                          title="Post to NeoFeed"
-                          data-testid="button-post-to-neofeed"
-                        >
-                          <Send className="w-3 h-3" />
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-44 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg" align="end" sideOffset={6}>
-                        <div className="flex flex-col gap-0.5">
-                          <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide px-2 py-1">Post to NeoFeed</p>
-                          <button
-                            className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
-                            data-testid="button-post-today"
-                            onClick={() => {
-                              setReportPostMode('today');
-                              setShowReportPostPickerPopover(false);
-                              setShowReportPostDialog(true);
-                            }}
-                          >
-                            <span className="text-base">📅</span>
-                            <span>Today's Post</span>
-                          </button>
-                          <button
-                            className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
-                            data-testid="button-post-selected"
-                            onClick={() => {
-                              setReportPostMode('selected');
-                              setReportPostSelectedDate(heatmapSelectedDate || new Date().toISOString().split('T')[0]);
-                              setShowReportPostPickerPopover(false);
-                              setShowReportPostDialog(true);
-                            }}
-                          >
-                            <span className="text-base">🗓️</span>
-                            <span>Selected Post</span>
-                          </button>
-                          <button
-                            className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
-                            data-testid="button-post-range"
-                            onClick={() => {
-                              setReportPostMode('range');
-                              setShowReportPostPickerPopover(false);
-                              setShowReportPostDialog(true);
-                            }}
-                          >
-                            <span className="text-base">📊</span>
-                            <span>Range Post</span>
-                          </button>
-                        </div>
-                      </PopoverContent>
-                    </Popover>
 
                     {!shareableUrl ? (
                       <Button

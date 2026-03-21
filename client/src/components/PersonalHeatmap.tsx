@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, X, MoreVertical, Edit2, Layout } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, MoreVertical, Edit2, Layout, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -7,6 +7,11 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
 
 interface PersonalHeatmapProps {
@@ -21,6 +26,7 @@ interface PersonalHeatmapProps {
   } | null;
   isPublicView?: boolean;
   refreshTrigger?: number;
+  onFeedPost?: (mode: 'today' | 'selected' | 'range') => void;
 }
 
 // Simple function to calculate P&L from trade data
@@ -96,7 +102,7 @@ function getPnLColor(pnl: number): string {
   }
 }
 
-export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView = false, refreshTrigger = 0 }: PersonalHeatmapProps) {
+export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView = false, refreshTrigger = 0, onFeedPost }: PersonalHeatmapProps) {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -1386,7 +1392,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
               </Button>
             ) : (
               // Normal mode - show formatted current date
-              <div className={`flex items-center ${isFeedMode ? 'w-full' : 'gap-1'}`}>
+              <div className={`flex items-center ${isFeedMode ? 'w-full justify-between' : 'gap-1'}`}>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -1404,6 +1410,49 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                   </span>
                 </Button>
 
+                {isFeedMode && onFeedPost && (
+                  <Popover>
+                    <PopoverTrigger asChild>
+                      <Button
+                        size="sm"
+                        className="h-7 px-3 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold gap-1.5"
+                        data-testid="button-feed-post"
+                      >
+                        <Send className="w-3 h-3" />
+                        Post
+                      </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-44 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg" align="end" sideOffset={6}>
+                      <div className="flex flex-col gap-0.5">
+                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide px-2 py-1">Post to NeoFeed</p>
+                        <button
+                          className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
+                          data-testid="button-post-today"
+                          onClick={() => onFeedPost('today')}
+                        >
+                          <span className="text-base">📅</span>
+                          <span>Today's Post</span>
+                        </button>
+                        <button
+                          className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
+                          data-testid="button-post-selected"
+                          onClick={() => onFeedPost('selected')}
+                        >
+                          <span className="text-base">🗓️</span>
+                          <span>Selected Post</span>
+                        </button>
+                        <button
+                          className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
+                          data-testid="button-post-range"
+                          onClick={() => onFeedPost('range')}
+                        >
+                          <span className="text-base">📊</span>
+                          <span>Range Post</span>
+                        </button>
+                      </div>
+                    </PopoverContent>
+                  </Popover>
+                )}
               </div>
             )}
 

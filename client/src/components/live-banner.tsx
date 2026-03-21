@@ -476,56 +476,59 @@ export function LiveBanner() {
           </div>
         )}
 
-        {/* === SLIDE 2: Term Insurance — Minimalist Banner === */}
+        {/* === SLIDE 2: Insurance Awareness — Journal-style === */}
         {currentIndex === 2 && (
-          <div className="absolute inset-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%)' }}>
-            {/* Subtle background accent blobs */}
-            <div className="absolute top-0 right-0 w-24 h-24 rounded-full bg-indigo-600/10 blur-2xl pointer-events-none" />
-            <div className="absolute bottom-0 left-0 w-20 h-20 rounded-full bg-blue-500/10 blur-2xl pointer-events-none" />
-            {/* Thin top accent line */}
-            <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/40 to-transparent" />
+          <div className="absolute inset-0 overflow-hidden bg-gradient-to-r from-slate-950 via-emerald-950/60 to-slate-950">
+            {/* Subtle glow accents matching journal tab */}
+            <div className="absolute -top-6 right-8 w-28 h-28 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-6 left-6 w-20 h-20 rounded-full bg-teal-500/8 blur-2xl pointer-events-none" />
+            {/* Top accent bar — matches journal green */}
+            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
 
-            {/* Content: single row, compact for all screen sizes */}
-            <div className="absolute inset-0 flex items-center px-3 gap-2.5">
+            <div className="absolute inset-0 flex items-center px-3 gap-3">
 
-              {/* Icon */}
-              <div className="shrink-0 w-8 h-8 rounded-lg bg-indigo-500/15 border border-indigo-500/25 flex items-center justify-center">
-                <ShieldCheck className="w-4 h-4 text-indigo-300" strokeWidth={1.5} />
+              {/* Shield icon — journal card style */}
+              <div className="shrink-0 flex flex-col items-center gap-1">
+                <div className="relative">
+                  <div className="absolute inset-0 rounded-xl bg-emerald-500/20 blur-sm" />
+                  <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/30 to-teal-600/20 border border-emerald-500/30 flex items-center justify-center">
+                    <ShieldCheck className="w-[18px] h-[18px] text-emerald-300" strokeWidth={1.5} />
+                  </div>
+                </div>
               </div>
 
-              {/* Text block */}
+              {/* Text content */}
               <div className="flex-1 min-w-0 flex flex-col gap-0.5">
-                {/* Top row: label + tagline */}
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[8px] font-semibold text-indigo-300 uppercase tracking-widest leading-none">
-                    Term Insurance
+                {/* Badge row */}
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[8px] font-bold text-emerald-300 uppercase tracking-widest px-1.5 py-0.5 bg-emerald-500/15 border border-emerald-500/25 rounded-md leading-none">
+                    Insurance Awareness
                   </span>
-                  <span className="hidden xs:inline text-[7px] text-slate-500 leading-none">·</span>
-                  <span className="hidden xs:flex items-center gap-0.5 text-[8px] text-rose-300/80 font-medium leading-none">
+                  <span className="hidden sm:flex items-center gap-0.5 text-[8px] text-rose-300/80 font-medium leading-none">
                     <Heart className="w-2 h-2 fill-rose-400 text-rose-400" />
-                    Protect Your Family
+                    <span>Protect Your Family</span>
                   </span>
                 </div>
-                {/* Main quote — truncates on very small screens */}
-                <p className="text-[9px] sm:text-[10px] leading-snug text-slate-300 font-medium line-clamp-1 sm:line-clamp-2">
+                {/* Quote */}
+                <p className="text-[10px] leading-snug text-white/85 font-medium line-clamp-1 sm:line-clamp-2">
                   "Even if you're not there tomorrow, your love will still take care of your family."
                 </p>
-                {/* Sub-text: hidden on very small screens */}
-                <p className="hidden sm:block text-[8px] leading-tight text-slate-500">
-                  Secure your family's future · Regulated by Govt. of India
+                {/* Sub-line — desktop only */}
+                <p className="hidden sm:block text-[8px] leading-tight text-emerald-400/60">
+                  Term insurance · Regulated by IRDAI · Govt. of India
                 </p>
               </div>
 
-              {/* CTA Button */}
+              {/* CTA — journal-card style button */}
               <a
                 href="https://irdai.gov.in/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-2 sm:px-3 py-1.5 rounded-lg border border-indigo-500/30 bg-indigo-500/10 hover:bg-indigo-500/20 hover:border-indigo-400/50 transition-all active:scale-95 group"
+                className="shrink-0 flex flex-col items-center justify-center gap-0.5 px-2.5 py-2 rounded-xl bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-400/50 transition-all active:scale-95 group"
                 data-testid="button-insurance-portal"
               >
-                <span className="text-[9px] font-semibold text-indigo-200 group-hover:text-white whitespace-nowrap transition-colors">Learn More</span>
-                <span className="text-[7px] text-indigo-400/70 whitespace-nowrap">irdai.gov.in</span>
+                <span className="text-[9px] font-bold text-emerald-200 group-hover:text-white whitespace-nowrap transition-colors">Learn More</span>
+                <span className="text-[7px] text-emerald-500/70 whitespace-nowrap">irdai.gov.in</span>
               </a>
             </div>
           </div>

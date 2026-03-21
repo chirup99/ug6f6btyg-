@@ -361,14 +361,11 @@ export function LiveBanner() {
     return `${d}d ago`;
   };
 
-  // Visible news items — rotate 3 at a time (matches home.tsx style)
-  const visibleNews = newsItems.length > 0
-    ? [
-        newsItems[activeNewsIndex % newsItems.length],
-        newsItems[(activeNewsIndex + 1) % newsItems.length],
-        newsItems[(activeNewsIndex + 2) % newsItems.length],
-      ]
-    : [];
+  // Single active news item (rotates one at a time)
+  const activeNewsItem = newsItems.length > 0
+    ? newsItems[activeNewsIndex % newsItems.length]
+    : null;
+  const visibleNews = activeNewsItem ? [activeNewsItem] : [];
 
   return (
     <Card className="w-full h-28 md:h-32 relative overflow-hidden bg-card border border-border">
@@ -482,80 +479,74 @@ export function LiveBanner() {
                 }
               </div>
 
-              {/* News items — exact same format as home.tsx market news tab */}
-              <div className="flex flex-col flex-1 min-h-0 overflow-hidden divide-y divide-white/5 relative z-10">
-                {newsLoading ? (
-                  <div className="flex flex-col gap-2 justify-center flex-1 px-1">
-                    {[80, 65, 50].map((w, i) => (
-                      <div key={i} className="h-2.5 bg-white/10 rounded animate-pulse" style={{ width: `${w}%` }} />
-                    ))}
+              {/* Single featured news item */}
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden relative z-10 justify-center">
+                {newsLoading || visibleNews.length === 0 ? (
+                  <div className="flex flex-col gap-1.5 px-1">
+                    <div className="h-2.5 bg-white/10 rounded animate-pulse w-4/5" />
+                    <div className="h-2.5 bg-white/10 rounded animate-pulse w-3/5" />
+                    <div className="h-2 bg-white/8 rounded animate-pulse w-2/5 mt-0.5" />
                   </div>
-                ) : visibleNews.length === 0 ? (
-                  <div className="flex flex-col gap-2 justify-center flex-1 px-1">
-                    {[80, 65].map((w, i) => (
-                      <div key={i} className="h-2.5 bg-white/10 rounded animate-pulse" style={{ width: `${w}%` }} />
-                    ))}
-                  </div>
-                ) : (
-                  visibleNews.map((item, i) => {
-                    const stockData = item.symbol ? newsStockPrices[item.symbol] : null;
-                    const isItemUp = stockData ? stockData.changePercent >= 0 : null;
-                    const pts = stockData?.chartData ?? [];
-                    let sparkPath = '';
-                    if (pts.length >= 2) {
-                      const prices = pts.map((p: any) => p.price);
-                      const mn = Math.min(...prices), mx = Math.max(...prices);
-                      const rng = mx - mn || 1;
-                      const W = 48, H = 16;
-                      sparkPath = prices.map((p: number, idx: number) => {
-                        const x = (idx / (prices.length - 1)) * W;
-                        const y = H - ((p - mn) / rng) * H;
-                        return `${idx === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
-                      }).join(' ');
-                    }
-                    return (
-                      <div
-                        key={`${activeNewsIndex}-${i}`}
-                        className={`flex-1 flex flex-col justify-center px-1 py-0.5 transition-opacity duration-500 cursor-pointer group ${i === 0 ? 'opacity-100' : i === 1 ? 'opacity-50' : 'opacity-25'}`}
-                        onClick={() => item.url && window.open(item.url, '_blank', 'noopener,noreferrer')}
-                      >
-                        {/* Row 1: badge + title + time — exactly like home.tsx */}
-                        <div className="flex items-center gap-1 min-w-0">
-                          {item.displayName && (
-                            <span className="shrink-0 text-[8px] font-semibold text-purple-300 px-1 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded leading-none">
-                              {item.displayName}
-                            </span>
-                          )}
-                          <span className="flex-1 text-[10px] leading-tight text-slate-200 font-medium line-clamp-1 group-hover:text-white transition-colors min-w-0">
-                            {item.title}
-                            {i === 0 && <ExternalLink className="inline w-2 h-2 ml-0.5 opacity-0 group-hover:opacity-40 transition-opacity" />}
+                ) : (() => {
+                  const item = visibleNews[0];
+                  const stockData = item.symbol ? newsStockPrices[item.symbol] : null;
+                  const isItemUp = stockData ? stockData.changePercent >= 0 : null;
+                  const pts = stockData?.chartData ?? [];
+                  let sparkPath = '';
+                  if (pts.length >= 2) {
+                    const prices = pts.map((p: any) => p.price);
+                    const mn = Math.min(...prices), mx = Math.max(...prices);
+                    const rng = mx - mn || 1;
+                    const W = 48, H = 16;
+                    sparkPath = prices.map((p: number, idx: number) => {
+                      const x = (idx / (prices.length - 1)) * W;
+                      const y = H - ((p - mn) / rng) * H;
+                      return `${idx === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+                    }).join(' ');
+                  }
+                  return (
+                    <div
+                      key={activeNewsIndex}
+                      className="flex flex-col gap-1 px-1 cursor-pointer group"
+                      onClick={() => item.url && window.open(item.url, '_blank', 'noopener,noreferrer')}
+                    >
+                      {/* Row 1: badge + time */}
+                      <div className="flex items-center gap-1.5">
+                        {item.displayName && (
+                          <span className="shrink-0 text-[8px] font-semibold text-purple-300 px-1 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded leading-none">
+                            {item.displayName}
                           </span>
-                          {item.publishedAt && (
-                            <span className="shrink-0 text-[8px] text-slate-500 ml-1">{getRelativeTime(item.publishedAt)}</span>
-                          )}
-                        </div>
-                        {/* Row 2: price + change % + sparkline — exactly like home.tsx */}
-                        {stockData && (
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <span className="text-[9px] text-slate-400 font-mono shrink-0">
-                              {stockData.currency === 'USD'
-                                ? `$${stockData.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
-                                : `₹${stockData.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
-                            </span>
-                            <span className={`text-[9px] font-semibold shrink-0 ${isItemUp ? 'text-emerald-400' : 'text-red-400'}`}>
-                              {isItemUp ? '▲' : '▼'} {Math.abs(stockData.changePercent).toFixed(2)}%
-                            </span>
-                            {sparkPath && (
-                              <svg width="48" height="16" viewBox="0 0 48 16" className="shrink-0">
-                                <path d={sparkPath} fill="none" stroke={isItemUp ? '#22c55e' : '#ef4444'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                              </svg>
-                            )}
-                          </div>
+                        )}
+                        {item.publishedAt && (
+                          <span className="text-[8px] text-slate-500">{getRelativeTime(item.publishedAt)}</span>
                         )}
                       </div>
-                    );
-                  })
-                )}
+                      {/* Row 2: full headline — 2 lines allowed */}
+                      <p className="text-[10px] leading-snug text-slate-200 font-medium line-clamp-2 group-hover:text-white transition-colors">
+                        {item.title}
+                        <ExternalLink className="inline w-2 h-2 ml-0.5 opacity-0 group-hover:opacity-40 transition-opacity" />
+                      </p>
+                      {/* Row 3: price + change + sparkline */}
+                      {stockData && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-[9px] text-slate-400 font-mono shrink-0">
+                            {stockData.currency === 'USD'
+                              ? `$${stockData.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+                              : `₹${stockData.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
+                          </span>
+                          <span className={`text-[9px] font-semibold shrink-0 ${isItemUp ? 'text-emerald-400' : 'text-red-400'}`}>
+                            {isItemUp ? '▲' : '▼'} {Math.abs(stockData.changePercent).toFixed(2)}%
+                          </span>
+                          {sparkPath && (
+                            <svg width="48" height="16" viewBox="0 0 48 16" className="shrink-0">
+                              <path d={sparkPath} fill="none" stroke={isItemUp ? '#22c55e' : '#ef4444'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 
@@ -588,21 +579,15 @@ export function LiveBanner() {
               </div>
 
               {/* Center: Message */}
-              <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
-                <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
+              <div className="flex-1 min-w-0 flex flex-col justify-center gap-1">
+                <div className="flex items-center gap-1">
                   <span className="text-[8px] font-bold text-emerald-300 uppercase tracking-widest px-1.5 py-0.5 bg-emerald-500/15 border border-emerald-500/25 rounded-md leading-none">
                     Insurance Awareness
                   </span>
-                  <span className="flex items-center gap-0.5 text-[8px] text-rose-300/80 font-semibold leading-none">
-                    <Heart className="w-2 h-2 fill-rose-400 text-rose-400" />
-                    <span className="hidden sm:inline">Protect Your Family</span>
-                  </span>
+                  <Heart className="w-2.5 h-2.5 fill-rose-400 text-rose-400 shrink-0" />
                 </div>
-                <p className="text-[9px] sm:text-[10px] leading-snug text-white/85 font-medium italic line-clamp-2">
+                <p className="text-[9px] leading-snug text-white/90 font-medium italic line-clamp-4">
                   "One health emergency can wipe out years of savings — insurance is not a choice, it's a shield."
-                </p>
-                <p className="text-[8px] leading-tight text-emerald-400/60 mt-0.5 line-clamp-1">
-                  Protect what you've built — get IRDAI-regulated coverage today.
                 </p>
               </div>
 

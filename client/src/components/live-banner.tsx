@@ -368,7 +368,7 @@ export function LiveBanner() {
   const visibleNews = activeNewsItem ? [activeNewsItem] : [];
 
   return (
-    <Card className="w-full h-28 md:h-32 relative overflow-hidden bg-card border border-border">
+    <Card className="w-full h-36 md:h-40 relative overflow-hidden bg-card border border-border">
       <div className="absolute inset-0">
 
         {/* === SLIDE 0: YouTube Live Stream === */}

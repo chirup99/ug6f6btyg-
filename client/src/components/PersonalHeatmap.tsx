@@ -1411,30 +1411,25 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                 </Button>
 
                 {isFeedMode && onFeedPost && (
-                  <div className="flex items-center gap-1">
-                    <Button
-                      size="sm"
-                      variant="default"
-                      className="h-7 px-2 text-xs font-medium gap-1 bg-violet-600 hover:bg-violet-700 text-white"
+                  <div className="flex items-center gap-0.5">
+                    <button
+                      className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium bg-violet-600 hover:bg-violet-700 text-white transition-colors"
                       data-testid="button-post-dynamic"
                       onClick={() => selectedDate ? onFeedPost('selected') : onFeedPost('today')}
                     >
-                      <Send className="w-3 h-3" />
+                      <Send className="w-2.5 h-2.5" />
                       {selectedDate
                         ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                         : 'Today'}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs font-medium gap-1 border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                    </button>
+                    <button
+                      className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
                       data-testid="button-post-range"
                       onClick={() => onFeedPost('range')}
                     >
-                      <BookOpen className="w-3 h-3" />
-                      <Send className="w-3 h-3" />
-                      Tradebook
-                    </Button>
+                      <BookOpen className="w-2.5 h-2.5" />
+                      <Send className="w-2.5 h-2.5" />
+                    </button>
                   </div>
                 )}
               </div>

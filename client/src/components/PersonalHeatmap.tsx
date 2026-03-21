@@ -1325,8 +1325,8 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
         ) : (
           // Normal Mode: Show calendar navigation
           <div className="flex items-center justify-center gap-0 w-full">
-            {/* Left arrow - always show in normal mode */}
-            {!isRangeSelectMode && (
+            {/* Left arrow - hide in feed mode to lock year */}
+            {!isRangeSelectMode && !isFeedMode && (
               <Button
                 variant="ghost"
                 size="icon"

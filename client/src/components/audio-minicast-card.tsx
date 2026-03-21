@@ -786,9 +786,12 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
                         minicast
                       </div>
 
-                      {/* Center - Play button */}
+                      {/* Spacer */}
+                      <div />
+
+                      {/* Bottom - Play button */}
                       <button
-                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-3 py-1.5 rounded-full text-[9px] font-medium transition-all"
+                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-2.5 py-1 rounded-full text-[8px] font-medium transition-all"
                         onClick={(e) => {
                           e.stopPropagation();
                           if (isTop) {
@@ -797,14 +800,11 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
                         }}
                         data-testid="button-play-audio-card"
                       >
-                        <div className="flex items-center gap-1">
-                          <Play className="w-2 h-2 fill-white" />
+                        <div className="flex items-center gap-0.5">
+                          <Play className="w-1.5 h-1.5 fill-white" />
                           <span>{isPlaying ? 'Playing' : 'Play Now'}</span>
                         </div>
                       </button>
-
-                      {/* Bottom spacer */}
-                      <div />
                     </div>
 
                     {/* Stack indicator for non-top cards */}

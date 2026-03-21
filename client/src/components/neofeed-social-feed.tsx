@@ -4631,8 +4631,8 @@ function ViewUserProfile({
             })()}
           </div>
 
-          {/* Performance Metric Cards */}
-          {(() => {
+          {/* Performance Metric Cards — only shown when profile is public */}
+          {performanceIsPublic && (() => {
             const { last6Months, monthlyYield, totalTrades, disciplineData, currentStreak } = viewPerfMetrics;
             const miniLinePath = (data: number[], w = 80, h = 28) => {
               if (data.length < 2) return null;

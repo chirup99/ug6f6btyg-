@@ -780,46 +780,31 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
                     </div>
 
                     {/* Card content */}
-                    <div className="relative z-10 h-full flex flex-col justify-between">
-                      {/* Top section - Label */}
-                      <div className="flex flex-col items-center gap-1">
-                        <div className="text-[8px] text-white/80 uppercase tracking-wide font-medium">
-                          {gradient.label}
+                    <div className="relative z-10 h-full flex flex-col items-center justify-between py-2">
+                      {/* Top - tiny label */}
+                      <div className="text-[7px] text-white/60 uppercase tracking-widest font-medium">
+                        minicast
+                      </div>
+
+                      {/* Center - Play button */}
+                      <button
+                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-3 py-1.5 rounded-full text-[9px] font-medium transition-all"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isTop) {
+                            togglePlay();
+                          }
+                        }}
+                        data-testid="button-play-audio-card"
+                      >
+                        <div className="flex items-center gap-1">
+                          <Play className="w-2 h-2 fill-white" />
+                          <span>{isPlaying ? 'Playing' : 'Play Now'}</span>
                         </div>
-                      </div>
+                      </button>
 
-                      {/* Display name - Center */}
-                      <div className="flex items-center justify-center">
-                        <div className="text-center">
-                          <div className="text-white font-bold text-sm leading-tight">
-                            {author.displayName}
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Play button - Bottom */}
-                      <div className="flex justify-center">
-                        <button
-                          className="bg-white text-gray-800 hover:bg-gray-100 px-3 py-1.5 rounded-full text-[10px] font-medium shadow-lg"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (isTop) {
-                              togglePlay();
-                            }
-                          }}
-                          data-testid="button-play-audio-card"
-                        >
-                          <div className="flex items-center gap-1">
-                            <Play className="w-2.5 h-2.5" />
-                            <span>{isPlaying ? 'Playing' : 'Play Now'}</span>
-                          </div>
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Icon */}
-                    <div className="absolute top-2 right-2 text-sm filter drop-shadow-lg">
-                      {gradient.icon}
+                      {/* Bottom spacer */}
+                      <div />
                     </div>
 
                     {/* Stack indicator for non-top cards */}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, X, MoreVertical, Edit2, Layout, Send } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, MoreVertical, Edit2, Layout, Send, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -1431,8 +1431,9 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                       data-testid="button-post-range"
                       onClick={() => onFeedPost('range')}
                     >
-                      <span className="text-sm">📊</span>
-                      Range
+                      <BookOpen className="w-3 h-3" />
+                      <Send className="w-3 h-3" />
+                      Tradebook
                     </Button>
                   </div>
                 )}

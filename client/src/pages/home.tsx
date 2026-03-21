@@ -11814,6 +11814,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [reportPostSelectedDate, setReportPostSelectedDate] = useState<string>('');
   const [isPostingReport, setIsPostingReport] = useState(false);
 
+  // Override data for range post when triggered from Personal Heatmap
+  const [rangePostOverrideData, setRangePostOverrideData] = useState<Record<string, any> | null>(null);
+
   // State and refs for Range Post FOMO curved lines
   const [rangePostTagHighlight, setRangePostTagHighlight] = useState<{ tag: string; dates: string[] } | null>(null);
   const rangePostFomoButtonRef = useRef<HTMLButtonElement>(null);
@@ -25053,10 +25056,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               onRangeChange={handleDateRangeChange}
                               highlightedDates={activeTagHighlight}
                               refreshTrigger={personalHeatmapRevision}
-                              onFeedPost={(mode) => {
+                              onFeedPost={(mode, data) => {
                                 setReportPostMode(mode);
                                 if (mode === 'selected') {
                                   setReportPostSelectedDate(heatmapSelectedDate || new Date().toISOString().split('T')[0]);
+                                }
+                                if (mode === 'range' && data) {
+                                  setRangePostOverrideData(data);
                                 }
                                 setShowReportPostDialog(true);
                               }}
@@ -31484,7 +31490,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           open={showReportPostDialog}
           onOpenChange={(open) => {
             setShowReportPostDialog(open);
-            if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); setRangePostTagHighlight(null); }
+            if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); setRangePostTagHighlight(null); setRangePostOverrideData(null); }
           }}
         >
           <DialogContent className="w-full sm:max-w-md max-h-[90dvh] overflow-hidden flex flex-col gap-0 p-0">
@@ -31587,7 +31593,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
               {/* Range Report Preview */}
               {reportPostMode === 'range' && (() => {
-                const filteredData = getFilteredHeatmapData();
+                const filteredData = rangePostOverrideData || getFilteredHeatmapData();
                 const dates = Object.keys(filteredData).sort();
                 let totalPnL = 0, totalTrades = 0, winningTrades = 0;
                 let fomoCount = 0, currentStreak = 0, maxStreak = 0, overTradeCount = 0;
@@ -31665,7 +31671,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         className="max-h-52 sm:max-h-72 overflow-auto border border-slate-200 scrollbar-hide dark:border-slate-700 rounded-lg"
                       >
                         <DemoHeatmap
-                          tradingDataByDate={getFilteredHeatmapData()}
+                          tradingDataByDate={rangePostOverrideData || getFilteredHeatmapData()}
                           onDateSelect={() => {}}
                           selectedDate={null}
                           onDataUpdate={() => {}}
@@ -31792,7 +31798,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             if (rangePostTagHighlight?.tag === 'fomo') {
                               setRangePostTagHighlight(null);
                             } else {
-                              const fd = getFilteredHeatmapData();
+                              const fd = rangePostOverrideData || getFilteredHeatmapData();
                               const fomoDates: string[] = [];
                               Object.keys(fd).sort().forEach(dateKey => {
                                 const dayData = fd[dateKey];
@@ -31831,7 +31837,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             if (rangePostTagHighlight?.tag === 'overtrading') {
                               setRangePostTagHighlight(null);
                             } else {
-                              const fd = getFilteredHeatmapData();
+                              const fd = rangePostOverrideData || getFilteredHeatmapData();
                               const otDates: string[] = [];
                               Object.keys(fd).sort().forEach(dateKey => {
                                 const dayData = fd[dateKey];

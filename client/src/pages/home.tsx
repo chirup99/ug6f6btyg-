@@ -3221,7 +3221,7 @@ export default function Home() {
           dateLabel: formattedDate,
         };
       } else if (reportPostMode === 'range') {
-        const filteredData = getFilteredHeatmapData();
+        const filteredData = rangePostOverrideData || getFilteredHeatmapData();
         const dates = Object.keys(filteredData).sort();
         let totalPnL = 0, totalTrades = 0, winningTrades = 0;
         let fomoCount = 0, currentStreak = 0, maxStreak = 0;

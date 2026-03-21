@@ -2877,8 +2877,10 @@ function TradeInsightCard({ post }: { post: FeedPost }) {
 
 function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { metadata: any; postId: string | number; postCreatedAt?: string | Date; stripped?: boolean }) {
   const [fomoHighlight, setFomoHighlight] = useState(false);
+  const [overtradeHighlight, setOvertradeHighlight] = useState(false);
   const [scrollTrigger, setScrollTrigger] = useState(0);
   const fomoButtonRef = useRef<HTMLButtonElement>(null);
+  const overtradingButtonRef = useRef<HTMLButtonElement>(null);
   const heatmapContainerRef = useRef<HTMLDivElement>(null);
   const [mirrorData, setMirrorData] = useState<Record<string, any> | null>(null);
   const [mirrorLoading, setMirrorLoading] = useState(false);
@@ -2922,9 +2924,10 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
   const mirrorStats = useMemo(() => {
     if (!mirrorData || Object.keys(mirrorData).length === 0) return null;
     let totalPnL = 0, totalTrades = 0, winningTrades = 0;
-    let fomoCount = 0, currentStreak = 0, maxStreak = 0;
+    let fomoCount = 0, overtradeCount = 0, currentStreak = 0, maxStreak = 0;
     const trendData: number[] = [];
     const fomoDates: string[] = [];
+    const overtradeDates: string[] = [];
     Object.entries(mirrorData)
       .sort(([a], [b]) => a.localeCompare(b))
       .forEach(([dateKey, dayData]: [string, any]) => {
@@ -2944,8 +2947,16 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
                 fomoDates.push(dateKey);
                 fomoCount++;
               }
+              if (tag.toLowerCase().includes('overtrading') && !overtradeDates.includes(dateKey)) {
+                overtradeDates.push(dateKey);
+              }
             });
           }
+          const hasHighVolume = (Number(metrics.totalTrades) || 0) > 10;
+          if (hasHighVolume && !overtradeDates.includes(dateKey)) {
+            overtradeDates.push(dateKey);
+          }
+          overtradeCount = overtradeDates.length;
         }
       });
     return {
@@ -2953,9 +2964,11 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
       totalTrades,
       winRate: totalTrades > 0 ? Math.round(winningTrades / totalTrades * 100) : 0,
       fomoCount,
+      overtradeCount,
       streak: maxStreak,
       trendData,
       fomoDates,
+      overtradeDates,
       dateCount: Object.keys(mirrorData).length,
     };
   }, [mirrorData]);
@@ -3032,6 +3045,8 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
                 isPublicView={true}
                 disableAutoScroll={true}
                 onSelectDateForHeatmap={() => {}}
+                hideNavigation={true}
+                initialDate={m.toDate ? new Date(m.toDate + 'T12:00:00') : (heatmapData ? (() => { const dates = Object.keys(heatmapData).sort(); return dates.length > 0 ? new Date(dates[dates.length - 1] + 'T12:00:00') : new Date(); })() : new Date())}
               />
             </div>
             {fomoHighlight && stats.fomoDates && stats.fomoDates.length > 0 && (() => {

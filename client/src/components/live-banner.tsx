@@ -138,10 +138,25 @@ export function LiveBanner() {
   const [niftyChartData, setNiftyChartData] = useState<ChartPoint[]>([]);
   const [niftyLoading, setNiftyLoading] = useState(false);
 
-  // News + stock prices (same as home.tsx)
+  // Nifty 50 news + stock prices
   const [newsItems, setNewsItems] = useState<NewsItem[]>([]);
   const [newsStockPrices, setNewsStockPrices] = useState<{ [symbol: string]: StockPrice }>({});
   const [activeNewsIndex, setActiveNewsIndex] = useState(0);
+  const [newsLoading, setNewsLoading] = useState(false);
+
+  // Top Nifty 50 stocks to pull news from (same list as home.tsx)
+  const BANNER_NIFTY50 = [
+    { symbol: 'RELIANCE',   name: 'Reliance' },
+    { symbol: 'HDFCBANK',   name: 'HDFC Bank' },
+    { symbol: 'ICICIBANK',  name: 'ICICI Bank' },
+    { symbol: 'INFY',       name: 'Infosys' },
+    { symbol: 'TCS',        name: 'TCS' },
+    { symbol: 'SBIN',       name: 'SBI' },
+    { symbol: 'BHARTIARTL', name: 'Airtel' },
+    { symbol: 'LT',         name: 'L&T' },
+    { symbol: 'BAJFINANCE', name: 'Bajaj Finance' },
+    { symbol: 'HCLTECH',    name: 'HCL Tech' },
+  ];
 
   const bannerCount = 3;
 
@@ -179,37 +194,64 @@ export function LiveBanner() {
     return () => clearInterval(t);
   }, [fetchNiftyChart]);
 
-  // Fetch market news + stock prices — same API as home.tsx
-  useEffect(() => {
-    fetch('/api/general-market-news')
-      .then(r => r.json())
-      .then((data: any[]) => {
-        if (Array.isArray(data)) {
-          const items: NewsItem[] = data.slice(0, 20).map(d => ({
-            title: d.title || d.headline || '',
-            sector: d.displayName || d.sector || 'Market',
-            source: d.source || d.displayName || 'News',
-            publishedAt: d.publishedAt,
-            symbol: d.symbol,
-            displayName: d.displayName,
-          })).filter(n => n.title);
-          setNewsItems(items);
-          // Fetch stock prices for symbols — same as home.tsx fetchNewsStockPrices
-          const symbols = [...new Set(items.map(i => i.symbol).filter(Boolean))] as string[];
-          if (symbols.length > 0) {
-            fetch(`/api/news-stock-prices?symbols=${symbols.slice(0, 10).join(',')}`)
-              .then(r => r.json())
-              .then((priceData: any) => {
-                if (priceData && typeof priceData === 'object') {
-                  setNewsStockPrices(priceData);
-                }
-              })
-              .catch(() => {});
-          }
-        }
-      })
-      .catch(() => {});
+  // Fetch real Nifty 50 news — same approach as home.tsx fetchNifty50News
+  const fetchNifty50BannerNews = useCallback(async () => {
+    setNewsLoading(true);
+    try {
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const allNews: NewsItem[] = [];
+      const seenUrls = new Set<string>();
+
+      await Promise.all(
+        BANNER_NIFTY50.map(async (stock) => {
+          try {
+            const res = await fetch(`/api/stock-news/${stock.symbol}`);
+            if (!res.ok) return;
+            const data = await res.json();
+            const items = Array.isArray(data) ? data : (data.news || []);
+            items.forEach((item: any) => {
+              if (!item.url || seenUrls.has(item.url)) return;
+              if (!item.title) return;
+              const published = new Date(item.publishedAt || item.date || 0);
+              if (published < oneWeekAgo) return;
+              seenUrls.add(item.url);
+              allNews.push({
+                title: item.title,
+                sector: stock.name,
+                source: item.source || stock.name,
+                publishedAt: item.publishedAt || item.date || new Date().toISOString(),
+                symbol: stock.symbol,
+                displayName: stock.name,
+              });
+            });
+          } catch {}
+        })
+      );
+
+      // Sort latest first
+      allNews.sort((a, b) => new Date(b.publishedAt || 0).getTime() - new Date(a.publishedAt || 0).getTime());
+      const top = allNews.slice(0, 20);
+      setNewsItems(top);
+
+      // Fetch live stock prices for symbols shown
+      const symbols = [...new Set(top.map(i => i.symbol).filter(Boolean))] as string[];
+      if (symbols.length > 0) {
+        fetch(`/api/news-stock-prices?symbols=${symbols.slice(0, 10).join(',')}`)
+          .then(r => r.json())
+          .then((priceData: any) => {
+            if (priceData && typeof priceData === 'object') setNewsStockPrices(priceData);
+          })
+          .catch(() => {});
+      }
+    } catch {}
+    finally { setNewsLoading(false); }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    fetchNifty50BannerNews();
+  }, [fetchNifty50BannerNews]);
 
   // Scroll pause
   useEffect(() => {
@@ -419,12 +461,21 @@ export function LiveBanner() {
               <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-purple-500/20 rounded-full blur-xl pointer-events-none" />
               <div className="flex items-center gap-1.5 mb-1 relative z-10">
                 <span className="text-[9px] font-bold text-purple-300 uppercase tracking-widest px-1.5 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded-md">
-                  Market News
+                  Nifty 50 News
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                {newsLoading
+                  ? <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 animate-pulse" />
+                  : <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                }
               </div>
               <div className="flex flex-col gap-1.5 flex-1 min-h-0 overflow-hidden justify-center relative z-10">
-                {visibleNews.length === 0 ? (
+                {newsLoading ? (
+                  <div className="space-y-2">
+                    {[1, 2].map(i => (
+                      <div key={i} className="h-3 bg-white/10 rounded animate-pulse" style={{ width: `${55 + i * 15}%` }} />
+                    ))}
+                  </div>
+                ) : visibleNews.length === 0 ? (
                   <div className="space-y-2">
                     {[1, 2].map(i => (
                       <div key={i} className="h-3 bg-white/10 rounded animate-pulse" style={{ width: `${55 + i * 15}%` }} />

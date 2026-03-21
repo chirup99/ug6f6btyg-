@@ -3708,7 +3708,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 </AvatarFallback>
               </Avatar>
               <div>
-                {onViewUserProfile && (post.user?.handle || post.authorUsername) !== currentUserUsername ? (
+                {onViewUserProfile ? (
                   <button
                     onClick={() => {
                       const username = post.user?.handle || post.authorUsername || '';
@@ -3771,7 +3771,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                {onViewUserProfile && (post.user?.handle || post.authorUsername) !== currentUserUsername ? (
+                {onViewUserProfile ? (
                   <button
                     onClick={() => {
                       const username = post.user?.handle || post.authorUsername || '';

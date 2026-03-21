@@ -14,6 +14,7 @@ import {
   ShieldCheck,
   Heart,
   Users,
+  ExternalLink,
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -42,6 +43,7 @@ import {
 interface NewsItem {
   title: string;
   sector: string;
+  url?: string;
   source?: string;
   publishedAt?: string;
   symbol?: string;
@@ -218,6 +220,7 @@ export function LiveBanner() {
               seenUrls.add(item.url);
               allNews.push({
                 title: item.title,
+                url: item.url,
                 sector: stock.name,
                 source: item.source || stock.name,
                 publishedAt: item.publishedAt || item.date || new Date().toISOString(),
@@ -346,11 +349,24 @@ export function LiveBanner() {
   const videoId = extractYouTubeId(youtubeUrl);
   const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
 
-  // Visible news items (rotate 2 at a time)
+  // Relative time helper — same logic as home.tsx getWatchlistNewsRelativeTime
+  const getRelativeTime = (publishedAt?: string) => {
+    if (!publishedAt) return '';
+    const diffMs = Date.now() - new Date(publishedAt).getTime();
+    const m = Math.floor(diffMs / 60000);
+    const h = Math.floor(diffMs / 3600000);
+    const d = Math.floor(diffMs / 86400000);
+    if (m < 60) return `${m}m ago`;
+    if (h < 24) return `${h}h ago`;
+    return `${d}d ago`;
+  };
+
+  // Visible news items — rotate 3 at a time (matches home.tsx style)
   const visibleNews = newsItems.length > 0
     ? [
         newsItems[activeNewsIndex % newsItems.length],
         newsItems[(activeNewsIndex + 1) % newsItems.length],
+        newsItems[(activeNewsIndex + 2) % newsItems.length],
       ]
     : [];
 
@@ -417,24 +433,21 @@ export function LiveBanner() {
           </div>
         )}
 
-        {/* === SLIDE 1: Nifty 50 real chart + News — journal-style dark gradient UI === */}
+        {/* === SLIDE 1: Nifty 50 chart + Live News === */}
         {currentIndex === 1 && (
           <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-violet-950/80 to-purple-950 flex items-stretch px-2 py-2 gap-2">
 
-            {/* Left: Nifty 50 chart panel — journal glass card */}
-            <div className="flex flex-col w-[38%] shrink-0 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm px-2.5 py-1.5 relative overflow-hidden">
-              {/* subtle glow accent */}
+            {/* Left: Nifty 50 chart — hidden on mobile to give news full width */}
+            <div className="hidden sm:flex flex-col w-[36%] shrink-0 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm px-2.5 py-1.5 relative overflow-hidden">
               <div className="absolute -top-4 -left-4 w-16 h-16 bg-violet-500/20 rounded-full blur-xl pointer-events-none" />
-              <div className="flex items-center justify-between mb-0.5 relative z-10">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-[9px] font-bold text-violet-300 uppercase tracking-widest px-1.5 py-0.5 bg-violet-500/20 border border-violet-500/30 rounded-md">
-                    Nifty 50
-                  </span>
-                  <span className="flex items-center gap-0.5 text-[8px] text-emerald-400 font-semibold">
-                    <span className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse" />
-                    Live
-                  </span>
-                </div>
+              <div className="flex items-center gap-1.5 mb-0.5 relative z-10">
+                <span className="text-[9px] font-bold text-violet-300 uppercase tracking-widest px-1.5 py-0.5 bg-violet-500/20 border border-violet-500/30 rounded-md">
+                  Nifty 50
+                </span>
+                <span className="flex items-center gap-0.5 text-[8px] text-emerald-400 font-semibold">
+                  <span className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse" />
+                  Live
+                </span>
               </div>
               <div className="text-sm font-bold text-white tabular-nums leading-none relative z-10">
                 {niftyCurrentPrice > 0 ? `₹${priceFormatted}` : '—'}
@@ -443,7 +456,6 @@ export function LiveBanner() {
                 {isUp ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
                 <span>{isUp ? '+' : ''}{niftyChangePct.toFixed(2)}%</span>
               </div>
-              {/* Real area chart */}
               <div className="flex-1 min-h-0 w-full mt-1 relative z-10">
                 {niftyLoading || niftyChartData.length === 0 ? (
                   <div className="w-full h-full flex items-center justify-center">
@@ -455,12 +467,13 @@ export function LiveBanner() {
               </div>
             </div>
 
-            {/* Right: News panel — journal-style glass card */}
-            <div className="flex-1 min-w-0 flex flex-col rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm px-2.5 py-1.5 relative overflow-hidden">
-              {/* subtle glow accent */}
+            {/* Right (full-width on mobile): News panel — home.tsx-style items */}
+            <div className="flex-1 min-w-0 flex flex-col rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm px-2 py-1.5 relative overflow-hidden">
               <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-purple-500/20 rounded-full blur-xl pointer-events-none" />
-              <div className="flex items-center gap-1.5 mb-1 relative z-10">
-                <span className="text-[9px] font-bold text-purple-300 uppercase tracking-widest px-1.5 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded-md">
+
+              {/* Header row */}
+              <div className="flex items-center gap-1.5 mb-1 relative z-10 shrink-0">
+                <span className="text-[9px] font-bold text-purple-300 uppercase tracking-widest px-1.5 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded-md leading-none">
                   Nifty 50 News
                 </span>
                 {newsLoading
@@ -468,52 +481,74 @@ export function LiveBanner() {
                   : <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
                 }
               </div>
-              <div className="flex flex-col gap-1.5 flex-1 min-h-0 overflow-hidden justify-center relative z-10">
+
+              {/* News items — exact same format as home.tsx market news tab */}
+              <div className="flex flex-col flex-1 min-h-0 overflow-hidden divide-y divide-white/5 relative z-10">
                 {newsLoading ? (
-                  <div className="space-y-2">
-                    {[1, 2].map(i => (
-                      <div key={i} className="h-3 bg-white/10 rounded animate-pulse" style={{ width: `${55 + i * 15}%` }} />
+                  <div className="flex flex-col gap-2 justify-center flex-1 px-1">
+                    {[80, 65, 50].map((w, i) => (
+                      <div key={i} className="h-2.5 bg-white/10 rounded animate-pulse" style={{ width: `${w}%` }} />
                     ))}
                   </div>
                 ) : visibleNews.length === 0 ? (
-                  <div className="space-y-2">
-                    {[1, 2].map(i => (
-                      <div key={i} className="h-3 bg-white/10 rounded animate-pulse" style={{ width: `${55 + i * 15}%` }} />
+                  <div className="flex flex-col gap-2 justify-center flex-1 px-1">
+                    {[80, 65].map((w, i) => (
+                      <div key={i} className="h-2.5 bg-white/10 rounded animate-pulse" style={{ width: `${w}%` }} />
                     ))}
                   </div>
                 ) : (
                   visibleNews.map((item, i) => {
                     const stockData = item.symbol ? newsStockPrices[item.symbol] : null;
                     const isItemUp = stockData ? stockData.changePercent >= 0 : null;
+                    const pts = stockData?.chartData ?? [];
+                    let sparkPath = '';
+                    if (pts.length >= 2) {
+                      const prices = pts.map((p: any) => p.price);
+                      const mn = Math.min(...prices), mx = Math.max(...prices);
+                      const rng = mx - mn || 1;
+                      const W = 48, H = 16;
+                      sparkPath = prices.map((p: number, idx: number) => {
+                        const x = (idx / (prices.length - 1)) * W;
+                        const y = H - ((p - mn) / rng) * H;
+                        return `${idx === 0 ? 'M' : 'L'}${x.toFixed(1)},${y.toFixed(1)}`;
+                      }).join(' ');
+                    }
                     return (
                       <div
                         key={`${activeNewsIndex}-${i}`}
-                        className={`transition-opacity duration-500 ${i === 0 ? 'opacity-100' : 'opacity-40'} rounded-lg px-1.5 py-1 ${i === 0 ? 'bg-white/8' : ''}`}
+                        className={`flex-1 flex flex-col justify-center px-1 py-0.5 transition-opacity duration-500 cursor-pointer group ${i === 0 ? 'opacity-100' : i === 1 ? 'opacity-50' : 'opacity-25'}`}
+                        onClick={() => item.url && window.open(item.url, '_blank', 'noopener,noreferrer')}
                       >
-                        {/* Source badge + title */}
-                        <div className="flex items-start gap-1 mb-0.5">
+                        {/* Row 1: badge + title + time — exactly like home.tsx */}
+                        <div className="flex items-center gap-1 min-w-0">
                           {item.displayName && (
-                            <span className="shrink-0 text-[8px] font-bold text-purple-300 px-1 py-0.5 bg-purple-500/25 border border-purple-500/30 rounded leading-none mt-px">
+                            <span className="shrink-0 text-[8px] font-semibold text-purple-300 px-1 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded leading-none">
                               {item.displayName}
                             </span>
                           )}
-                          <p className="text-[10px] leading-tight text-slate-200 font-medium line-clamp-1">
+                          <span className="flex-1 text-[10px] leading-tight text-slate-200 font-medium line-clamp-1 group-hover:text-white transition-colors min-w-0">
                             {item.title}
-                          </p>
+                            {i === 0 && <ExternalLink className="inline w-2 h-2 ml-0.5 opacity-0 group-hover:opacity-40 transition-opacity" />}
+                          </span>
+                          {item.publishedAt && (
+                            <span className="shrink-0 text-[8px] text-slate-500 ml-1">{getRelativeTime(item.publishedAt)}</span>
+                          )}
                         </div>
-                        {/* Price + change + sparkline */}
+                        {/* Row 2: price + change % + sparkline — exactly like home.tsx */}
                         {stockData && (
-                          <div className="flex items-center gap-1.5 pl-0.5">
-                            <span className="text-slate-400 text-[10px] font-mono">
+                          <div className="flex items-center gap-1.5 mt-0.5">
+                            <span className="text-[9px] text-slate-400 font-mono shrink-0">
                               {stockData.currency === 'USD'
                                 ? `$${stockData.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
                                 : `₹${stockData.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
                             </span>
-                            <span className={`text-[10px] font-semibold ${isItemUp ? 'text-emerald-400' : 'text-red-400'}`}>
+                            <span className={`text-[9px] font-semibold shrink-0 ${isItemUp ? 'text-emerald-400' : 'text-red-400'}`}>
                               {isItemUp ? '▲' : '▼'} {Math.abs(stockData.changePercent).toFixed(2)}%
                             </span>
-                            {stockData.chartData?.length >= 2 && (
-                              <MiniSparkline chartData={stockData.chartData} isUp={!!isItemUp} />
+                            {sparkPath && (
+                              <svg width="48" height="16" viewBox="0 0 48 16" className="shrink-0">
+                                <path d={sparkPath} fill="none" stroke={isItemUp ? '#22c55e' : '#ef4444'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                              </svg>
                             )}
                           </div>
                         )}

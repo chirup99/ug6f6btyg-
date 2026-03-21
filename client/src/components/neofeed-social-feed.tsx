@@ -3691,7 +3691,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 </AvatarFallback>
               </Avatar>
               <div>
-                {onViewUserProfile ? (
+                {onViewUserProfile && (post.user?.handle || post.authorUsername) !== currentUserUsername ? (
                   <button
                     onClick={() => {
                       const username = post.user?.handle || post.authorUsername || '';
@@ -3754,7 +3754,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                {onViewUserProfile ? (
+                {onViewUserProfile && (post.user?.handle || post.authorUsername) !== currentUserUsername ? (
                   <button
                     onClick={() => {
                       const username = post.user?.handle || post.authorUsername || '';
@@ -3786,7 +3786,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 {post.isRepost && post.originalAuthorUsername && (
                   <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                     <Repeat className="h-4 w-4 text-green-500" />
-                    {onViewUserProfile ? (
+                    {onViewUserProfile && post.originalAuthorUsername !== currentUserUsername ? (
                       <button
                         onClick={(e) => {
                           e.stopPropagation();

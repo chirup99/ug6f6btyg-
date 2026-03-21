@@ -1165,6 +1165,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
   const [activeRuleIndex, setActiveRuleIndex] = useState(() => new Date().getDay() % MINDSET_CARDS.length);
   const [ruleExiting, setRuleExiting] = useState(false);
+  const hasInitFromProfile = useRef(false);
   const [cardsPrivate, setCardsPrivate] = useState(() => {
     const stored = localStorage.getItem('performancePrivate');
     if (stored !== null) return stored === 'true';
@@ -1172,10 +1173,14 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   });
 
   useEffect(() => {
-    if (profileData && profileData.performancePublic !== undefined) {
-      const isPrivate = profileData.performancePublic === false;
-      setCardsPrivate(isPrivate);
-      localStorage.setItem('performancePrivate', isPrivate ? 'true' : 'false');
+    if (profileData && profileData.performancePublic !== undefined && !hasInitFromProfile.current) {
+      hasInitFromProfile.current = true;
+      const stored = localStorage.getItem('performancePrivate');
+      if (stored === null) {
+        const isPrivate = profileData.performancePublic === false;
+        setCardsPrivate(isPrivate);
+        localStorage.setItem('performancePrivate', isPrivate ? 'true' : 'false');
+      }
     }
   }, [profileData?.performancePublic]);
 
@@ -1221,11 +1226,6 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
     return () => clearInterval(timer);
   }, [ruleExiting]);
 
-  useEffect(() => {
-    if (profileData !== undefined) {
-      setCardsPrivate(profileData?.performancePublic === false);
-    }
-  }, [profileData?.performancePublic]);
 
   const DEMO_MONTHS = [
     { label: 'Oct', pnl: 8200 },
@@ -4772,7 +4772,7 @@ function ViewUserProfile({
   const bio = profileData?.bio || '';
   const profilePicUrl = profileData?.profilePicUrl;
   const initials = (displayName || 'U').charAt(0).toUpperCase();
-  const performanceIsPublic = profileData?.performancePublic !== false;
+  const performanceIsPublic = profileData?.performancePublic === true;
   const showPerformance = isOwnProfile || performanceIsPublic;
 
   const VIEW_MINDSET_CARDS = [

@@ -592,18 +592,20 @@ export function LiveBanner() {
               </div>
 
               {/* Right: CTA */}
-              <div className="flex flex-col items-center justify-center gap-1 shrink-0">
+              <div className="flex flex-col items-center justify-center gap-1.5 shrink-0">
                 <a
                   href="https://irdai.gov.in/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-400/50 transition-all active:scale-95 group shadow-sm"
+                  className="flex flex-col items-center gap-0.5 px-2.5 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-400/50 transition-all active:scale-95 group shadow-sm"
                   data-testid="button-insurance-portal"
                 >
                   <span className="text-[9px] font-bold text-emerald-200 group-hover:text-white whitespace-nowrap transition-colors">More Details</span>
-                  <span className="text-[7px] text-emerald-500/60 whitespace-nowrap">irdai.gov.in</span>
+                  <span className="text-[7px] text-emerald-500/70 whitespace-nowrap">irdai.gov.in</span>
                 </a>
-                <span className="text-[7px] text-slate-500 text-center leading-tight">Govt. of India<br className="hidden sm:block" /><span className="hidden sm:inline"> Official Portal</span></span>
+                <span className="text-[8px] font-semibold text-emerald-400/80 whitespace-nowrap px-1.5 py-0.5 bg-emerald-500/10 border border-emerald-500/20 rounded-md leading-none">
+                  IRDAI Regulated
+                </span>
               </div>
 
             </div>

@@ -4230,6 +4230,286 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
 });
 
 // Twitter-style User Profile View Component
+// Demo performance data for bot profile (mirrors journal tab demo tradebook)
+const BOT_DEMO_PERF = {
+  last6Months: [
+    { label: 'Oct', pnl: 3200 },
+    { label: 'Nov', pnl: -1400 },
+    { label: 'Dec', pnl: 5800 },
+    { label: 'Jan', pnl: 2100 },
+    { label: 'Feb', pnl: -800 },
+    { label: 'Mar', pnl: 4600 },
+  ],
+  monthlyYield: 3.7,
+  totalTrades: 52,
+  currentStreak: 14,
+  disciplineData: [2, 4, 5, 6, 8, 7, 9, 11, 10, 13, 12, 14],
+};
+
+function FinanceNewsBotProfile({ onBack }: { onBack: () => void }) {
+  const [activeTab, setActiveTab] = useState('Posts');
+  const [viewCardIndex, setViewCardIndex] = useState(0);
+  const [viewCardExiting, setViewCardExiting] = useState(false);
+
+  const BOT_MINDSET_CARDS = [
+    { label: 'Market Intelligence', quote: "Stay informed, stay ahead. Real-time news is your edge in a fast-moving market.", bg: 'from-blue-950 via-blue-900 to-indigo-950', showImage: false, image: '' },
+    { label: 'Information Is Power', quote: "The trader who reads the news before the crowd gains the first-mover advantage.", bg: 'from-gray-950 via-[#001a2a] to-gray-900', showImage: false, image: '' },
+    { label: 'Signal vs Noise', quote: "Filter out the noise. Not every headline moves markets — learn to spot what matters.", bg: 'from-emerald-900 to-teal-800', showImage: false, image: '' },
+  ];
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setViewCardExiting(true);
+      setTimeout(() => { setViewCardIndex(i => (i + 1) % BOT_MINDSET_CARDS.length); setViewCardExiting(false); }, 280);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const { data: botPosts = [], isLoading: postsLoading } = useQuery({
+    queryKey: ['/api/social-posts/by-user/finance_news'],
+    queryFn: async (): Promise<SocialPost[]> => {
+      const response = await fetch('/api/social-posts/by-user/finance_news');
+      if (!response.ok) throw new Error('Failed to fetch posts');
+      return response.json();
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const { last6Months, monthlyYield, totalTrades, disciplineData, currentStreak } = BOT_DEMO_PERF;
+
+  const miniLinePath = (data: number[], w = 80, h = 28) => {
+    if (data.length < 2) return null;
+    const max = Math.max(...data), min = Math.min(...data), range = max - min || 1;
+    const pts = data.map((v, i) => ({ x: (i / (data.length - 1)) * w, y: h - ((v - min) / range) * h }));
+    return pts.reduce((d, p, i) => i === 0 ? `M ${p.x.toFixed(1)},${p.y.toFixed(1)}` : `${d} L ${p.x.toFixed(1)},${p.y.toFixed(1)}`, '');
+  };
+
+  const isYieldPos = monthlyYield >= 0;
+  const yieldPath = miniLinePath(last6Months.map(m => m.pnl));
+  const disciplinePath = miniLinePath(disciplineData);
+  const MONTHLY_TARGET_PCT = 5.0;
+  const targetProgress = Math.min(100, Math.max(0, (monthlyYield / MONTHLY_TARGET_PCT) * 100));
+  const R = 18, CIRC = 2 * Math.PI * R, dash = (targetProgress / 100) * CIRC;
+
+  return (
+    <div className="bg-white dark:bg-gray-900 min-h-screen">
+      {/* Back Button Header */}
+      <div className="sticky top-0 z-40 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm border-b border-gray-200 dark:border-gray-700 px-4 py-2">
+        <Button variant="ghost" size="icon" onClick={onBack} className="text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full" data-testid="button-back-bot-profile">
+          <ArrowLeft className="h-5 w-5" />
+        </Button>
+      </div>
+
+      {/* Profile Header */}
+      <div className="bg-white dark:bg-gray-900 px-4 pt-4 pb-0 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex items-start gap-3 mb-3">
+          {/* Bot Avatar */}
+          <div className="w-14 h-14 flex-shrink-0 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center border-2 border-blue-200 dark:border-blue-800 shadow-sm" data-testid="img-bot-avatar">
+            <Newspaper className="w-7 h-7 text-white" />
+          </div>
+
+          {/* Name / handle / bio */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-gray-900 dark:text-white font-bold text-base leading-tight flex items-center gap-1 flex-wrap">
+              Finance News
+              <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
+              <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5">
+                <Bot className="w-2.5 h-2.5" /> Bot
+              </span>
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-xs">@finance_news</p>
+            <p className="text-gray-700 dark:text-gray-300 text-xs mt-0.5 leading-snug">
+              AI-powered market intelligence — curated finance news, earnings reports, and economic insights delivered in real time.
+            </p>
+          </div>
+
+          {/* Stats on the right */}
+          <div className="flex-shrink-0 flex flex-col items-end gap-2">
+            <div className="flex items-center gap-3 text-center">
+              <div>
+                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{botPosts.length}</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Posts</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Joined Date */}
+        <div className="flex items-center gap-1 text-gray-400 dark:text-gray-500 text-xs mb-3">
+          <Calendar className="w-3 h-3" />
+          <span>Automated financial news aggregator</span>
+        </div>
+      </div>
+
+      {/* Performance Section with Demo Data */}
+      <div className="bg-white dark:bg-gray-900 px-4 pt-3 pb-0">
+        <div className="flex items-center justify-between mb-2">
+          <p className="text-[9px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Performance</p>
+          <div className="flex items-center gap-1 text-[9px] text-gray-400 dark:text-gray-500">
+            <Unlock className="w-2.5 h-2.5" /><span>Demo Data</span>
+          </div>
+        </div>
+        <p className="text-[8px] text-blue-400 dark:text-blue-500 mb-2 flex items-center gap-1">
+          <Eye className="w-2.5 h-2.5" /> Based on journal tab demo tradebook
+        </p>
+
+        {/* Mindset card */}
+        <style>{`@keyframes blPulseV{0%,100%{filter:drop-shadow(0 0 8px rgba(234,179,8,.35)) brightness(1);transform:scale(1)}50%{filter:drop-shadow(0 0 18px rgba(234,179,8,.7)) brightness(1.08);transform:scale(1.04)}}`}</style>
+        <div className="relative h-[88px] mb-3">
+          {[2, 1].map((offset) => {
+            const c = BOT_MINDSET_CARDS[(viewCardIndex + offset) % BOT_MINDSET_CARDS.length];
+            return (
+              <div key={offset} className={`absolute inset-0 rounded-xl bg-gradient-to-r ${c.bg}`}
+                style={{ opacity: offset === 2 ? 0.32 : 0.6, transform: `translateY(${offset === 2 ? '-7px' : '-3.5px'}) scaleX(${offset === 2 ? 0.95 : 0.98})`, zIndex: offset === 2 ? 1 : 2 }}
+              />
+            );
+          })}
+          {(() => {
+            const card = BOT_MINDSET_CARDS[viewCardIndex];
+            return (
+              <div className={`absolute inset-0 rounded-xl bg-gradient-to-r ${card.bg} shadow-md overflow-hidden z-10 select-none`}
+                style={{ opacity: viewCardExiting ? 0 : 1, transform: viewCardExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)', transition: 'opacity 280ms, transform 280ms' }}
+                onClick={() => {
+                  setViewCardExiting(true);
+                  setTimeout(() => { setViewCardIndex(i => (i + 1) % BOT_MINDSET_CARDS.length); setViewCardExiting(false); }, 280);
+                }}
+              >
+                <div className="flex items-center h-full px-3 pr-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[7px] uppercase tracking-widest font-bold mb-0.5 text-white/65">{card.label}</p>
+                    <p className="text-[10px] font-semibold leading-tight text-white">&ldquo;{card.quote}&rdquo;</p>
+                  </div>
+                  <div className="flex flex-col items-center justify-end pb-1.5 flex-shrink-0 self-end ml-2">
+                    <div className="flex items-center gap-1">
+                      {BOT_MINDSET_CARDS.map((_, i) => (
+                        <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === viewCardIndex ? 'w-3 bg-white' : 'w-1 bg-white/30'}`} />
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+
+        {/* Performance metric cards */}
+        <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-4">
+          {/* Streak */}
+          <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+            <div className="flex items-center gap-1 mb-1"><Flame className="w-3 h-3 text-orange-500" /><p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold">Streak</p></div>
+            <p className="text-base font-bold leading-none text-orange-500 mb-1.5">{currentStreak} days</p>
+            <div className="flex gap-0.5">{Array.from({ length: 7 }).map((_, i) => <div key={i} className={`flex-1 h-4 rounded-sm ${i < Math.min(currentStreak, 7) ? 'bg-orange-400' : 'bg-gray-100 dark:bg-gray-700'}`} />)}</div>
+            <p className="text-[8px] text-gray-400 mt-1">Journal streak</p>
+          </div>
+          {/* Journal */}
+          <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+            <div className="flex items-center gap-1 mb-1"><BookOpen className="w-3 h-3 text-teal-500" /><p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold">Journal</p></div>
+            <p className="text-base font-bold leading-none text-teal-600 dark:text-teal-400 mb-2">{totalTrades} entries</p>
+            <div className="flex gap-0.5 items-end h-6">{last6Months.map((m, i) => { const maxP = Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1); return <div key={i} className="flex-1 rounded-sm bg-teal-400/70" style={{ height: `${Math.max(20, (Math.abs(m.pnl) / maxP) * 100)}%` }} />; })}</div>
+            <p className="text-[8px] text-gray-400 mt-1">Logged trades</p>
+          </div>
+          {/* Yield */}
+          <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+            <p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold mb-1">Yield</p>
+            <p className={`text-base font-bold leading-none mb-2 ${isYieldPos ? 'text-emerald-500' : 'text-red-500'}`}>{isYieldPos ? '+' : ''}{monthlyYield.toFixed(1)}%</p>
+            {yieldPath ? <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none"><path d={yieldPath} fill="none" stroke={isYieldPos ? '#10b981' : '#ef4444'} strokeWidth="1.8" strokeLinecap="round" /></svg>
+              : <div className="flex gap-0.5 items-end h-6">{last6Months.map((m, i) => <div key={i} className={`flex-1 rounded-sm ${m.pnl >= 0 ? 'bg-emerald-400' : 'bg-red-400'}`} style={{ height: `${Math.max(20, Math.abs(m.pnl) / Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1) * 100)}%` }} />)}</div>}
+            <p className="text-[8px] text-gray-400 mt-1">{totalTrades} trades</p>
+          </div>
+          {/* Target */}
+          <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+            <div className="flex items-center gap-1 mb-1"><TargetIcon className="w-3 h-3 text-blue-500" /><p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold">Target</p></div>
+            <div className="flex items-center gap-2">
+              <svg width="40" height="40" viewBox="0 0 46 46">
+                <circle cx="23" cy="23" r={R} fill="none" stroke="#e5e7eb" strokeWidth="4" />
+                <circle cx="23" cy="23" r={R} fill="none" stroke={targetProgress >= 100 ? '#10b981' : '#3b82f6'} strokeWidth="4" strokeLinecap="round" strokeDasharray={`${dash} ${CIRC}`} strokeDashoffset={CIRC * 0.25} style={{ transition: 'stroke-dasharray 0.6s ease' }} />
+                <text x="23" y="27" textAnchor="middle" fontSize="9" fontWeight="700" fill={targetProgress >= 100 ? '#10b981' : '#3b82f6'}>{Math.round(targetProgress)}%</text>
+              </svg>
+              <div><p className="text-xs font-bold text-gray-900 dark:text-white leading-none">{isYieldPos ? '+' : ''}{monthlyYield.toFixed(1)}%</p><p className="text-[9px] text-gray-400 mt-0.5">of {MONTHLY_TARGET_PCT}%</p></div>
+            </div>
+          </div>
+          {/* Discipline */}
+          <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+            <div className="flex items-center gap-1 mb-1"><Award className="w-3 h-3 text-violet-500" /><p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold">Discipline</p></div>
+            <p className="text-base font-bold leading-none mb-2 text-violet-600 dark:text-violet-400">{currentStreak} wins</p>
+            {disciplinePath ? <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none"><defs><linearGradient id="dg-bot" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#8b5cf6" /><stop offset="100%" stopColor="#6366f1" /></linearGradient></defs><path d={disciplinePath} fill="none" stroke="url(#dg-bot)" strokeWidth="1.8" strokeLinecap="round" /></svg>
+              : <div className="h-6 flex items-center"><div className="h-px w-full bg-violet-200 dark:bg-violet-800" /></div>}
+            <p className="text-[8px] text-gray-400 mt-1">Win streak trend</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex overflow-x-auto scrollbar-hide px-4">
+          {(['Posts'] as const).map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`pb-3 px-3 font-medium text-sm whitespace-nowrap transition-colors relative flex-shrink-0 ${activeTab === tab ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'}`}
+              data-testid={`button-bot-profile-tab-${tab.toLowerCase()}`}
+            >
+              {tab}{!postsLoading && botPosts.length > 0 ? ` (${botPosts.length})` : ''}
+              {activeTab === tab && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full" />}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Posts */}
+      <div className="max-w-4xl mx-auto px-4">
+        {postsLoading ? (
+          <div className="space-y-3 mt-2">
+            {[1, 2, 3].map(i => (
+              <Card key={i} className="p-4 animate-pulse border-0 shadow-none bg-muted/30">
+                <div className="flex gap-3">
+                  <div className="w-9 h-9 bg-muted rounded-full flex-shrink-0"></div>
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3.5 bg-muted rounded w-28"></div>
+                    <div className="h-3 bg-muted rounded w-full"></div>
+                    <div className="h-3 bg-muted rounded w-2/3"></div>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        ) : botPosts.length === 0 ? (
+          <div className="py-14 text-center text-gray-400 dark:text-gray-500">
+            <div className="mb-3 flex justify-center opacity-40"><Newspaper className="w-10 h-10" /></div>
+            <p className="text-sm">No news posts yet</p>
+          </div>
+        ) : (
+          <div className="space-y-2 mt-2 mb-6">
+            {(botPosts as any[]).map((post: any) => (
+              <PostCard
+                key={post.id}
+                post={{
+                  id: post.id?.toString() ?? String(Math.random()),
+                  content: post.content ?? '',
+                  authorUsername: post.authorUsername ?? 'finance_news',
+                  authorDisplayName: post.authorDisplayName ?? 'Finance News',
+                  authorAvatar: post.authorAvatar ?? null,
+                  authorVerified: true,
+                  likes: post.likes ?? 0,
+                  comments: post.comments ?? 0,
+                  reposts: post.reposts ?? 0,
+                  tags: post.tags ?? [],
+                  sentiment: post.sentiment ?? null,
+                  ticker: post.ticker ?? null,
+                  createdAt: post.createdAt,
+                  timestamp: post.timestamp,
+                  metadata: post.metadata,
+                  imageUrl: post.imageUrl ?? null,
+                } as any}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function ViewUserProfile({ 
   username, 
   onBack, 
@@ -5356,8 +5636,11 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   // Use feedData directly - don't add mock data
   const defaultFeedData: FeedPost[] = feedData;
 
-  // Show ViewUserProfile when viewing another user's profile
+  // Show bot profile for finance_news, or regular profile for other users
   if (viewingUserProfile) {
+    if (viewingUserProfile === 'finance_news') {
+      return <FinanceNewsBotProfile onBack={() => setViewingUserProfile(null)} />;
+    }
     return (
       <ViewUserProfile
         username={viewingUserProfile}

@@ -1248,6 +1248,20 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
       });
   }, [journalRaw]);
 
+  // Push performance snapshot to server mirror so public profile views are instant
+  useEffect(() => {
+    if (!userId || last6Months.length === 0) return;
+    const currentStreak = disciplineData.length > 0 ? disciplineData[disciplineData.length - 1] : 0;
+    getCognitoToken().then(idToken => {
+      if (!idToken) return;
+      fetch('/api/user/performance-mirror', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+        body: JSON.stringify({ last6Months, monthlyYield, totalTrades, winRate, currentStreak, disciplineData }),
+      }).catch(() => {});
+    });
+  }, [userId, last6Months, monthlyYield, totalTrades, winRate, disciplineData]);
+
   // Handle image selection for editing
   const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>, type: 'profile' | 'cover') => {
     const file = e.target.files?.[0];
@@ -4209,7 +4223,7 @@ function ViewUserProfile({
       if (!response.ok) throw new Error('Failed to fetch profile');
       return response.json();
     },
-    staleTime: 30 * 1000,
+    staleTime: 2 * 60 * 1000,
   });
 
   // Fetch followers/following counts
@@ -4326,7 +4340,6 @@ function ViewUserProfile({
   const bio = profileData?.bio || '';
   const profilePicUrl = profileData?.profilePicUrl;
   const initials = (displayName || 'U').charAt(0).toUpperCase();
-  const viewUserId = profileData?.userId;
   const performanceIsPublic = profileData?.performancePublic !== false;
   const showPerformance = isOwnProfile || performanceIsPublic;
 
@@ -4351,51 +4364,33 @@ function ViewUserProfile({
     return () => clearInterval(timer);
   }, []);
 
-  const { data: viewJournalRaw = {} } = useQuery({
-    queryKey: ['view-journal-perf', viewUserId],
+  // Fetch performance snapshot from in-memory mirror — instant, no DynamoDB read
+  const { data: viewPerfMirror } = useQuery({
+    queryKey: ['perf-mirror', username],
     queryFn: async () => {
-      if (!viewUserId) return {};
-      const res = await fetch(`/api/user-journal/${viewUserId}/public`);
-      if (!res.ok) return {};
+      const res = await fetch(`/api/users/${username}/performance-mirror`);
+      if (!res.ok) return null;
       return res.json();
     },
-    enabled: !!viewUserId && showPerformance,
-    staleTime: 5 * 60 * 1000,
+    enabled: showPerformance,
+    staleTime: 60 * 1000,
+    refetchInterval: showPerformance ? 30 * 1000 : false,
   });
 
   const viewPerfMetrics = useMemo(() => {
-    const now = new Date();
-    const months: { label: string; pnl: number }[] = [];
-    for (let i = 5; i >= 0; i--) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = d.toLocaleString('en', { month: 'short' });
-      let pnl = 0;
-      Object.entries(viewJournalRaw as Record<string, any>).forEach(([date, day]) => {
-        if (date.startsWith(key)) pnl += Number(day?.performanceMetrics?.netPnL) || 0;
-      });
-      months.push({ label, pnl });
-    }
-    const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-    let thisMonthPnl = 0, totalW = 0, totalL = 0, allTrades = 0;
-    Object.entries(viewJournalRaw as Record<string, any>).forEach(([date, day]) => {
-      if (date.startsWith(currentKey)) thisMonthPnl += Number(day?.performanceMetrics?.netPnL) || 0;
-      totalW += Number(day?.performanceMetrics?.winningTrades) || 0;
-      totalL += Number(day?.performanceMetrics?.losingTrades) || 0;
-      allTrades += Number(day?.performanceMetrics?.totalTrades) || 0;
-    });
-    const totalAbsPnl = months.reduce((s, m) => s + Math.abs(m.pnl), 0);
-    const yieldPct = totalAbsPnl > 0 ? (thisMonthPnl / totalAbsPnl) * 100 : 0;
-    const entries = Object.entries(viewJournalRaw as Record<string, any>).sort(([a], [b]) => a.localeCompare(b)).slice(-12);
-    let st = 0;
-    const disciplineData = entries.map(([, day]) => {
-      const p = Number(day?.performanceMetrics?.netPnL || 0);
-      if (p >= 0) st++; else st = Math.max(0, st - 1);
-      return st;
-    });
-    const currentStreak = disciplineData.length > 0 ? disciplineData[disciplineData.length - 1] : 0;
-    return { last6Months: months, monthlyYield: yieldPct, totalTrades: allTrades, disciplineData, currentStreak };
-  }, [viewJournalRaw]);
+    const fallback = {
+      last6Months: [] as { label: string; pnl: number }[],
+      monthlyYield: 0, totalTrades: 0, currentStreak: 0, disciplineData: [] as number[],
+    };
+    if (!viewPerfMirror) return fallback;
+    return {
+      last6Months: viewPerfMirror.last6Months || [],
+      monthlyYield: viewPerfMirror.monthlyYield || 0,
+      totalTrades: viewPerfMirror.totalTrades || 0,
+      currentStreak: viewPerfMirror.currentStreak || 0,
+      disciplineData: viewPerfMirror.disciplineData || [],
+    };
+  }, [viewPerfMirror]);
 
   if (profileLoading) {
     return (

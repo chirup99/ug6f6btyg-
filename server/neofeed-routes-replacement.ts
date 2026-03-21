@@ -88,6 +88,20 @@ export function invalidateProfileCache(username: string) {
   _profileCache.delete(username.toLowerCase());
 }
 
+// ─── In-memory Performance Mirror ─────────────────────────────────────────────
+// Owners push a computed snapshot when they view their own profile; public
+// viewers read it instantly without touching DynamoDB.
+interface PerfSnapshot {
+  last6Months: { label: string; pnl: number }[];
+  monthlyYield: number;
+  totalTrades: number;
+  currentStreak: number;
+  winRate: number;
+  disciplineData: number[];
+  updatedAt: number;
+}
+const _perfMirror = new Map<string, PerfSnapshot>();
+
 // MIRROR LOGIC: Always pull the latest displayName and avatar from the profile —
 // the stored post fields are ignored so every profile update is immediately reflected everywhere.
 async function enrichPostWithRealCounts(post: any): Promise<any> {
@@ -1289,6 +1303,34 @@ export function registerNeoFeedAwsRoutes(app: any) {
       console.error('❌ Error unfollowing user:', error);
       res.status(500).json({ error: 'Failed to unfollow user' });
     }
+  });
+
+  // ─── Performance Mirror: owner pushes, public reads ────────────────────────
+  app.post('/api/user/performance-mirror', async (req: any, res: any) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+      const { last6Months, monthlyYield, totalTrades, currentStreak, winRate, disciplineData } = req.body;
+      _perfMirror.set(user.username.toLowerCase(), {
+        last6Months: last6Months || [],
+        monthlyYield: Number(monthlyYield) || 0,
+        totalTrades: Number(totalTrades) || 0,
+        currentStreak: Number(currentStreak) || 0,
+        winRate: Number(winRate) || 0,
+        disciplineData: disciplineData || [],
+        updatedAt: Date.now(),
+      });
+      res.json({ ok: true });
+    } catch (err) {
+      res.status(500).json({ error: 'Failed to update performance mirror' });
+    }
+  });
+
+  app.get('/api/users/:username/performance-mirror', (req: any, res: any) => {
+    const username = (req.params.username || '').toLowerCase();
+    const snapshot = _perfMirror.get(username);
+    if (!snapshot) return res.json(null);
+    res.json(snapshot);
   });
 
   app.get('/api/users/:username/profile', async (req: any, res: any) => {

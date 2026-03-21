@@ -5,15 +5,12 @@ import { Button } from './ui/button';
 import { 
   Play, 
   Pause,
-  Calendar,
-  TrendingUp,
-  Zap,
-  Bell,
   ChevronLeft,
   ChevronRight,
   Tv,
   Link as LinkIcon,
-  MoreVertical
+  MoreVertical,
+  Radio
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -41,6 +38,11 @@ interface BannerContent {
   date?: string;
   isLive?: boolean;
   priority?: 'high' | 'medium' | 'low';
+}
+
+function extractYouTubeId(url: string): string | null {
+  const match = url.match(/embed\/([a-zA-Z0-9_-]{11})/);
+  return match ? match[1] : null;
 }
 
 const getDefaultBannerContent = (youtubeUrl?: string | null): BannerContent[] => {
@@ -89,7 +91,6 @@ export function LiveBanner() {
   const [youtubeUrl, setYoutubeUrl] = useState<string>('https://www.youtube.com/embed/P857H4ej-MQ?enablejsapi=1&modestbranding=1&controls=0&showinfo=0&rel=0&pp=ygUJY25iYyBsaXZl');
 
   const handleCnbcStream = () => {
-    // CNBC-TV18 Live Stream (India) - typically has a stable live link
     const cnbcUrl = 'https://www.youtube.com/embed/P857H4ej-MQ?enablejsapi=1&modestbranding=1&controls=0&showinfo=0&rel=0';
     updateStreamUrl(cnbcUrl);
   };
@@ -100,7 +101,6 @@ export function LiveBanner() {
     let processedUrl = customUrl.trim();
     
     try {
-      // Handle various YouTube URL formats
       if (processedUrl.includes('youtube.com/watch?v=')) {
         const urlObj = new URL(processedUrl);
         const videoId = urlObj.searchParams.get('v');
@@ -112,7 +112,6 @@ export function LiveBanner() {
         const videoId = processedUrl.split('live/')[1]?.split(/[?#]/)[0];
         if (videoId) processedUrl = `https://www.youtube.com/embed/${videoId}`;
       } else if (processedUrl.includes('youtube.com/embed/')) {
-        // Already an embed URL, just ensure it has the protocol
         if (processedUrl.startsWith('//')) processedUrl = 'https:' + processedUrl;
       }
     } catch (e) {
@@ -131,14 +130,13 @@ export function LiveBanner() {
       : `${url}?enablejsapi=1&modestbranding=1&controls=0&showinfo=0&rel=0&origin=${encodeURIComponent(origin)}`;
     setYoutubeUrl(cleanUrl);
     setCurrentIndex(0);
+    setIsVideoPlaying(false);
     localStorage.setItem('youtube_banner_url', cleanUrl);
     
-    // Dispatch event for other components
     const event = new CustomEvent('livestream-url-updated', { detail: { url: cleanUrl } });
     window.dispatchEvent(event);
   };
 
-  // Load saved URL from localStorage on mount
   useEffect(() => {
     const savedUrl = localStorage.getItem('youtube_banner_url');
     if (savedUrl) {
@@ -149,7 +147,6 @@ export function LiveBanner() {
     }
   }, []);
 
-  // Listen for URL updates from LivestreamAdsControl
   useEffect(() => {
     const handleUrlUpdate = (event: CustomEvent) => {
       const newUrl = event.detail.url;
@@ -159,9 +156,11 @@ export function LiveBanner() {
           : `${newUrl}?modestbranding=1&controls=0&showinfo=0&rel=0`;
         setYoutubeUrl(cleanUrl);
         setCurrentIndex(0);
+        setIsVideoPlaying(false);
       } else {
         setYoutubeUrl('https://www.youtube.com/embed/P857H4ej-MQ?enablejsapi=1&modestbranding=1&controls=0&showinfo=0&rel=0&pp=ygUJY25iYyBsaXZl');
         setCurrentIndex(0);
+        setIsVideoPlaying(false);
       }
     };
 
@@ -177,37 +176,27 @@ export function LiveBanner() {
   
   const currentContent = bannerContent[currentIndex];
 
-  // Carousel auto-rotation - STOPS when video is playing
   useEffect(() => {
     if (!isCarouselPlaying) return;
+    if (isVideoPlaying) return;
     
-    // STOP carousel if YouTube video is playing
-    if (isVideoPlaying) {
-      console.log('⏸️ Carousel PAUSED - YouTube video is playing');
-      return;
-    }
-    
-    // Run carousel normally when video is NOT playing
     const interval = setInterval(() => {
       setCurrentIndex((prev) => (prev + 1) % bannerContent.length);
     }, 5000);
     
     return () => clearInterval(interval);
-  }, [isCarouselPlaying, isVideoPlaying, currentContent.youtubeEmbedUrl, bannerContent.length]);
+  }, [isCarouselPlaying, isVideoPlaying, bannerContent.length]);
 
-  // Handle scroll - pause video when scrolling
   useEffect(() => {
     if (!currentContent.youtubeEmbedUrl) return;
 
     const handleScroll = () => {
       if (isVideoPlaying && iframeRef.current) {
-        // Pause YouTube video
         iframeRef.current.contentWindow?.postMessage(
           '{"event":"command","func":"pauseVideo","args":""}', 
           '*'
         );
         setIsVideoPlaying(false);
-        console.log('⏸️ Video paused due to scroll');
       }
     };
 
@@ -226,148 +215,184 @@ export function LiveBanner() {
   (window as any).pauseBannerYouTube = pauseYouTube;
 
   const navigateLeft = () => {
+    setIsVideoPlaying(false);
     setCurrentIndex((prev) => prev > 0 ? prev - 1 : bannerContent.length - 1);
   };
 
   const navigateRight = () => {
+    setIsVideoPlaying(false);
     setCurrentIndex((prev) => (prev + 1) % bannerContent.length);
   };
 
-  const getBadgeStyle = (type: string, priority?: string) => {
-    switch (type) {
-      case 'live_stream':
-        return 'bg-red-600 hover:bg-red-700';
-      case 'update':
-        if (priority === 'high') {
-          return 'bg-orange-600 hover:bg-orange-700';
-        }
-        return 'bg-blue-600 hover:bg-blue-700';
-      case 'ad':
-        return 'bg-purple-600 hover:bg-purple-700';
-      default:
-        return 'bg-indigo-600 hover:bg-indigo-700';
-    }
-  };
-
-  const getBadgeIcon = (type: string) => {
-    switch (type) {
-      case 'live_stream':
-        return <Zap className="w-3 h-3" />;
-      case 'update':
-        return <Bell className="w-3 h-3" />;
-      case 'ad':
-        return <TrendingUp className="w-3 h-3" />;
-      default:
-        return <Calendar className="w-3 h-3" />;
-    }
-  };
-
-  const toggleYouTubePlayback = () => {
+  const handlePlayClick = () => {
     if (!iframeRef.current || !currentContent.youtubeEmbedUrl) return;
-    
-    if (isVideoPlaying) {
-      // Pause video
-      iframeRef.current.contentWindow?.postMessage(
-        '{"event":"command","func":"pauseVideo","args":""}', 
-        '*'
-      );
-      setIsVideoPlaying(false);
-      console.log('⏸️ Video PAUSED - Carousel will RESUME');
-    } else {
-      // Play video
-      iframeRef.current.contentWindow?.postMessage(
-        '{"event":"command","func":"playVideo","args":""}', 
-        '*'
-      );
-      setIsVideoPlaying(true);
-      console.log('▶️ Video PLAYING - Carousel will STOP');
-    }
+    iframeRef.current.contentWindow?.postMessage(
+      '{"event":"command","func":"playVideo","args":""}', 
+      '*'
+    );
+    setIsVideoPlaying(true);
   };
+
+  const handlePauseClick = () => {
+    if (!iframeRef.current) return;
+    iframeRef.current.contentWindow?.postMessage(
+      '{"event":"command","func":"pauseVideo","args":""}', 
+      '*'
+    );
+    setIsVideoPlaying(false);
+  };
+
+  const getAdAccentColor = (type: string, priority?: string) => {
+    if (type === 'update' && priority === 'high') return 'from-orange-500/10 to-amber-500/10 border-orange-500/20';
+    if (type === 'ad') return 'from-violet-500/10 to-purple-500/10 border-violet-500/20';
+    if (type === 'content') return 'from-blue-500/10 to-cyan-500/10 border-blue-500/20';
+    return 'from-muted/50 to-muted/30 border-border';
+  };
+
+  const getAdDot = (type: string, priority?: string) => {
+    if (type === 'update' && priority === 'high') return 'bg-orange-500';
+    if (type === 'ad') return 'bg-violet-500';
+    if (type === 'content') return 'bg-blue-500';
+    return 'bg-muted-foreground';
+  };
+
+  const videoId = currentContent.youtubeEmbedUrl ? extractYouTubeId(currentContent.youtubeEmbedUrl) : null;
+  const thumbnailUrl = videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : null;
 
   return (
-    <Card className="w-full h-32 md:h-48 relative overflow-hidden bg-gradient-to-r from-slate-900 via-indigo-900 to-slate-900 border-2 border-indigo-400/30">
+    <Card className="w-full h-40 md:h-52 relative overflow-hidden bg-card border border-border">
+
+      {/* Main Content Area */}
       <div className="absolute inset-0 flex items-center justify-center">
         {currentContent.youtubeEmbedUrl ? (
-          <div className="relative w-full h-full">
-            {/* Clean YouTube Video */}
+          <div className="relative w-full h-full bg-black">
+            {/* Always-mounted iframe (hidden until playing) */}
             <iframe
               ref={iframeRef}
-              className="absolute inset-0 w-full h-full"
+              className={`absolute inset-0 w-full h-full transition-opacity duration-300 ${isVideoPlaying ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}
               src={currentContent.youtubeEmbedUrl}
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
               allowFullScreen
               data-testid="youtube-iframe"
             />
-            
-            {/* Top-left corner controls */}
-            <div className="absolute top-2 left-2 flex items-center gap-2 z-10">
-              <Button
-                size="icon"
-                variant="ghost"
-                onClick={toggleYouTubePlayback}
-                className="h-8 w-8 bg-black/50 backdrop-blur-sm hover:bg-black/70 text-white"
-                data-testid="button-youtube-toggle"
-              >
-                {isVideoPlaying ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
-              </Button>
-              
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button
-                    size="icon"
-                    variant="ghost"
-                    className="h-8 w-8 bg-black/50 backdrop-blur-sm hover:bg-black/70 text-white"
-                    data-testid="button-stream-dropdown"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48 bg-slate-900 border-slate-700 text-white">
-                  <DropdownMenuItem onClick={handleCnbcStream} className="hover:bg-slate-800 cursor-pointer">
-                    <Tv className="w-4 h-4 mr-2" />
-                    <span>CNBC-TV18 Live</span>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => setIsUrlDialogOpen(true)} className="hover:bg-slate-800 cursor-pointer">
-                    <LinkIcon className="w-4 h-4 mr-2" />
-                    <span>Custom Stream</span>
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-              
-              {currentContent.isLive && (
-                <Badge className="bg-red-600 hover:bg-red-700 text-white text-xs px-2 py-0.5 flex items-center gap-1">
-                  <span className="w-2 h-2 bg-white rounded-full animate-pulse" />
-                  LIVE
-                </Badge>
-              )}
-            </div>
+
+            {/* Thumbnail + centered play button (shown when not playing) */}
+            {!isVideoPlaying && (
+              <div className="absolute inset-0 flex items-center justify-center">
+                {thumbnailUrl && (
+                  <img
+                    src={thumbnailUrl}
+                    alt="Stream thumbnail"
+                    className="absolute inset-0 w-full h-full object-cover"
+                    data-testid="youtube-thumbnail"
+                  />
+                )}
+                {/* Dark overlay */}
+                <div className="absolute inset-0 bg-black/40" />
+
+                {/* Centered play button */}
+                <button
+                  onClick={handlePlayClick}
+                  className="relative z-10 flex items-center justify-center w-14 h-14 rounded-full bg-white/20 backdrop-blur-sm border border-white/30 hover:bg-white/30 transition-all active:scale-95"
+                  data-testid="button-youtube-play"
+                >
+                  <Play className="w-6 h-6 text-white fill-white ml-0.5" />
+                </button>
+
+                {/* LIVE badge + stream selector — top right */}
+                <div className="absolute top-2 right-2 flex items-center gap-1.5 z-10">
+                  {currentContent.isLive && (
+                    <div className="flex items-center gap-1 bg-red-600/90 backdrop-blur-sm rounded-full px-2 py-0.5">
+                      <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
+                      <span className="text-white text-[10px] font-semibold tracking-wide">LIVE</span>
+                    </div>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        className="h-7 w-7 bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white"
+                        data-testid="button-stream-dropdown"
+                      >
+                        <MoreVertical className="w-3.5 h-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-44">
+                      <DropdownMenuItem onClick={handleCnbcStream} className="cursor-pointer">
+                        <Tv className="w-4 h-4 mr-2" />
+                        <span>CNBC-TV18 Live</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setIsUrlDialogOpen(true)} className="cursor-pointer">
+                        <LinkIcon className="w-4 h-4 mr-2" />
+                        <span>Custom Stream</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+              </div>
+            )}
+
+            {/* Pause button overlay (shown when playing) */}
+            {isVideoPlaying && (
+              <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5">
+                <button
+                  onClick={handlePauseClick}
+                  className="flex items-center justify-center w-7 h-7 rounded-full bg-black/50 backdrop-blur-sm hover:bg-black/70 transition-all"
+                  data-testid="button-youtube-pause"
+                >
+                  <Pause className="w-3.5 h-3.5 text-white" />
+                </button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      size="icon"
+                      variant="ghost"
+                      className="h-7 w-7 bg-black/40 backdrop-blur-sm hover:bg-black/60 text-white"
+                      data-testid="button-stream-dropdown-playing"
+                    >
+                      <MoreVertical className="w-3.5 h-3.5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-44">
+                    <DropdownMenuItem onClick={handleCnbcStream} className="cursor-pointer">
+                      <Tv className="w-4 h-4 mr-2" />
+                      <span>CNBC-TV18 Live</span>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => setIsUrlDialogOpen(true)} className="cursor-pointer">
+                      <LinkIcon className="w-4 h-4 mr-2" />
+                      <span>Custom Stream</span>
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </div>
+            )}
           </div>
         ) : (
-          <div className="text-center px-4 md:px-8">
-            <div className="flex items-center justify-center gap-2 mb-2">
-              <Badge 
-                className={`${getBadgeStyle(currentContent.type, currentContent.priority)} text-white flex items-center gap-1`}
-                data-testid={`badge-${currentContent.type}`}
-              >
-                {getBadgeIcon(currentContent.type)}
-                <span>{currentContent.type.replace('_', ' ').toUpperCase()}</span>
-              </Badge>
+          /* Non-YouTube slides — minimal ad/update/content cards */
+          <div className={`absolute inset-0 bg-gradient-to-br ${getAdAccentColor(currentContent.type, currentContent.priority)} flex flex-col items-center justify-center px-6 text-center`}>
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className={`w-1.5 h-1.5 rounded-full ${getAdDot(currentContent.type, currentContent.priority)}`} />
+              <span className="text-[11px] font-medium text-muted-foreground uppercase tracking-widest">
+                {currentContent.type === 'live_stream' ? 'Live' : currentContent.type}
+              </span>
               {currentContent.date && (
-                <span className="text-xs text-indigo-300">{currentContent.date}</span>
+                <span className="text-[11px] text-muted-foreground">· {currentContent.date}</span>
               )}
             </div>
-            <h2 className="text-lg md:text-2xl font-bold text-white mb-1 md:mb-2">
+            <h2 className="text-base md:text-lg font-semibold text-foreground mb-1 leading-snug">
               {currentContent.title}
             </h2>
-            <p className="text-sm md:text-base text-indigo-200 line-clamp-2">
+            <p className="text-xs md:text-sm text-muted-foreground line-clamp-2 max-w-xs">
               {currentContent.description}
             </p>
           </div>
         )}
       </div>
 
+      {/* URL Dialog */}
       <Dialog open={isUrlDialogOpen} onOpenChange={setIsUrlDialogOpen}>
-        <DialogContent className="bg-slate-900 border-slate-700 text-white">
+        <DialogContent>
           <DialogHeader>
             <DialogTitle>Custom Live Stream</DialogTitle>
           </DialogHeader>
@@ -378,48 +403,47 @@ export function LiveBanner() {
               placeholder="https://www.youtube.com/watch?v=..."
               value={customUrl}
               onChange={(e) => setCustomUrl(e.target.value)}
-              className="bg-slate-800 border-slate-700 text-white"
             />
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsUrlDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleCustomUrlSubmit} className="bg-indigo-600 hover:bg-indigo-700">Set Stream</Button>
+            <Button onClick={handleCustomUrlSubmit}>Set Stream</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
       {/* Navigation arrows */}
-      <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-2 pointer-events-none">
+      <div className="absolute inset-y-0 left-0 right-0 flex items-center justify-between px-1.5 pointer-events-none z-20">
         <Button
           size="icon"
           variant="ghost"
           onClick={navigateLeft}
-          className="pointer-events-auto h-8 w-8 md:h-10 md:w-10 bg-black/30 backdrop-blur-sm hover:bg-black/50 text-white"
+          className="pointer-events-auto h-7 w-7 bg-background/60 backdrop-blur-sm hover:bg-background/80 text-foreground shadow-sm"
           data-testid="button-banner-left"
         >
-          <ChevronLeft className="w-4 h-4 md:w-5 md:h-5" />
+          <ChevronLeft className="w-4 h-4" />
         </Button>
         <Button
           size="icon"
           variant="ghost"
           onClick={navigateRight}
-          className="pointer-events-auto h-8 w-8 md:h-10 md:w-10 bg-black/30 backdrop-blur-sm hover:bg-black/50 text-white"
+          className="pointer-events-auto h-7 w-7 bg-background/60 backdrop-blur-sm hover:bg-background/80 text-foreground shadow-sm"
           data-testid="button-banner-right"
         >
-          <ChevronRight className="w-4 h-4 md:w-5 md:h-5" />
+          <ChevronRight className="w-4 h-4" />
         </Button>
       </div>
 
-      {/* Progress indicators */}
-      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5 z-10">
+      {/* Progress dots */}
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1 z-20">
         {bannerContent.map((_, index) => (
           <button
             key={index}
-            onClick={() => setCurrentIndex(index)}
-            className={`h-1.5 rounded-full transition-all ${
+            onClick={() => { setIsVideoPlaying(false); setCurrentIndex(index); }}
+            className={`h-1 rounded-full transition-all duration-300 ${
               index === currentIndex 
-                ? 'w-6 bg-white' 
-                : 'w-1.5 bg-white/40 hover:bg-white/60'
+                ? 'w-5 bg-foreground/70' 
+                : 'w-1 bg-foreground/20 hover:bg-foreground/40'
             }`}
             data-testid={`button-indicator-${index}`}
           />

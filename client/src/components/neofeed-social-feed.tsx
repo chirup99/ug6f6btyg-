@@ -3691,15 +3691,21 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 </AvatarFallback>
               </Avatar>
               <div>
-                <button
-                  onClick={() => {
-                    const username = post.user?.handle || post.authorUsername || '';
-                    if (username) onViewUserProfile ? onViewUserProfile(username) : (window.location.href = `/user/${username}`);
-                  }}
-                  className="text-foreground font-semibold text-sm hover:underline leading-none"
-                >
-                  {post.user?.username || post.authorDisplayName || post.authorUsername || 'Unknown'}
-                </button>
+                {onViewUserProfile ? (
+                  <button
+                    onClick={() => {
+                      const username = post.user?.handle || post.authorUsername || '';
+                      if (username) onViewUserProfile(username);
+                    }}
+                    className="text-foreground font-semibold text-sm hover:underline leading-none"
+                  >
+                    {post.user?.username || post.authorDisplayName || post.authorUsername || 'Unknown'}
+                  </button>
+                ) : (
+                  <span className="text-foreground font-semibold text-sm leading-none">
+                    {post.user?.username || post.authorDisplayName || post.authorUsername || 'Unknown'}
+                  </span>
+                )}
                 <p className="text-muted-foreground text-xs leading-none mt-0.5">@{post.user?.handle || post.authorUsername}</p>
               </div>
             </div>
@@ -3748,25 +3754,31 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <button
-                  onClick={() => {
-                    const username = post.user?.handle || post.authorUsername || '';
-                    if (username) {
-                      if (onViewUserProfile) {
-                        onViewUserProfile(username);
-                      } else {
-                        window.location.href = `/user/${username}`;
-                      }
-                    }
-                  }}
-                  className="text-foreground font-semibold text-sm xl:text-base hover:underline cursor-pointer transition-colors"
-                  data-testid={`button-profile-${post.authorUsername}`}
-                >
-                  {post.user?.username || 
-                   post.authorDisplayName || 
-                   post.authorUsername || 
-                   'Unknown User'}
-                </button>
+                {onViewUserProfile ? (
+                  <button
+                    onClick={() => {
+                      const username = post.user?.handle || post.authorUsername || '';
+                      if (username) onViewUserProfile(username);
+                    }}
+                    className="text-foreground font-semibold text-sm xl:text-base hover:underline cursor-pointer transition-colors"
+                    data-testid={`button-profile-${post.authorUsername}`}
+                  >
+                    {post.user?.username || 
+                     post.authorDisplayName || 
+                     post.authorUsername || 
+                     'Unknown User'}
+                  </button>
+                ) : (
+                  <span
+                    className="text-foreground font-semibold text-sm xl:text-base"
+                    data-testid={`text-profile-${post.authorUsername}`}
+                  >
+                    {post.user?.username || 
+                     post.authorDisplayName || 
+                     post.authorUsername || 
+                     'Unknown User'}
+                  </span>
+                )}
                 {(post.user?.verified || post.authorVerified) && (
                   <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 fill-current" />
                 )}
@@ -3774,22 +3786,27 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 {post.isRepost && post.originalAuthorUsername && (
                   <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
                     <Repeat className="h-4 w-4 text-green-500" />
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (post.originalAuthorUsername) {
-                          if (onViewUserProfile) {
+                    {onViewUserProfile ? (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (post.originalAuthorUsername) {
                             onViewUserProfile(post.originalAuthorUsername);
-                          } else {
-                            window.location.href = `/user/${post.originalAuthorUsername}`;
                           }
-                        }
-                      }}
-                      className="text-sm hover:underline cursor-pointer text-green-600 dark:text-green-400 font-medium"
-                      data-testid={`button-original-author-${post.originalPostId}`}
-                    >
-                      {post.originalAuthorDisplayName || post.originalAuthorUsername}
-                    </button>
+                        }}
+                        className="text-sm hover:underline cursor-pointer text-green-600 dark:text-green-400 font-medium"
+                        data-testid={`button-original-author-${post.originalPostId}`}
+                      >
+                        {post.originalAuthorDisplayName || post.originalAuthorUsername}
+                      </button>
+                    ) : (
+                      <span
+                        className="text-sm text-green-600 dark:text-green-400 font-medium"
+                        data-testid={`text-original-author-${post.originalPostId}`}
+                      >
+                        {post.originalAuthorDisplayName || post.originalAuthorUsername}
+                      </span>
+                    )}
                   </div>
                 )}
               </div>

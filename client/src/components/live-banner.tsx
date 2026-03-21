@@ -372,35 +372,37 @@ export function LiveBanner() {
           </div>
         )}
 
-        {/* === SLIDE 1: Nifty 50 real chart + News with price + sparkline === */}
+        {/* === SLIDE 1: Nifty 50 real chart + News — journal-style dark gradient UI === */}
         {currentIndex === 1 && (
-          <div className="absolute inset-0 flex items-stretch px-2 py-2 gap-2">
+          <div className="absolute inset-0 bg-gradient-to-r from-slate-900 via-violet-950/80 to-purple-950 flex items-stretch px-2 py-2 gap-2">
 
-            {/* Left: Nifty 50 real area chart — same as home.tsx */}
-            <div className="flex flex-col w-[38%] shrink-0 rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/40 px-2.5 py-1.5 border-l-4 border-l-blue-500">
-              <div className="flex items-center justify-between mb-0.5">
-                <div className="flex items-center gap-1">
-                  <span className="text-[9px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-wider px-1 py-0.5 bg-blue-50 dark:bg-blue-900/30 rounded">
+            {/* Left: Nifty 50 chart panel — journal glass card */}
+            <div className="flex flex-col w-[38%] shrink-0 rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm px-2.5 py-1.5 relative overflow-hidden">
+              {/* subtle glow accent */}
+              <div className="absolute -top-4 -left-4 w-16 h-16 bg-violet-500/20 rounded-full blur-xl pointer-events-none" />
+              <div className="flex items-center justify-between mb-0.5 relative z-10">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-bold text-violet-300 uppercase tracking-widest px-1.5 py-0.5 bg-violet-500/20 border border-violet-500/30 rounded-md">
                     Nifty 50
                   </span>
-                  <span className="flex items-center gap-0.5 text-[8px] text-green-500 font-medium">
-                    <span className="w-1 h-1 bg-green-500 rounded-full animate-pulse" />
+                  <span className="flex items-center gap-0.5 text-[8px] text-emerald-400 font-semibold">
+                    <span className="w-1 h-1 bg-emerald-400 rounded-full animate-pulse" />
                     Live
                   </span>
                 </div>
               </div>
-              <div className="text-sm font-bold text-slate-800 dark:text-slate-100 tabular-nums leading-none">
+              <div className="text-sm font-bold text-white tabular-nums leading-none relative z-10">
                 {niftyCurrentPrice > 0 ? `₹${priceFormatted}` : '—'}
               </div>
-              <div className={`flex items-center gap-0.5 text-[10px] font-semibold ${isUp ? 'text-green-500' : 'text-red-500'}`}>
+              <div className={`flex items-center gap-0.5 text-[10px] font-semibold relative z-10 ${isUp ? 'text-emerald-400' : 'text-red-400'}`}>
                 {isUp ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
                 <span>{isUp ? '+' : ''}{niftyChangePct.toFixed(2)}%</span>
               </div>
               {/* Real area chart */}
-              <div className="flex-1 min-h-0 w-full mt-1">
+              <div className="flex-1 min-h-0 w-full mt-1 relative z-10">
                 {niftyLoading || niftyChartData.length === 0 ? (
                   <div className="w-full h-full flex items-center justify-center">
-                    <div className="w-full h-px bg-slate-300 dark:bg-slate-700 animate-pulse" />
+                    <div className="w-full h-px bg-white/20 animate-pulse" />
                   </div>
                 ) : (
                   <NiftyAreaChart chartData={niftyChartData} isUp={isUp} />
@@ -408,19 +410,21 @@ export function LiveBanner() {
               </div>
             </div>
 
-            {/* Right: News with price + sparkline — same as home.tsx market news tab */}
-            <div className="flex-1 min-w-0 flex flex-col rounded-lg border border-slate-100 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-900/40 px-2 py-1.5 border-l-4 border-l-purple-500 overflow-hidden">
-              <div className="flex items-center gap-1.5 mb-1">
-                <span className="text-[9px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-tight px-1.5 py-0.5 bg-purple-50 dark:bg-purple-900/30 rounded">
+            {/* Right: News panel — journal-style glass card */}
+            <div className="flex-1 min-w-0 flex flex-col rounded-xl bg-white/5 border border-white/10 backdrop-blur-sm px-2.5 py-1.5 relative overflow-hidden">
+              {/* subtle glow accent */}
+              <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-purple-500/20 rounded-full blur-xl pointer-events-none" />
+              <div className="flex items-center gap-1.5 mb-1 relative z-10">
+                <span className="text-[9px] font-bold text-purple-300 uppercase tracking-widest px-1.5 py-0.5 bg-purple-500/20 border border-purple-500/30 rounded-md">
                   Market News
                 </span>
-                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
               </div>
-              <div className="flex flex-col gap-1 flex-1 min-h-0 overflow-hidden justify-center">
+              <div className="flex flex-col gap-1.5 flex-1 min-h-0 overflow-hidden justify-center relative z-10">
                 {visibleNews.length === 0 ? (
-                  <div className="space-y-1.5">
+                  <div className="space-y-2">
                     {[1, 2].map(i => (
-                      <div key={i} className="h-3 bg-slate-200 dark:bg-slate-700/60 rounded animate-pulse" style={{ width: `${55 + i * 15}%` }} />
+                      <div key={i} className="h-3 bg-white/10 rounded animate-pulse" style={{ width: `${55 + i * 15}%` }} />
                     ))}
                   </div>
                 ) : (
@@ -430,28 +434,28 @@ export function LiveBanner() {
                     return (
                       <div
                         key={`${activeNewsIndex}-${i}`}
-                        className={`transition-opacity duration-500 ${i === 0 ? 'opacity-100' : 'opacity-50'}`}
+                        className={`transition-opacity duration-500 ${i === 0 ? 'opacity-100' : 'opacity-40'} rounded-lg px-1.5 py-1 ${i === 0 ? 'bg-white/8' : ''}`}
                       >
                         {/* Source badge + title */}
                         <div className="flex items-start gap-1 mb-0.5">
                           {item.displayName && (
-                            <span className="shrink-0 text-[8px] font-bold text-purple-600 dark:text-purple-400 px-1 py-0.5 bg-purple-50 dark:bg-purple-900/30 rounded leading-none mt-px">
+                            <span className="shrink-0 text-[8px] font-bold text-purple-300 px-1 py-0.5 bg-purple-500/25 border border-purple-500/30 rounded leading-none mt-px">
                               {item.displayName}
                             </span>
                           )}
-                          <p className="text-[10px] leading-tight text-slate-700 dark:text-slate-300 font-medium line-clamp-1">
+                          <p className="text-[10px] leading-tight text-slate-200 font-medium line-clamp-1">
                             {item.title}
                           </p>
                         </div>
-                        {/* Price + change + sparkline — exactly like home.tsx market news */}
+                        {/* Price + change + sparkline */}
                         {stockData && (
                           <div className="flex items-center gap-1.5 pl-0.5">
-                            <span className="text-slate-600 dark:text-slate-400 text-[10px] font-mono">
+                            <span className="text-slate-400 text-[10px] font-mono">
                               {stockData.currency === 'USD'
                                 ? `$${stockData.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
                                 : `₹${stockData.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
                             </span>
-                            <span className={`text-[10px] font-semibold ${isItemUp ? 'text-green-500' : 'text-red-500'}`}>
+                            <span className={`text-[10px] font-semibold ${isItemUp ? 'text-emerald-400' : 'text-red-400'}`}>
                               {isItemUp ? '▲' : '▼'} {Math.abs(stockData.changePercent).toFixed(2)}%
                             </span>
                             {stockData.chartData?.length >= 2 && (

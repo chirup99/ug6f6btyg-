@@ -3221,7 +3221,9 @@ export default function Home() {
           dateLabel: formattedDate,
         };
       } else if (reportPostMode === 'range') {
-        const filteredData = rangePostOverrideData || getFilteredHeatmapData();
+        const filteredData = (rangePostOverrideData && Object.keys(rangePostOverrideData).length > 0)
+          ? rangePostOverrideData
+          : getFilteredHeatmapData();
         const dates = Object.keys(filteredData).sort();
         let totalPnL = 0, totalTrades = 0, winningTrades = 0;
         let fomoCount = 0, currentStreak = 0, maxStreak = 0;
@@ -3257,11 +3259,23 @@ export default function Home() {
 
         const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100) : 0;
 
+        // Use year bounds as fromDate/toDate when data is empty but a year was selected
+        const yr = rangePostYear || (dates[0] ? dates[0].split('-')[0] : new Date().getFullYear().toString());
+        const fromDate = dates[0] || `${yr}-01-01`;
+        const toDate = dates[dates.length - 1] || `${yr}-12-31`;
+
         metadata = {
           type: 'range_report',
-          fromDate: dates[0] || '',
-          toDate: dates[dates.length - 1] || '',
+          fromDate,
+          toDate,
           dateCount: dates.length,
+          // Store computed stats so NeoFeed card shows correct values immediately
+          totalPnL,
+          totalTrades,
+          winRate: Math.round(winRate),
+          fomoCount,
+          streak: maxStreak,
+          trendData,
         };
       }
 
@@ -11816,6 +11830,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Override data for range post when triggered from Personal Heatmap
   const [rangePostOverrideData, setRangePostOverrideData] = useState<Record<string, any> | null>(null);
+  const [rangePostYear, setRangePostYear] = useState<string | null>(null);
 
   // State and refs for Range Post FOMO curved lines
   const [rangePostTagHighlight, setRangePostTagHighlight] = useState<{ tag: string; dates: string[] } | null>(null);
@@ -25056,13 +25071,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               onRangeChange={handleDateRangeChange}
                               highlightedDates={activeTagHighlight}
                               refreshTrigger={personalHeatmapRevision}
-                              onFeedPost={(mode, data) => {
+                              onFeedPost={(mode, data, year) => {
                                 setReportPostMode(mode);
                                 if (mode === 'selected') {
                                   setReportPostSelectedDate(heatmapSelectedDate || new Date().toISOString().split('T')[0]);
                                 }
-                                if (mode === 'range' && data) {
-                                  setRangePostOverrideData(data);
+                                if (mode === 'range') {
+                                  setRangePostOverrideData(data || null);
+                                  if (year) setRangePostYear(year);
                                 }
                                 setShowReportPostDialog(true);
                               }}
@@ -31490,7 +31506,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           open={showReportPostDialog}
           onOpenChange={(open) => {
             setShowReportPostDialog(open);
-            if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); setRangePostTagHighlight(null); setRangePostOverrideData(null); }
+            if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); setRangePostTagHighlight(null); setRangePostOverrideData(null); setRangePostYear(null); }
           }}
         >
           <DialogContent className="w-full sm:max-w-md max-h-[90dvh] overflow-hidden flex flex-col gap-0 p-0">

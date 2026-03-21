@@ -3006,6 +3006,19 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
     };
   }, [fomoHighlight]);
 
+  useEffect(() => {
+    if (!overtradeHighlight) return;
+    const container = heatmapContainerRef.current;
+    if (!container) return;
+    const handleScroll = () => setScrollTrigger(prev => prev + 1);
+    container.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('resize', handleScroll, { passive: true });
+    return () => {
+      container.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('resize', handleScroll);
+    };
+  }, [overtradeHighlight]);
+
   const tradingDays: { date: string; pnl: number; isFomo: boolean }[] = m.tradingDays || [];
   const maxAbsPnL = Math.max(...tradingDays.map(d => Math.abs(d.pnl)), 1);
   const monthGroups: { label: string; days: { date: string; pnl: number; isFomo: boolean }[] }[] = [];
@@ -3092,6 +3105,49 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
                 </svg>
               );
             })()}
+            {overtradeHighlight && stats.overtradeDates && stats.overtradeDates.length > 0 && (() => {
+              void scrollTrigger;
+              if (!overtradingButtonRef.current || !heatmapContainerRef.current) return null;
+              const scrollableEl = heatmapContainerRef.current;
+              const scrollLeft = scrollableEl.scrollLeft || 0;
+              const scrollTop = scrollableEl.scrollTop || 0;
+              const scrollWidth = scrollableEl.scrollWidth || 0;
+              const scrollHeight = scrollableEl.scrollHeight || 0;
+              const containerRect = scrollableEl.getBoundingClientRect();
+              const buttonRect = overtradingButtonRef.current.getBoundingClientRect();
+              const buttonCenterX = buttonRect.left - containerRect.left + scrollLeft + buttonRect.width / 2;
+              const buttonCenterY = buttonRect.top - containerRect.top + scrollTop + buttonRect.height / 2;
+              const paths: JSX.Element[] = [];
+              (stats.overtradeDates as string[]).forEach((date: string, index: number) => {
+                const cellEl = scrollableEl.querySelector(`[data-date="${date}"]`);
+                if (cellEl) {
+                  const cellRect = cellEl.getBoundingClientRect();
+                  const cellCenterX = cellRect.left - containerRect.left + scrollLeft + cellRect.width / 2;
+                  const cellCenterY = cellRect.top - containerRect.top + scrollTop + cellRect.height / 2;
+                  const controlX = (buttonCenterX + cellCenterX) / 2;
+                  const controlY = Math.min(buttonCenterY, cellCenterY) - 40;
+                  paths.push(
+                    <g key={`nfot-${date}-${index}`}>
+                      <path d={`M ${buttonCenterX} ${buttonCenterY} Q ${controlX} ${controlY}, ${cellCenterX} ${cellCenterY}`} fill="none" stroke="url(#nfOtGrad)" strokeWidth="2.5" strokeDasharray="6,4" opacity="0.95" />
+                      <circle cx={cellCenterX} cy={cellCenterY} r="4" fill="#fb923c" opacity="0.9" />
+                      <circle cx={cellCenterX} cy={cellCenterY} r="3" fill="#f97316" />
+                    </g>
+                  );
+                }
+              });
+              return (
+                <svg style={{ position: 'absolute', top: 0, left: 0, width: `${scrollWidth}px`, height: `${scrollHeight}px`, pointerEvents: 'none', zIndex: 10, overflow: 'visible' }}>
+                  <defs>
+                    <linearGradient id="nfOtGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                      <stop offset="0%" stopColor="#f97316" stopOpacity="1" />
+                      <stop offset="50%" stopColor="#fb923c" stopOpacity="1" />
+                      <stop offset="100%" stopColor="#fbbf24" stopOpacity="1" />
+                    </linearGradient>
+                  </defs>
+                  {paths}
+                </svg>
+              );
+            })()}
           </div>
         </div>
       ) : tradingDays.length > 0 && (
@@ -3160,6 +3216,16 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
             <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
             <div className="text-xs font-bold leading-none">{stats.streak || 0}</div>
           </div>
+          <div className="w-px h-6 bg-white/20" />
+          <button
+            ref={overtradingButtonRef}
+            className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 border shadow-inner transition-all ${overtradeHighlight ? 'bg-white/30 border-white/60 ring-2 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
+            onClick={() => setOvertradeHighlight(prev => !prev)}
+            title={`Tap to ${overtradeHighlight ? 'hide' : 'show'} overtrading dates`}
+          >
+            <div className="text-[8px] font-medium opacity-90 uppercase tracking-wide">OverTrade</div>
+            <div className="text-xs font-bold leading-none">{stats.overtradeCount || 0}</div>
+          </button>
         </div>
       </div>
     </>

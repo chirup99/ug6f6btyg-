@@ -513,10 +513,10 @@ export function LiveBanner() {
                   </span>
                 </div>
                 <p className="text-[9px] sm:text-[10px] leading-snug text-white/85 font-medium italic line-clamp-2">
-                  "Term insurance is the promise that even if you're not there tomorrow, your love will still take care of your family."
+                  "One health emergency can wipe out years of savings — insurance is not a choice, it's a shield."
                 </p>
                 <p className="text-[8px] leading-tight text-emerald-400/60 mt-0.5 line-clamp-1">
-                  Secure your family's future — plan ahead with IRDAI-regulated coverage.
+                  Protect what you've built — get IRDAI-regulated coverage today.
                 </p>
               </div>
 

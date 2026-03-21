@@ -5990,6 +5990,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expressionAttributeValues[':coverPicUrl'] = coverPicUrl;
       }
 
+      const { performancePublic } = req.body;
+      if (performancePublic !== undefined) {
+        updateExpression += ', performancePublic = :performancePublic';
+        expressionAttributeValues[':performancePublic'] = performancePublic;
+      }
+
       // Add dob and location handling
       const { dob, location } = req.body;
       if (dob !== undefined) {

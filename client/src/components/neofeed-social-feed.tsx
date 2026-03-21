@@ -1165,7 +1165,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
   const [activeRuleIndex, setActiveRuleIndex] = useState(() => new Date().getDay() % MINDSET_CARDS.length);
   const [ruleExiting, setRuleExiting] = useState(false);
-  const [cardsPrivate, setCardsPrivate] = useState(false);
+  const [cardsPrivate, setCardsPrivate] = useState(() => profileData?.performancePublic === false);
   const ruleTouchStartXRef = useRef<number | null>(null);
   const ruleSwipedRef = useRef(false);
 
@@ -1207,6 +1207,12 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
     const timer = setInterval(cycleRule, 4000);
     return () => clearInterval(timer);
   }, [ruleExiting]);
+
+  useEffect(() => {
+    if (profileData !== undefined) {
+      setCardsPrivate(profileData?.performancePublic === false);
+    }
+  }, [profileData?.performancePublic]);
 
   const DEMO_MONTHS = [
     { label: 'Oct', pnl: 8200 },
@@ -1562,7 +1568,20 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                 <div className="flex items-center justify-between mb-2 pt-1">
                   <p className="text-[9px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Performance</p>
                   <button
-                    onClick={() => setCardsPrivate(v => !v)}
+                    onClick={async () => {
+                      const next = !cardsPrivate;
+                      setCardsPrivate(next);
+                      try {
+                        const idToken = await getCognitoToken();
+                        if (idToken) {
+                          await fetch('/api/user/profile', {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+                            body: JSON.stringify({ performancePublic: !next }),
+                          });
+                        }
+                      } catch {}
+                    }}
                     className={`flex items-center gap-1 text-[9px] font-semibold px-2 py-0.5 rounded-full transition-colors ${
                       cardsPrivate
                         ? 'bg-gray-900 dark:bg-white text-white dark:text-gray-900'
@@ -4307,6 +4326,76 @@ function ViewUserProfile({
   const bio = profileData?.bio || '';
   const profilePicUrl = profileData?.profilePicUrl;
   const initials = (displayName || 'U').charAt(0).toUpperCase();
+  const viewUserId = profileData?.userId;
+  const performanceIsPublic = profileData?.performancePublic !== false;
+  const showPerformance = isOwnProfile || performanceIsPublic;
+
+  const VIEW_MINDSET_CARDS = [
+    { label: "Trader's Mindset", quote: "Be like water — adapt to what the market gives you. Never force a trade.", bg: 'from-gray-950 via-[#1a1200] to-gray-900', showImage: true, image: '/bruce-lee-card.png' },
+    { label: 'Your Greatest Enemy Is Within', quote: "Fear, greed, and ego destroy more traders than any bad setup ever will.", bg: 'from-[#0d0500] via-[#2a1400] to-[#0d0800]', showImage: true, image: '/bruce-lee-enemy-within.png' },
+    { label: 'Loss Psychology', quote: "A loss is tuition — pay it and move on. Revenge trading is the real enemy.", bg: 'from-rose-600 to-red-700', showImage: false, image: '' },
+    { label: 'Ignore the Noise', quote: "Consuming too much information creates paralysis. Block the noise — trust your system.", bg: 'from-slate-600 to-slate-800', showImage: false, image: '' },
+    { label: 'Follow the Rules', quote: "Your rules exist because your past self was rational. Don't let emotions override them.", bg: 'from-violet-600 to-indigo-700', showImage: false, image: '' },
+  ];
+
+  const [viewCardIndex, setViewCardIndex] = useState(() => new Date().getDay() % VIEW_MINDSET_CARDS.length);
+  const [viewCardExiting, setViewCardExiting] = useState(false);
+  const viewTouchStartRef = useRef<number | null>(null);
+  const viewSwipedRef = useRef(false);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setViewCardExiting(true);
+      setTimeout(() => { setViewCardIndex(i => (i + 1) % VIEW_MINDSET_CARDS.length); setViewCardExiting(false); }, 280);
+    }, 4000);
+    return () => clearInterval(timer);
+  }, []);
+
+  const { data: viewJournalRaw = {} } = useQuery({
+    queryKey: ['view-journal-perf', viewUserId],
+    queryFn: async () => {
+      if (!viewUserId) return {};
+      const res = await fetch(`/api/user-journal/${viewUserId}/public`);
+      if (!res.ok) return {};
+      return res.json();
+    },
+    enabled: !!viewUserId && showPerformance,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const viewPerfMetrics = useMemo(() => {
+    const now = new Date();
+    const months: { label: string; pnl: number }[] = [];
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      const label = d.toLocaleString('en', { month: 'short' });
+      let pnl = 0;
+      Object.entries(viewJournalRaw as Record<string, any>).forEach(([date, day]) => {
+        if (date.startsWith(key)) pnl += Number(day?.performanceMetrics?.netPnL) || 0;
+      });
+      months.push({ label, pnl });
+    }
+    const currentKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    let thisMonthPnl = 0, totalW = 0, totalL = 0, allTrades = 0;
+    Object.entries(viewJournalRaw as Record<string, any>).forEach(([date, day]) => {
+      if (date.startsWith(currentKey)) thisMonthPnl += Number(day?.performanceMetrics?.netPnL) || 0;
+      totalW += Number(day?.performanceMetrics?.winningTrades) || 0;
+      totalL += Number(day?.performanceMetrics?.losingTrades) || 0;
+      allTrades += Number(day?.performanceMetrics?.totalTrades) || 0;
+    });
+    const totalAbsPnl = months.reduce((s, m) => s + Math.abs(m.pnl), 0);
+    const yieldPct = totalAbsPnl > 0 ? (thisMonthPnl / totalAbsPnl) * 100 : 0;
+    const entries = Object.entries(viewJournalRaw as Record<string, any>).sort(([a], [b]) => a.localeCompare(b)).slice(-12);
+    let st = 0;
+    const disciplineData = entries.map(([, day]) => {
+      const p = Number(day?.performanceMetrics?.netPnL || 0);
+      if (p >= 0) st++; else st = Math.max(0, st - 1);
+      return st;
+    });
+    const currentStreak = disciplineData.length > 0 ? disciplineData[disciplineData.length - 1] : 0;
+    return { last6Months: months, monthlyYield: yieldPct, totalTrades: allTrades, disciplineData, currentStreak };
+  }, [viewJournalRaw]);
 
   if (profileLoading) {
     return (
@@ -4451,9 +4540,153 @@ function ViewUserProfile({
           <Calendar className="w-3 h-3" />
           <span>Joined {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : new Date().getFullYear()}</span>
         </div>
+      </div>
 
-        {/* Tabs */}
-        <div className="flex overflow-x-auto scrollbar-hide -mx-4 px-4">
+      {/* Mindset Quote Card + Performance Cards — visible when public (or own profile) */}
+      {showPerformance && (
+        <div className="bg-white dark:bg-gray-900 px-4 pt-3 pb-0">
+          {/* Header row */}
+          <div className="flex items-center justify-between mb-2">
+            <p className="text-[9px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Performance</p>
+            <div className="flex items-center gap-1 text-[9px] text-gray-400 dark:text-gray-500">
+              {performanceIsPublic ? (
+                <><Unlock className="w-2.5 h-2.5" /><span>Public</span></>
+              ) : (
+                <><Lock className="w-2.5 h-2.5" /><span>Private</span></>
+              )}
+            </div>
+          </div>
+          {performanceIsPublic && (
+            <p className="text-[8px] text-blue-400 dark:text-blue-500 mb-2 flex items-center gap-1">
+              <Eye className="w-2.5 h-2.5" /> Visible to everyone
+            </p>
+          )}
+
+          {/* Mindset Card */}
+          <style>{`@keyframes blPulseV{0%,100%{filter:drop-shadow(0 0 8px rgba(234,179,8,.35)) brightness(1);transform:scale(1)}50%{filter:drop-shadow(0 0 18px rgba(234,179,8,.7)) brightness(1.08);transform:scale(1.04)}}`}</style>
+          <div className="relative h-[88px] mb-3">
+            {[2, 1].map((offset) => {
+              const c = VIEW_MINDSET_CARDS[(viewCardIndex + offset) % VIEW_MINDSET_CARDS.length];
+              return (
+                <div key={offset} className={`absolute inset-0 rounded-xl bg-gradient-to-r ${c.bg}`}
+                  style={{ opacity: offset === 2 ? 0.32 : 0.6, transform: `translateY(${offset === 2 ? '-7px' : '-3.5px'}) scaleX(${offset === 2 ? 0.95 : 0.98})`, zIndex: offset === 2 ? 1 : 2 }}
+                />
+              );
+            })}
+            {(() => {
+              const card = VIEW_MINDSET_CARDS[viewCardIndex];
+              return (
+                <div className={`absolute inset-0 rounded-xl bg-gradient-to-r ${card.bg} shadow-md overflow-hidden z-10 select-none`}
+                  style={{ opacity: viewCardExiting ? 0 : 1, transform: viewCardExiting ? 'translateY(-8px) scale(0.97)' : 'translateY(0) scale(1)', transition: 'opacity 280ms, transform 280ms' }}
+                  onTouchStart={e => { viewTouchStartRef.current = e.touches[0].clientX; viewSwipedRef.current = false; }}
+                  onTouchEnd={e => {
+                    if (viewTouchStartRef.current === null) return;
+                    const delta = e.changedTouches[0].clientX - viewTouchStartRef.current;
+                    if (Math.abs(delta) > 40) { viewSwipedRef.current = true; setViewCardExiting(true); setTimeout(() => { setViewCardIndex(i => (i + (delta < 0 ? 1 : -1) + VIEW_MINDSET_CARDS.length) % VIEW_MINDSET_CARDS.length); setViewCardExiting(false); }, 280); }
+                    viewTouchStartRef.current = null;
+                  }}
+                  onClick={e => {
+                    if (viewSwipedRef.current) { viewSwipedRef.current = false; return; }
+                    const rect = (e.currentTarget as HTMLDivElement).getBoundingClientRect();
+                    const isRight = e.clientX - rect.left > rect.width / 2;
+                    setViewCardExiting(true);
+                    setTimeout(() => { setViewCardIndex(i => (i + (isRight ? 1 : -1) + VIEW_MINDSET_CARDS.length) % VIEW_MINDSET_CARDS.length); setViewCardExiting(false); }, 280);
+                  }}
+                >
+                  {card.showImage && (
+                    <>
+                      <div className="absolute right-0 top-0 bottom-0 w-[90px] bg-gradient-to-l from-yellow-500/25 via-yellow-400/10 to-transparent pointer-events-none" />
+                      <div className="absolute right-0 top-0 bottom-0 w-[80px] overflow-hidden pointer-events-none">
+                        <img src={card.image} alt="" className="absolute inset-0 w-full h-full object-contain object-bottom" style={{ animation: 'blPulseV 3s ease-in-out infinite' }} />
+                      </div>
+                    </>
+                  )}
+                  <div className={`flex items-center h-full px-3 ${card.showImage ? 'pr-[82px]' : 'pr-3'}`}>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[7px] uppercase tracking-widest font-bold mb-0.5 text-white/65">{card.label}</p>
+                      <p className="text-[10px] font-semibold leading-tight text-white">&ldquo;{card.quote}&rdquo;</p>
+                    </div>
+                    <div className="flex flex-col items-center justify-end pb-1.5 flex-shrink-0 self-end ml-2">
+                      <div className="flex items-center gap-1">
+                        {VIEW_MINDSET_CARDS.map((_, i) => (
+                          <div key={i} className={`h-1 rounded-full transition-all duration-300 ${i === viewCardIndex ? 'w-3 bg-white' : 'w-1 bg-white/30'}`} />
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+          </div>
+
+          {/* Performance Metric Cards */}
+          {(() => {
+            const { last6Months, monthlyYield, totalTrades, disciplineData, currentStreak } = viewPerfMetrics;
+            const miniLinePath = (data: number[], w = 80, h = 28) => {
+              if (data.length < 2) return null;
+              const max = Math.max(...data), min = Math.min(...data), range = max - min || 1;
+              const pts = data.map((v, i) => ({ x: (i / (data.length - 1)) * w, y: h - ((v - min) / range) * h }));
+              return pts.reduce((d, p, i) => i === 0 ? `M ${p.x.toFixed(1)},${p.y.toFixed(1)}` : `${d} L ${p.x.toFixed(1)},${p.y.toFixed(1)}`, '');
+            };
+            const isYieldPos = monthlyYield >= 0;
+            const yieldPath = miniLinePath(last6Months.map(m => m.pnl));
+            const disciplinePath = miniLinePath(disciplineData.length > 1 ? disciplineData : [0, 1, 2, 3, 4, 5]);
+            const MONTHLY_TARGET_PCT = 5.0;
+            const targetProgress = Math.min(100, Math.max(0, (monthlyYield / MONTHLY_TARGET_PCT) * 100));
+            const R = 18, CIRC = 2 * Math.PI * R, dash = (targetProgress / 100) * CIRC;
+            return (
+              <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-4 px-4 pb-4">
+                {/* Streak */}
+                <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                  <div className="flex items-center gap-1 mb-1"><Flame className="w-3 h-3 text-orange-500" /><p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold">Streak</p></div>
+                  <p className="text-base font-bold leading-none text-orange-500 mb-1.5">{currentStreak} days</p>
+                  <div className="flex gap-0.5">{Array.from({ length: 7 }).map((_, i) => <div key={i} className={`flex-1 h-4 rounded-sm ${i < Math.min(currentStreak, 7) ? 'bg-orange-400' : 'bg-gray-100 dark:bg-gray-700'}`} />)}</div>
+                  <p className="text-[8px] text-gray-400 mt-1">Journal streak</p>
+                </div>
+                {/* Journal Entries */}
+                <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                  <div className="flex items-center gap-1 mb-1"><BookOpen className="w-3 h-3 text-teal-500" /><p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold">Journal</p></div>
+                  <p className="text-base font-bold leading-none text-teal-600 dark:text-teal-400 mb-2">{totalTrades} entries</p>
+                  <div className="flex gap-0.5 items-end h-6">{last6Months.map((m, i) => { const maxP = Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1); return <div key={i} className="flex-1 rounded-sm bg-teal-400/70" style={{ height: `${Math.max(20, (Math.abs(m.pnl) / maxP) * 100)}%` }} />; })}</div>
+                  <p className="text-[8px] text-gray-400 mt-1">Logged trades</p>
+                </div>
+                {/* Yield */}
+                <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                  <p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold mb-1">Yield</p>
+                  <p className={`text-base font-bold leading-none mb-2 ${isYieldPos ? 'text-emerald-500' : 'text-red-500'}`}>{isYieldPos ? '+' : ''}{monthlyYield.toFixed(1)}%</p>
+                  {yieldPath ? <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none"><path d={yieldPath} fill="none" stroke={isYieldPos ? '#10b981' : '#ef4444'} strokeWidth="1.8" strokeLinecap="round" /></svg>
+                    : <div className="flex gap-0.5 items-end h-6">{last6Months.map((m, i) => <div key={i} className={`flex-1 rounded-sm ${m.pnl >= 0 ? 'bg-emerald-400' : 'bg-red-400'}`} style={{ height: `${Math.max(20, Math.abs(m.pnl) / Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1) * 100)}%` }} />)}</div>}
+                  <p className="text-[8px] text-gray-400 mt-1">{totalTrades} trades</p>
+                </div>
+                {/* Target */}
+                <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                  <div className="flex items-center gap-1 mb-1"><TargetIcon className="w-3 h-3 text-blue-500" /><p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold">Target</p></div>
+                  <div className="flex items-center gap-2">
+                    <svg width="40" height="40" viewBox="0 0 46 46">
+                      <circle cx="23" cy="23" r={R} fill="none" stroke="#e5e7eb" strokeWidth="4" />
+                      <circle cx="23" cy="23" r={R} fill="none" stroke={targetProgress >= 100 ? '#10b981' : '#3b82f6'} strokeWidth="4" strokeLinecap="round" strokeDasharray={`${dash} ${CIRC}`} strokeDashoffset={CIRC * 0.25} style={{ transition: 'stroke-dasharray 0.6s ease' }} />
+                      <text x="23" y="27" textAnchor="middle" fontSize="9" fontWeight="700" fill={targetProgress >= 100 ? '#10b981' : '#3b82f6'}>{Math.round(targetProgress)}%</text>
+                    </svg>
+                    <div><p className="text-xs font-bold text-gray-900 dark:text-white leading-none">{monthlyYield >= 0 ? '+' : ''}{monthlyYield.toFixed(1)}%</p><p className="text-[9px] text-gray-400 mt-0.5">of {MONTHLY_TARGET_PCT}%</p></div>
+                  </div>
+                </div>
+                {/* Discipline */}
+                <div className="flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                  <div className="flex items-center gap-1 mb-1"><Award className="w-3 h-3 text-violet-500" /><p className="text-[8px] uppercase tracking-widest text-gray-400 font-bold">Discipline</p></div>
+                  <p className="text-base font-bold leading-none mb-2 text-violet-600 dark:text-violet-400">{currentStreak} wins</p>
+                  {disciplinePath ? <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none"><defs><linearGradient id="dg-view" x1="0" y1="0" x2="1" y2="0"><stop offset="0%" stopColor="#8b5cf6" /><stop offset="100%" stopColor="#6366f1" /></linearGradient></defs><path d={disciplinePath} fill="none" stroke="url(#dg-view)" strokeWidth="1.8" strokeLinecap="round" /></svg>
+                    : <div className="h-6 flex items-center"><div className="h-px w-full bg-violet-200 dark:bg-violet-800" /></div>}
+                  <p className="text-[8px] text-gray-400 mt-1">Win streak trend</p>
+                </div>
+              </div>
+            );
+          })()}
+        </div>
+      )}
+
+      {/* Tabs */}
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800">
+        <div className="flex overflow-x-auto scrollbar-hide px-4">
           {(['Posts', 'Audio', 'Bullish', 'Bearish'] as const).map((tab) => {
             const count = tab === 'Posts'
               ? userPosts.filter(p => !(p as any).isAudioPost).length

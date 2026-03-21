@@ -1411,47 +1411,38 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                 </Button>
 
                 {isFeedMode && onFeedPost && (
-                  <Popover>
-                    <PopoverTrigger asChild>
-                      <Button
-                        size="sm"
-                        className="h-7 px-3 bg-violet-600 hover:bg-violet-700 text-white text-xs font-semibold gap-1.5"
-                        data-testid="button-feed-post"
-                      >
-                        <Send className="w-3 h-3" />
-                        Post
-                      </Button>
-                    </PopoverTrigger>
-                    <PopoverContent className="w-44 p-1.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-lg" align="end" sideOffset={6}>
-                      <div className="flex flex-col gap-0.5">
-                        <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wide px-2 py-1">Post to NeoFeed</p>
-                        <button
-                          className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
-                          data-testid="button-post-today"
-                          onClick={() => onFeedPost('today')}
-                        >
-                          <span className="text-base">📅</span>
-                          <span>Today's Post</span>
-                        </button>
-                        <button
-                          className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
-                          data-testid="button-post-selected"
-                          onClick={() => onFeedPost('selected')}
-                        >
-                          <span className="text-base">🗓️</span>
-                          <span>Selected Post</span>
-                        </button>
-                        <button
-                          className="flex items-center gap-2 px-2 py-1.5 rounded text-sm text-slate-700 dark:text-slate-200 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors text-left"
-                          data-testid="button-post-range"
-                          onClick={() => onFeedPost('range')}
-                        >
-                          <span className="text-base">📊</span>
-                          <span>Range Post</span>
-                        </button>
-                      </div>
-                    </PopoverContent>
-                  </Popover>
+                  <div className="flex items-center gap-1">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs font-medium gap-1 border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                      data-testid="button-post-today"
+                      onClick={() => onFeedPost('today')}
+                    >
+                      <span className="text-sm">📅</span>
+                      Today
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs font-medium gap-1 border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                      data-testid="button-post-selected"
+                      onClick={() => onFeedPost('selected')}
+                    >
+                      <span className="text-sm">🗓️</span>
+                      Select
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="h-7 px-2 text-xs font-medium gap-1 border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                      data-testid="button-post-range"
+                      onClick={() => onFeedPost('range')}
+                    >
+                      <span className="text-sm">📊</span>
+                      Range
+                    </Button>
+                  </div>
                 )}
               </div>
             )}

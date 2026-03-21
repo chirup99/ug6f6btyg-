@@ -689,7 +689,7 @@ function PriceChartSection({ ticker, analysisData }: { ticker: string; analysisD
               </div>
             </div>
           ) : chartData && chartData.length > 0 ? (
-            <div className="w-full h-full flex items-center justify-center">
+            <div className="w-full h-full">
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={chartData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                   <XAxis 

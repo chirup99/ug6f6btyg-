@@ -1511,23 +1511,15 @@ export function WorldMap() {
           return (
             <button
               key={region.name}
-              className="flex items-center gap-1.5 cursor-pointer hover:opacity-80 transition-opacity rounded-full px-2 py-0.5 hover:bg-white/10 active:scale-95 whitespace-nowrap"
+              className="cursor-pointer hover:opacity-80 transition-opacity rounded-full p-1 hover:bg-white/10 active:scale-95"
               onClick={() => setSelectedRegion(region.name)}
+              title={region.name}
               data-testid={`button-region-${region.name.toLowerCase().replace(" ", "-")}`}
             >
               <div
-                className="w-1.5 h-1.5 rounded-full flex-shrink-0"
+                className="w-2 h-2 rounded-full flex-shrink-0"
                 style={{ backgroundColor: color }}
               />
-              <span className="text-gray-600 text-[10px] tracking-wide">
-                {region.name}
-              </span>
-              {market && market.change !== undefined && (
-                <span className="text-[9px] font-medium" style={{ color }}>
-                  {market.isUp ? "+" : ""}
-                  {market.change.toFixed(2)}%
-                </span>
-              )}
             </button>
           );
         })}

@@ -3183,48 +3183,48 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
         </div>
       )}
 
-      <div className={`bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg px-2.5 py-2 ${stripped ? 'mb-0' : 'mx-2 mb-2'}`}>
+      <div className={`bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg px-2 py-1 ${stripped ? 'mb-0' : 'mx-2 mb-2'}`}>
         <div className="flex items-center justify-around text-white">
-          <div className="flex flex-col items-center gap-0.5">
-            <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
-            <div className="text-xs font-bold leading-none">{isProfit ? '+' : '-'}₹{(Math.abs(stats.totalPnL || 0) / 1000).toFixed(1)}K</div>
+          <div className="flex flex-col items-center gap-0">
+            <div className="text-[7px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
+            <div className="text-[11px] font-bold leading-none">{isProfit ? '+' : '-'}₹{(Math.abs(stats.totalPnL || 0) / 1000).toFixed(1)}K</div>
           </div>
-          <div className="w-px h-6 bg-white/20" />
-          <div className="flex flex-col items-center gap-0.5">
-            <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
-            <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-8 h-4">
+          <div className="w-px h-4 bg-white/20" />
+          <div className="flex flex-col items-center gap-0">
+            <div className="text-[7px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
+            <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-7 h-3">
               <path d={trendPath} fill="none" stroke="white" strokeWidth="1.8" opacity="0.95" strokeLinecap="round" strokeLinejoin="round" />
             </svg>
           </div>
-          <div className="w-px h-6 bg-white/20" />
+          <div className="w-px h-4 bg-white/20" />
           <button
             ref={fomoButtonRef}
-            className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 border shadow-inner transition-all ${fomoHighlight ? 'bg-white/30 border-white/60 ring-2 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
+            className={`flex flex-col items-center gap-0 rounded-lg px-1.5 py-0.5 border transition-all ${fomoHighlight ? 'bg-white/30 border-white/60 ring-1 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
             onClick={() => setFomoHighlight(prev => !prev)}
             title={`Tap to ${fomoHighlight ? 'hide' : 'show'} FOMO trading days`}
           >
-            <div className="text-[8px] font-medium opacity-90 uppercase tracking-wide">FOMO</div>
-            <div className="text-xs font-bold leading-none">{stats.fomoCount || 0}</div>
+            <div className="text-[7px] font-medium opacity-90 uppercase tracking-wide">FOMO</div>
+            <div className="text-[11px] font-bold leading-none">{stats.fomoCount || 0}</div>
           </button>
-          <div className="w-px h-6 bg-white/20" />
-          <div className="flex flex-col items-center gap-0.5">
-            <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
-            <div className="text-xs font-bold leading-none">{stats.winRate || 0}%</div>
+          <div className="w-px h-4 bg-white/20" />
+          <div className="flex flex-col items-center gap-0">
+            <div className="text-[7px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
+            <div className="text-[11px] font-bold leading-none">{stats.winRate || 0}%</div>
           </div>
-          <div className="w-px h-6 bg-white/20" />
-          <div className="flex flex-col items-center gap-0.5">
-            <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
-            <div className="text-xs font-bold leading-none">{stats.streak || 0}</div>
+          <div className="w-px h-4 bg-white/20" />
+          <div className="flex flex-col items-center gap-0">
+            <div className="text-[7px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
+            <div className="text-[11px] font-bold leading-none">{stats.streak || 0}</div>
           </div>
-          <div className="w-px h-6 bg-white/20" />
+          <div className="w-px h-4 bg-white/20" />
           <button
             ref={overtradingButtonRef}
-            className={`flex flex-col items-center gap-0.5 rounded-xl px-2 py-1 border shadow-inner transition-all ${overtradeHighlight ? 'bg-white/30 border-white/60 ring-2 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
+            className={`flex flex-col items-center gap-0 rounded-lg px-1.5 py-0.5 border transition-all ${overtradeHighlight ? 'bg-white/30 border-white/60 ring-1 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
             onClick={() => setOvertradeHighlight(prev => !prev)}
             title={`Tap to ${overtradeHighlight ? 'hide' : 'show'} overtrading dates`}
           >
-            <div className="text-[8px] font-medium opacity-90 uppercase tracking-wide">OverTrade</div>
-            <div className="text-xs font-bold leading-none">{stats.overtradeCount || 0}</div>
+            <div className="text-[7px] font-medium opacity-90 uppercase tracking-wide">OverTrade</div>
+            <div className="text-[11px] font-bold leading-none">{stats.overtradeCount || 0}</div>
           </button>
         </div>
       </div>

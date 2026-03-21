@@ -1562,8 +1562,8 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
         ) : (
           // Normal Mode: Show calendar navigation
           <div className="flex items-center justify-center gap-0 w-full">
-            {/* Left arrow - always show in normal mode */}
-            {!isRangeSelectMode && (
+            {/* Left arrow - hide in feed mode to lock year */}
+            {!isRangeSelectMode && !isFeedMode && (
               <Button
                 variant="ghost"
                 size="icon"
@@ -1984,16 +1984,16 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
               </Button>
             )}
 
-            {/* Social Feed Icon - beside 3-dot menu */}
+            {/* Social Feed Icon - shows X to exit when feed mode is active */}
             {!isRangeSelectMode && !isPublicView && (
               <Button
-                variant={isFeedMode ? "secondary" : "ghost"}
+                variant="ghost"
                 size="icon"
                 onClick={handleFeedClick}
-                className={`h-8 w-8 ml-1 ${isFeedMode ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : ''}`}
+                className={`h-8 w-8 ml-1 ${isFeedMode ? 'text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : ''}`}
                 data-testid="button-social-feed"
               >
-                <Layout className="w-4 h-4" />
+                {isFeedMode ? <X className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
               </Button>
             )}
 

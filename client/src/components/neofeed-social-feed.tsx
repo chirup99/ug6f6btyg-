@@ -4246,10 +4246,15 @@ const BOT_DEMO_PERF = {
   disciplineData: [2, 4, 5, 6, 8, 7, 9, 11, 10, 13, 12, 14],
 };
 
-function FinanceNewsBotProfile({ onBack }: { onBack: () => void }) {
+function FinanceNewsBotProfile({ onBack, currentUserUsername }: { onBack: () => void; currentUserUsername: string }) {
   const [activeTab, setActiveTab] = useState('Posts');
   const [viewCardIndex, setViewCardIndex] = useState(0);
   const [viewCardExiting, setViewCardExiting] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowLoading, setIsFollowLoading] = useState(false);
+  const [showFollowersDialog, setShowFollowersDialog] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const BOT_MINDSET_CARDS = [
     { label: 'Market Intelligence', quote: "Stay informed, stay ahead. Real-time news is your edge in a fast-moving market.", bg: 'from-blue-950 via-blue-900 to-indigo-950', showImage: false, image: '' },
@@ -4274,6 +4279,69 @@ function FinanceNewsBotProfile({ onBack }: { onBack: () => void }) {
     },
     staleTime: 30 * 1000,
   });
+
+  const { data: countsData = { followers: 0, following: 0 } } = useQuery({
+    queryKey: ['/api/users/finance_news/followers-count'],
+    queryFn: async () => {
+      const response = await fetch('/api/users/finance_news/followers-count');
+      if (!response.ok) return { followers: 0, following: 0 };
+      return response.json();
+    },
+    staleTime: 30 * 1000,
+  });
+
+  const { data: followersList = { followers: [] } } = useQuery({
+    queryKey: ['/api/users/finance_news/followers-list'],
+    queryFn: async () => {
+      const response = await fetch('/api/users/finance_news/followers-list');
+      if (!response.ok) return { followers: [] };
+      return response.json();
+    },
+    enabled: showFollowersDialog,
+  });
+
+  useEffect(() => {
+    const checkFollowStatus = async () => {
+      if (!currentUserUsername) return;
+      try {
+        const idToken = await getCognitoToken();
+        if (!idToken) return;
+        const response = await fetch('/api/users/finance_news/follow-status', {
+          headers: { 'Authorization': `Bearer ${idToken}` }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setIsFollowing(data.following || data.isFollowing || false);
+        }
+      } catch {}
+    };
+    checkFollowStatus();
+  }, [currentUserUsername]);
+
+  const handleFollowToggle = async () => {
+    if (!currentUserUsername) return;
+    setIsFollowLoading(true);
+    try {
+      const idToken = await getCognitoToken();
+      if (!idToken) { setIsFollowLoading(false); return; }
+      const endpoint = isFollowing ? '/api/users/finance_news/unfollow' : '/api/users/finance_news/follow';
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+        body: JSON.stringify({ targetUserData: { displayName: 'Finance News' } })
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setIsFollowing(data.following);
+        queryClient.invalidateQueries({ queryKey: ['/api/users/finance_news/followers-count'] });
+        toast({ description: data.following ? 'Following Finance News!' : 'Unfollowed' });
+      }
+    } catch (error) {
+      console.error('Error toggling follow:', error);
+    } finally {
+      setIsFollowLoading(false);
+    }
+  };
 
   const { last6Months, monthlyYield, totalTrades, disciplineData, currentStreak } = BOT_DEMO_PERF;
 
@@ -4312,7 +4380,9 @@ function FinanceNewsBotProfile({ onBack }: { onBack: () => void }) {
           <div className="flex-1 min-w-0">
             <h1 className="text-gray-900 dark:text-white font-bold text-base leading-tight flex items-center gap-1 flex-wrap">
               Finance News
-              <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
+              <span className="inline-flex items-center justify-center w-4 h-4 bg-blue-500 rounded-full flex-shrink-0">
+                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+              </span>
               <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5">
                 <Bot className="w-2.5 h-2.5" /> Bot
               </span>
@@ -4323,14 +4393,36 @@ function FinanceNewsBotProfile({ onBack }: { onBack: () => void }) {
             </p>
           </div>
 
-          {/* Stats on the right */}
+          {/* Stats + Follow button on the right */}
           <div className="flex-shrink-0 flex flex-col items-end gap-2">
             <div className="flex items-center gap-3 text-center">
+              <div>
+                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">0</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Following</div>
+              </div>
+              <button
+                className="hover:opacity-80 transition-opacity"
+                onClick={() => setShowFollowersDialog(true)}
+                data-testid="button-bot-view-followers"
+              >
+                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{countsData?.followers || 0}</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Followers</div>
+              </button>
               <div>
                 <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{botPosts.length}</div>
                 <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Posts</div>
               </div>
             </div>
+            <Button
+              onClick={handleFollowToggle}
+              disabled={isFollowLoading}
+              size="sm"
+              variant={isFollowing ? 'outline' : 'default'}
+              className={`h-7 px-4 text-xs font-semibold rounded-lg ${isFollowing ? 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300' : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100'}`}
+              data-testid="button-bot-follow-toggle"
+            >
+              {isFollowLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
+            </Button>
           </div>
         </div>
 
@@ -4506,6 +4598,32 @@ function FinanceNewsBotProfile({ onBack }: { onBack: () => void }) {
           </div>
         )}
       </div>
+
+      {/* Followers Dialog */}
+      <Dialog open={showFollowersDialog} onOpenChange={setShowFollowersDialog}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>Followers</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 max-h-80 overflow-y-auto">
+            {(followersList?.followers || []).length === 0 ? (
+              <p className="text-center text-gray-400 text-sm py-6">No followers yet</p>
+            ) : (
+              (followersList?.followers || []).map((f: any) => (
+                <div key={f.id} className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gradient-to-br from-slate-600 to-slate-800 flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                    {f.username?.charAt(0).toUpperCase() || 'U'}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-gray-900 dark:text-white">{f.displayName || f.username}</p>
+                    <p className="text-xs text-gray-400">@{f.username}</p>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
@@ -5639,7 +5757,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   // Show bot profile for finance_news, or regular profile for other users
   if (viewingUserProfile) {
     if (viewingUserProfile === 'finance_news') {
-      return <FinanceNewsBotProfile onBack={() => setViewingUserProfile(null)} />;
+      return <FinanceNewsBotProfile onBack={() => setViewingUserProfile(null)} currentUserUsername={currentUserUsername} />;
     }
     return (
       <ViewUserProfile

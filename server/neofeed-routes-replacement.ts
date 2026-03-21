@@ -531,6 +531,16 @@ export function registerNeoFeedAwsRoutes(app: any) {
     try {
       const { username } = req.params;
       console.log(`📱 Fetching posts for user: ${username}`);
+
+      // Special case: finance_news bot posts come from the finance news table
+      if (username?.toLowerCase() === 'finance_news') {
+        const financePosts = await getFinanceNews(50);
+        const enrichedPosts = await Promise.all(
+          financePosts.map((post: any) => enrichPostWithRealCounts(post))
+        );
+        console.log(`✅ Found ${enrichedPosts.length} finance news posts`);
+        return res.json(enrichedPosts);
+      }
       
       const { items: userPosts } = await getAllUserPosts(100);
       

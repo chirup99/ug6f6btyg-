@@ -27,6 +27,8 @@ interface PersonalHeatmapProps {
   isPublicView?: boolean;
   refreshTrigger?: number;
   onFeedPost?: (mode: 'today' | 'selected' | 'range') => void;
+  hideNavigation?: boolean;
+  initialDate?: Date;
 }
 
 // Simple function to calculate P&L from trade data
@@ -102,8 +104,8 @@ function getPnLColor(pnl: number): string {
   }
 }
 
-export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView = false, refreshTrigger = 0, onFeedPost }: PersonalHeatmapProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
+export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView = false, refreshTrigger = 0, onFeedPost, hideNavigation = false, initialDate }: PersonalHeatmapProps) {
+  const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
@@ -1187,7 +1189,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
       </div>
 
       {/* Year Navigation / Edit Mode / Delete Mode Control */}
-      <div className="relative pt-2 border-t border-gray-200 dark:border-gray-700">
+      {!hideNavigation && <div className="relative pt-2 border-t border-gray-200 dark:border-gray-700">
         {isDeleteMode ? (
           // Delete Mode: Show single date selection interface
           <div className="flex items-center justify-between gap-1.5 px-2 py-1.5 bg-red-50 dark:bg-red-900/20 rounded-md">
@@ -1489,7 +1491,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
         {/* Hidden refs for range badge calculations */}
         <div ref={rangeBadge1Ref} className="hidden" />
         <div ref={rangeBadge2Ref} className="hidden" />
-      </div>
+      </div>}
 
       <style>{`
         .thin-scrollbar::-webkit-scrollbar {

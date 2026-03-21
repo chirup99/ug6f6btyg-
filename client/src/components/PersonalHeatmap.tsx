@@ -1342,56 +1342,69 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
 
             {/* Single button - shows "Select range", selected dates, or in range select mode */}
             {isRangeSelectMode ? (
-              // Range selection mode - show dates with X icon
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 px-2 flex-shrink flex items-center gap-1"
-                data-testid="button-select-date-range-mode"
-              >
-                <span className="text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">
-                  {selectedDatesForRange.length === 0 ? (
-                    "Select range"
-                  ) : selectedDatesForRange.length > 0 ? (
-                    (() => {
-                      const [date1, date2] = selectedDatesForRange.sort();
-                      const from = new Date(date1);
-                      const to = new Date(date2);
-                      const fromDate = from.toLocaleDateString('en-US', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      });
-                      const toDate = to.toLocaleDateString('en-US', { 
-                        weekday: 'short', 
-                        month: 'short', 
-                        day: 'numeric', 
-                        year: 'numeric' 
-                      });
-                      return `${fromDate} - ${toDate}`;
-                    })()
-                  ) : "Select range"}
-                </span>
-                <button
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    closeButtonRef.current = true;
-                    // Close range selection mode AND clear selected range
-                    setIsRangeSelectMode(false);
-                    setSelectedDatesForRange([]);
-                    setSelectedRange(null);
-                    if (onRangeChange) {
-                      onRangeChange(null);
-                    }
-                  }}
-                  className="flex items-center justify-center w-4 h-4 hover:opacity-70"
-                  data-testid="button-close-range-select"
+              // Range selection mode - show dates with X icon + post button in feed mode
+              <div className={`flex items-center ${isFeedMode ? 'w-full justify-between' : 'gap-1'}`}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-8 px-2 flex-shrink flex items-center gap-1"
+                  data-testid="button-select-date-range-mode"
                 >
-                  <X className="w-4 h-4" />
-                </button>
-              </Button>
+                  <span className="text-xs text-gray-900 dark:text-gray-100 whitespace-nowrap">
+                    {selectedDatesForRange.length === 0 ? (
+                      "Select range"
+                    ) : selectedDatesForRange.length > 0 ? (
+                      (() => {
+                        const [date1, date2] = selectedDatesForRange.sort();
+                        const from = new Date(date1);
+                        const to = new Date(date2);
+                        const fromDate = from.toLocaleDateString('en-US', { 
+                          weekday: 'short', 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: isFeedMode ? undefined : 'numeric' 
+                        });
+                        const toDate = to.toLocaleDateString('en-US', { 
+                          weekday: 'short', 
+                          month: 'short', 
+                          day: 'numeric', 
+                          year: isFeedMode ? undefined : 'numeric' 
+                        });
+                        return `${fromDate} - ${toDate}`;
+                      })()
+                    ) : "Select range"}
+                  </span>
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      closeButtonRef.current = true;
+                      // Close range selection mode AND clear selected range
+                      setIsRangeSelectMode(false);
+                      setSelectedDatesForRange([]);
+                      setSelectedRange(null);
+                      if (onRangeChange) {
+                        onRangeChange(null);
+                      }
+                    }}
+                    className="flex items-center justify-center w-4 h-4 hover:opacity-70"
+                    data-testid="button-close-range-select"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </Button>
+
+                {isFeedMode && onFeedPost && selectedDatesForRange.length === 2 && (
+                  <button
+                    className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                    data-testid="button-post-range"
+                    onClick={() => onFeedPost('range')}
+                  >
+                    <BookOpen className="w-2.5 h-2.5" />
+                    <Send className="w-2.5 h-2.5" />
+                  </button>
+                )}
+              </div>
             ) : (
               // Normal mode - show formatted current date
               <div className={`flex items-center ${isFeedMode ? 'w-full justify-between' : 'gap-1'}`}>
@@ -1413,26 +1426,16 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                 </Button>
 
                 {isFeedMode && onFeedPost && (
-                  <div className="flex items-center gap-0.5">
-                    <button
-                      className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium bg-violet-600 hover:bg-violet-700 text-white transition-colors"
-                      data-testid="button-post-dynamic"
-                      onClick={() => selectedDate ? onFeedPost('selected') : onFeedPost('today')}
-                    >
-                      <Send className="w-2.5 h-2.5" />
-                      {selectedDate
-                        ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                        : 'Today'}
-                    </button>
-                    <button
-                      className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
-                      data-testid="button-post-range"
-                      onClick={() => onFeedPost('range')}
-                    >
-                      <BookOpen className="w-2.5 h-2.5" />
-                      <Send className="w-2.5 h-2.5" />
-                    </button>
-                  </div>
+                  <button
+                    className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium bg-violet-600 hover:bg-violet-700 text-white transition-colors"
+                    data-testid="button-post-dynamic"
+                    onClick={() => selectedDate ? onFeedPost('selected') : onFeedPost('today')}
+                  >
+                    <Send className="w-2.5 h-2.5" />
+                    {selectedDate
+                      ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : 'Today'}
+                  </button>
                 )}
               </div>
             )}

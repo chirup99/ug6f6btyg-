@@ -31679,7 +31679,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           disableAutoScroll={true}
                           onSelectDateForHeatmap={() => {}}
                           hideNavigation={true}
-                          initialDate={dates.length > 0 ? new Date(dates[0] + 'T12:00:00') : new Date()}
+                          initialDate={dates.length > 0 ? new Date(dates[dates.length - 1] + 'T12:00:00') : new Date()}
                         />
                       </div>
 

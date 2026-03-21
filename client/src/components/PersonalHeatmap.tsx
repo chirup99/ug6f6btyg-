@@ -1409,7 +1409,13 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                     <button
                       className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
                       data-testid="button-post-range"
-                      onClick={() => onFeedPost('range', filteredHeatmapData)}
+                      onClick={() => {
+                        const yearStr = String(currentDate.getFullYear());
+                        const dataToPost = selectedRange
+                          ? filteredHeatmapData
+                          : Object.fromEntries(Object.entries(heatmapData).filter(([k]) => k.startsWith(yearStr)));
+                        onFeedPost('range', dataToPost);
+                      }}
                     >
                       <BookOpen className="w-2.5 h-2.5" />
                       <Send className="w-2.5 h-2.5" />
@@ -1452,7 +1458,13 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                     <button
                       className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
                       data-testid="button-post-range"
-                      onClick={() => onFeedPost('range', filteredHeatmapData)}
+                      onClick={() => {
+                        const yearStr = String(currentDate.getFullYear());
+                        const dataToPost = selectedRange
+                          ? filteredHeatmapData
+                          : Object.fromEntries(Object.entries(heatmapData).filter(([k]) => k.startsWith(yearStr)));
+                        onFeedPost('range', dataToPost);
+                      }}
                     >
                       <BookOpen className="w-2.5 h-2.5" />
                       <Send className="w-2.5 h-2.5" />

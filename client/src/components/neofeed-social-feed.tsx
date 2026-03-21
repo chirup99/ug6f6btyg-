@@ -3813,11 +3813,68 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                   ? <span className="text-[9px] bg-gray-100 dark:bg-zinc-800 text-gray-400 px-1.5 py-0.5 rounded font-medium">expired</span>
                   : <span className="text-[9px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded font-medium">{rangeCountdown.hoursLeft}h left</span>
               )}
+              {isOwnPost && (
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors p-1 h-auto"
+                    onClick={() => setShowOptionsMenu(!showOptionsMenu)}
+                    data-testid={`button-options-${post.id}`}
+                  >
+                    <MoreHorizontal className="h-4 w-4" />
+                  </Button>
+                  {showOptionsMenu && (
+                    <div className="absolute right-0 top-8 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg py-1 z-50 min-w-[50px]">
+                      <button
+                        onClick={() => {
+                          setShowDeleteDialog(true);
+                          setShowOptionsMenu(false);
+                        }}
+                        className="flex items-center justify-center p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 w-full transition-colors"
+                        data-testid={`button-delete-${post.id}`}
+                        title="Delete Post"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
         {/* Heatmap + Stats — no padding, fills the card */}
         <RangeReportCard metadata={post.metadata} postId={post.id} postCreatedAt={post.createdAt} stripped={true} />
+
+        {/* Delete Confirmation Dialog */}
+        <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Delete Post</DialogTitle>
+            </DialogHeader>
+            <p className="text-gray-600 dark:text-gray-400">
+              Are you sure you want to delete this post? This action cannot be undone.
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setShowDeleteDialog(false)}
+                data-testid="button-cancel-delete-range"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => deleteMutation.mutate()}
+                disabled={deleteMutation.isPending}
+                data-testid="button-confirm-delete-range"
+              >
+                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
       </Card>
     );
   }

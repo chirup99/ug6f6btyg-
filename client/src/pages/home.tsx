@@ -11817,6 +11817,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // State and refs for Range Post FOMO curved lines
   const [rangePostTagHighlight, setRangePostTagHighlight] = useState<{ tag: string; dates: string[] } | null>(null);
   const rangePostFomoButtonRef = useRef<HTMLButtonElement>(null);
+  const rangePostOvertradingButtonRef = useRef<HTMLButtonElement>(null);
   const rangePostHeatmapContainerRef = useRef<HTMLDivElement>(null);
   const [rangePostScrollTrigger, setRangePostScrollTrigger] = useState(0);
 
@@ -11884,7 +11885,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Effect to handle scroll updates for range post curved lines
   useEffect(() => {
-    if (!rangePostTagHighlight || rangePostTagHighlight.tag !== 'fomo') return;
+    if (!rangePostTagHighlight) return;
     const container = rangePostHeatmapContainerRef.current;
     if (!container) return;
     const scrollableElement = container;
@@ -31676,6 +31677,52 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         />
                       </div>
 
+                    {/* OverTrading Curved Lines Overlay */}
+                    {rangePostTagHighlight?.tag === 'overtrading' && rangePostTagHighlight.dates.length > 0 && (() => {
+                      void rangePostScrollTrigger;
+                      if (!rangePostOvertradingButtonRef.current || !rangePostHeatmapContainerRef.current) return null;
+                      const scrollableEl = rangePostHeatmapContainerRef.current;
+                      const scrollWidth = scrollableEl.scrollWidth || 0;
+                      const scrollHeight = scrollableEl.scrollHeight || 0;
+                      const scrollLeft = scrollableEl.scrollLeft || 0;
+                      const scrollTop = scrollableEl.scrollTop || 0;
+                      const containerRect = scrollableEl.getBoundingClientRect();
+                      const buttonRect = rangePostOvertradingButtonRef.current.getBoundingClientRect();
+                      const buttonCenterX = buttonRect.left - containerRect.left + scrollLeft + buttonRect.width / 2;
+                      const buttonCenterY = buttonRect.top - containerRect.top + scrollTop + buttonRect.height / 2;
+                      const otPaths: JSX.Element[] = [];
+                      rangePostTagHighlight.dates.forEach((date, index) => {
+                        const cellEl = scrollableEl.querySelector(`[data-date="${date}"]`);
+                        if (cellEl) {
+                          const cellRect = cellEl.getBoundingClientRect();
+                          const cellCenterX = cellRect.left - containerRect.left + scrollLeft + cellRect.width / 2;
+                          const cellCenterY = cellRect.top - containerRect.top + scrollTop + cellRect.height / 2;
+                          const controlX = (buttonCenterX + cellCenterX) / 2;
+                          const controlY = Math.min(buttonCenterY, cellCenterY) - 50;
+                          const pathD = `M ${buttonCenterX} ${buttonCenterY} Q ${controlX} ${controlY}, ${cellCenterX} ${cellCenterY}`;
+                          otPaths.push(
+                            <g key={`ot-${date}-${index}`}>
+                              <path d={pathD} fill="none" stroke="url(#otGradient)" strokeWidth="2.5" strokeDasharray="6,4" opacity="0.95" />
+                              <circle cx={cellCenterX} cy={cellCenterY} r="4" fill="#fb923c" opacity="0.9" />
+                              <circle cx={cellCenterX} cy={cellCenterY} r="3" fill="#f97316" className="animate-pulse" />
+                            </g>
+                          );
+                        }
+                      });
+                      return (
+                        <svg style={{ position: 'absolute', top: 0, left: 0, width: `${scrollWidth}px`, height: `${scrollHeight}px`, pointerEvents: 'none', zIndex: 10, overflow: 'visible' }}>
+                          <defs>
+                            <linearGradient id="otGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                              <stop offset="0%" stopColor="#f97316" stopOpacity="1" />
+                              <stop offset="50%" stopColor="#fb923c" stopOpacity="1" />
+                              <stop offset="100%" stopColor="#fbbf24" stopOpacity="1" />
+                            </linearGradient>
+                          </defs>
+                          {otPaths}
+                        </svg>
+                      );
+                    })()}
+
                     {/* FOMO Curved Lines Overlay */}
                     {rangePostTagHighlight?.tag === 'fomo' && rangePostTagHighlight.dates.length > 0 && (() => {
                       void rangePostScrollTrigger;
@@ -31724,23 +31771,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
 
                     {/* Stats Bar */}
-                    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-xl px-4 py-3">
+                    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg px-3 py-1.5">
                       <div className="flex items-center justify-around text-white">
-                        <div className="flex flex-col items-center gap-0.5">
-                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
-                          <div className="text-sm font-bold leading-none">{isProfit ? '+' : ''}₹{(totalPnL / 1000).toFixed(1)}K</div>
+                        <div className="flex flex-col items-center gap-0">
+                          <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
+                          <div className="text-xs font-bold leading-none">{isProfit ? '+' : ''}₹{(totalPnL / 1000).toFixed(1)}K</div>
                         </div>
-                        <div className="w-px h-8 bg-white/20" />
-                        <div className="flex flex-col items-center gap-0.5">
-                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
-                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-10 h-5">
+                        <div className="w-px h-6 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0">
+                          <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
+                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-8 h-4">
                             <path d={smoothTrendPath} fill="none" stroke="white" strokeWidth="1.8" opacity="0.95" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </div>
-                        <div className="w-px h-8 bg-white/20" />
+                        <div className="w-px h-6 bg-white/20" />
                         <button
                           ref={rangePostFomoButtonRef}
-                          className="flex flex-col items-center gap-0.5"
+                          className={`flex flex-col items-center gap-0 transition-opacity ${rangePostTagHighlight?.tag === 'fomo' ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}
                           onClick={() => {
                             if (rangePostTagHighlight?.tag === 'fomo') {
                               setRangePostTagHighlight(null);
@@ -31763,24 +31810,47 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           }}
                           title={`Click to ${rangePostTagHighlight?.tag === 'fomo' ? 'hide' : 'show'} FOMO dates on calendar`}
                         >
-                          <div className="text-[9px] font-medium opacity-90 uppercase tracking-wide">FOMO</div>
-                          <div className="text-sm font-bold leading-none">{fomoCount}</div>
+                          <div className="text-[8px] font-medium uppercase tracking-wide">{rangePostTagHighlight?.tag === 'fomo' ? '● ' : ''}FOMO</div>
+                          <div className="text-xs font-bold leading-none">{fomoCount}</div>
                         </button>
-                        <div className="w-px h-8 bg-white/20" />
-                        <div className="flex flex-col items-center gap-0.5">
-                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
-                          <div className="text-sm font-bold leading-none">{winRate.toFixed(0)}%</div>
+                        <div className="w-px h-6 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0">
+                          <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
+                          <div className="text-xs font-bold leading-none">{winRate.toFixed(0)}%</div>
                         </div>
-                        <div className="w-px h-8 bg-white/20" />
-                        <div className="flex flex-col items-center gap-0.5">
-                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
-                          <div className="text-sm font-bold leading-none">{maxStreak}</div>
+                        <div className="w-px h-6 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0">
+                          <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
+                          <div className="text-xs font-bold leading-none">{maxStreak}</div>
                         </div>
-                        <div className="w-px h-8 bg-white/20" />
-                        <div className="flex flex-col items-center gap-0.5">
-                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">OverTrade</div>
-                          <div className="text-sm font-bold leading-none">{overTradeCount}</div>
-                        </div>
+                        <div className="w-px h-6 bg-white/20" />
+                        <button
+                          ref={rangePostOvertradingButtonRef}
+                          className={`flex flex-col items-center gap-0 transition-opacity ${rangePostTagHighlight?.tag === 'overtrading' ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}
+                          onClick={() => {
+                            if (rangePostTagHighlight?.tag === 'overtrading') {
+                              setRangePostTagHighlight(null);
+                            } else {
+                              const fd = getFilteredHeatmapData();
+                              const otDates: string[] = [];
+                              Object.keys(fd).sort().forEach(dateKey => {
+                                const dayData = fd[dateKey];
+                                const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                                const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+                                const hasTag = Array.isArray(tags) && tags.some((t: string) => t.toLowerCase().includes('overtrading'));
+                                const hasHighVolume = (metrics?.totalTrades || 0) > 10;
+                                if ((hasTag || hasHighVolume) && !otDates.includes(dateKey)) {
+                                  otDates.push(dateKey);
+                                }
+                              });
+                              setRangePostTagHighlight({ tag: 'overtrading', dates: otDates });
+                            }
+                          }}
+                          title={`Click to ${rangePostTagHighlight?.tag === 'overtrading' ? 'hide' : 'show'} overtrading dates on calendar`}
+                        >
+                          <div className="text-[8px] font-medium uppercase tracking-wide">{rangePostTagHighlight?.tag === 'overtrading' ? '● ' : ''}OverTrade</div>
+                          <div className="text-xs font-bold leading-none">{overTradeCount}</div>
+                        </button>
                       </div>
                     </div>
                   </div>

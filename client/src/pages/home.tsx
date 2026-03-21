@@ -31589,7 +31589,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 const filteredData = getFilteredHeatmapData();
                 const dates = Object.keys(filteredData).sort();
                 let totalPnL = 0, totalTrades = 0, winningTrades = 0;
-                let fomoCount = 0, currentStreak = 0, maxStreak = 0;
+                let fomoCount = 0, currentStreak = 0, maxStreak = 0, overTradeCount = 0;
                 const trendData: number[] = [];
 
                 dates.forEach(dateKey => {
@@ -31604,8 +31604,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     trendData.push(netPnL);
                     if (netPnL > 0) { currentStreak++; maxStreak = Math.max(maxStreak, currentStreak); }
                     else { currentStreak = 0; }
+                    if ((metrics.totalTrades || 0) > 10) overTradeCount++;
                     if (Array.isArray(tags)) {
-                      tags.forEach((tag: string) => { if (tag.toLowerCase().includes('fomo')) fomoCount++; });
+                      tags.forEach((tag: string) => {
+                        if (tag.toLowerCase().includes('fomo')) fomoCount++;
+                        if (tag.toLowerCase().includes('overtrading')) overTradeCount++;
+                      });
                     }
                   }
                 });
@@ -31736,7 +31740,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         <div className="w-px h-8 bg-white/20" />
                         <button
                           ref={rangePostFomoButtonRef}
-                          className={`flex flex-col items-center gap-0.5 rounded-2xl px-4 py-1.5 border shadow-inner transition-all ${rangePostTagHighlight?.tag === 'fomo' ? 'bg-white/30 border-white/60 ring-2 ring-white/40' : 'bg-white/20 border-white/40 hover:bg-white/25'}`}
+                          className="flex flex-col items-center gap-0.5"
                           onClick={() => {
                             if (rangePostTagHighlight?.tag === 'fomo') {
                               setRangePostTagHighlight(null);
@@ -31771,6 +31775,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         <div className="flex flex-col items-center gap-0.5">
                           <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
                           <div className="text-sm font-bold leading-none">{maxStreak}</div>
+                        </div>
+                        <div className="w-px h-8 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0.5">
+                          <div className="text-[9px] font-medium opacity-75 uppercase tracking-wide">OverTrade</div>
+                          <div className="text-sm font-bold leading-none">{overTradeCount}</div>
                         </div>
                       </div>
                     </div>

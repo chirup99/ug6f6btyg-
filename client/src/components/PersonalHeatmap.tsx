@@ -26,7 +26,7 @@ interface PersonalHeatmapProps {
   } | null;
   isPublicView?: boolean;
   refreshTrigger?: number;
-  onFeedPost?: (mode: 'today' | 'selected' | 'range', data?: Record<string, any>, year?: string) => void;
+  onFeedPost?: (mode: 'today' | 'selected' | 'range', data?: Record<string, any>) => void;
   hideNavigation?: boolean;
   initialDate?: Date;
 }
@@ -1414,7 +1414,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                         const dataToPost = selectedRange
                           ? filteredHeatmapData
                           : Object.fromEntries(Object.entries(heatmapData).filter(([k]) => k.startsWith(yearStr)));
-                        onFeedPost('range', dataToPost, yearStr);
+                        onFeedPost('range', dataToPost);
                       }}
                     >
                       <BookOpen className="w-2.5 h-2.5" />
@@ -1463,7 +1463,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                         const dataToPost = selectedRange
                           ? filteredHeatmapData
                           : Object.fromEntries(Object.entries(heatmapData).filter(([k]) => k.startsWith(yearStr)));
-                        onFeedPost('range', dataToPost, yearStr);
+                        onFeedPost('range', dataToPost);
                       }}
                     >
                       <BookOpen className="w-2.5 h-2.5" />

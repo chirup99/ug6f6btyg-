@@ -31593,31 +31593,38 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     }).join(' ')
                   : `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
 
+                const ordDay = (() => {
+                  const d = dateObj.getDate();
+                  const sfx = (d >= 11 && d <= 13) ? 'TH' : ['TH','ST','ND','RD','TH'][Math.min(d % 10, 4)];
+                  return `${dateObj.toLocaleDateString('en-US', { weekday: 'short' }).toUpperCase()} ${d}${sfx} ${dateObj.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()} ${dateObj.getFullYear()}`;
+                })();
+
                 return (
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                    <div className="flex h-[130px]">
-                      <div className="flex-1 p-3 flex flex-col">
-                        <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">{formattedDate}</div>
+                    <div className="flex h-[180px]">
+                      <div className="flex-1 px-4 pt-4 pb-3 flex flex-col">
+                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide mb-3">{ordDay}</div>
                         <div className="flex-1 w-full min-h-0">
                           <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-full" preserveAspectRatio="none">
-                            <path d={pathD} fill="none" stroke={isProfit ? '#22c55e' : '#ef4444'} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                            <path d={pathD} fill="none" stroke={isProfit ? '#22c55e' : '#ef4444'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </div>
                       </div>
-                      <div className="w-[110px] bg-slate-50 dark:bg-slate-800/50 border-l border-slate-100 dark:border-slate-700 p-3 flex flex-col justify-center space-y-2.5">
+                      <div className="w-px bg-slate-100 dark:bg-slate-700 self-stretch my-4" />
+                      <div className="w-[140px] px-4 flex flex-col justify-center space-y-4">
                         <div>
-                          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">TOTAL P&L</div>
-                          <div className={`text-sm font-bold ${isProfit ? 'text-green-600' : 'text-red-600'}`}>
-                            {isProfit ? '+' : '-'}₹{Math.abs(totalPnL).toLocaleString()}
+                          <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">TOTAL P&L</div>
+                          <div className={`text-lg font-bold leading-tight ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
+                            ₹{Math.abs(totalPnL).toLocaleString()}
                           </div>
                         </div>
                         <div>
-                          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">TRADES</div>
-                          <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">{totalTrades}</div>
+                          <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">TRADES</div>
+                          <div className="text-base font-bold text-slate-800 dark:text-slate-100">{totalTrades}</div>
                         </div>
                         <div>
-                          <div className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">WIN RATE</div>
-                          <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">{winRate.toFixed(0)}%</div>
+                          <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">WIN RATE</div>
+                          <div className="text-base font-bold text-slate-800 dark:text-slate-100">{winRate.toFixed(1)}%</div>
                         </div>
                       </div>
                     </div>

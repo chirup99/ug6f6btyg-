@@ -1165,7 +1165,20 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
   const [activeRuleIndex, setActiveRuleIndex] = useState(() => new Date().getDay() % MINDSET_CARDS.length);
   const [ruleExiting, setRuleExiting] = useState(false);
-  const [cardsPrivate, setCardsPrivate] = useState(() => profileData?.performancePublic === false);
+  const [cardsPrivate, setCardsPrivate] = useState(() => {
+    const stored = localStorage.getItem('performancePrivate');
+    if (stored !== null) return stored === 'true';
+    return profileData?.performancePublic === false;
+  });
+
+  useEffect(() => {
+    if (profileData && profileData.performancePublic !== undefined) {
+      const isPrivate = profileData.performancePublic === false;
+      setCardsPrivate(isPrivate);
+      localStorage.setItem('performancePrivate', isPrivate ? 'true' : 'false');
+    }
+  }, [profileData?.performancePublic]);
+
   const ruleTouchStartXRef = useRef<number | null>(null);
   const ruleSwipedRef = useRef(false);
 
@@ -1585,6 +1598,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                     onClick={async () => {
                       const next = !cardsPrivate;
                       setCardsPrivate(next);
+                      localStorage.setItem('performancePrivate', next ? 'true' : 'false');
                       try {
                         const idToken = await getCognitoToken();
                         if (idToken) {
@@ -1593,6 +1607,9 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                             headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
                             body: JSON.stringify({ performancePublic: !next }),
                           });
+                          if (username) {
+                            queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/profile`] });
+                          }
                         }
                       } catch {}
                     }}

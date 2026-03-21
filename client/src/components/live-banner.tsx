@@ -516,7 +516,7 @@ export function LiveBanner() {
                   "Your portfolio is hedged. Is your family?"
                 </p>
                 <p className="text-[8px] leading-tight text-amber-300/50 mt-0.5 line-clamp-1">
-                  One medical bill can erase years of market gains — insurance is your ultimate hedge.
+                  Don't let one bad day undo everything you worked years to build.
                 </p>
               </div>
 

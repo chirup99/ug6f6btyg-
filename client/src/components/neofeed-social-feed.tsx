@@ -4306,19 +4306,27 @@ function ViewUserProfile({
   const displayName = profileData?.displayName || username;
   const bio = profileData?.bio || '';
   const profilePicUrl = profileData?.profilePicUrl;
-  const coverPicUrl = profileData?.coverPicUrl;
   const initials = (displayName || 'U').charAt(0).toUpperCase();
 
   if (profileLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 animate-pulse">
-          <div className="h-48 bg-gray-300 dark:bg-gray-700 relative">
-            <div className="absolute top-4 left-4 w-10 h-10 bg-gray-400 dark:bg-gray-600 rounded-full"></div>
-          </div>
-          <div className="pt-20 px-4 pb-4">
-            <div className="h-8 bg-gray-300 dark:bg-gray-700 rounded w-48 mb-2"></div>
-            <div className="h-4 bg-gray-300 dark:bg-gray-700 rounded w-32"></div>
+      <div className="min-h-screen bg-white dark:bg-gray-900">
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800 animate-pulse">
+          <div className="flex items-start gap-3">
+            <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-2 pt-1">
+              <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28" />
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+              <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-36" />
+            </div>
+            <div className="flex flex-col items-end gap-2">
+              <div className="flex gap-3">
+                <div className="w-12 h-8 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="w-12 h-8 bg-gray-200 dark:bg-gray-700 rounded" />
+                <div className="w-10 h-8 bg-gray-200 dark:bg-gray-700 rounded" />
+              </div>
+              <div className="w-24 h-7 bg-gray-200 dark:bg-gray-700 rounded-lg" />
+            </div>
           </div>
         </div>
       </div>
@@ -4348,73 +4356,80 @@ function ViewUserProfile({
           <ArrowLeft className="h-5 w-5" />
         </Button>
       </div>
-      
-      {/* Profile Header Card */}
-      <div className="bg-white dark:bg-gray-800 overflow-hidden">
-        {/* Cover Photo */}
-        <div className="h-44 relative overflow-hidden">
-          {coverPicUrl ? (
-            <img src={coverPicUrl} alt="Cover" className="w-full h-full object-cover" />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-r from-slate-400 via-slate-500 to-slate-600" />
-          )}
-          
-          {/* Camera icon for cover editing (only for own profile) */}
-          {isOwnProfile && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="absolute top-3 right-3 bg-gray-800/60 hover:bg-gray-800/80 text-white rounded-lg"
-              data-testid="button-edit-cover"
-            >
-              <Camera className="h-5 w-5" />
-            </Button>
-          )}
-          
-          {/* Profile Picture - overlapping cover */}
-          <div className="absolute -bottom-14 left-4">
-            <div className="relative">
-              <Avatar className="w-28 h-28 border-4 border-white dark:border-gray-800 shadow-lg">
-                {profilePicUrl ? (
-                  <AvatarImage src={profilePicUrl} className="object-cover" />
-                ) : (
-                  <AvatarFallback className="bg-gradient-to-br from-slate-500 to-slate-600 text-white text-3xl font-bold">
-                    {initials}
-                  </AvatarFallback>
-                )}
-              </Avatar>
-            </div>
-          </div>
-        </div>
 
-        {/* Profile Info */}
-        <div className="pt-16 px-4 pb-4">
-          {/* Name and Edit/Follow Button Row */}
-          <div className="flex justify-between items-start mb-3">
-            <div>
-              <h1 className="text-gray-900 dark:text-white font-bold text-xl flex items-center gap-2">
-                {displayName}
-                {profileData?.verified && (
-                  <CheckCircle className="w-5 h-5 text-blue-500 fill-current" />
-                )}
-              </h1>
-              <p className="text-gray-500 dark:text-gray-400 text-sm">@{username}</p>
+      {/* Profile Header — no cover photo */}
+      <div className="bg-white dark:bg-gray-900 px-4 pt-4 pb-0 border-b border-gray-100 dark:border-gray-800">
+        {/* Top row: avatar + info + stats + action button */}
+        <div className="flex items-start gap-3 mb-3">
+          {/* Avatar */}
+          <Avatar className="w-14 h-14 flex-shrink-0 border-2 border-gray-200 dark:border-gray-700 shadow-sm">
+            {profilePicUrl ? (
+              <AvatarImage src={profilePicUrl} className="object-cover" />
+            ) : (
+              <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-2xl font-bold">
+                {initials}
+              </AvatarFallback>
+            )}
+          </Avatar>
+
+          {/* Name / handle / bio */}
+          <div className="flex-1 min-w-0">
+            <h1 className="text-gray-900 dark:text-white font-bold text-base leading-tight flex items-center gap-1 flex-wrap">
+              {displayName}
+              {profileData?.verified && (
+                <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
+              )}
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400 text-xs">
+              @{username}
+              {profileData?.location ? ` · ${profileData.location}` : ''}
+            </p>
+            {bio && (
+              <p className="text-gray-700 dark:text-gray-300 text-xs mt-0.5 leading-snug">{bio}</p>
+            )}
+          </div>
+
+          {/* Stats + action button on the right */}
+          <div className="flex-shrink-0 flex flex-col items-end gap-2">
+            {/* Stats row */}
+            <div className="flex items-center gap-3 text-center">
+              <button
+                className="hover:opacity-80 transition-opacity"
+                onClick={() => setShowFollowingDialog(true)}
+                data-testid="button-view-following"
+              >
+                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{countsData?.following || 0}</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Following</div>
+              </button>
+              <button
+                className="hover:opacity-80 transition-opacity"
+                onClick={() => setShowFollowersDialog(true)}
+                data-testid="button-view-followers"
+              >
+                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{countsData?.followers || 0}</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Followers</div>
+              </button>
+              <div>
+                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{userPosts.length}</div>
+                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Posts</div>
+              </div>
             </div>
-            
-            {/* Edit Profile or Follow Button */}
+            {/* Action Button */}
             {isOwnProfile ? (
               <Button
-                variant="outline"
-                className="rounded-full px-5 border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300"
+                variant="default"
+                size="sm"
+                className="rounded-lg px-4 text-xs font-semibold bg-gray-900 dark:bg-white dark:text-gray-900 text-white"
                 onClick={() => setShowEditProfile(true)}
                 data-testid="button-edit-profile"
               >
-                Edit profile
+                Edit Profile
               </Button>
             ) : currentUserUsername ? (
               <Button
                 variant={isFollowing ? "outline" : "default"}
-                className={`rounded-full px-5 min-w-[100px] ${
+                size="sm"
+                className={`rounded-lg px-4 text-xs font-semibold min-w-[80px] ${
                   isFollowing
                     ? 'border-gray-300 dark:border-gray-600 hover:border-red-500 hover:text-red-500'
                     : 'bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 text-white'
@@ -4424,58 +4439,30 @@ function ViewUserProfile({
                 data-testid="button-follow-profile"
               >
                 {isFollowLoading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : isFollowing ? (
-                  'Following'
-                ) : (
-                  'Follow'
-                )}
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                ) : isFollowing ? 'Following' : 'Follow'}
               </Button>
             ) : null}
           </div>
+        </div>
 
-          {/* Bio */}
-          {bio && (
-            <p className="text-gray-800 dark:text-gray-200 mb-3 text-sm">{bio}</p>
-          )}
+        {/* Join Date */}
+        <div className="flex items-center gap-1 text-gray-400 dark:text-gray-500 text-xs mb-3">
+          <Calendar className="w-3 h-3" />
+          <span>Joined {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : new Date().getFullYear()}</span>
+        </div>
 
-          {/* Location and Join Date */}
-          <div className="flex flex-wrap items-center gap-3 text-gray-500 dark:text-gray-400 text-sm mb-3">
-            {profileData?.location && (
-              <div className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5" />
-                <span>{profileData.location}</span>
-              </div>
-            )}
-            <div className="flex items-center gap-1">
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Joined {profileData?.createdAt ? new Date(profileData.createdAt).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }) : new Date().getFullYear()}</span>
-            </div>
-          </div>
-
-          {/* Following/Followers Counts */}
-          <div className="flex gap-4 text-sm mb-4">
-            <button
-              className="hover:underline"
-              onClick={() => setShowFollowingDialog(true)}
-              data-testid="button-view-following"
-            >
-              <span className="font-bold text-gray-900 dark:text-white">{countsData?.following || 0}</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-1">Following</span>
-            </button>
-            <button
-              className="hover:underline"
-              onClick={() => setShowFollowersDialog(true)}
-              data-testid="button-view-followers"
-            >
-              <span className="font-bold text-gray-900 dark:text-white">{countsData?.followers || 0}</span>
-              <span className="text-gray-500 dark:text-gray-400 ml-1">Followers</span>
-            </button>
-          </div>
-
-          {/* Tabs: scrollable */}
-          <div className="flex overflow-x-auto scrollbar-hide border-b border-gray-200 dark:border-gray-700 -mx-4 px-4">
-            {(['Posts', 'Audio', 'Bullish', 'Bearish'] as const).map((tab) => (
+        {/* Tabs */}
+        <div className="flex overflow-x-auto scrollbar-hide -mx-4 px-4">
+          {(['Posts', 'Audio', 'Bullish', 'Bearish'] as const).map((tab) => {
+            const count = tab === 'Posts'
+              ? userPosts.filter(p => !(p as any).isAudioPost).length
+              : tab === 'Audio'
+              ? userPosts.filter(p => (p as any).isAudioPost).length
+              : tab === 'Bullish'
+              ? userPosts.filter(p => (p as any).sentiment === 'bullish').length
+              : userPosts.filter(p => (p as any).sentiment === 'bearish').length;
+            return (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -4486,13 +4473,13 @@ function ViewUserProfile({
                 }`}
                 data-testid={`button-profile-tab-${tab.toLowerCase()}`}
               >
-                {tab}
+                {tab}{!postsLoading && count > 0 ? ` (${count})` : ''}
                 {activeTab === tab && (
-                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full"></div>
+                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full" />
                 )}
               </button>
-            ))}
-          </div>
+            );
+          })}
         </div>
       </div>
 

@@ -476,47 +476,47 @@ export function LiveBanner() {
           </div>
         )}
 
-        {/* === SLIDE 2: Insurance Awareness — Trader-voice amber design === */}
+        {/* === SLIDE 2: Insurance Awareness — Journal-style with full details === */}
         {currentIndex === 2 && (
-          <div className="absolute inset-0 overflow-hidden" style={{ background: 'linear-gradient(135deg, #1a0a00 0%, #2d1200 40%, #1a0505 100%)' }}>
-            {/* Warm glow accents */}
-            <div className="absolute -top-4 right-10 w-32 h-32 rounded-full bg-amber-500/15 blur-2xl pointer-events-none" />
-            <div className="absolute -bottom-4 left-8 w-24 h-24 rounded-full bg-rose-500/10 blur-2xl pointer-events-none" />
-            {/* Top amber accent line */}
-            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-amber-500/60 to-transparent" />
+          <div className="absolute inset-0 overflow-hidden bg-gradient-to-r from-slate-950 via-emerald-950/60 to-slate-950">
+            {/* Glow accents */}
+            <div className="absolute -top-6 right-6 w-28 h-28 rounded-full bg-emerald-500/10 blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-6 left-4 w-20 h-20 rounded-full bg-teal-500/10 blur-2xl pointer-events-none" />
+            {/* Top accent line */}
+            <div className="absolute top-0 left-0 right-0 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-500/50 to-transparent" />
 
             <div className="absolute inset-0 flex items-stretch px-2.5 py-2 gap-2.5">
 
-              {/* Left: Shield icon */}
+              {/* Left: Shield icon block */}
               <div className="flex flex-col items-center justify-center w-12 shrink-0 gap-1.5">
                 <div className="relative flex items-center justify-center">
-                  <div className="absolute w-11 h-11 rounded-full bg-amber-500/15 animate-pulse" />
-                  <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-amber-500/30 to-rose-600/20 border border-amber-500/40 flex items-center justify-center shadow-lg shadow-amber-900/30">
-                    <ShieldCheck style={{ width: '18px', height: '18px' }} className="text-amber-300" strokeWidth={1.75} />
+                  <div className="absolute w-10 h-10 rounded-full bg-emerald-500/15 animate-pulse" />
+                  <div className="relative w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500/40 to-teal-600/30 border border-emerald-500/40 flex items-center justify-center shadow-lg shadow-emerald-900/40">
+                    <ShieldCheck className="w-4.5 h-4.5 text-emerald-300" strokeWidth={1.75} style={{ width: '18px', height: '18px' }} />
                   </div>
                 </div>
                 <div className="flex items-center gap-0.5">
                   <Heart className="w-2.5 h-2.5 text-rose-400 fill-rose-400" />
-                  <Users className="w-3 h-3 text-amber-400/60" />
+                  <Users className="w-3 h-3 text-emerald-400/70" />
                 </div>
               </div>
 
-              {/* Center: Trader-voice message */}
+              {/* Center: Message */}
               <div className="flex-1 min-w-0 flex flex-col justify-center gap-0.5">
                 <div className="flex items-center gap-1.5 flex-wrap mb-0.5">
-                  <span className="text-[8px] font-bold text-amber-300 uppercase tracking-widest px-1.5 py-0.5 bg-amber-500/15 border border-amber-500/25 rounded-md leading-none">
+                  <span className="text-[8px] font-bold text-emerald-300 uppercase tracking-widest px-1.5 py-0.5 bg-emerald-500/15 border border-emerald-500/25 rounded-md leading-none">
                     Insurance Awareness
                   </span>
-                  <span className="hidden sm:flex items-center gap-0.5 text-[8px] text-rose-300/80 font-semibold leading-none">
+                  <span className="flex items-center gap-0.5 text-[8px] text-rose-300/80 font-semibold leading-none">
                     <Heart className="w-2 h-2 fill-rose-400 text-rose-400" />
-                    Protect Your Family
+                    <span className="hidden sm:inline">Protect Your Family</span>
                   </span>
                 </div>
-                <p className="text-[10px] sm:text-[11px] leading-snug text-white/90 font-semibold line-clamp-1 sm:line-clamp-2">
-                  "Your portfolio is hedged. Is your family?"
+                <p className="text-[9px] sm:text-[10px] leading-snug text-white/85 font-medium italic line-clamp-2">
+                  "One health emergency can wipe out years of savings — insurance is not a choice, it's a shield."
                 </p>
-                <p className="text-[8px] leading-tight text-amber-300/50 mt-0.5 line-clamp-1">
-                  Don't let one bad day undo everything you worked years to build.
+                <p className="text-[8px] leading-tight text-emerald-400/60 mt-0.5 line-clamp-1">
+                  Protect what you've built — get IRDAI-regulated coverage today.
                 </p>
               </div>
 
@@ -526,13 +526,13 @@ export function LiveBanner() {
                   href="https://irdai.gov.in/"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl bg-amber-500/15 border border-amber-500/30 hover:bg-amber-500/25 hover:border-amber-400/50 transition-all active:scale-95 group shadow-sm"
+                  className="flex flex-col items-center gap-0.5 px-2 py-1.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 hover:bg-emerald-500/25 hover:border-emerald-400/50 transition-all active:scale-95 group shadow-sm"
                   data-testid="button-insurance-portal"
                 >
-                  <span className="text-[9px] font-bold text-amber-200 group-hover:text-white whitespace-nowrap transition-colors">More Details</span>
-                  <span className="text-[7px] text-amber-500/60 whitespace-nowrap">irdai.gov.in</span>
+                  <span className="text-[9px] font-bold text-emerald-200 group-hover:text-white whitespace-nowrap transition-colors">More Details</span>
+                  <span className="text-[7px] text-emerald-500/60 whitespace-nowrap">irdai.gov.in</span>
                 </a>
-                <span className="text-[7px] text-slate-500 text-center leading-tight">Govt. of India<br /><span className="hidden sm:inline">Official Portal</span></span>
+                <span className="text-[7px] text-slate-500 text-center leading-tight">Govt. of India<br className="hidden sm:block" /><span className="hidden sm:inline"> Official Portal</span></span>
               </div>
 
             </div>

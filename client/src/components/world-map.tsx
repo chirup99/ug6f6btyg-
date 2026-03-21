@@ -1258,18 +1258,6 @@ export function WorldMap() {
                     opacity="0.95"
                   />
 
-                  {/* Flag + region label */}
-                  <text
-                    x={svgX}
-                    y={svgY - 10}
-                    textAnchor="middle"
-                    fontSize="8"
-                    fill="white"
-                    opacity="0.85"
-                    style={{ pointerEvents: "none", userSelect: "none" }}
-                  >
-                    {meta?.flag} {region.name}
-                  </text>
                 </g>
               );
             })}

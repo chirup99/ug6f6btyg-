@@ -1414,23 +1414,15 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                   <div className="flex items-center gap-1">
                     <Button
                       size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs font-medium gap-1 border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20"
-                      data-testid="button-post-today"
-                      onClick={() => onFeedPost('today')}
+                      variant="default"
+                      className="h-7 px-2 text-xs font-medium gap-1 bg-violet-600 hover:bg-violet-700 text-white"
+                      data-testid="button-post-dynamic"
+                      onClick={() => selectedDate ? onFeedPost('selected') : onFeedPost('today')}
                     >
-                      <span className="text-sm">📅</span>
-                      Today
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="h-7 px-2 text-xs font-medium gap-1 border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20"
-                      data-testid="button-post-selected"
-                      onClick={() => onFeedPost('selected')}
-                    >
-                      <span className="text-sm">🗓️</span>
-                      Select
+                      <Send className="w-3 h-3" />
+                      {selectedDate
+                        ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                        : 'Today'}
                     </Button>
                     <Button
                       size="sm"
@@ -1463,13 +1455,13 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
             {/* Social Feed Icon - beside 3-dot menu */}
             {!isRangeSelectMode && (
               <Button
-                variant={isFeedMode ? "secondary" : "ghost"}
+                variant="ghost"
                 size="icon"
                 onClick={handleFeedClick}
-                className={`h-8 w-8 ml-1 ${isFeedMode ? 'bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300' : ''}`}
+                className={`h-8 w-8 ml-1 ${isFeedMode ? 'text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : ''}`}
                 data-testid="button-social-feed"
               >
-                <Layout className="w-4 h-4" />
+                {isFeedMode ? <X className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
               </Button>
             )}
 

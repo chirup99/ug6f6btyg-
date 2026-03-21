@@ -33,6 +33,8 @@ interface DemoHeatmapProps {
   disableAutoScroll?: boolean;
   onSelectDateForHeatmap?: (symbol: string, date: string) => void;
   refreshTrigger?: number;
+  hideNavigation?: boolean;
+  initialDate?: Date;
 }
 
 // Simple function to calculate P&L from trade data
@@ -87,10 +89,10 @@ function getPnLColor(pnl: number): string {
   }
 }
 
-export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, disableAutoScroll, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0 }: DemoHeatmapProps) {
+export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, disableAutoScroll, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0, hideNavigation = false, initialDate }: DemoHeatmapProps) {
   const { currentUser } = useCurrentUser();
-  // Default to December of last year so the calendar shows the correct year before data loads
-  const [currentDate, setCurrentDate] = useState(new Date(new Date().getFullYear() - 1, 11, 1));
+  // Use initialDate if provided, otherwise default to December of last year
+  const [currentDate, setCurrentDate] = useState(initialDate || new Date(new Date().getFullYear() - 1, 11, 1));
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(true);
@@ -1418,7 +1420,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
       </div>
 
       {/* Year Navigation / Edit Mode / Delete Mode Control */}
-      <div className="relative pt-2 border-t border-gray-200 dark:border-gray-700">
+      {!hideNavigation && <div className="relative pt-2 border-t border-gray-200 dark:border-gray-700">
         {isDeleteMode ? (
           // Delete Mode: Show single date selection interface
           <div className="flex items-center justify-between gap-1.5 px-2 py-1.5 bg-red-50 dark:bg-red-900/20 rounded-md">
@@ -2027,7 +2029,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
         {/* Hidden refs for range badge calculations */}
         <div ref={rangeBadge1Ref} className="hidden" />
         <div ref={rangeBadge2Ref} className="hidden" />
-      </div>
+      </div>}
 
       <style>{`
         .thin-scrollbar::-webkit-scrollbar {

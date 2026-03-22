@@ -31560,30 +31560,34 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                 return (
                   <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden">
-                    <div className="flex h-[180px]">
+                    <div className="flex h-[220px]">
                       <div className="flex-1 px-4 pt-4 pb-3 flex flex-col">
                         <div className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide mb-3">{ordDay}</div>
                         <div className="flex-1 w-full min-h-0">
-                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-full" preserveAspectRatio="none">
-                            <path d={pathD} fill="none" stroke={isProfit ? '#22c55e' : '#ef4444'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
-                          </svg>
+                          {chartPoints.length > 0 ? (
+                            <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-full" preserveAspectRatio="none">
+                              <path d={pathD} fill="none" stroke={isProfit ? '#22c55e' : '#ef4444'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center text-xs text-slate-400">No chart data</div>
+                          )}
                         </div>
                       </div>
                       <div className="w-px bg-slate-100 dark:bg-slate-700 self-stretch my-4" />
-                      <div className="w-[140px] px-4 flex flex-col justify-center space-y-4">
+                      <div className="w-[160px] px-5 flex flex-col justify-center space-y-5">
                         <div>
-                          <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">TOTAL P&L</div>
-                          <div className={`text-lg font-bold leading-tight ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
+                          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">TOTAL P&L</div>
+                          <div className={`text-2xl font-bold leading-tight ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
                             ₹{Math.abs(totalPnL).toLocaleString()}
                           </div>
                         </div>
                         <div>
-                          <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">TRADES</div>
-                          <div className="text-base font-bold text-slate-800 dark:text-slate-100">{totalTrades}</div>
+                          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">TRADES</div>
+                          <div className="text-xl font-bold text-slate-800 dark:text-slate-100">{totalTrades}</div>
                         </div>
                         <div>
-                          <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">WIN RATE</div>
-                          <div className="text-base font-bold text-slate-800 dark:text-slate-100">{winRate.toFixed(1)}%</div>
+                          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">WIN RATE</div>
+                          <div className="text-xl font-bold text-slate-800 dark:text-slate-100">{winRate.toFixed(1)}%</div>
                         </div>
                       </div>
                     </div>

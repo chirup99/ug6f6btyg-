@@ -31493,7 +31493,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); setRangePostTagHighlight(null); setRangePostOverrideData(null); }
           }}
         >
-          <DialogContent className={reportPostMode === 'range' ? "w-full sm:max-w-md max-h-[90dvh] overflow-hidden flex flex-col gap-0 p-0" : "w-full sm:max-w-xl p-0 overflow-hidden flex flex-col max-h-[90dvh] bg-white dark:bg-zinc-950"}>
+          <DialogContent className={reportPostMode === 'range' ? "w-full sm:max-w-md max-h-[90dvh] overflow-hidden flex flex-col gap-0 p-0" : "w-full sm:max-w-sm p-0 overflow-hidden flex flex-col max-h-[90dvh] bg-white dark:bg-zinc-950"}>
             {reportPostMode === 'range' && (
             <DialogHeader className="flex-shrink-0 px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2">
@@ -31560,9 +31560,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                 return (
                   <div className={reportPostMode === 'range' ? "bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl overflow-hidden" : "border-b border-gray-100 dark:border-zinc-800"}>
-                    <div className="flex h-[220px]">
-                      <div className="flex-1 px-4 pt-4 pb-3 flex flex-col">
-                        <div className="text-sm font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide mb-3">{ordDay}</div>
+                    <div className="flex h-[160px]">
+                      <div className="flex-1 px-3 pt-3 pb-2 flex flex-col">
+                        <div className="text-xs font-bold text-slate-800 dark:text-slate-100 uppercase tracking-wide mb-2">{ordDay}</div>
                         <div className="flex-1 w-full min-h-0">
                           {chartPoints.length > 0 ? (
                             <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-full h-full" preserveAspectRatio="none">
@@ -31573,21 +31573,21 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           )}
                         </div>
                       </div>
-                      <div className="w-px bg-slate-100 dark:bg-slate-700 self-stretch my-4" />
-                      <div className="w-[160px] px-5 flex flex-col justify-center space-y-5">
+                      <div className="w-px bg-slate-100 dark:bg-slate-700 self-stretch my-3" />
+                      <div className="w-[130px] px-4 flex flex-col justify-center space-y-3">
                         <div>
-                          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">TOTAL P&L</div>
-                          <div className={`text-2xl font-bold leading-tight ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
+                          <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">TOTAL P&L</div>
+                          <div className={`text-lg font-bold leading-tight ${isProfit ? 'text-green-500' : 'text-red-500'}`}>
                             ₹{Math.abs(totalPnL).toLocaleString()}
                           </div>
                         </div>
                         <div>
-                          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">TRADES</div>
-                          <div className="text-xl font-bold text-slate-800 dark:text-slate-100">{totalTrades}</div>
+                          <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">TRADES</div>
+                          <div className="text-base font-bold text-slate-800 dark:text-slate-100">{totalTrades}</div>
                         </div>
                         <div>
-                          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-widest mb-1">WIN RATE</div>
-                          <div className="text-xl font-bold text-slate-800 dark:text-slate-100">{winRate.toFixed(1)}%</div>
+                          <div className="text-[9px] font-semibold text-slate-400 uppercase tracking-widest mb-0.5">WIN RATE</div>
+                          <div className="text-base font-bold text-slate-800 dark:text-slate-100">{winRate.toFixed(1)}%</div>
                         </div>
                       </div>
                     </div>
@@ -31892,35 +31892,42 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
             {/* Plain textarea for selected/today - DemoHeatmap style */}
             {(reportPostMode === 'today' || reportPostMode === 'selected') && (
-              <div className="flex-1 px-6 py-4 flex flex-col min-h-[100px]">
+              <div className="px-4 py-3 flex flex-col min-h-[70px]">
                 <textarea
                   value={reportPostDescription}
                   onChange={(e) => setReportPostDescription(e.target.value)}
                   placeholder="Add your notes..."
-                  className="flex-1 w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-600 dark:text-zinc-400 resize-none placeholder:text-gray-400 leading-relaxed"
+                  rows={3}
+                  className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-600 dark:text-zinc-400 resize-none placeholder:text-gray-400 leading-relaxed"
                   data-testid="textarea-post-description"
                 />
               </div>
             )}
 
             {/* Footer with POST button */}
-            <div className="flex-shrink-0 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-2 px-6 py-4">
+            <div className="flex-shrink-0 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-2 px-4 py-3">
               {reportPostMode === 'range' ? (
-                <span className="text-xs text-slate-400">Posts to NeoFeed tab</span>
+                <span className="text-xs text-slate-400">Posts to Social Feed</span>
               ) : (
                 <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
-                    {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
+                  <Avatar className="h-7 w-7">
+                    <AvatarImage src={currentUser?.profilePicUrl ?? undefined} />
+                    <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-[10px]">
+                      {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="text-xs font-medium text-gray-700 dark:text-zinc-300 leading-none">
+                      {currentUser?.displayName || currentUser?.email || 'Guest'}
+                    </span>
+                    <span className="text-[10px] text-gray-400 dark:text-zinc-500 leading-none mt-0.5">Posts to Social Feed</span>
                   </div>
-                  <span className="text-xs font-medium text-gray-700 dark:text-zinc-300">
-                    {currentUser?.displayName || currentUser?.email || 'Guest'}
-                  </span>
                 </div>
               )}
               <Button
                 onClick={handlePostToNeoFeed}
                 disabled={isPostingReport || (reportPostMode === 'selected' && !reportPostSelectedDate)}
-                className={reportPostMode === 'range' ? "bg-violet-600 hover:bg-violet-700 text-white h-8 px-4 text-sm font-semibold" : "h-8 px-4 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold shadow-sm flex items-center gap-2"}
+                className={reportPostMode === 'range' ? "bg-violet-600 hover:bg-violet-700 text-white h-8 px-4 text-sm font-semibold" : "h-7 px-3 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold shadow-sm flex items-center gap-1.5"}
                 data-testid="button-submit-post"
               >
                 {isPostingReport ? (

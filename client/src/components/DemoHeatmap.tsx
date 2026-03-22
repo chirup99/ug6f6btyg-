@@ -1751,11 +1751,11 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
             <Dialog open={isPostDialogOpen} onOpenChange={setIsPostDialogOpen}>
               <DialogContent className="max-w-xl p-0 overflow-hidden bg-white dark:bg-zinc-950 border-none shadow-2xl">
                 <div className="flex flex-col h-full bg-white dark:bg-zinc-950 overflow-hidden">
-                  <div className="flex h-[160px] border-b border-gray-100 dark:border-zinc-800/50">
+                  <div className="flex h-[220px] border-b border-gray-100 dark:border-zinc-800/50">
                     {/* Left side: Chart */}
-                    <div className="flex-1 p-6 flex flex-col justify-center relative">
-                      <div className="absolute top-4 left-6 flex flex-col">
-                        <span className="text-[10px] font-bold text-gray-900 dark:text-zinc-100 uppercase tracking-tight">
+                    <div className="flex-1 px-4 pt-4 pb-3 flex flex-col relative">
+                      <div className="flex flex-col mb-3">
+                        <span className="text-sm font-bold text-gray-900 dark:text-zinc-100 uppercase tracking-tight">
                           {(() => {
                             const days = ['SUN', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
                             const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
@@ -1774,7 +1774,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
                           })()}
                         </span>
                       </div>
-                      <div className="h-[80px] w-full flex items-center justify-center mt-6">
+                      <div className="flex-1 w-full min-h-0">
                         {(() => {
                           const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
                           const dayData = heatmapData[dateKey];
@@ -1797,7 +1797,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
                             }).join(' ');
                             
                             return (
-                              <svg width="100%" height="60" viewBox="0 0 320 80" preserveAspectRatio="none" className="overflow-visible">
+                              <svg width="100%" height="100%" viewBox="0 0 320 80" preserveAspectRatio="none" className="overflow-visible">
                                 <defs>
                                   <linearGradient id="pnlGradientPost" x1="0" y1="0" x2="0" y2="1">
                                     <stop offset="0%" stopColor={pnlValue >= 0 ? "#22c55e" : "#ef4444"} stopOpacity="0.05" />
@@ -1812,21 +1812,23 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
                                   points={points}
                                   fill="none"
                                   stroke={pnlValue >= 0 ? "#22c55e" : "#ef4444"}
-                                  strokeWidth="1.5"
+                                  strokeWidth="2.5"
                                   strokeLinecap="round"
                                   strokeLinejoin="round"
                                 />
                               </svg>
                             );
                           }
-                          return <span className="text-[10px] text-gray-400">No chart data</span>;
+                          return <div className="w-full h-full flex items-center justify-center text-xs text-gray-400">No chart data</div>;
                         })()}
                       </div>
                     </div>
 
+                    <div className="w-px bg-gray-100 dark:bg-zinc-800 self-stretch my-4" />
+
                     {/* Right side: Stats */}
-                    <div className="w-[140px] flex flex-col border-l border-gray-100 dark:border-zinc-800/50 bg-gray-50/30 dark:bg-zinc-900/10">
-                      <div className="flex-1 px-5 flex flex-col justify-center space-y-4">
+                    <div className="w-[160px] flex flex-col">
+                      <div className="flex-1 px-5 flex flex-col justify-center space-y-5">
                         {(() => {
                           const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
                           const dayData = heatmapData[dateKey];
@@ -1837,18 +1839,18 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
                           return (
                             <>
                               <div className="flex flex-col">
-                                <span className="text-[8px] uppercase text-gray-400 font-bold tracking-widest leading-none mb-1.5">TOTAL P&L</span>
-                                <span className={`text-sm font-bold leading-none ${pnlValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-widest leading-none mb-1">TOTAL P&L</span>
+                                <span className={`text-2xl font-bold leading-tight ${pnlValue >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                                   ₹{Math.floor(pnlValue).toLocaleString()}
                                 </span>
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[8px] uppercase text-gray-400 font-bold tracking-widest leading-none mb-1.5">TRADES</span>
-                                <span className="text-xs font-semibold text-gray-700 dark:text-zinc-300 leading-none">{totalTrades}</span>
+                                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-widest leading-none mb-1">TRADES</span>
+                                <span className="text-xl font-bold text-gray-800 dark:text-zinc-100 leading-tight">{totalTrades}</span>
                               </div>
                               <div className="flex flex-col">
-                                <span className="text-[8px] uppercase text-gray-400 font-bold tracking-widest leading-none mb-1.5">WIN RATE</span>
-                                <span className="text-xs font-semibold text-gray-700 dark:text-zinc-300 leading-none">{winRate}%</span>
+                                <span className="text-[10px] uppercase text-gray-400 font-semibold tracking-widest leading-none mb-1">WIN RATE</span>
+                                <span className="text-xl font-bold text-gray-800 dark:text-zinc-100 leading-tight">{winRate}%</span>
                               </div>
                             </>
                           );

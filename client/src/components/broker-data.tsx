@@ -67,6 +67,11 @@ interface BrokerDataProps {
   angelOneAccessToken?: string | null;
   angelOneClientCode?: string | null;
   angelOneUserName?: string | null;
+  secondaryBroker?: string | null;
+  secondaryBrokerOrders?: any[];
+  secondaryBrokerPositions?: any[];
+  secondaryBrokerFunds?: number | null;
+  fetchingSecondaryBroker?: boolean;
 }
 
 export function BrokerData(props: BrokerDataProps) {
@@ -89,6 +94,11 @@ export function BrokerData(props: BrokerDataProps) {
     angelOneAccessToken,
     angelOneClientCode,
     angelOneUserName,
+    secondaryBroker,
+    secondaryBrokerOrders = [],
+    secondaryBrokerPositions = [],
+    secondaryBrokerFunds,
+    fetchingSecondaryBroker,
   } = props;
 
   const queryClient = useQueryClient();
@@ -233,45 +243,163 @@ export function BrokerData(props: BrokerDataProps) {
     ? (queryClient.getQueryData<{funds: number}>(["/api/broker/groww/funds"])?.funds ?? brokerFunds)
     : brokerFunds;
 
+  const allBrokerInfo: Record<string, { logo: string; id: string; name: string; rounded?: boolean }> = {
+    zerodha:  { logo: "https://zerodha.com/static/images/products/kite-logo.svg", id: zerodhaClientId || "N/A", name: zerodhaUserName || "N/A" },
+    upstox:   { logo: "https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png", id: upstoxUserId || "N/A", name: (upstoxUserName && upstoxUserName !== "undefined" && upstoxUserName !== "N/A" ? upstoxUserName : "Upstox User") },
+    dhan:     { logo: "https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701", id: dhanClientId || dhanUserId || "N/A", name: dhanClientName || "Dhan User" },
+    groww:    { logo: "https://groww.in/logo-groww-rectangular.svg", id: growwUserId || "N/A", name: growwUserName || "Groww User" },
+    delta:    { logo: "https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw", id: (deltaExchangeUserId && deltaExchangeUserId !== "Fetching..." ? deltaExchangeUserId : "N/A"), name: (deltaExchangeAccountName && deltaExchangeAccountName !== "Delta User" ? deltaExchangeAccountName : "Delta User"), rounded: true },
+    fyers:    { logo: "https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw", id: fyersStatus?.userId || "N/A", name: fyersStatus?.userName || "Fyers User", rounded: true },
+    angelone: { logo: "https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701", id: angelOneClientCode || "N/A", name: angelOneUserName || "Angel One User", rounded: true },
+  };
+
+  const renderBrokerChip = (broker: string) => {
+    const info = allBrokerInfo[broker];
+    if (!info) return null;
+    return (
+      <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1 min-w-0">
+        <img src={info.logo} alt={broker} className={`w-3 h-3 flex-shrink-0 ${info.rounded ? 'rounded-full' : ''}`} />
+        <div className="flex flex-col min-w-0 leading-tight">
+          <span className="text-[10px] font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">{showUserId ? info.id : "••••••"}</span>
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[120px]">{showUserId ? info.name : "•••••"}</span>
+        </div>
+      </div>
+    );
+  };
+
+  const renderOrdersTable = (orders: any[], isFetching: boolean, onRecord?: () => void) => (
+    <div className="space-y-2">
+      <div className="max-h-80 overflow-auto border rounded-lg custom-thin-scrollbar">
+        <table className="w-full min-w-[420px] text-xs">
+          <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+            <tr>
+              <th className="px-2 py-2 text-left font-medium">Time</th>
+              <th className="px-2 py-2 text-left font-medium">Order</th>
+              <th className="px-2 py-2 text-left font-medium">Symbol</th>
+              <th className="px-2 py-2 text-left font-medium">Qty</th>
+              <th className="px-2 py-2 text-left font-medium">Price</th>
+              <th className="px-2 py-2 text-left font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {orders.length === 0 ? (
+              <tr><td colSpan={6} className="px-2 py-4 text-center text-gray-500">{isFetching ? 'Loading...' : 'No orders found'}</td></tr>
+            ) : (
+              [...orders].sort((a, b) => {
+                const aS = String(a.status || "").toUpperCase().trim();
+                const bS = String(b.status || "").toUpperCase().trim();
+                return (aS === "COMPLETE" || aS === "PENDING" ? 0 : 999) - (bS === "COMPLETE" || bS === "PENDING" ? 0 : 999);
+              }).map((trade, idx) => {
+                const status = String(trade.status || "").toUpperCase().trim();
+                const isClosed = status === "REJECTED" || status === "CANCELLED";
+                let displayTime = trade.time || trade.executedAt || trade.created_at || '';
+                try {
+                  const d = new Date(displayTime);
+                  if (!isNaN(d.getTime())) displayTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                } catch {}
+                return (
+                  <tr key={idx} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${isClosed ? 'bg-gray-100/50 dark:bg-gray-800/40' : ''}`}>
+                    <td className="px-2 py-1.5 font-medium">{displayTime}</td>
+                    <td className="px-2 py-1.5">
+                      <span className={`px-1 py-0.5 rounded text-xs ${trade.order === "BUY" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"}`}>{trade.order}</span>
+                    </td>
+                    <td className="px-2 py-1.5 font-medium">{formatSymbol(trade.symbol)}</td>
+                    <td className="px-2 py-1.5">{trade.qty}</td>
+                    <td className="px-2 py-1.5">₹{typeof trade.price === 'number' ? trade.price.toFixed(2) : trade.price}</td>
+                    <td className="px-2 py-1.5">
+                      <span className={`text-xs font-medium ${(status === 'COMPLETE' || status === 'COMPLETED') ? 'text-green-600 dark:text-green-400' : status === 'REJECTED' ? 'text-red-600 dark:text-red-400' : status === 'CANCELLED' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                        {(trade.status || 'PENDING').toUpperCase()}
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex items-center justify-between pt-1">
+        {onRecord && <button onClick={onRecord} disabled={orders.length === 0} className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded transition-colors" data-testid="button-record-broker-orders">Record to Journal</button>}
+        <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{orders.length} orders</span>
+      </div>
+    </div>
+  );
+
+  const renderPositionsTable = (positions: any[]) => (
+    <div className="space-y-2">
+      <div className="max-h-80 overflow-auto border rounded-lg custom-thin-scrollbar">
+        <table className="w-full min-w-[420px] text-xs">
+          <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+            <tr>
+              <th className="px-2 py-2 text-left font-medium">Symbol</th>
+              <th className="px-2 py-2 text-left font-medium">Entry</th>
+              <th className="px-2 py-2 text-left font-medium">LTP</th>
+              <th className="px-2 py-2 text-left font-medium">Qty</th>
+              <th className="px-2 py-2 text-left font-medium">P&L</th>
+              <th className="px-2 py-2 text-left font-medium">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {positions.length === 0 ? (
+              <tr><td colSpan={6} className="px-2 py-4 text-center text-gray-500">No open positions</td></tr>
+            ) : (
+              [...positions].sort((a, b) => {
+                const aS = String(a.status || "Open").toUpperCase().trim();
+                const bS = String(b.status || "Open").toUpperCase().trim();
+                return (aS === "OPEN" ? 0 : 999) - (bS === "OPEN" ? 0 : 999);
+              }).map((pos, idx) => {
+                const entryPrice = (pos.entryPrice || pos.entry_price || pos.avgPrice || 0) as number;
+                const currentPrice = (pos.currentPrice || pos.current_price || pos.ltp || 0) as number;
+                const qty = (pos.qty || pos.quantity || pos.netQty || 0) as number;
+                const unrealizedPnl = pos.unrealizedPnl !== undefined ? pos.unrealizedPnl : (currentPrice - entryPrice) * qty;
+                const status = String(pos.status || "Open").toUpperCase().trim();
+                const isClosed = status === "CLOSED";
+                return (
+                  <tr key={idx} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${isClosed ? 'bg-gray-100/50 dark:bg-gray-800/40' : ''}`}>
+                    <td className="px-2 py-1.5 font-medium">{formatSymbol(pos.symbol)}</td>
+                    <td className="px-2 py-1.5">₹{entryPrice.toFixed(2)}</td>
+                    <td className="px-2 py-1.5">₹{currentPrice.toFixed(2)}</td>
+                    <td className="px-2 py-1.5">{qty}</td>
+                    <td className={`px-2 py-1.5 font-medium ${unrealizedPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>₹{unrealizedPnl.toFixed(2)}</td>
+                    <td className="px-2 py-1.5">{(pos.status || 'Open').toUpperCase()}</td>
+                  </tr>
+                );
+              })
+            )}
+          </tbody>
+        </table>
+      </div>
+      <div className="flex items-center justify-end pt-1">
+        <span className="text-xs text-gray-500 dark:text-gray-400">{positions.length} positions</span>
+      </div>
+    </div>
+  );
+
   return (
     <>
       <Dialog open={showOrderModal} onOpenChange={setShowOrderModal}>
-        <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-thin-scrollbar p-0 sm:mx-4">
+        <DialogContent className={`w-full ${secondaryBroker ? 'max-w-6xl' : 'max-w-4xl'} max-h-[90vh] overflow-y-auto custom-thin-scrollbar p-0 sm:mx-4`}>
           <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
             <div className="flex items-center justify-between sm:w-1/3">
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Orders & Positions</span>
+              {secondaryBroker && (
+                <span className="text-[10px] font-bold px-1.5 py-0.5 bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-400 rounded-full ml-1">2 Brokers</span>
+              )}
             </div>
 
             <div className="flex items-center justify-between sm:w-1/3 sm:flex-col sm:items-center sm:justify-center gap-1">
               <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Available Funds</span>
               <span className="text-xs font-bold text-green-600 dark:text-green-400">
                 {showUserId ? (activeBroker === 'delta' ? `$${(Number(brokerFundsValue) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `₹${(Number(brokerFundsValue) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`) : (activeBroker === 'delta' ? "$***" : "₹***")}
+                {secondaryBroker && secondaryBrokerFunds != null && (
+                  <span className="text-slate-400 ml-1">+ ₹{secondaryBrokerFunds.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                )}
               </span>
             </div>
 
-            <div className="flex items-center justify-end sm:w-1/3 gap-2">
-              {activeBroker && (() => {
-                const brokerInfo: Record<string, { logo: string; id: string; name: string; rounded?: boolean }> = {
-                  zerodha:  { logo: "https://zerodha.com/static/images/products/kite-logo.svg", id: zerodhaClientId || "N/A", name: zerodhaUserName || "N/A" },
-                  upstox:   { logo: "https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png", id: upstoxUserId || "N/A", name: (upstoxUserName && upstoxUserName !== "undefined" && upstoxUserName !== "N/A" ? upstoxUserName : "Upstox User") },
-                  dhan:     { logo: "https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701", id: dhanClientId || dhanUserId || "N/A", name: dhanClientName || "Dhan User" },
-                  groww:    { logo: "https://groww.in/logo-groww-rectangular.svg", id: growwUserId || "N/A", name: growwUserName || "Groww User" },
-                  delta:    { logo: "https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw", id: (deltaExchangeUserId && deltaExchangeUserId !== "Fetching..." ? deltaExchangeUserId : "N/A"), name: (deltaExchangeAccountName && deltaExchangeAccountName !== "Delta User" ? deltaExchangeAccountName : "Delta User"), rounded: true },
-                  fyers:    { logo: "https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw", id: fyersStatus?.userId || "N/A", name: fyersStatus?.userName || "Fyers User", rounded: true },
-                  angelone: { logo: "https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701", id: angelOneClientCode || "N/A", name: angelOneUserName || "Angel One User", rounded: true },
-                };
-                const info = brokerInfo[activeBroker];
-                if (!info) return null;
-                return (
-                  <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1 min-w-0">
-                    <img src={info.logo} alt={activeBroker} className={`w-3 h-3 flex-shrink-0 ${info.rounded ? 'rounded-full' : ''}`} />
-                    <div className="flex flex-col min-w-0 leading-tight">
-                      <span className="text-[10px] font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">{showUserId ? info.id : "••••••"}</span>
-                      <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[120px]">{showUserId ? info.name : "•••••"}</span>
-                    </div>
-                  </div>
-                );
-              })()}
+            <div className="flex items-center justify-end sm:w-1/3 gap-2 flex-wrap">
+              {activeBroker && renderBrokerChip(activeBroker)}
+              {secondaryBroker && renderBrokerChip(secondaryBroker)}
               {activeBroker && (
                 <button onClick={() => setShowUserId(!showUserId)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors flex-shrink-0" data-testid="button-toggle-user-id" title={showUserId ? "Hide ID" : "Show ID"}>
                   {showUserId ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
@@ -288,198 +416,198 @@ export function BrokerData(props: BrokerDataProps) {
               </TabsList>
 
               <TabsContent value="history" className="space-y-4">
-                <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
-                  <table className="w-full min-w-[520px] text-xs">
-                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
-                      <tr>
-                        <th className="px-2 py-2 text-left font-medium">Time</th>
-                        <th className="px-2 py-2 text-left font-medium">Order</th>
-                        <th className="px-2 py-2 text-left font-medium">Symbol</th>
-                        <th className="px-2 py-2 text-left font-medium">Type</th>
-                        <th className="px-2 py-2 text-left font-medium">Qty</th>
-                        <th className="px-2 py-2 text-left font-medium">Price</th>
-                        <th className="px-2 py-2 text-left font-medium">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {displayOrders.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="px-2 py-4 text-center text-gray-500">
-                            {isConnected ? 'No orders found' : 'Connect to broker to view orders'}
-                          </td>
-                        </tr>
-                      ) : (
-                        [...displayOrders].sort((a, b) => { 
-                          const aStatus = String(a.status || "").toUpperCase().trim(); 
-                          const bStatus = String(b.status || "").toUpperCase().trim(); 
-                          const aOrder = aStatus === "COMPLETE" || aStatus === "PENDING" ? 0 : aStatus === "REJECTED" || aStatus === "CANCELLED" ? 999 : 500; 
-                          const bOrder = bStatus === "COMPLETE" || bStatus === "PENDING" ? 0 : bStatus === "REJECTED" || bStatus === "CANCELLED" ? 999 : 500; 
-                          return aOrder - bOrder; 
-                        }).map((trade, index) => {
-                          const status = String(trade.status || "").toUpperCase().trim();
-                          const isClosed = status === "REJECTED" || status === "CANCELLED";
-                          
-                          // Format time to show only time (HH:MM:SS AM/PM) if it's a full date string
-                          let displayTime = trade.time || trade.executedAt || trade.created_at;
-                          if (displayTime) {
-                            try {
-                              const dateObj = new Date(displayTime);
-                              if (!isNaN(dateObj.getTime())) {
-                                displayTime = dateObj.toLocaleTimeString('en-US', { 
-                                  hour: '2-digit', 
-                                  minute: '2-digit', 
-                                  second: '2-digit',
-                                  hour12: true 
-                                });
-                              } else if (displayTime.includes(' ')) {
-                                const dateParts = displayTime.split(' ');
-                                if (dateParts.length >= 2) {
-                                  displayTime = dateParts[1];
-                                  const timeObj = new Date(`2000-01-01 ${displayTime}`);
-                                  if (!isNaN(timeObj.getTime())) {
-                                    displayTime = timeObj.toLocaleTimeString('en-US', { 
-                                      hour: '2-digit', 
-                                      minute: '2-digit', 
-                                      second: '2-digit',
-                                      hour12: true 
-                                    });
-                                  }
-                                }
-                              }
-                            } catch (e) {
-                              console.error("Error formatting time:", e);
-                            }
-                          }
-
-                          return (
-                            <tr key={index} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${isClosed ? 'bg-gray-100/50 dark:bg-gray-800/40' : ''}`}>
-                              <td className="px-2 py-2 font-medium">{displayTime}</td>
-                              <td className="px-2 py-2">
-                                <span className={`px-1 py-0.5 rounded text-xs ${
-                                  trade.order === "BUY"
-                                    ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300"
-                                    : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"
-                                }`}>
-                                  {trade.order}
-                                </span>
-                              </td>
-                              <td className="px-2 py-2 font-medium">{formatSymbol(trade.symbol)}</td>
-                              <td className="px-2 py-2">{trade.type}</td>
-                              <td className="px-2 py-2">{trade.qty}</td>
-                              <td className="px-2 py-2">₹{typeof trade.price === 'number' ? trade.price.toFixed(2) : trade.price}</td>
-                              <td className="px-2 py-2">
-                                <span className={`text-xs font-medium ${
-                                  (status === 'COMPLETE' || status === 'COMPLETED') ? 'text-green-600 dark:text-green-400' :
-                                  status === 'REJECTED' ? 'text-red-600 dark:text-red-400' :
-                                  status === 'CANCELLED' ? 'text-yellow-600 dark:text-yellow-400' :
-                                  'text-blue-600 dark:text-blue-400'
-                                }`}>
-                                  {(trade.status || 'PENDING').toUpperCase()}
-                                </span>
+                {secondaryBroker ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        {activeBroker && (() => { const info = allBrokerInfo[activeBroker]; return info ? <img src={info.logo} alt={activeBroker} className={`w-3 h-3 ${info.rounded ? 'rounded-full' : ''}`} /> : null; })()}
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 capitalize">{activeBroker}</span>
+                        {fetchingBrokerOrders && <span className="text-[10px] text-blue-500 animate-pulse">Syncing...</span>}
+                      </div>
+                      {renderOrdersTable(displayOrders, fetchingBrokerOrders, recordAllBrokerOrders)}
+                    </div>
+                    <div className="border-l border-gray-200 dark:border-gray-700 pl-4">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        {(() => { const info = allBrokerInfo[secondaryBroker]; return info ? <img src={info.logo} alt={secondaryBroker} className={`w-3 h-3 ${info.rounded ? 'rounded-full' : ''}`} /> : null; })()}
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 capitalize">{secondaryBroker}</span>
+                        {fetchingSecondaryBroker && <span className="text-[10px] text-blue-500 animate-pulse">Syncing...</span>}
+                      </div>
+                      {renderOrdersTable(secondaryBrokerOrders, fetchingSecondaryBroker || false)}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
+                      <table className="w-full min-w-[520px] text-xs">
+                        <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                          <tr>
+                            <th className="px-2 py-2 text-left font-medium">Time</th>
+                            <th className="px-2 py-2 text-left font-medium">Order</th>
+                            <th className="px-2 py-2 text-left font-medium">Symbol</th>
+                            <th className="px-2 py-2 text-left font-medium">Type</th>
+                            <th className="px-2 py-2 text-left font-medium">Qty</th>
+                            <th className="px-2 py-2 text-left font-medium">Price</th>
+                            <th className="px-2 py-2 text-left font-medium">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {displayOrders.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="px-2 py-4 text-center text-gray-500">
+                                {isConnected ? 'No orders found' : 'Connect to broker to view orders'}
                               </td>
                             </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700 mt-2">
-                  <button
-                    onClick={recordAllBrokerOrders}
-                    disabled={displayOrders.length === 0}
-                    className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded transition-colors"
-                    data-testid="button-record-broker-orders"
-                  >
-                    Record to Journal
-                  </button>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{displayOrders.length} orders</span>
-                </div>
+                          ) : (
+                            [...displayOrders].sort((a, b) => { 
+                              const aStatus = String(a.status || "").toUpperCase().trim(); 
+                              const bStatus = String(b.status || "").toUpperCase().trim(); 
+                              const aOrder = aStatus === "COMPLETE" || aStatus === "PENDING" ? 0 : aStatus === "REJECTED" || aStatus === "CANCELLED" ? 999 : 500; 
+                              const bOrder = bStatus === "COMPLETE" || bStatus === "PENDING" ? 0 : bStatus === "REJECTED" || bStatus === "CANCELLED" ? 999 : 500; 
+                              return aOrder - bOrder; 
+                            }).map((trade, index) => {
+                              const status = String(trade.status || "").toUpperCase().trim();
+                              const isClosed = status === "REJECTED" || status === "CANCELLED";
+                              let displayTime = trade.time || trade.executedAt || trade.created_at;
+                              if (displayTime) {
+                                try {
+                                  const dateObj = new Date(displayTime);
+                                  if (!isNaN(dateObj.getTime())) {
+                                    displayTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                                  } else if (displayTime.includes(' ')) {
+                                    const dateParts = displayTime.split(' ');
+                                    if (dateParts.length >= 2) {
+                                      displayTime = dateParts[1];
+                                      const timeObj = new Date(`2000-01-01 ${displayTime}`);
+                                      if (!isNaN(timeObj.getTime())) {
+                                        displayTime = timeObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                                      }
+                                    }
+                                  }
+                                } catch (e) { console.error("Error formatting time:", e); }
+                              }
+                              return (
+                                <tr key={index} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${isClosed ? 'bg-gray-100/50 dark:bg-gray-800/40' : ''}`}>
+                                  <td className="px-2 py-2 font-medium">{displayTime}</td>
+                                  <td className="px-2 py-2">
+                                    <span className={`px-1 py-0.5 rounded text-xs ${trade.order === "BUY" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"}`}>{trade.order}</span>
+                                  </td>
+                                  <td className="px-2 py-2 font-medium">{formatSymbol(trade.symbol)}</td>
+                                  <td className="px-2 py-2">{trade.type}</td>
+                                  <td className="px-2 py-2">{trade.qty}</td>
+                                  <td className="px-2 py-2">₹{typeof trade.price === 'number' ? trade.price.toFixed(2) : trade.price}</td>
+                                  <td className="px-2 py-2">
+                                    <span className={`text-xs font-medium ${(status === 'COMPLETE' || status === 'COMPLETED') ? 'text-green-600 dark:text-green-400' : status === 'REJECTED' ? 'text-red-600 dark:text-red-400' : status === 'CANCELLED' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                                      {(trade.status || 'PENDING').toUpperCase()}
+                                    </span>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700 mt-2">
+                      <button onClick={recordAllBrokerOrders} disabled={displayOrders.length === 0} className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded transition-colors" data-testid="button-record-broker-orders">Record to Journal</button>
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{displayOrders.length} orders</span>
+                    </div>
+                  </>
+                )}
               </TabsContent>
 
               <TabsContent value="positions" className="space-y-4">
-                <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
-                  <table className="w-full min-w-[560px] text-xs">
-                    <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
-                      <tr>
-                        <th className="px-2 py-2 text-left font-medium">Symbol</th>
-                        <th className="px-2 py-2 text-left font-medium">Entry Price</th>
-                        <th className="px-2 py-2 text-left font-medium">Current Price</th>
-                        <th className="px-2 py-2 text-left font-medium">Qty</th>
-                        <th className="px-2 py-2 text-left font-medium">Unrealized P&L</th>
-                        <th className="px-2 py-2 text-left font-medium">Return %</th>
-                        <th className="px-2 py-2 text-left font-medium">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {brokerPositions.length === 0 ? (
-                        <tr>
-                          <td colSpan={7} className="px-2 py-4 text-center text-gray-500">
-                            {isConnected ? 'No open positions' : 'Connect to broker to view positions'}
-                          </td>
-                        </tr>
-                      ) : (
-                        [...brokerPositions].sort((a, b) => { 
-                          const aStatus = String(a.status || "Open").toUpperCase().trim(); 
-                          const bStatus = String(b.status || "Open").toUpperCase().trim(); 
-                          return (aStatus === "OPEN" ? 0 : 999) - (bStatus === "OPEN" ? 0 : 999); 
-                        }).map((pos, index) => {
-                          const entryPrice = (pos.entryPrice || pos.entry_price || pos.avgPrice || 0) as number;
-                          const currentPrice = (pos.currentPrice || pos.current_price || pos.ltp || 0) as number;
-                          const qty = (pos.qty || pos.quantity || pos.netQty || 0) as number;
-                          const unrealizedPnl = pos.unrealizedPnl !== undefined ? pos.unrealizedPnl : (currentPrice - entryPrice) * qty;
-                          const status = String(pos.status || "Open").toUpperCase().trim();
-                          const isClosed = status === "CLOSED";
-                          const returnPercent = (entryPrice > 0 && !isClosed) ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
-                          
-                          // Format time if available (some brokers include it in positions)
-                          let displayTime = pos.time || pos.timestamp || '';
-                          if (displayTime && typeof displayTime === 'string' && displayTime.includes(' ')) {
-                            try {
-                              const dateParts = displayTime.split(' ');
-                              if (dateParts.length >= 2) {
-                                displayTime = dateParts[1];
-                                const timeObj = new Date(`2000-01-01 ${displayTime}`);
-                                if (!isNaN(timeObj.getTime())) {
-                                  displayTime = timeObj.toLocaleTimeString('en-US', { 
-                                    hour: '2-digit', 
-                                    minute: '2-digit', 
-                                    second: '2-digit',
-                                    hour12: true 
-                                  });
-                                }
-                              }
-                            } catch (e) {
-                              console.error("Error formatting position time:", e);
-                            }
-                          }
-                          
-                          return (
-                            <tr key={index} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${isClosed ? 'bg-gray-100/50 dark:bg-gray-800/40' : ''}`}>
-                              <td className="px-2 py-2 font-medium">
-                                <div>{formatSymbol(pos.symbol)}</div>
-                                {displayTime && <div className="text-[10px] text-gray-500 font-normal">{displayTime}</div>}
+                {secondaryBroker ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <div className="flex items-center gap-1.5 mb-2">
+                        {activeBroker && (() => { const info = allBrokerInfo[activeBroker]; return info ? <img src={info.logo} alt={activeBroker} className={`w-3 h-3 ${info.rounded ? 'rounded-full' : ''}`} /> : null; })()}
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 capitalize">{activeBroker}</span>
+                      </div>
+                      {renderPositionsTable(brokerPositions)}
+                    </div>
+                    <div className="border-l border-gray-200 dark:border-gray-700 pl-4">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        {(() => { const info = allBrokerInfo[secondaryBroker]; return info ? <img src={info.logo} alt={secondaryBroker} className={`w-3 h-3 ${info.rounded ? 'rounded-full' : ''}`} /> : null; })()}
+                        <span className="text-xs font-semibold text-slate-700 dark:text-slate-200 capitalize">{secondaryBroker}</span>
+                        {fetchingSecondaryBroker && <span className="text-[10px] text-blue-500 animate-pulse">Syncing...</span>}
+                      </div>
+                      {renderPositionsTable(secondaryBrokerPositions)}
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
+                      <table className="w-full min-w-[560px] text-xs">
+                        <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
+                          <tr>
+                            <th className="px-2 py-2 text-left font-medium">Symbol</th>
+                            <th className="px-2 py-2 text-left font-medium">Entry Price</th>
+                            <th className="px-2 py-2 text-left font-medium">Current Price</th>
+                            <th className="px-2 py-2 text-left font-medium">Qty</th>
+                            <th className="px-2 py-2 text-left font-medium">Unrealized P&L</th>
+                            <th className="px-2 py-2 text-left font-medium">Return %</th>
+                            <th className="px-2 py-2 text-left font-medium">Status</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {brokerPositions.length === 0 ? (
+                            <tr>
+                              <td colSpan={7} className="px-2 py-4 text-center text-gray-500">
+                                {isConnected ? 'No open positions' : 'Connect to broker to view positions'}
                               </td>
-                              <td className="px-2 py-2">₹{entryPrice.toFixed(2)}</td>
-                              <td className="px-2 py-2">₹{currentPrice.toFixed(2)}</td>
-                              <td className="px-2 py-2">{qty}</td>
-                              <td className={`px-2 py-2 font-medium ${unrealizedPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                ₹{unrealizedPnl.toFixed(2)}
-                              </td>
-                              <td className={`px-2 py-2 ${returnPercent >= 0 || isClosed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                                {isClosed ? "0.00%" : `${returnPercent.toFixed(2)}%`}
-                              </td>
-                              <td className="px-2 py-2">{(pos.status || 'Open').toUpperCase()}</td>
                             </tr>
-                          );
-                        })
-                      )}
-                    </tbody>
-                  </table>
-                </div>
-                <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700 mt-2">
-                  <span className="text-xs text-gray-500 dark:text-gray-400">{brokerPositions.length} open positions</span>
-                </div>
+                          ) : (
+                            [...brokerPositions].sort((a, b) => { 
+                              const aStatus = String(a.status || "Open").toUpperCase().trim(); 
+                              const bStatus = String(b.status || "Open").toUpperCase().trim(); 
+                              return (aStatus === "OPEN" ? 0 : 999) - (bStatus === "OPEN" ? 0 : 999); 
+                            }).map((pos, index) => {
+                              const entryPrice = (pos.entryPrice || pos.entry_price || pos.avgPrice || 0) as number;
+                              const currentPrice = (pos.currentPrice || pos.current_price || pos.ltp || 0) as number;
+                              const qty = (pos.qty || pos.quantity || pos.netQty || 0) as number;
+                              const unrealizedPnl = pos.unrealizedPnl !== undefined ? pos.unrealizedPnl : (currentPrice - entryPrice) * qty;
+                              const status = String(pos.status || "Open").toUpperCase().trim();
+                              const isClosed = status === "CLOSED";
+                              const returnPercent = (entryPrice > 0 && !isClosed) ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
+                              let displayTime = pos.time || pos.timestamp || '';
+                              if (displayTime && typeof displayTime === 'string' && displayTime.includes(' ')) {
+                                try {
+                                  const dateParts = displayTime.split(' ');
+                                  if (dateParts.length >= 2) {
+                                    displayTime = dateParts[1];
+                                    const timeObj = new Date(`2000-01-01 ${displayTime}`);
+                                    if (!isNaN(timeObj.getTime())) {
+                                      displayTime = timeObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                                    }
+                                  }
+                                } catch (e) { console.error("Error formatting position time:", e); }
+                              }
+                              return (
+                                <tr key={index} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${isClosed ? 'bg-gray-100/50 dark:bg-gray-800/40' : ''}`}>
+                                  <td className="px-2 py-2 font-medium">
+                                    <div>{formatSymbol(pos.symbol)}</div>
+                                    {displayTime && <div className="text-[10px] text-gray-500 font-normal">{displayTime}</div>}
+                                  </td>
+                                  <td className="px-2 py-2">₹{entryPrice.toFixed(2)}</td>
+                                  <td className="px-2 py-2">₹{currentPrice.toFixed(2)}</td>
+                                  <td className="px-2 py-2">{qty}</td>
+                                  <td className={`px-2 py-2 font-medium ${unrealizedPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>₹{unrealizedPnl.toFixed(2)}</td>
+                                  <td className={`px-2 py-2 ${returnPercent >= 0 || isClosed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+                                    {isClosed ? "0.00%" : `${returnPercent.toFixed(2)}%`}
+                                  </td>
+                                  <td className="px-2 py-2">{(pos.status || 'Open').toUpperCase()}</td>
+                                </tr>
+                              );
+                            })
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                    <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700 mt-2">
+                      <span className="text-xs text-gray-500 dark:text-gray-400">{brokerPositions.length} open positions</span>
+                    </div>
+                  </>
+                )}
               </TabsContent>
             </Tabs>
           </div>

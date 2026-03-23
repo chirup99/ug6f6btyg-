@@ -4783,6 +4783,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const isConnected = zerodhaIsConnected || upstoxIsConnected || userAngelOneIsConnected || angelOneIsConnected || dhanIsConnected || deltaExchangeIsConnected || fyersIsConnected || growwIsConnected;
   const activeBroker = zerodhaIsConnected ? 'zerodha' : upstoxIsConnected ? 'upstox' : userAngelOneIsConnected ? 'angelone' : angelOneIsConnected ? 'angelone' : dhanIsConnected ? 'dhan' : growwIsConnected ? 'groww' : deltaExchangeIsConnected ? 'delta' : fyersIsConnected ? 'fyers' : null;
 
+  const connectedBrokersList = [
+    zerodhaIsConnected ? 'zerodha' : null,
+    upstoxIsConnected ? 'upstox' : null,
+    (userAngelOneIsConnected || angelOneIsConnected) ? 'angelone' : null,
+    dhanIsConnected ? 'dhan' : null,
+    deltaExchangeIsConnected ? 'delta' : null,
+    fyersIsConnected ? 'fyers' : null,
+    growwIsConnected ? 'groww' : null,
+  ].filter((b): b is string => Boolean(b));
+  const connectedBrokersCount = connectedBrokersList.length;
+  const secondaryBroker = connectedBrokersList[1] || null;
+
   const brokerFundsValue = activeBroker === 'groww' 
     ? (queryClient.getQueryData<{funds: number}>(["/api/broker/groww/funds"])?.funds ?? brokerFunds)
     : brokerFunds;
@@ -6414,6 +6426,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [fetchingBrokerOrders, setFetchingBrokerOrders] = useState(false);
   const [brokerPositions, setBrokerPositions] = useState<any[]>([]);
   const [fetchingBrokerPositions, setFetchingBrokerPositions] = useState(false);
+
+  const [broker2Orders, setBroker2Orders] = useState<any[]>([]);
+  const [broker2Positions, setBroker2Positions] = useState<any[]>([]);
+  const [broker2Funds, setBroker2Funds] = useState<number | null>(null);
+  const [fetchingBroker2, setFetchingBroker2] = useState(false);
+
   const [orderData, setOrderData] = useState({
     symbol: "",
     action: "Buy",
@@ -6507,6 +6525,76 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       return () => clearInterval(pollInterval);
     }
   }, [zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, orderTab]);
+
+  // Fetch second broker orders & positions when 2 brokers are connected
+  useEffect(() => {
+    if (!secondaryBroker || !showOrderModal) {
+      setBroker2Orders([]);
+      setBroker2Positions([]);
+      setBroker2Funds(null);
+      return;
+    }
+    let cancelled = false;
+
+    const getTokenAndEndpoints = () => {
+      switch (secondaryBroker) {
+        case 'zerodha': {
+          const apiKey = localStorage.getItem("zerodha_api_key");
+          const ordersEp = apiKey ? `/api/zerodha/trades?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/trades';
+          const positionsEp = apiKey ? `/api/zerodha/positions?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/positions';
+          return { token: zerodhaAccessToken, ordersEp, positionsEp, fundsEp: apiKey ? `/api/zerodha/margins?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/margins' };
+        }
+        case 'upstox':
+          return { token: upstoxAccessToken, ordersEp: '/api/broker/upstox/trades', positionsEp: '/api/broker/upstox/positions', fundsEp: '/api/broker/upstox/margins' };
+        case 'angelone':
+          return { token: userAngelOneToken, ordersEp: '/api/broker/angelone/trades', positionsEp: '/api/broker/angelone/positions', fundsEp: null };
+        case 'dhan':
+          return { token: dhanAccessToken, ordersEp: '/api/broker/dhan/trades', positionsEp: '/api/broker/dhan/positions', fundsEp: null };
+        case 'groww':
+          return { token: growwAccessToken, ordersEp: `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken || '')}`, positionsEp: null, fundsEp: null };
+        default:
+          return { token: null, ordersEp: null, positionsEp: null, fundsEp: null };
+      }
+    };
+
+    const fetchBroker2Data = async () => {
+      const { token, ordersEp, positionsEp, fundsEp } = getTokenAndEndpoints();
+      if (!token && secondaryBroker !== 'groww') return;
+      setFetchingBroker2(true);
+      try {
+        if (ordersEp && orderTab === 'history') {
+          const res = await fetch(ordersEp, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+          if (!cancelled && res.ok) {
+            const data = await res.json();
+            setBroker2Orders(data.trades || data.orders || []);
+          }
+        }
+        if (positionsEp && orderTab === 'positions') {
+          const res = await fetch(positionsEp, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+          if (!cancelled && res.ok) {
+            const data = await res.json();
+            setBroker2Positions(data.positions || []);
+          }
+        }
+        if (fundsEp) {
+          const res = await fetch(fundsEp, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+          if (!cancelled && res.ok) {
+            const data = await res.json();
+            if (data.availableCash !== undefined) setBroker2Funds(data.availableCash);
+          }
+        }
+      } catch (err) {
+        console.error('❌ [BROKER2] Error fetching secondary broker data:', err);
+      } finally {
+        if (!cancelled) setFetchingBroker2(false);
+      }
+    };
+
+    fetchBroker2Data();
+    const interval = setInterval(fetchBroker2Data, 5000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [secondaryBroker, showOrderModal, orderTab, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken]);
+
 // Fetch broker funds when dialog opens - with auto-refresh polling
   useEffect(() => {
     if (showOrderModal && (zerodhaAccessToken || upstoxAccessToken)) {
@@ -23995,6 +24083,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           <DialogTitle className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
                               Connect Your Broker
+                              <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-full ${connectedBrokersCount >= 2 ? 'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-400' : 'bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400'}`}>
+                                {connectedBrokersCount}/2
+                              </span>
                               <Button 
                                 variant="ghost" 
                                 size="icon" 
@@ -24082,12 +24173,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               onClick={handleZerodhaConnect}
                               variant="outline"
                               className={`w-full h-10 ${
-                                (upstoxIsConnected || angelOneIsConnected || userAngelOneIsConnected || dhanIsConnected)
+                                (connectedBrokersCount >= 2 && !zerodhaIsConnected)
                                   ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
                                   : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                               }`}
                               data-testid="button-zerodha-dialog"
-                              disabled={upstoxIsConnected || angelOneIsConnected || userAngelOneIsConnected || dhanIsConnected}
+                              disabled={connectedBrokersCount >= 2 && !zerodhaIsConnected}
                             >
                               <img 
                                 src="https://zerodha.com/static/images/products/kite-logo.svg" 
@@ -24123,12 +24214,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 <Button
                                   variant="outline"
                                   className={`w-full h-10 ${
-                                    (zerodhaIsConnected || angelOneIsConnected || userAngelOneIsConnected || dhanIsConnected)
+                                    (connectedBrokersCount >= 2 && !upstoxIsConnected)
                                       ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
                                       : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                                   }`}
                                   data-testid="button-upstox-dialog"
-                                  disabled={zerodhaIsConnected || angelOneIsConnected || userAngelOneIsConnected || dhanIsConnected}
+                                  disabled={connectedBrokersCount >= 2 && !upstoxIsConnected}
                                 >
                                   <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-4 mr-2" />
                                   Upstox
@@ -24243,12 +24334,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     <Button
                                       variant="outline"
                                       className={`w-full h-10 ${
-                                        (zerodhaIsConnected || upstoxIsConnected || dhanIsConnected)
+                                        (connectedBrokersCount >= 2 && !(angelOneIsConnected || userAngelOneIsConnected))
                                           ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
                                           : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                                       }`}
                                       data-testid="button-angelone-dialog"
-                                      disabled={zerodhaIsConnected || upstoxIsConnected || dhanIsConnected}
+                                      disabled={connectedBrokersCount >= 2 && !(angelOneIsConnected || userAngelOneIsConnected)}
                                     >
                                       <img
                                         src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701"
@@ -24419,12 +24510,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               onClick={handleDhanConnect}
                               variant="outline"
                               className={`w-full h-10 ${
-                                (zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected)
+                                (connectedBrokersCount >= 2 && !dhanIsConnected)
                                   ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
                                   : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                               }`}
                               data-testid="button-dhan-dialog"
-                              disabled={zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected}
+                              disabled={connectedBrokersCount >= 2 && !dhanIsConnected}
                             >
                               <img src="https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701" alt="Dhan" className="h-4 mr-2" />
                               Dhan
@@ -24464,12 +24555,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             <Button
                               variant="outline"
                               className={`w-full h-10 ${
-                                (zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected)
+                                (connectedBrokersCount >= 2 && !fyersIsConnected)
                                   ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
                                   : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 relative'
                               }`}
                               onClick={() => setIsFyersDialogOpen(true)}
-                              disabled={zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected}
+                              disabled={connectedBrokersCount >= 2 && !fyersIsConnected}
                             >
                               <img src="https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw" alt="Fyers" className="w-4 h-4 mr-2 rounded-full" />
                               Fyers
@@ -24501,12 +24592,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               onClick={handleGrowwConnect}
                               variant="outline"
                               className={`w-full h-10 ${
-                                (zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected)
+                                (connectedBrokersCount >= 2 && !growwIsConnected)
                                   ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
                                   : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                               }`}
                               data-testid="button-groww-dialog"
-                              disabled={zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected}
+                              disabled={connectedBrokersCount >= 2 && !growwIsConnected}
                             >
                               <img src="https://play-lh.googleusercontent.com/LHjOai6kf1IsstKNWO9jbMxD-ix_FVYaJSLodKCqYQdoFVzQBuV9z5txxzcTagQcyX8=s48-rw" alt="Groww" className="w-4 h-4 mr-2 rounded-full" />
                               Groww
@@ -27747,6 +27838,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           angelOneAccessToken={userAngelOneToken}
           angelOneClientCode={localStorage.getItem("angel_one_client_code")}
           angelOneUserName={userAngelOneName}
+          secondaryBroker={secondaryBroker}
+          secondaryBrokerOrders={secondaryBroker === 'fyers' ? (fyersOrders || []) : secondaryBroker === 'delta' ? (deltaExchangeTradesData || []) : broker2Orders}
+          secondaryBrokerPositions={secondaryBroker === 'fyers' ? (fyersPositions || []) : secondaryBroker === 'delta' ? (deltaExchangePositionsData || []) : broker2Positions}
+          secondaryBrokerFunds={broker2Funds}
+          fetchingSecondaryBroker={fetchingBroker2}
           showBrokerImportModal={showBrokerImportModal} 
           setShowBrokerImportModal={setShowBrokerImportModal} 
           handleBrokerImport={handleBrokerImport} 

@@ -15389,30 +15389,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {userAngelOneIsConnected ? (
-                              <div className="flex items-center gap-2">
-                                <Button
-                                  variant="outline"
-                                  className="flex-1 h-10 bg-green-50 dark:bg-green-900/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900/20"
-                                  onClick={() => setIsAngelOneDialogOpen(true)}
-                                >
-                                  <span className="flex items-center gap-2">
-                                    <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                                    Angel One Connected
-                                  </span>
-                                </Button>
-                                <Button
-                                  variant="outline"
-                                  size="icon"
-                                  className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-10 w-10 border border-slate-200"
-                                  onClick={() => {
-                                    handleUserAngelOneDisconnect();
-                                  }}
-                                >
-                                  <X className="h-4 w-4" />
-                                </Button>
-                              </div>
-                            ) : null}
+
                             {/* Angel One connect button and dialog removed from dashboard */}
                             {false && (
                               <Button

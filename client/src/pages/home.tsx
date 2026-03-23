@@ -6343,6 +6343,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           const res = await fetch(endpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            if (res.status === 401) {
+              console.warn('⚠️ [POSITIONS] Session expired, please reconnect broker');
+            }
+            setBrokerPositions([]);
+            setFetchingBrokerPositions(false);
+            return;
+          }
           const data = await res.json();
           let positions = data.positions || [];
 
@@ -6456,6 +6465,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           const res = await fetch(endpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
+          if (!res.ok) {
+            const errData = await res.json().catch(() => ({}));
+            if (res.status === 401) {
+              console.warn('⚠️ [ORDERS] Session expired, please reconnect broker');
+            }
+            setBrokerOrders([]);
+            setFetchingBrokerOrders(false);
+            return;
+          }
           const data = await res.json();
           setBrokerOrders(data.trades || []);
           console.log('✅ [ORDERS]', broker, 'Fetched', (data.trades || []).length, 'trades');

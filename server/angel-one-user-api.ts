@@ -6,6 +6,8 @@ import { SmartAPI } from 'smartapi-javascript';
 // @ts-ignore - totp-generator import compatibility
 import { TOTP } from 'totp-generator';
 
+const ANGEL_ONE_BASE_URL = 'https://apiconnect.angelbroking.com';
+
 export interface AngelOneUserCredentials {
   clientCode: string;
   pin: string;
@@ -18,6 +20,7 @@ export interface AngelOneUserSession {
   refreshToken: string;
   feedToken: string;
   clientCode: string;
+  apiKey: string;
   name?: string;
   email?: string;
   connectedAt: string;
@@ -35,6 +38,33 @@ async function generateTOTP(totpSecret: string): Promise<string> {
   // Otherwise treat it as a base32 TOTP secret key
   const totpResult = await TOTP.generate(cleanSecret);
   return typeof totpResult === 'string' ? totpResult : totpResult.otp;
+}
+
+// Build the standard headers required for all Angel One REST API calls
+function buildAngelOneHeaders(jwtToken: string, apiKey: string): Record<string, string> {
+  return {
+    'Authorization': `Bearer ${jwtToken}`,
+    'Content-Type': 'application/json',
+    'Accept': 'application/json',
+    'X-UserType': 'USER',
+    'X-SourceID': 'WEB',
+    'X-ClientLocalIP': '127.0.0.1',
+    'X-ClientPublicIP': '106.193.147.98',
+    'X-MACAddress': '00:00:00:00:00:00',
+    'X-PrivateKey': apiKey,
+  };
+}
+
+// Direct REST call to Angel One API
+async function angelOneGet(path: string, jwtToken: string, apiKey: string): Promise<any> {
+  const url = `${ANGEL_ONE_BASE_URL}${path}`;
+  const headers = buildAngelOneHeaders(jwtToken, apiKey);
+  const res = await fetch(url, { method: 'GET', headers });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`Angel One API error ${res.status}: ${text}`);
+  }
+  return res.json();
 }
 
 export async function connectAngelOneUser(credentials: AngelOneUserCredentials): Promise<AngelOneUserSession> {
@@ -85,6 +115,7 @@ export async function connectAngelOneUser(credentials: AngelOneUserCredentials):
     refreshToken,
     feedToken,
     clientCode: clientCode.trim(),
+    apiKey: apiKey.trim(),
     name,
     email,
     connectedAt: new Date().toISOString(),
@@ -112,12 +143,17 @@ export function getAngelOneSessionByToken(jwtToken: string): AngelOneUserSession
   return undefined;
 }
 
+// Fetch order book (today's orders placed) via direct REST API
 export async function getAngelOneUserOrders(session: AngelOneUserSession): Promise<any[]> {
   try {
-    const smartApi = new SmartAPI({ api_key: '' });
-    const res = await (smartApi as any).getOrderBook(session.jwtToken);
-    if (res?.status && res?.data) {
-      return Array.isArray(res.data) ? res.data : [];
+    const data = await angelOneGet(
+      '/rest/secure/angelbroking/order/v1/getOrderBook',
+      session.jwtToken,
+      session.apiKey
+    );
+    console.log(`📋 [USER-ANGELONE] Order book response for ${session.clientCode}:`, JSON.stringify(data).slice(0, 200));
+    if (data?.status && data?.data) {
+      return Array.isArray(data.data) ? data.data : [];
     }
     return [];
   } catch (e) {
@@ -126,12 +162,17 @@ export async function getAngelOneUserOrders(session: AngelOneUserSession): Promi
   }
 }
 
+// Fetch trade book (executed trades) via direct REST API
 export async function getAngelOneUserTrades(session: AngelOneUserSession): Promise<any[]> {
   try {
-    const smartApi = new SmartAPI({ api_key: '' });
-    const res = await (smartApi as any).getTradeBook(session.jwtToken);
-    if (res?.status && res?.data) {
-      return Array.isArray(res.data) ? res.data : [];
+    const data = await angelOneGet(
+      '/rest/secure/angelbroking/order/v1/getTradeBook',
+      session.jwtToken,
+      session.apiKey
+    );
+    console.log(`📋 [USER-ANGELONE] Trade book response for ${session.clientCode}:`, JSON.stringify(data).slice(0, 200));
+    if (data?.status && data?.data) {
+      return Array.isArray(data.data) ? data.data : [];
     }
     return [];
   } catch (e) {
@@ -140,12 +181,18 @@ export async function getAngelOneUserTrades(session: AngelOneUserSession): Promi
   }
 }
 
+// Fetch positions via direct REST API
 export async function getAngelOneUserPositions(session: AngelOneUserSession): Promise<any[]> {
   try {
-    const smartApi = new SmartAPI({ api_key: '' });
-    const res = await (smartApi as any).getPosition(session.jwtToken);
-    if (res?.status && res?.data) {
-      const positions = (Array.isArray(res.data) ? res.data : (res.data.net || [])).map((p: any) => ({
+    const data = await angelOneGet(
+      '/rest/secure/angelbroking/order/v1/getPosition',
+      session.jwtToken,
+      session.apiKey
+    );
+    console.log(`📋 [USER-ANGELONE] Positions response for ${session.clientCode}:`, JSON.stringify(data).slice(0, 200));
+    if (data?.status && data?.data) {
+      const raw = Array.isArray(data.data) ? data.data : (data.data?.net || []);
+      return raw.map((p: any) => ({
         symbol: p.tradingsymbol || p.symbolname || '',
         quantity: Number(p.netqty || p.quantity || 0),
         averagePrice: Number(p.averageprice || p.avgnetprice || 0),
@@ -153,8 +200,8 @@ export async function getAngelOneUserPositions(session: AngelOneUserSession): Pr
         pnl: Number(p.unrealised || p.pnl || 0),
         product: p.producttype || p.product || '',
         exchange: p.exchange || 'NSE',
+        status: Number(p.netqty || 0) === 0 ? 'CLOSED' : 'OPEN',
       }));
-      return positions;
     }
     return [];
   } catch (e) {
@@ -163,15 +210,22 @@ export async function getAngelOneUserPositions(session: AngelOneUserSession): Pr
   }
 }
 
+// Fetch available funds (RMS) via direct REST API
 export async function getAngelOneUserFunds(session: AngelOneUserSession): Promise<number> {
   try {
-    const smartApi = new SmartAPI({ api_key: '' });
-    const res = await (smartApi as any).getRMS(session.jwtToken);
-    if (res?.status && res?.data) {
-      const net = res.data?.net;
+    const data = await angelOneGet(
+      '/rest/secure/angelbroking/user/v1/getRMS',
+      session.jwtToken,
+      session.apiKey
+    );
+    console.log(`💰 [USER-ANGELONE] Funds response for ${session.clientCode}:`, JSON.stringify(data).slice(0, 200));
+    if (data?.status && data?.data) {
+      const net = data.data?.net;
       if (net && Array.isArray(net) && net.length > 0) {
         return Number(net[0]?.availablecash || 0);
       }
+      // Some responses return availablecash directly
+      return Number(data.data?.availablecash || data.data?.availableBalance || 0);
     }
     return 0;
   } catch (e) {

@@ -51,12 +51,31 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
       getCurrentImages: () => images
     }), [images]);
 
+    const MAX_IMAGES = 3;
+
     const processFiles = (files: File[]) => {
+      const remainingSlots = MAX_IMAGES - images.length;
+      if (remainingSlots <= 0) {
+        toast({
+          title: "Limit reached",
+          description: `You can upload a maximum of ${MAX_IMAGES} images`,
+          variant: "destructive"
+        });
+        return;
+      }
+      const allowedFiles = files.slice(0, remainingSlots);
+      if (allowedFiles.length < files.length) {
+        toast({
+          title: "Some images skipped",
+          description: `Only ${remainingSlots} slot(s) remaining (max ${MAX_IMAGES})`,
+          variant: "destructive"
+        });
+      }
       setIsUploading(true);
       const newImages: UploadedImage[] = [];
       let loaded = 0;
 
-      files.forEach(file => {
+      allowedFiles.forEach(file => {
         const reader = new FileReader();
         reader.onload = (e) => {
           newImages.push({
@@ -67,7 +86,7 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
           });
           
           loaded++;
-          if (loaded === files.length) {
+          if (loaded === allowedFiles.length) {
             const allImages = [...images, ...newImages];
             updateImages(allImages);
             setIsUploading(false);
@@ -92,11 +111,11 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
     };
 
     const navigateLeft = () => {
-      setCurrentIndex((currentIndex - 1 + (images.length > 0 ? images.length : 5)) % (images.length > 0 ? images.length : 5));
+      setCurrentIndex((currentIndex - 1 + (images.length > 0 ? images.length : MAX_IMAGES)) % (images.length > 0 ? images.length : MAX_IMAGES));
     };
 
     const navigateRight = () => {
-      setCurrentIndex((currentIndex + 1) % (images.length > 0 ? images.length : 5));
+      setCurrentIndex((currentIndex + 1) % (images.length > 0 ? images.length : MAX_IMAGES));
     };
 
     const handleTouchStart = (e: React.TouchEvent) => {
@@ -171,10 +190,8 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
     // Define card slots with labels
     const cardSlots = [
       { id: 'card-1', label: 'Upload Image' },
-      { id: 'card-2', label: 'Upload Articles Images' },
-      { id: 'card-3', label: 'Technical Analysis' },
-      { id: 'card-4', label: 'Fundamentals' },
-      { id: 'card-5', label: 'Strategy Image' },
+      { id: 'card-2', label: 'Technical Analysis' },
+      { id: 'card-3', label: 'Fundamentals' },
     ];
 
     // Map uploaded images to card slots
@@ -421,7 +438,7 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
             }}
           >
             {images.length === 0 
-              ? `${currentIndex + 1}/5`
+              ? `${currentIndex + 1}/${MAX_IMAGES}`
               : `${Math.min(currentIndex + 1, images.length)}/${images.length}`
             }
           </div>

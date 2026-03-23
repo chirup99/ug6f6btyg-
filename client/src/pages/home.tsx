@@ -31493,26 +31493,24 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); setRangePostTagHighlight(null); setRangePostOverrideData(null); }
           }}
         >
-          <DialogContent className={reportPostMode === 'range' ? "w-full sm:max-w-md max-h-[90dvh] overflow-hidden flex flex-col gap-0 p-0" : "w-full sm:max-w-sm p-0 overflow-hidden flex flex-col max-h-[90dvh] bg-white dark:bg-zinc-950"}>
+          <DialogContent className={reportPostMode === 'range' ? "w-[calc(100vw-16px)] sm:w-full sm:max-w-sm max-h-[88dvh] overflow-hidden flex flex-col gap-0 p-0 rounded-xl" : "w-full sm:max-w-sm p-0 overflow-hidden flex flex-col max-h-[90dvh] bg-white dark:bg-zinc-950"}>
             {reportPostMode === 'range' && (
-            <DialogHeader className="flex-shrink-0 px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center justify-between gap-3">
-                <div className="flex items-center gap-2 min-w-0">
-                  <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0 bg-white dark:bg-slate-800 shadow-sm">
-                    <img src="/logo.png" alt="PERALA" className="w-full h-full object-contain" />
-                  </div>
-                  <div className="min-w-0">
-                    <DialogTitle className="text-sm font-semibold leading-none">Trade Book Post</DialogTitle>
-                    <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
-                      {currentUser?.displayName || currentUser?.email || currentUser?.userId || 'Guest'}
-                    </p>
-                  </div>
+            <DialogHeader className="flex-shrink-0 px-3 pt-3 pb-2.5 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className="w-5 h-5 rounded overflow-hidden flex-shrink-0 bg-white dark:bg-slate-800 shadow-sm">
+                  <img src="/logo.png" alt="PERALA" className="w-full h-full object-contain" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <DialogTitle className="text-xs font-semibold leading-none">Trade Book Post</DialogTitle>
+                  <p className="text-[9px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                    {currentUser?.displayName || currentUser?.email || currentUser?.userId || 'Guest'}
+                  </p>
                 </div>
               </div>
             </DialogHeader>
             )}
 
-            <div className={reportPostMode === 'range' ? "flex-1 overflow-auto px-4 py-3 space-y-3" : "flex-1 overflow-auto"}>
+            <div className={reportPostMode === 'range' ? "flex-1 overflow-auto px-3 py-2 space-y-2" : "flex-1 overflow-auto"}>
               {/* Selected date display for Selected mode - only for range */}
               {false && reportPostMode === 'selected' && (
                 <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
@@ -31670,16 +31668,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 })();
 
                 return (
-                  <div className="space-y-2">
-                    <div className="text-xs text-slate-500 dark:text-slate-400 font-medium">
-                      {dates.length} trading days · {fromLabel} – {toLabel}
+                  <div className="space-y-1.5">
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                      {dates.length} days · {fromLabel} – {toLabel}
                     </div>
 
                     {/* Heatmap Calendar */}
                     <div className="relative">
                       <div
                         ref={rangePostHeatmapContainerRef}
-                        className="max-h-52 sm:max-h-72 overflow-auto border border-slate-200 scrollbar-hide dark:border-slate-700 rounded-lg"
+                        className="max-h-40 sm:max-h-52 overflow-auto border border-slate-200 scrollbar-hide dark:border-slate-700 rounded-lg"
                       >
                         <DemoHeatmap
                           tradingDataByDate={rangePostOverrideData || getFilteredHeatmapData()}
@@ -31788,23 +31786,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
 
                     {/* Stats Bar */}
-                    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg px-3 py-1.5">
+                    <div className="bg-gradient-to-r from-violet-500 to-purple-600 rounded-lg px-2 py-1">
                       <div className="flex items-center justify-around text-white">
-                        <div className="flex flex-col items-center gap-0">
-                          <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
-                          <div className="text-xs font-bold leading-none">{isProfit ? '+' : ''}₹{(totalPnL / 1000).toFixed(1)}K</div>
+                        <div className="flex flex-col items-center gap-0 px-0.5">
+                          <div className="text-[7px] font-medium opacity-75 uppercase tracking-wide">P&L</div>
+                          <div className="text-[10px] font-bold leading-none">{isProfit ? '+' : ''}₹{(totalPnL / 1000).toFixed(1)}K</div>
                         </div>
-                        <div className="w-px h-6 bg-white/20" />
-                        <div className="flex flex-col items-center gap-0">
-                          <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
-                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-8 h-4">
+                        <div className="w-px h-5 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0 px-0.5">
+                          <div className="text-[7px] font-medium opacity-75 uppercase tracking-wide">Trend</div>
+                          <svg viewBox={`0 0 ${svgW} ${svgH}`} className="w-7 h-3">
                             <path d={smoothTrendPath} fill="none" stroke="white" strokeWidth="1.8" opacity="0.95" strokeLinecap="round" strokeLinejoin="round" />
                           </svg>
                         </div>
-                        <div className="w-px h-6 bg-white/20" />
+                        <div className="w-px h-5 bg-white/20" />
                         <button
                           ref={rangePostFomoButtonRef}
-                          className={`flex flex-col items-center gap-0 transition-opacity ${rangePostTagHighlight?.tag === 'fomo' ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}
+                          className={`flex flex-col items-center gap-0 px-0.5 transition-opacity ${rangePostTagHighlight?.tag === 'fomo' ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}
                           onClick={() => {
                             if (rangePostTagHighlight?.tag === 'fomo') {
                               setRangePostTagHighlight(null);
@@ -31827,23 +31825,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           }}
                           title={`Click to ${rangePostTagHighlight?.tag === 'fomo' ? 'hide' : 'show'} FOMO dates on calendar`}
                         >
-                          <div className="text-[8px] font-medium uppercase tracking-wide">{rangePostTagHighlight?.tag === 'fomo' ? '● ' : ''}FOMO</div>
-                          <div className="text-xs font-bold leading-none">{fomoCount}</div>
+                          <div className="text-[7px] font-medium uppercase tracking-wide">{rangePostTagHighlight?.tag === 'fomo' ? '●' : ''}FOMO</div>
+                          <div className="text-[10px] font-bold leading-none">{fomoCount}</div>
                         </button>
-                        <div className="w-px h-6 bg-white/20" />
-                        <div className="flex flex-col items-center gap-0">
-                          <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
-                          <div className="text-xs font-bold leading-none">{winRate.toFixed(0)}%</div>
+                        <div className="w-px h-5 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0 px-0.5">
+                          <div className="text-[7px] font-medium opacity-75 uppercase tracking-wide">Win%</div>
+                          <div className="text-[10px] font-bold leading-none">{winRate.toFixed(0)}%</div>
                         </div>
-                        <div className="w-px h-6 bg-white/20" />
-                        <div className="flex flex-col items-center gap-0">
-                          <div className="text-[8px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
-                          <div className="text-xs font-bold leading-none">{maxStreak}</div>
+                        <div className="w-px h-5 bg-white/20" />
+                        <div className="flex flex-col items-center gap-0 px-0.5">
+                          <div className="text-[7px] font-medium opacity-75 uppercase tracking-wide">Streak</div>
+                          <div className="text-[10px] font-bold leading-none">{maxStreak}</div>
                         </div>
-                        <div className="w-px h-6 bg-white/20" />
+                        <div className="w-px h-5 bg-white/20" />
                         <button
                           ref={rangePostOvertradingButtonRef}
-                          className={`flex flex-col items-center gap-0 transition-opacity ${rangePostTagHighlight?.tag === 'overtrading' ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}
+                          className={`flex flex-col items-center gap-0 px-0.5 transition-opacity ${rangePostTagHighlight?.tag === 'overtrading' ? 'opacity-100' : 'opacity-75 hover:opacity-100'}`}
                           onClick={() => {
                             if (rangePostTagHighlight?.tag === 'overtrading') {
                               setRangePostTagHighlight(null);
@@ -31865,8 +31863,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           }}
                           title={`Click to ${rangePostTagHighlight?.tag === 'overtrading' ? 'hide' : 'show'} overtrading dates on calendar`}
                         >
-                          <div className="text-[8px] font-medium uppercase tracking-wide">{rangePostTagHighlight?.tag === 'overtrading' ? '● ' : ''}OverTrade</div>
-                          <div className="text-xs font-bold leading-none">{overTradeCount}</div>
+                          <div className="text-[7px] font-medium uppercase tracking-wide">{rangePostTagHighlight?.tag === 'overtrading' ? '●' : ''}OvTrd</div>
+                          <div className="text-[10px] font-bold leading-none">{overTradeCount}</div>
                         </button>
                       </div>
                     </div>
@@ -31876,23 +31874,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
               {/* Description + User row - only for range mode */}
               {reportPostMode === 'range' && (
-              <div className="flex items-start gap-2.5">
-                <Avatar className="h-8 w-8 flex-shrink-0">
+              <div className="flex items-start gap-2">
+                <Avatar className="h-7 w-7 flex-shrink-0">
                   <AvatarImage src={currentUser?.profilePicUrl ?? undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-xs">
+                  <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-[10px]">
                     {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex-1">
-                  <div className="text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
+                  <div className="text-[10px] font-medium text-slate-700 dark:text-slate-200 mb-1">
                     {currentUser?.displayName || currentUser?.email || 'Guest'}
                   </div>
                   <textarea
                     value={reportPostDescription}
                     onChange={(e) => setReportPostDescription(e.target.value)}
                     placeholder="Add a description... (optional)"
-                    rows={3}
-                    className="w-full text-sm border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-2 focus:ring-violet-500"
+                    rows={2}
+                    className="w-full text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-violet-500"
                     data-testid="textarea-post-description"
                   />
                 </div>
@@ -31915,25 +31913,25 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             )}
 
             {/* Footer with POST button */}
-            <div className="flex-shrink-0 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-2 px-4 py-3">
-              <div className="flex items-center gap-2">
-                <Avatar className="h-7 w-7">
+            <div className="flex-shrink-0 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-2 px-3 py-2">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Avatar className="h-6 w-6 flex-shrink-0">
                   <AvatarImage src={currentUser?.profilePicUrl ?? undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-[10px]">
+                  <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-[9px]">
                     {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
-                <div className="flex flex-col">
-                  <span className="text-xs font-medium text-gray-700 dark:text-zinc-300 leading-none">
+                <div className="flex flex-col min-w-0">
+                  <span className="text-[10px] font-medium text-gray-700 dark:text-zinc-300 leading-none truncate">
                     {currentUser?.displayName || currentUser?.email || 'Guest'}
                   </span>
-                  <span className="text-[10px] text-gray-400 dark:text-zinc-500 leading-none mt-0.5">Posts to Social Feed</span>
+                  <span className="text-[9px] text-gray-400 dark:text-zinc-500 leading-none mt-0.5">Posts to Social Feed</span>
                 </div>
               </div>
               <Button
                 onClick={handlePostToNeoFeed}
                 disabled={isPostingReport || (reportPostMode === 'selected' && !reportPostSelectedDate)}
-                className="h-7 px-3 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold shadow-sm flex items-center gap-1.5"
+                className="h-7 px-3 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold shadow-sm flex items-center gap-1 flex-shrink-0"
                 data-testid="button-submit-post"
               >
                 {isPostingReport ? (
@@ -31941,7 +31939,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 ) : (
                   <Send className="w-3 h-3" />
                 )}
-                <span>{isPostingReport ? 'POSTING...' : 'POST'}</span>
+                <span>{isPostingReport ? 'Posting...' : 'POST'}</span>
               </Button>
             </div>
           </DialogContent>

@@ -31541,7 +31541,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 if (!dateKey && reportPostMode === 'selected') return null;
                 const dayData = tradingDataByDate[dateKey] || {};
                 const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-                const tradeHistory: any[] = dayData?.tradeHistory || [];
+                const tradeHistory: any[] = dayData?.tradeHistory || dayData?.tradingData?.tradeHistory || [];
                 let cumulative = 0;
                 const chartPoints = tradeHistory.map((t: any) => {
                   const p = typeof t.pnl === 'number' ? t.pnl : parseFloat(String(t.pnl || '0').replace(/[₹+,]/g, '')) || 0;

@@ -104,3 +104,78 @@ export function disconnectAngelOneUser(clientCode: string): void {
 export function getAngelOneUserSession(clientCode: string): AngelOneUserSession | undefined {
   return userSessions.get(clientCode);
 }
+
+export function getAngelOneSessionByToken(jwtToken: string): AngelOneUserSession | undefined {
+  for (const session of userSessions.values()) {
+    if (session.jwtToken === jwtToken) return session;
+  }
+  return undefined;
+}
+
+export async function getAngelOneUserOrders(session: AngelOneUserSession): Promise<any[]> {
+  try {
+    const smartApi = new SmartAPI({ api_key: '' });
+    const res = await (smartApi as any).getOrderBook(session.jwtToken);
+    if (res?.status && res?.data) {
+      return Array.isArray(res.data) ? res.data : [];
+    }
+    return [];
+  } catch (e) {
+    console.error(`❌ [USER-ANGELONE] Error fetching orders for ${session.clientCode}:`, e);
+    return [];
+  }
+}
+
+export async function getAngelOneUserTrades(session: AngelOneUserSession): Promise<any[]> {
+  try {
+    const smartApi = new SmartAPI({ api_key: '' });
+    const res = await (smartApi as any).getTradeBook(session.jwtToken);
+    if (res?.status && res?.data) {
+      return Array.isArray(res.data) ? res.data : [];
+    }
+    return [];
+  } catch (e) {
+    console.error(`❌ [USER-ANGELONE] Error fetching trades for ${session.clientCode}:`, e);
+    return [];
+  }
+}
+
+export async function getAngelOneUserPositions(session: AngelOneUserSession): Promise<any[]> {
+  try {
+    const smartApi = new SmartAPI({ api_key: '' });
+    const res = await (smartApi as any).getPosition(session.jwtToken);
+    if (res?.status && res?.data) {
+      const positions = (Array.isArray(res.data) ? res.data : (res.data.net || [])).map((p: any) => ({
+        symbol: p.tradingsymbol || p.symbolname || '',
+        quantity: Number(p.netqty || p.quantity || 0),
+        averagePrice: Number(p.averageprice || p.avgnetprice || 0),
+        currentPrice: Number(p.ltp || 0),
+        pnl: Number(p.unrealised || p.pnl || 0),
+        product: p.producttype || p.product || '',
+        exchange: p.exchange || 'NSE',
+      }));
+      return positions;
+    }
+    return [];
+  } catch (e) {
+    console.error(`❌ [USER-ANGELONE] Error fetching positions for ${session.clientCode}:`, e);
+    return [];
+  }
+}
+
+export async function getAngelOneUserFunds(session: AngelOneUserSession): Promise<number> {
+  try {
+    const smartApi = new SmartAPI({ api_key: '' });
+    const res = await (smartApi as any).getRMS(session.jwtToken);
+    if (res?.status && res?.data) {
+      const net = res.data?.net;
+      if (net && Array.isArray(net) && net.length > 0) {
+        return Number(net[0]?.availablecash || 0);
+      }
+    }
+    return 0;
+  } catch (e) {
+    console.error(`❌ [USER-ANGELONE] Error fetching funds for ${session.clientCode}:`, e);
+    return 0;
+  }
+}

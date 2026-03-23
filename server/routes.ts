@@ -24,7 +24,7 @@ const upload = multer({
 import crypto from "crypto";
 import { storage } from "./storage";
 import { angelOneApi } from "./angel-one-api";
-import { connectAngelOneUser, disconnectAngelOneUser } from "./angel-one-user-api";
+import { connectAngelOneUser, disconnectAngelOneUser, getAngelOneSessionByToken, getAngelOneUserTrades, getAngelOneUserPositions, getAngelOneUserFunds } from "./angel-one-user-api";
 import { AnalysisProcessor } from "./analysis-processor";
 import { insertAnalysisInstructionsSchema, insertAnalysisResultsSchema, socialPosts, socialPostLikes, socialPostComments, socialPostReposts, userFollows, insertSocialPostSchema, type SocialPost, brokerImportRequestSchema, type BrokerImportRequest, type BrokerTradesResponse, insertVerifiedReportSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -10952,6 +10952,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json({ success: true, message: "Angel One disconnected" });
     } catch (error: any) {
       res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Angel One - User: fetch trade history (uses user JWT from Authorization header)
+  app.get("/api/broker/angelone/trades", async (req, res) => {
+    const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    if (!token) return res.status(401).json({ success: false, message: "Missing token" });
+    const session = getAngelOneSessionByToken(token);
+    if (!session) return res.status(401).json({ success: false, message: "Angel One session not found. Please reconnect." });
+    try {
+      const trades = await getAngelOneUserTrades(session);
+      const normalized = trades.map((t: any) => ({
+        symbol: t.tradingsymbol || t.symbolname || '',
+        side: t.transactiontype || t.side || '',
+        quantity: Number(t.quantity || t.qty || 0),
+        price: Number(t.tradeprice || t.averageprice || t.price || 0),
+        orderId: t.orderid || t.uniqueorderid || '',
+        product: t.producttype || t.product || '',
+        exchange: t.exchange || 'NSE',
+        status: t.orderstatus || t.status || '',
+        time: t.updatetime || t.ordertime || '',
+      }));
+      res.json({ success: true, trades: normalized });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // Angel One - User: fetch positions (uses user JWT from Authorization header)
+  app.get("/api/broker/angelone/positions", async (req, res) => {
+    const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    if (!token) return res.status(401).json({ success: false, message: "Missing token" });
+    const session = getAngelOneSessionByToken(token);
+    if (!session) return res.status(401).json({ success: false, message: "Angel One session not found. Please reconnect." });
+    try {
+      const positions = await getAngelOneUserPositions(session);
+      res.json({ success: true, positions });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
+    }
+  });
+
+  // Angel One - User: fetch available funds/margins (uses user JWT from Authorization header)
+  app.get("/api/broker/angelone/margins", async (req, res) => {
+    const token = (req.headers.authorization || '').replace('Bearer ', '').trim();
+    if (!token) return res.status(401).json({ success: false, message: "Missing token" });
+    const session = getAngelOneSessionByToken(token);
+    if (!session) return res.status(401).json({ success: false, message: "Angel One session not found. Please reconnect." });
+    try {
+      const availableCash = await getAngelOneUserFunds(session);
+      res.json({ success: true, availableCash, funds: availableCash });
+    } catch (err: any) {
+      res.status(500).json({ success: false, message: err.message });
     }
   });
 

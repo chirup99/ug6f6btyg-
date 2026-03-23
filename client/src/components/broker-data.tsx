@@ -64,6 +64,8 @@ interface BrokerDataProps {
   deltaExchangeAccountName?: string | null;
   brokerFunds: number | null;
   fyersStatus?: any;
+  angelOneAccessToken?: string | null;
+  angelOneClientCode?: string | null;
 }
 
 export function BrokerData(props: BrokerDataProps) {
@@ -82,14 +84,16 @@ export function BrokerData(props: BrokerDataProps) {
     filteredBrokers, buildModeData, setBuildModeData, allColumnsFilledForSave, missingColumns,
     saveFormatToUniversalLibrary, currentUser, getCognitoToken, setSavedFormats, importDataTextareaRef,
     brokerFunds,
-    fyersStatus
+    fyersStatus,
+    angelOneAccessToken,
+    angelOneClientCode,
   } = props;
 
   const queryClient = useQueryClient();
 
   const isFyersConnected = fyersStatus?.connected && fyersStatus?.authenticated;
-  const isConnected = zerodhaAccessToken || upstoxAccessToken || dhanAccessToken || growwAccessToken || deltaExchangeIsConnected || isFyersConnected;
-  const activeBroker = zerodhaAccessToken ? 'zerodha' : upstoxAccessToken ? 'upstox' : dhanAccessToken ? 'dhan' : growwAccessToken ? 'groww' : deltaExchangeIsConnected ? 'delta' : isFyersConnected ? 'fyers' : null;
+  const isConnected = zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken || growwAccessToken || deltaExchangeIsConnected || isFyersConnected;
+  const activeBroker = zerodhaAccessToken ? 'zerodha' : upstoxAccessToken ? 'upstox' : angelOneAccessToken ? 'angelone' : dhanAccessToken ? 'dhan' : growwAccessToken ? 'groww' : deltaExchangeIsConnected ? 'delta' : isFyersConnected ? 'fyers' : null;
 
   // Refresh Dhan profile every 10 seconds if connected
   useEffect(() => {
@@ -288,8 +292,14 @@ export function BrokerData(props: BrokerDataProps) {
                       <span>id: {showUserId ? (fyersStatus?.userId || "N/A") : "••••••"} | {showUserId ? (fyersStatus?.userName || "Fyers User") : "•••••"}</span>
                     </>
                   )}
+                  {activeBroker === 'angelone' && (
+                    <>
+                      <img src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701" alt="Angel One" className="w-3 h-3 rounded-full" />
+                      <span>id: {showUserId ? (angelOneClientCode || "N/A") : "••••••"} | {showUserId ? "Angel One User" : "•••••"}</span>
+                    </>
+                  )}
                 </div>
-                {(activeBroker === 'zerodha' || activeBroker === 'upstox' || activeBroker === 'dhan' || activeBroker === 'groww' || activeBroker === 'delta' || activeBroker === 'fyers') && (
+                {(activeBroker === 'zerodha' || activeBroker === 'upstox' || activeBroker === 'angelone' || activeBroker === 'dhan' || activeBroker === 'groww' || activeBroker === 'delta' || activeBroker === 'fyers') && (
                   <button onClick={() => setShowUserId(!showUserId)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors" data-testid="button-toggle-user-id" title={showUserId ? "Hide ID" : "Show ID"}>
                     {showUserId ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                   </button>

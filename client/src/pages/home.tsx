@@ -31677,7 +31677,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     <div className="relative">
                       <div
                         ref={rangePostHeatmapContainerRef}
-                        className="max-h-40 sm:max-h-52 overflow-auto border border-slate-200 scrollbar-hide dark:border-slate-700 rounded-lg"
+                        className="max-h-52 sm:max-h-72 overflow-auto border border-slate-200 scrollbar-hide dark:border-slate-700 rounded-lg"
                       >
                         <DemoHeatmap
                           tradingDataByDate={rangePostOverrideData || getFilteredHeatmapData()}

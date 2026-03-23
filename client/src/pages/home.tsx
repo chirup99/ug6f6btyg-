@@ -31496,11 +31496,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           <DialogContent className={reportPostMode === 'range' ? "w-full sm:max-w-md max-h-[90dvh] overflow-hidden flex flex-col gap-0 p-0" : "w-full sm:max-w-sm p-0 overflow-hidden flex flex-col max-h-[90dvh] bg-white dark:bg-zinc-950"}>
             {reportPostMode === 'range' && (
             <DialogHeader className="flex-shrink-0 px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center">
-                  <Send className="w-3 h-3 text-white" />
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="w-6 h-6 rounded-md overflow-hidden flex-shrink-0 bg-white dark:bg-slate-800 shadow-sm">
+                    <img src="/logo.png" alt="PERALA" className="w-full h-full object-contain" />
+                  </div>
+                  <div className="min-w-0">
+                    <DialogTitle className="text-sm font-semibold leading-none">Trade Book Post</DialogTitle>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+                      {currentUser?.displayName || currentUser?.email || currentUser?.userId || 'Guest'}
+                    </p>
+                  </div>
                 </div>
-                <DialogTitle className="text-sm font-semibold">Range Post</DialogTitle>
               </div>
             </DialogHeader>
             )}
@@ -31870,9 +31877,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
               {/* Description + User row - only for range mode */}
               {reportPostMode === 'range' && (
               <div className="flex items-start gap-2.5">
-                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center flex-shrink-0 text-white text-xs font-bold">
-                  {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
-                </div>
+                <Avatar className="h-8 w-8 flex-shrink-0">
+                  <AvatarImage src={currentUser?.profilePicUrl ?? undefined} />
+                  <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-xs">
+                    {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
                 <div className="flex-1">
                   <div className="text-xs font-medium text-slate-700 dark:text-slate-200 mb-1">
                     {currentUser?.displayName || currentUser?.email || 'Guest'}
@@ -31906,28 +31916,24 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
             {/* Footer with POST button */}
             <div className="flex-shrink-0 border-t border-gray-100 dark:border-zinc-800 flex items-center justify-between gap-2 px-4 py-3">
-              {reportPostMode === 'range' ? (
-                <span className="text-xs text-slate-400">Posts to Social Feed</span>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <Avatar className="h-7 w-7">
-                    <AvatarImage src={currentUser?.profilePicUrl ?? undefined} />
-                    <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-[10px]">
-                      {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
-                  <div className="flex flex-col">
-                    <span className="text-xs font-medium text-gray-700 dark:text-zinc-300 leading-none">
-                      {currentUser?.displayName || currentUser?.email || 'Guest'}
-                    </span>
-                    <span className="text-[10px] text-gray-400 dark:text-zinc-500 leading-none mt-0.5">Posts to Social Feed</span>
-                  </div>
+              <div className="flex items-center gap-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarImage src={currentUser?.profilePicUrl ?? undefined} />
+                  <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-[10px]">
+                    {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <div className="flex flex-col">
+                  <span className="text-xs font-medium text-gray-700 dark:text-zinc-300 leading-none">
+                    {currentUser?.displayName || currentUser?.email || 'Guest'}
+                  </span>
+                  <span className="text-[10px] text-gray-400 dark:text-zinc-500 leading-none mt-0.5">Posts to Social Feed</span>
                 </div>
-              )}
+              </div>
               <Button
                 onClick={handlePostToNeoFeed}
                 disabled={isPostingReport || (reportPostMode === 'selected' && !reportPostSelectedDate)}
-                className={reportPostMode === 'range' ? "bg-violet-600 hover:bg-violet-700 text-white h-8 px-4 text-sm font-semibold" : "h-7 px-3 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold shadow-sm flex items-center gap-1.5"}
+                className="h-7 px-3 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold shadow-sm flex items-center gap-1.5"
                 data-testid="button-submit-post"
               >
                 {isPostingReport ? (

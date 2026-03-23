@@ -236,28 +236,22 @@ export function BrokerData(props: BrokerDataProps) {
   return (
     <>
       <Dialog open={showOrderModal} onOpenChange={setShowOrderModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto custom-thin-scrollbar p-0">
-          <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3 flex items-center">
-            <div className="w-1/3 flex items-center gap-3">
+        <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-thin-scrollbar p-0 sm:mx-4">
+          <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2">
+            <div className="flex items-center justify-between sm:w-1/3">
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Orders & Positions</span>
-              {isConnected ? (
-                <div className="flex items-center gap-1.5 px-2 py-0.5 bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 rounded-full text-[10px] font-medium border border-green-100 dark:border-green-800">
-                  <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
-                  Live Connected
-                </div>
-              ) : null}
             </div>
 
-            <div className="w-1/3 flex flex-col items-center justify-center">
+            <div className="flex items-center justify-between sm:w-1/3 sm:flex-col sm:items-center sm:justify-center gap-1">
               <span className="text-[10px] font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">Available Funds</span>
               <span className="text-xs font-bold text-green-600 dark:text-green-400">
                 {showUserId ? (activeBroker === 'delta' ? `$${(Number(brokerFundsValue) || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : `₹${(Number(brokerFundsValue) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`) : (activeBroker === 'delta' ? "$***" : "₹***")}
               </span>
             </div>
 
-            <div className="w-1/3 flex items-center justify-end gap-3">
+            <div className="flex items-center justify-end sm:w-1/3 gap-3">
               <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                <div className="flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1">
+                <div className="hidden sm:flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1 max-w-[200px] truncate">
                   {activeBroker === 'zerodha' && (
                     <>
                       <img src="https://zerodha.com/static/images/products/kite-logo.svg" alt="Zerodha" className="w-3 h-3" />
@@ -318,8 +312,8 @@ export function BrokerData(props: BrokerDataProps) {
               </TabsList>
 
               <TabsContent value="history" className="space-y-4">
-                <div className="max-h-96 overflow-y-auto border rounded-lg custom-thin-scrollbar">
-                  <table className="w-full text-xs">
+                <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
+                  <table className="w-full min-w-[520px] text-xs">
                     <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
                       <tr>
                         <th className="px-2 py-2 text-left font-medium">Time</th>
@@ -335,7 +329,7 @@ export function BrokerData(props: BrokerDataProps) {
                       {displayOrders.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="px-2 py-4 text-center text-gray-500">
-                            {isFetchingOrders ? 'Loading orders...' : isConnected ? 'No orders found' : 'Connect to broker to view orders'}
+                            {isConnected ? 'No orders found' : 'Connect to broker to view orders'}
                           </td>
                         </tr>
                       ) : (
@@ -428,8 +422,8 @@ export function BrokerData(props: BrokerDataProps) {
               </TabsContent>
 
               <TabsContent value="positions" className="space-y-4">
-                <div className="max-h-96 overflow-y-auto border rounded-lg custom-thin-scrollbar">
-                  <table className="w-full text-xs">
+                <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
+                  <table className="w-full min-w-[560px] text-xs">
                     <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
                       <tr>
                         <th className="px-2 py-2 text-left font-medium">Symbol</th>
@@ -445,7 +439,7 @@ export function BrokerData(props: BrokerDataProps) {
                       {brokerPositions.length === 0 ? (
                         <tr>
                           <td colSpan={7} className="px-2 py-4 text-center text-gray-500">
-                            {fetchingBrokerPositions ? 'Loading positions...' : isConnected ? 'No open positions' : 'Connect to broker to view positions'}
+                            {isConnected ? 'No open positions' : 'Connect to broker to view positions'}
                           </td>
                         </tr>
                       ) : (

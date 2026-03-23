@@ -4759,6 +4759,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   }, [upstoxAccessToken]);
   const [angelOneAccessToken, setAngelOneAccessToken] = useState<string | null>(null);
   const [angelOneIsConnected, setAngelOneIsConnected] = useState(false);
+  // Separate state for user's PERSONAL Angel One broker connection (never touches company state)
+  const [userAngelOneToken, setUserAngelOneToken] = useState<string | null>(() => localStorage.getItem("user_ao_jwt"));
+  const [userAngelOneIsConnected, setUserAngelOneIsConnected] = useState(() => !!localStorage.getItem("user_ao_jwt"));
   
   
   
@@ -4776,8 +4779,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     refetchInterval: 5000,
   });
   const fyersIsConnected = fyersStatus?.connected && fyersStatus?.authenticated;
-  const isConnected = zerodhaIsConnected || upstoxIsConnected || angelOneIsConnected || dhanIsConnected || deltaExchangeIsConnected || fyersIsConnected || growwIsConnected;
-  const activeBroker = zerodhaIsConnected ? 'zerodha' : upstoxIsConnected ? 'upstox' : angelOneIsConnected ? 'angelone' : dhanIsConnected ? 'dhan' : growwIsConnected ? 'groww' : deltaExchangeIsConnected ? 'delta' : fyersIsConnected ? 'fyers' : null;
+  const isConnected = zerodhaIsConnected || upstoxIsConnected || userAngelOneIsConnected || angelOneIsConnected || dhanIsConnected || deltaExchangeIsConnected || fyersIsConnected || growwIsConnected;
+  const activeBroker = zerodhaIsConnected ? 'zerodha' : upstoxIsConnected ? 'upstox' : userAngelOneIsConnected ? 'angelone' : angelOneIsConnected ? 'angelone' : dhanIsConnected ? 'dhan' : growwIsConnected ? 'groww' : deltaExchangeIsConnected ? 'delta' : fyersIsConnected ? 'fyers' : null;
 
   const brokerFundsValue = activeBroker === 'groww' 
     ? (queryClient.getQueryData<{funds: number}>(["/api/broker/groww/funds"])?.funds ?? brokerFunds)
@@ -5787,11 +5790,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         throw new Error(data.message || "Failed to connect");
       }
 
-      localStorage.setItem("angel_one_token", data.token);
+      localStorage.setItem("user_ao_jwt", data.token);
       localStorage.setItem("angel_one_client_code", data.clientCode || angelOneClientCodeInput);
 
-      setAngelOneAccessToken(data.token);
-      setAngelOneIsConnected(true);
+      setUserAngelOneToken(data.token);
+      setUserAngelOneIsConnected(true);
       setIsAngelOneDialogOpen(false);
 
       setAngelOneClientCodeInput("");
@@ -5822,10 +5825,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         body: JSON.stringify({ clientCode }),
       }).catch(() => {});
     }
-    localStorage.removeItem("angel_one_token");
+    localStorage.removeItem("user_ao_jwt");
     localStorage.removeItem("angel_one_client_code");
-    setAngelOneAccessToken(null);
-    setAngelOneIsConnected(false);
+    setUserAngelOneToken(null);
+    setUserAngelOneIsConnected(false);
   };
 
   const handleRevokeZerodha = () => {
@@ -6298,7 +6301,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [orderTab, setOrderTab] = useState("history");
   // Fetch broker positions when tab changes - supports all 4 brokers (Zerodha, Upstox, Angel One, Dhan)
   useEffect(() => {
-    if (orderTab === "positions" && (zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken)) {
+    if (orderTab === "positions" && (zerodhaAccessToken || upstoxAccessToken || userAngelOneToken || dhanAccessToken)) {
       const fetchPositions = async () => {
         setFetchingBrokerPositions(true);
         try {
@@ -6321,9 +6324,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             endpoint = '/api/broker/upstox/positions';
             token = upstoxAccessToken;
             broker = 'Upstox';
-          } else if (angelOneAccessToken) {
+          } else if (userAngelOneToken) {
             endpoint = '/api/broker/angelone/positions';
-            token = angelOneAccessToken;
+            token = userAngelOneToken;
             broker = 'Angel One';
           } else if (dhanAccessToken) {
             endpoint = '/api/broker/dhan/positions';
@@ -6385,7 +6388,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Cleanup: clear interval when tab changes
       return () => clearInterval(pollInterval);
     }
-  }, [zerodhaAccessToken, upstoxAccessToken, angelOneAccessToken, dhanAccessToken, orderTab]);
+  }, [zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, orderTab]);
   const [brokerOrders, setBrokerOrders] = useState<any[]>([]);
   const [fetchingBrokerOrders, setFetchingBrokerOrders] = useState(false);
   const [brokerPositions, setBrokerPositions] = useState<any[]>([]);
@@ -6411,7 +6414,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Fetch broker orders when Orders dialog opens - supports all 4 brokers (Zerodha, Upstox, Angel One, Dhan)
   useEffect(() => {
-    if (orderTab === 'history' && (zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken)) {
+    if (orderTab === 'history' && (zerodhaAccessToken || upstoxAccessToken || userAngelOneToken || dhanAccessToken)) {
       const fetchOrders = async () => {
         setFetchingBrokerOrders(true);
         try {
@@ -6434,9 +6437,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             endpoint = '/api/broker/upstox/trades';
             token = upstoxAccessToken;
             broker = 'Upstox';
-          } else if (angelOneAccessToken) {
+          } else if (userAngelOneToken) {
             endpoint = '/api/broker/angelone/trades';
-            token = angelOneAccessToken;
+            token = userAngelOneToken;
             broker = 'Angel One';
           } else if (dhanAccessToken) {
             endpoint = '/api/broker/dhan/trades';
@@ -6473,7 +6476,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Cleanup: clear interval when dialog closes
       return () => clearInterval(pollInterval);
     }
-  }, [zerodhaAccessToken, upstoxAccessToken, angelOneAccessToken, dhanAccessToken, orderTab]);
+  }, [zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, orderTab]);
 // Fetch broker funds when dialog opens - with auto-refresh polling
   useEffect(() => {
     if (showOrderModal && (zerodhaAccessToken || upstoxAccessToken)) {
@@ -6530,7 +6533,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Fetch broker funds when dialog opens - supports all 4 brokers (Zerodha, Upstox, Angel One, Dhan)
   useEffect(() => {
-    if (showOrderModal && (zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken)) {
+    if (showOrderModal && (zerodhaAccessToken || upstoxAccessToken || userAngelOneToken || dhanAccessToken)) {
       const fetchBrokerFunds = async () => {
         try {
           // Determine which broker is connected
@@ -6552,9 +6555,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             endpoint = '/api/broker/upstox/margins';
             token = upstoxAccessToken;
             broker = 'Upstox';
-          } else if (angelOneAccessToken) {
+          } else if (userAngelOneToken) {
             endpoint = '/api/broker/angelone/margins';
-            token = angelOneAccessToken;
+            token = userAngelOneToken;
             broker = 'Angel One';
           } else if (dhanAccessToken) {
             endpoint = '/api/broker/dhan/margins';
@@ -6589,7 +6592,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Cleanup: clear interval when dialog closes
       return () => clearInterval(pollInterval);
     }
-  }, [showOrderModal, zerodhaAccessToken, upstoxAccessToken, angelOneAccessToken, dhanAccessToken]);
+  }, [showOrderModal, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken]);
 
   // PAPER TRADING (DEMO TRADING) STATE - Like TradingView Practice Account
   // ============================================
@@ -6619,7 +6622,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Fetch broker funds globally - supports all 4 brokers (Zerodha, Upstox, Angel One, Dhan, Groww, Fyers)
   useEffect(() => {
-    if (zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken || growwAccessToken || fyersIsConnected) {
+    if (zerodhaAccessToken || upstoxAccessToken || userAngelOneToken || dhanAccessToken || growwAccessToken || fyersIsConnected) {
       const fetchBrokerFundsGlobal = async () => {
         try {
           // Determine which broker is connected
@@ -6637,9 +6640,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             endpoint = '/api/broker/upstox/margins';
             token = upstoxAccessToken;
             broker = 'Upstox';
-          } else if (activeBroker === 'angelone' && angelOneAccessToken) {
+          } else if (activeBroker === 'angelone' && userAngelOneToken) {
             endpoint = '/api/broker/angelone/margins';
-            token = angelOneAccessToken;
+            token = userAngelOneToken;
             broker = 'Angel One';
           } else if (activeBroker === 'dhan' && dhanAccessToken) {
             endpoint = '/api/broker/dhan/margins';
@@ -6690,7 +6693,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       const pollInterval = setInterval(fetchBrokerFundsGlobal, 5000);
       return () => clearInterval(pollInterval);
     }
-  }, [activeBroker, zerodhaAccessToken, upstoxAccessToken, angelOneAccessToken, dhanAccessToken, growwAccessToken, fyersIsConnected]);
+  }, [activeBroker, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken, fyersIsConnected]);
 
   // Paper trading position interface
   interface PaperPosition {
@@ -15386,7 +15389,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {angelOneIsConnected ? (
+                            {userAngelOneIsConnected ? (
                               <div className="flex items-center gap-2">
                                 <Button
                                   variant="outline"
@@ -15403,10 +15406,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   size="icon"
                                   className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-10 w-10 border border-slate-200"
                                   onClick={() => {
-                                    localStorage.removeItem("angel_one_token");
-                                    localStorage.removeItem("angel_one_client_code");
-                                    setAngelOneAccessToken(null);
-                                    setAngelOneIsConnected(false);
+                                    handleUserAngelOneDisconnect();
                                   }}
                                 >
                                   <X className="h-4 w-4" />
@@ -27692,8 +27692,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           deltaExchangeApiKey={deltaExchangeApiKey}
           deltaExchangeApiSecret={deltaExchangeApiSecret}
           fyersStatus={fyersStatus}
-          brokerOrders={zerodhaAccessToken ? brokerOrders : upstoxAccessToken ? brokerOrders : angelOneIsConnected ? brokerOrders : dhanAccessToken ? brokerOrders : growwAccessToken ? (brokerOrders || []) : deltaExchangeIsConnected ? (deltaExchangeTradesData || []) : fyersIsConnected ? (fyersOrders || []) : []}
-          fetchingBrokerOrders={zerodhaAccessToken ? fetchingBrokerOrders : upstoxAccessToken ? fetchingBrokerOrders : angelOneIsConnected ? fetchingBrokerOrders : dhanAccessToken ? (fetchingBrokerOrders || false) : growwAccessToken ? (fetchingBrokerOrders || false) : deltaExchangeIsConnected ? deltaExchangeFetching : fetchingFyersOrders}
+          brokerOrders={zerodhaAccessToken ? brokerOrders : upstoxAccessToken ? brokerOrders : userAngelOneIsConnected ? brokerOrders : dhanAccessToken ? brokerOrders : growwAccessToken ? (brokerOrders || []) : deltaExchangeIsConnected ? (deltaExchangeTradesData || []) : fyersIsConnected ? (fyersOrders || []) : []}
+          fetchingBrokerOrders={zerodhaAccessToken ? fetchingBrokerOrders : upstoxAccessToken ? fetchingBrokerOrders : userAngelOneIsConnected ? fetchingBrokerOrders : dhanAccessToken ? (fetchingBrokerOrders || false) : growwAccessToken ? (fetchingBrokerOrders || false) : deltaExchangeIsConnected ? deltaExchangeFetching : fetchingFyersOrders}
           zerodhaAccessToken={zerodhaAccessToken}
           recordAllBrokerOrders={recordAllBrokerOrders}
           upstoxAccessToken={upstoxAccessToken}
@@ -27705,9 +27705,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           growwAccessToken={growwAccessToken}
           growwUserId={growwUserId}
           growwUserName={growwUserName || "Groww User"}
-          brokerPositions={zerodhaAccessToken ? brokerPositions : upstoxAccessToken ? brokerPositions : angelOneIsConnected ? brokerPositions : dhanAccessToken ? brokerPositions : growwAccessToken ? (brokerPositions || []) : deltaExchangeIsConnected ? (deltaExchangePositionsData || []) : fyersIsConnected ? (fyersPositions || []) : []}
-          fetchingBrokerPositions={zerodhaAccessToken ? fetchingBrokerPositions : upstoxAccessToken ? fetchingBrokerPositions : angelOneIsConnected ? fetchingBrokerPositions : dhanAccessToken ? (fetchingBrokerOrders || false) : growwAccessToken ? (fetchingBrokerPositions || false) : deltaExchangeIsConnected ? deltaExchangeFetching : fetchingFyersPositions}
-          angelOneAccessToken={angelOneAccessToken}
+          brokerPositions={zerodhaAccessToken ? brokerPositions : upstoxAccessToken ? brokerPositions : userAngelOneIsConnected ? brokerPositions : dhanAccessToken ? brokerPositions : growwAccessToken ? (brokerPositions || []) : deltaExchangeIsConnected ? (deltaExchangePositionsData || []) : fyersIsConnected ? (fyersPositions || []) : []}
+          fetchingBrokerPositions={zerodhaAccessToken ? fetchingBrokerPositions : upstoxAccessToken ? fetchingBrokerPositions : userAngelOneIsConnected ? fetchingBrokerPositions : dhanAccessToken ? (fetchingBrokerOrders || false) : growwAccessToken ? (fetchingBrokerPositions || false) : deltaExchangeIsConnected ? deltaExchangeFetching : fetchingFyersPositions}
+          angelOneAccessToken={userAngelOneToken}
           angelOneClientCode={localStorage.getItem("angel_one_client_code")}
           showBrokerImportModal={showBrokerImportModal} 
           setShowBrokerImportModal={setShowBrokerImportModal} 

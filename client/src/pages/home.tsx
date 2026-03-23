@@ -11824,37 +11824,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const rangePostHeatmapContainerRef = useRef<HTMLDivElement>(null);
   const [rangePostScrollTrigger, setRangePostScrollTrigger] = useState(0);
 
-  // Auto-generate trade description when Selected/Today post dialog opens
-  useEffect(() => {
-    if (showReportPostDialog && (reportPostMode === 'today' || reportPostMode === 'selected')) {
-      const dateKey = reportPostMode === 'today'
-        ? new Date().toISOString().split('T')[0]
-        : reportPostSelectedDate;
-      if (!dateKey) return;
-      const dayData = tradingDataByDate[dateKey] || {};
-      const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-      const tradeHistory: any[] = dayData?.tradeHistory || [];
-      const totalPnL = metrics?.netPnL ?? dayData?.profitLossAmount ?? 0;
-      const totalTrades = metrics?.totalTrades ?? dayData?.totalTrades ?? tradeHistory.length;
-      const winningTrades = metrics?.winningTrades ?? 0;
-      const winRate = totalTrades > 0 ? Math.round((winningTrades / totalTrades) * 100) : 0;
-      const isProfit = totalPnL >= 0;
-      const symbols = [...new Set(tradeHistory.map((t: any) => (t.symbol || t.name || '').split('-')[0]).filter(Boolean))] as string[];
-
-      let desc = '';
-      if (totalTrades > 0) {
-        desc += isProfit
-          ? `Profitable session! ${totalTrades} trade${totalTrades !== 1 ? 's' : ''} today`
-          : `Tough session. ${totalTrades} trade${totalTrades !== 1 ? 's' : ''} today`;
-        if (symbols.length > 0) {
-          desc += ` on ${symbols.slice(0, 3).join(', ')}${symbols.length > 3 ? ' & more' : ''}`;
-        }
-        desc += `. P&L: ₹${totalPnL >= 0 ? '+' : ''}${Math.round(totalPnL).toLocaleString('en-IN')}, Win rate: ${winRate}%.`;
-      }
-      setReportPostDescription(desc);
-    }
-  }, [showReportPostDialog, reportPostMode, reportPostSelectedDate]);
-
   // Effect to handle scroll updates for report dialog curved lines
   useEffect(() => {
     if (!reportDialogTagHighlight || reportDialogTagHighlight.tag !== 'fomo') return;

@@ -6310,6 +6310,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   useEffect(() => {
     if (orderTab === "positions" && (zerodhaAccessToken || upstoxAccessToken || userAngelOneToken || dhanAccessToken)) {
       let isFirst = true;
+      let lastPositionsKey = '';
       const fetchPositions = async () => {
         if (isFirst) setFetchingBrokerPositions(true);
         try {
@@ -6388,8 +6389,17 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             positions = livePositions;
           }
 
-          setBrokerPositions(positions);
-          console.log('✅ [POSITIONS]', broker, 'Fetched', positions.length, 'positions with live prices via WebSocket');
+          // Build a key from symbols+qty+status to detect structural changes only (not price fluctuations)
+          const newKey = positions.map((p: any) =>
+            `${p.symbol}:${p.qty ?? p.quantity ?? p.netQty ?? 0}:${p.status ?? ''}`
+          ).join('|');
+
+          // Only update React state when positions actually changed (new position added/removed/closed)
+          if (isFirst || newKey !== lastPositionsKey) {
+            lastPositionsKey = newKey;
+            setBrokerPositions(positions);
+            console.log('✅ [POSITIONS]', broker, 'Updated', positions.length, 'positions');
+          }
         } catch (err) {
           console.error('❌ [POSITIONS] Error fetching positions:', err);
           if (isFirst) setBrokerPositions([]);
@@ -6402,8 +6412,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Fetch positions immediately when tab opens
       fetchPositions();
 
-      // Set up polling to refresh every 3 seconds while tab is open (silently, no loading state)
-      const pollInterval = setInterval(fetchPositions, 3000);
+      // Poll every 700ms in background — UI only updates when positions actually change
+      const pollInterval = setInterval(fetchPositions, 700);
 
       // Cleanup: clear interval when tab changes
       return () => clearInterval(pollInterval);

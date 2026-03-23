@@ -11824,6 +11824,37 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const rangePostHeatmapContainerRef = useRef<HTMLDivElement>(null);
   const [rangePostScrollTrigger, setRangePostScrollTrigger] = useState(0);
 
+  // Auto-generate trade description when Selected/Today post dialog opens
+  useEffect(() => {
+    if (showReportPostDialog && (reportPostMode === 'today' || reportPostMode === 'selected')) {
+      const dateKey = reportPostMode === 'today'
+        ? new Date().toISOString().split('T')[0]
+        : reportPostSelectedDate;
+      if (!dateKey) return;
+      const dayData = tradingDataByDate[dateKey] || {};
+      const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+      const tradeHistory: any[] = dayData?.tradeHistory || [];
+      const totalPnL = metrics?.netPnL ?? dayData?.profitLossAmount ?? 0;
+      const totalTrades = metrics?.totalTrades ?? dayData?.totalTrades ?? tradeHistory.length;
+      const winningTrades = metrics?.winningTrades ?? 0;
+      const winRate = totalTrades > 0 ? Math.round((winningTrades / totalTrades) * 100) : 0;
+      const isProfit = totalPnL >= 0;
+      const symbols = [...new Set(tradeHistory.map((t: any) => (t.symbol || t.name || '').split('-')[0]).filter(Boolean))] as string[];
+
+      let desc = '';
+      if (totalTrades > 0) {
+        desc += isProfit
+          ? `Profitable session! ${totalTrades} trade${totalTrades !== 1 ? 's' : ''} today`
+          : `Tough session. ${totalTrades} trade${totalTrades !== 1 ? 's' : ''} today`;
+        if (symbols.length > 0) {
+          desc += ` on ${symbols.slice(0, 3).join(', ')}${symbols.length > 3 ? ' & more' : ''}`;
+        }
+        desc += `. P&L: ₹${totalPnL >= 0 ? '+' : ''}${Math.round(totalPnL).toLocaleString('en-IN')}, Win rate: ${winRate}%.`;
+      }
+      setReportPostDescription(desc);
+    }
+  }, [showReportPostDialog, reportPostMode, reportPostSelectedDate]);
+
   // Effect to handle scroll updates for report dialog curved lines
   useEffect(() => {
     if (!reportDialogTagHighlight || reportDialogTagHighlight.tag !== 'fomo') return;
@@ -31898,7 +31929,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   <textarea
                     value={reportPostDescription}
                     onChange={(e) => setReportPostDescription(e.target.value)}
-                    placeholder="Add a description... (optional)"
+                    placeholder="Share what happened in your trades today..."
                     rows={2}
                     className="w-full text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-violet-500"
                     data-testid="textarea-post-description"
@@ -31914,7 +31945,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 <textarea
                   value={reportPostDescription}
                   onChange={(e) => setReportPostDescription(e.target.value)}
-                  placeholder="Add your notes..."
+                  placeholder="Describe your trades — what worked, what didn't, your key takeaways..."
                   rows={3}
                   className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-600 dark:text-zinc-400 resize-none placeholder:text-gray-400 leading-relaxed"
                   data-testid="textarea-post-description"

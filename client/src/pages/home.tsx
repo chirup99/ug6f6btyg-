@@ -4796,10 +4796,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [zerodhaApiSecretInput, setZerodhaApiSecretInput] = useState("");
   const [upstoxApiKeyInput, setUpstoxApiKeyInput] = useState("");
   const [upstoxApiSecretInput, setUpstoxApiSecretInput] = useState("");
-  const [angelOneApiKeyInput, setAngelOneApiKeyInput] = useState("");
-  const [angelOneClientCodeInput, setAngelOneClientCodeInput] = useState("");
-  const [angelOnePinInput, setAngelOnePinInput] = useState("");
-  const [angelOneTotpInput, setAngelOneTotpInput] = useState("");
+  const [angelOneApiKeyInput, setAngelOneApiKeyInput] = useState(() => localStorage.getItem("angel_one_api_key") || "");
+  const [angelOneClientCodeInput, setAngelOneClientCodeInput] = useState(() => localStorage.getItem("angel_one_client_code") || "");
+  const [angelOnePinInput, setAngelOnePinInput] = useState(() => localStorage.getItem("angel_one_pin") || "");
+  const [angelOneTotpInput, setAngelOneTotpInput] = useState(() => localStorage.getItem("angel_one_totp") || "");
   const [showZerodhaSecret, setShowZerodhaSecret] = useState(false);
   const [showUpstoxSecret, setShowUpstoxSecret] = useState(false);
   const [showAngelOneSecret, setShowAngelOneSecret] = useState(false);
@@ -24274,23 +24274,53 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <Label htmlFor="ao-client-code" className="text-slate-700 dark:text-slate-300">Client Code</Label>
                                         <Input
                                           id="ao-client-code"
-                                          placeholder="e.g. P176266"
+                                          placeholder="Enter your client ID"
                                           value={angelOneClientCodeInput}
-                                          onChange={(e) => setAngelOneClientCodeInput(e.target.value)}
+                                          onChange={(e) => { setAngelOneClientCodeInput(e.target.value); localStorage.setItem("angel_one_client_code", e.target.value); }}
                                           className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
                                           data-testid="input-angelone-client-code"
                                         />
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor="ao-api-key" className="text-slate-700 dark:text-slate-300">API Key</Label>
-                                        <Input
-                                          id="ao-api-key"
-                                          placeholder="Enter your Angel One API Key"
-                                          value={angelOneApiKeyInput}
-                                          onChange={(e) => setAngelOneApiKeyInput(e.target.value)}
-                                          className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-                                          data-testid="input-angelone-api-key"
-                                        />
+                                        <div className="relative">
+                                          <Input
+                                            id="ao-api-key"
+                                            type={showAngelOneSecret ? "text" : "password"}
+                                            placeholder="Enter your Angel One API Key"
+                                            value={angelOneApiKeyInput}
+                                            onChange={(e) => { setAngelOneApiKeyInput(e.target.value); localStorage.setItem("angel_one_api_key", e.target.value); }}
+                                            className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
+                                            data-testid="input-angelone-api-key"
+                                          />
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute right-0 top-0 h-10 w-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-transparent"
+                                            onClick={() => setShowAngelOneSecret(!showAngelOneSecret)}
+                                          >
+                                            {showAngelOneSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                          </Button>
+                                        </div>
+                                        <div className="flex items-center gap-2 mt-1 px-2 py-1 bg-slate-100 dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 w-fit group hover:border-blue-200 dark:hover:border-blue-900/40 transition-colors">
+                                          <span className="text-[10px] text-slate-500 font-medium">Redirect URL:</span>
+                                          <code className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold truncate max-w-[180px]">{window.location.protocol}//{window.location.host}/api/broker/angelone/callback</code>
+                                          <Button
+                                            size="icon"
+                                            variant="ghost"
+                                            className="h-4 w-4 hover:bg-slate-200 dark:hover:bg-slate-800 ml-0.5"
+                                            onClick={() => {
+                                              navigator.clipboard.writeText(`${window.location.protocol}//${window.location.host}/api/broker/angelone/callback`);
+                                              toast({ title: "Copied", description: "Redirect URL copied to clipboard" });
+                                            }}
+                                          >
+                                            <Copy className="h-2.5 w-2.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
+                                          </Button>
+                                        </div>
+                                        <p className="text-[10px] text-slate-500 mt-1">
+                                          Generate API key at: <a href="https://smartapi.angelone.in/publisher-login" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://smartapi.angelone.in</a>
+                                        </p>
                                       </div>
                                       <div className="space-y-2">
                                         <Label htmlFor="ao-pin" className="text-slate-700 dark:text-slate-300">Login PIN</Label>
@@ -24300,7 +24330,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             type={showAngelOnePin ? "text" : "password"}
                                             placeholder="Enter your Login PIN"
                                             value={angelOnePinInput}
-                                            onChange={(e) => setAngelOnePinInput(e.target.value)}
+                                            onChange={(e) => { setAngelOnePinInput(e.target.value); localStorage.setItem("angel_one_pin", e.target.value); }}
                                             className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
                                             data-testid="input-angelone-pin"
                                           />
@@ -24323,7 +24353,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             type={showAngelOneTotp ? "text" : "password"}
                                             placeholder="Secret Key or 6-digit OTP"
                                             value={angelOneTotpInput}
-                                            onChange={(e) => setAngelOneTotpInput(e.target.value)}
+                                            onChange={(e) => { setAngelOneTotpInput(e.target.value); localStorage.setItem("angel_one_totp", e.target.value); }}
                                             className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
                                             data-testid="input-angelone-totp"
                                           />

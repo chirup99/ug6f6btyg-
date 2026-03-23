@@ -24206,7 +24206,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               </DialogContent>
                             </Dialog>
                           )}
-                              {angelOneIsConnected ? (
+                              {(angelOneIsConnected || userAngelOneIsConnected) ? (
                                 <div className="flex items-center gap-2">
                                   <Button
                                     variant="outline"

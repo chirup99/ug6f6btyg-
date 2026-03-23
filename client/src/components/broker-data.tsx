@@ -249,58 +249,34 @@ export function BrokerData(props: BrokerDataProps) {
               </span>
             </div>
 
-            <div className="flex items-center justify-end sm:w-1/3 gap-3">
-              <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-400">
-                <div className="hidden sm:flex items-center gap-1 bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1 max-w-[200px] truncate">
-                  {activeBroker === 'zerodha' && (
-                    <>
-                      <img src="https://zerodha.com/static/images/products/kite-logo.svg" alt="Zerodha" className="w-3 h-3" />
-                      <span>id: {showUserId ? (zerodhaClientId || "N/A") : "••••••"} | {showUserId ? (zerodhaUserName || "N/A") : "•••••"}</span>
-                    </>
-                  )}
-                  {activeBroker === 'upstox' && (
-                    <>
-                      <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="w-3 h-3" />
-                      <span>id: {showUserId ? (upstoxUserId || "N/A") : "••••••"} | {showUserId ? (upstoxUserName && upstoxUserName !== "undefined" && upstoxUserName !== "N/A" ? upstoxUserName : "Upstox User") : "•••••"}</span>
-                    </>
-                  )}
-                  {activeBroker === 'dhan' && (
-                    <>
-                      <img src="https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701" alt="Dhan" className="w-4 h-4" />
-                      <span>id: {showUserId ? (dhanClientId || dhanUserId || "N/A") : "••••••"} | {showUserId ? (dhanClientName || "Dhan User") : "•••••"}</span>
-                    </>
-                  )}
-                  {activeBroker === 'groww' && (
-                    <>
-                      <img src="https://groww.in/logo-groww-rectangular.svg" alt="Groww" className="w-4 h-4" />
-                      <span>id: {showUserId ? (growwUserId || "N/A") : "••••••"} | {showUserId ? (growwUserName || "Groww User") : "•••••"}</span>
-                    </>
-                  )}
-                  {activeBroker === 'delta' && (
-                    <>
-                      <img src="https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw" alt="Delta Exchange" className="w-3 h-3 rounded-full" />
-                      <span>id: {showUserId ? (deltaExchangeUserId && deltaExchangeUserId !== "Fetching..." ? deltaExchangeUserId : "N/A") : "••••••"} | {showUserId ? (deltaExchangeAccountName && deltaExchangeAccountName !== "Delta User" ? deltaExchangeAccountName : "Delta User") : "•••••"}</span>
-                    </>
-                  )}
-                  {activeBroker === 'fyers' && (
-                    <>
-                      <img src="https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw" alt="Fyers" className="w-3 h-3 rounded-full" />
-                      <span>id: {showUserId ? (fyersStatus?.userId || "N/A") : "••••••"} | {showUserId ? (fyersStatus?.userName || "Fyers User") : "•••••"}</span>
-                    </>
-                  )}
-                  {activeBroker === 'angelone' && (
-                    <>
-                      <img src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701" alt="Angel One" className="w-3 h-3 rounded-full" />
-                      <span>id: {showUserId ? (angelOneClientCode || "N/A") : "••••••"} | {showUserId ? (angelOneUserName || "Angel One User") : "•••••"}</span>
-                    </>
-                  )}
-                </div>
-                {(activeBroker === 'zerodha' || activeBroker === 'upstox' || activeBroker === 'angelone' || activeBroker === 'dhan' || activeBroker === 'groww' || activeBroker === 'delta' || activeBroker === 'fyers') && (
-                  <button onClick={() => setShowUserId(!showUserId)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors" data-testid="button-toggle-user-id" title={showUserId ? "Hide ID" : "Show ID"}>
-                    {showUserId ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                  </button>
-                )}
-              </div>
+            <div className="flex items-center justify-end sm:w-1/3 gap-2">
+              {activeBroker && (() => {
+                const brokerInfo: Record<string, { logo: string; id: string; name: string; rounded?: boolean }> = {
+                  zerodha:  { logo: "https://zerodha.com/static/images/products/kite-logo.svg", id: zerodhaClientId || "N/A", name: zerodhaUserName || "N/A" },
+                  upstox:   { logo: "https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png", id: upstoxUserId || "N/A", name: (upstoxUserName && upstoxUserName !== "undefined" && upstoxUserName !== "N/A" ? upstoxUserName : "Upstox User") },
+                  dhan:     { logo: "https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701", id: dhanClientId || dhanUserId || "N/A", name: dhanClientName || "Dhan User" },
+                  groww:    { logo: "https://groww.in/logo-groww-rectangular.svg", id: growwUserId || "N/A", name: growwUserName || "Groww User" },
+                  delta:    { logo: "https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw", id: (deltaExchangeUserId && deltaExchangeUserId !== "Fetching..." ? deltaExchangeUserId : "N/A"), name: (deltaExchangeAccountName && deltaExchangeAccountName !== "Delta User" ? deltaExchangeAccountName : "Delta User"), rounded: true },
+                  fyers:    { logo: "https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw", id: fyersStatus?.userId || "N/A", name: fyersStatus?.userName || "Fyers User", rounded: true },
+                  angelone: { logo: "https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701", id: angelOneClientCode || "N/A", name: angelOneUserName || "Angel One User", rounded: true },
+                };
+                const info = brokerInfo[activeBroker];
+                if (!info) return null;
+                return (
+                  <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1 min-w-0">
+                    <img src={info.logo} alt={activeBroker} className={`w-3 h-3 flex-shrink-0 ${info.rounded ? 'rounded-full' : ''}`} />
+                    <div className="flex flex-col min-w-0 leading-tight">
+                      <span className="text-[10px] font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">{showUserId ? info.id : "••••••"}</span>
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[120px]">{showUserId ? info.name : "•••••"}</span>
+                    </div>
+                  </div>
+                );
+              })()}
+              {activeBroker && (
+                <button onClick={() => setShowUserId(!showUserId)} className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors flex-shrink-0" data-testid="button-toggle-user-id" title={showUserId ? "Hide ID" : "Show ID"}>
+                  {showUserId ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+                </button>
+              )}
             </div>
           </div>
 

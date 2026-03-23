@@ -6309,8 +6309,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Fetch broker positions when tab changes - supports all 4 brokers (Zerodha, Upstox, Angel One, Dhan)
   useEffect(() => {
     if (orderTab === "positions" && (zerodhaAccessToken || upstoxAccessToken || userAngelOneToken || dhanAccessToken)) {
+      let isFirst = true;
       const fetchPositions = async () => {
-        setFetchingBrokerPositions(true);
+        if (isFirst) setFetchingBrokerPositions(true);
         try {
           // Determine which broker is connected and get correct endpoint/token
           let endpoint = '';
@@ -6351,12 +6352,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
             if (res.status === 401) {
               console.warn('⚠️ [POSITIONS] Session expired, please reconnect broker');
             }
-            setBrokerPositions([]);
-            setFetchingBrokerPositions(false);
+            if (isFirst) {
+              setBrokerPositions([]);
+              setFetchingBrokerPositions(false);
+            }
+            isFirst = false;
             return;
           }
           const data = await res.json();
@@ -6389,17 +6392,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           console.log('✅ [POSITIONS]', broker, 'Fetched', positions.length, 'positions with live prices via WebSocket');
         } catch (err) {
           console.error('❌ [POSITIONS] Error fetching positions:', err);
-          setBrokerPositions([]);
+          if (isFirst) setBrokerPositions([]);
         } finally {
-          setFetchingBrokerPositions(false);
+          if (isFirst) setFetchingBrokerPositions(false);
+          isFirst = false;
         }
       };
 
       // Fetch positions immediately when tab opens
       fetchPositions();
 
-      // Set up polling to refresh every 700ms while tab is open
-      const pollInterval = setInterval(fetchPositions, 700);
+      // Set up polling to refresh every 3 seconds while tab is open (silently, no loading state)
+      const pollInterval = setInterval(fetchPositions, 3000);
 
       // Cleanup: clear interval when tab changes
       return () => clearInterval(pollInterval);

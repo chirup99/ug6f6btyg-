@@ -10965,11 +10965,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const trades = await getAngelOneUserTrades(session);
       const normalized = trades.map((t: any) => ({
         symbol: t.tradingsymbol || t.symbolname || '',
-        side: t.transactiontype || t.side || '',
-        quantity: Number(t.quantity || t.qty || 0),
+        order: t.transactiontype || t.side || '',
+        qty: Number(t.quantity || t.qty || 0),
         price: Number(t.tradeprice || t.averageprice || t.price || 0),
         orderId: t.orderid || t.uniqueorderid || '',
-        product: t.producttype || t.product || '',
+        type: t.producttype || t.product || '',
         exchange: t.exchange || 'NSE',
         status: t.orderstatus || t.status || '',
         time: t.updatetime || t.ordertime || '',

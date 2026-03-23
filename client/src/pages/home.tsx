@@ -4762,6 +4762,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Separate state for user's PERSONAL Angel One broker connection (never touches company state)
   const [userAngelOneToken, setUserAngelOneToken] = useState<string | null>(() => localStorage.getItem("user_ao_jwt"));
   const [userAngelOneIsConnected, setUserAngelOneIsConnected] = useState(() => !!localStorage.getItem("user_ao_jwt"));
+  const [userAngelOneName, setUserAngelOneName] = useState<string | null>(() => localStorage.getItem("angel_one_user_name"));
   
   
   
@@ -5792,6 +5793,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
       localStorage.setItem("user_ao_jwt", data.token);
       localStorage.setItem("angel_one_client_code", data.clientCode || angelOneClientCodeInput);
+      if (data.name) {
+        localStorage.setItem("angel_one_user_name", data.name);
+        setUserAngelOneName(data.name);
+      }
 
       setUserAngelOneToken(data.token);
       setUserAngelOneIsConnected(true);
@@ -5827,8 +5832,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     }
     localStorage.removeItem("user_ao_jwt");
     localStorage.removeItem("angel_one_client_code");
+    localStorage.removeItem("angel_one_user_name");
     setUserAngelOneToken(null);
     setUserAngelOneIsConnected(false);
+    setUserAngelOneName(null);
   };
 
   const handleRevokeZerodha = () => {
@@ -27704,6 +27711,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           fetchingBrokerPositions={zerodhaAccessToken ? fetchingBrokerPositions : upstoxAccessToken ? fetchingBrokerPositions : userAngelOneIsConnected ? fetchingBrokerPositions : dhanAccessToken ? (fetchingBrokerOrders || false) : growwAccessToken ? (fetchingBrokerPositions || false) : deltaExchangeIsConnected ? deltaExchangeFetching : fetchingFyersPositions}
           angelOneAccessToken={userAngelOneToken}
           angelOneClientCode={localStorage.getItem("angel_one_client_code")}
+          angelOneUserName={userAngelOneName}
           showBrokerImportModal={showBrokerImportModal} 
           setShowBrokerImportModal={setShowBrokerImportModal} 
           handleBrokerImport={handleBrokerImport} 

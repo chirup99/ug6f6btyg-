@@ -66,6 +66,7 @@ interface BrokerDataProps {
   fyersStatus?: any;
   angelOneAccessToken?: string | null;
   angelOneClientCode?: string | null;
+  angelOneUserName?: string | null;
 }
 
 export function BrokerData(props: BrokerDataProps) {
@@ -87,6 +88,7 @@ export function BrokerData(props: BrokerDataProps) {
     fyersStatus,
     angelOneAccessToken,
     angelOneClientCode,
+    angelOneUserName,
   } = props;
 
   const queryClient = useQueryClient();
@@ -295,7 +297,7 @@ export function BrokerData(props: BrokerDataProps) {
                   {activeBroker === 'angelone' && (
                     <>
                       <img src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701" alt="Angel One" className="w-3 h-3 rounded-full" />
-                      <span>id: {showUserId ? (angelOneClientCode || "N/A") : "••••••"} | {showUserId ? "Angel One User" : "•••••"}</span>
+                      <span>id: {showUserId ? (angelOneClientCode || "N/A") : "••••••"} | {showUserId ? (angelOneUserName || "Angel One User") : "•••••"}</span>
                     </>
                   )}
                 </div>

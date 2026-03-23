@@ -6309,10 +6309,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Fetch broker positions when tab changes - supports all 4 brokers (Zerodha, Upstox, Angel One, Dhan)
   useEffect(() => {
     if (orderTab === "positions" && (zerodhaAccessToken || upstoxAccessToken || userAngelOneToken || dhanAccessToken)) {
-      let isFirst = true;
-      let lastPositionsKey = '';
+      let lastPositionsKey = '__uninit__';
       const fetchPositions = async () => {
-        if (isFirst) setFetchingBrokerPositions(true);
         try {
           // Determine which broker is connected and get correct endpoint/token
           let endpoint = '';
@@ -6352,15 +6350,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           const res = await fetch(endpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
+          // On any error, leave the existing positions on screen — don't blank them out
           if (!res.ok) {
             if (res.status === 401) {
               console.warn('⚠️ [POSITIONS] Session expired, please reconnect broker');
             }
-            if (isFirst) {
-              setBrokerPositions([]);
-              setFetchingBrokerPositions(false);
-            }
-            isFirst = false;
             return;
           }
           const data = await res.json();
@@ -6394,18 +6388,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             `${p.symbol}:${p.qty ?? p.quantity ?? p.netQty ?? 0}:${p.status ?? ''}`
           ).join('|');
 
-          // Only update React state when positions actually changed (new position added/removed/closed)
-          if (isFirst || newKey !== lastPositionsKey) {
+          // Only update React state when positions actually changed — keeps UI completely stable between polls
+          if (newKey !== lastPositionsKey) {
             lastPositionsKey = newKey;
             setBrokerPositions(positions);
             console.log('✅ [POSITIONS]', broker, 'Updated', positions.length, 'positions');
           }
         } catch (err) {
+          // Silent fail — keep whatever is currently displayed, don't blank out
           console.error('❌ [POSITIONS] Error fetching positions:', err);
-          if (isFirst) setBrokerPositions([]);
-        } finally {
-          if (isFirst) setFetchingBrokerPositions(false);
-          isFirst = false;
         }
       };
 

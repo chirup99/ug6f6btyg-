@@ -31882,40 +31882,27 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 );
               })()}
 
-              {/* Description + User row - only for range mode */}
+              {/* Description textarea - only for range mode */}
               {reportPostMode === 'range' && (
-              <div className="flex items-start gap-2">
-                <Avatar className="h-7 w-7 flex-shrink-0">
-                  <AvatarImage src={currentUser?.profilePicUrl ?? undefined} />
-                  <AvatarFallback className="bg-gradient-to-br from-violet-500 to-purple-600 text-white font-semibold text-[10px]">
-                    {(currentUser?.displayName || currentUser?.email || 'U')[0].toUpperCase()}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="flex-1">
-                  <div className="text-[10px] font-medium text-slate-700 dark:text-slate-200 mb-1">
-                    {currentUser?.displayName || currentUser?.email || 'Guest'}
-                  </div>
-                  <textarea
-                    value={reportPostDescription}
-                    onChange={(e) => setReportPostDescription(e.target.value)}
-                    placeholder="Share what happened in your trades today..."
-                    rows={2}
-                    className="w-full text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-violet-500"
-                    data-testid="textarea-post-description"
-                  />
-                </div>
-              </div>
+                <textarea
+                  value={reportPostDescription}
+                  onChange={(e) => setReportPostDescription(e.target.value)}
+                  placeholder="Describe your trades — what worked, what didn't, your key takeaways..."
+                  rows={4}
+                  className="w-full text-xs border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 resize-none focus:outline-none focus:ring-1 focus:ring-violet-500"
+                  data-testid="textarea-post-description"
+                />
               )}
             </div>
 
             {/* Plain textarea for selected/today - DemoHeatmap style */}
             {(reportPostMode === 'today' || reportPostMode === 'selected') && (
-              <div className="px-4 py-3 flex flex-col min-h-[70px]">
+              <div className="px-4 py-3 flex flex-col min-h-[100px]">
                 <textarea
                   value={reportPostDescription}
                   onChange={(e) => setReportPostDescription(e.target.value)}
                   placeholder="Describe your trades — what worked, what didn't, your key takeaways..."
-                  rows={3}
+                  rows={5}
                   className="w-full bg-transparent border-none focus:outline-none focus:ring-0 text-sm text-gray-600 dark:text-zinc-400 resize-none placeholder:text-gray-400 leading-relaxed"
                   data-testid="textarea-post-description"
                 />

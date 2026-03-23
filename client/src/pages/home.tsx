@@ -25046,6 +25046,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 setJournalChartMode('heatmap');
                                 fetchHeatmapChartData(symbol, date);
                               }}
+                              onFeedPost={(mode, data) => {
+                                setReportPostMode(mode);
+                                if (mode === 'selected') {
+                                  setReportPostSelectedDate(selectedDate ? selectedDate.toISOString().split('T')[0] : new Date().toISOString().split('T')[0]);
+                                }
+                                if (mode === 'range' && data) {
+                                  setRangePostOverrideData(data);
+                                }
+                                setShowReportPostDialog(true);
+                              }}
                             />
                           ) : (
                             <PersonalHeatmap

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, X, MoreVertical, Layout, Send, Image as ImageIcon, Smile, Paperclip } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, MoreVertical, Layout, Send, Image as ImageIcon, Smile, Paperclip, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,6 +35,7 @@ interface DemoHeatmapProps {
   refreshTrigger?: number;
   hideNavigation?: boolean;
   initialDate?: Date;
+  onFeedPost?: (mode: 'today' | 'selected' | 'range', data?: Record<string, any>) => void;
 }
 
 // Simple function to calculate P&L from trade data
@@ -89,7 +90,7 @@ function getPnLColor(pnl: number): string {
   }
 }
 
-export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, disableAutoScroll, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0, hideNavigation = false, initialDate }: DemoHeatmapProps) {
+export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, disableAutoScroll, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0, hideNavigation = false, initialDate, onFeedPost }: DemoHeatmapProps) {
   const { currentUser } = useCurrentUser();
   // Use initialDate if provided, otherwise default to December of last year
   const [currentDate, setCurrentDate] = useState(initialDate || new Date(new Date().getFullYear() - 1, 11, 1));
@@ -1649,100 +1650,43 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
                 </span>
               </Button>
 
-              {isFeedMode && (
-                <div className="flex items-center gap-6 ml-auto pr-2">
-                  {(() => {
-                    const dateKey = `${currentDate.getFullYear()}-${String(currentDate.getMonth() + 1).padStart(2, '0')}-${String(currentDate.getDate()).padStart(2, '0')}`;
-                    const dayData = heatmapData[dateKey];
-                    const pnlValue = calculatePnL(dayData, isPublicView);
-                    const totalTrades = dayData?.tradeHistory?.length || dayData?.tradingData?.tradeHistory?.length || 0;
-                    
-                    // Calculate P&L percentage if possible
-                    let pnlPercentage = null;
-                    if (dayData?.tradingData?.performanceMetrics?.pnlPercentage !== undefined) {
-                      pnlPercentage = dayData.tradingData.performanceMetrics.pnlPercentage;
-                    } else if (dayData?.performanceMetrics?.pnlPercentage !== undefined) {
-                      pnlPercentage = dayData.performanceMetrics.pnlPercentage;
-                    }
-
-                    // Generate P&L data for line chart
-                    const trades = dayData?.tradeHistory || dayData?.tradingData?.tradeHistory || [];
-                    const pnlData = trades.map((t: any) => {
-                      if (typeof t.pnl === 'number') return t.pnl;
-                      if (typeof t.pnl === 'string') return parseFloat(t.pnl.replace(/[₹,+]/g, '')) || 0;
-                      return 0;
-                    });
-
-                    return (
-                      <>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[10px] uppercase text-gray-500 font-medium leading-none mb-1">P&L</span>
-                          <div className="flex items-baseline gap-1">
-                            <span className={`text-xs font-bold leading-none ${pnlValue >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                              ₹{Math.floor(pnlValue).toLocaleString()}
-                            </span>
-                            {pnlPercentage !== null && (
-                              <span className={`text-[10px] font-medium leading-none ${pnlPercentage >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                                {pnlPercentage >= 0 ? '+' : ''}{pnlPercentage.toFixed(2)}%
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[10px] uppercase text-gray-500 font-medium leading-none mb-1">Trend</span>
-                          <div className="h-4 w-12 flex items-center justify-center">
-                            {pnlData.length > 0 ? (
-                              <svg width="48" height="16" className="overflow-visible">
-                                {(() => {
-                                  const min = Math.min(...pnlData, 0);
-                                  const max = Math.max(...pnlData, 0);
-                                  const range = max - min || 1;
-                                  const points = pnlData.map((val: number, i: number) => {
-                                    const x = (i / (pnlData.length - 1 || 1)) * 48;
-                                    const y = 16 - ((val - min) / range) * 16;
-                                    return `${x},${y}`;
-                                  }).join(' ');
-                                  return (
-                                    <polyline
-                                      points={points}
-                                      fill="none"
-                                      stroke={pnlValue >= 0 ? "#16a34a" : "#dc2626"}
-                                      strokeWidth="1.5"
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                    />
-                                  );
-                                })()}
-                              </svg>
-                            ) : (
-                              <div className="h-[1px] w-full bg-gray-200" />
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[10px] uppercase text-gray-500 font-medium leading-none mb-1">TOTAL TRADES</span>
-                          <span className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-none">
-                            {totalTrades}
-                          </span>
-                        </div>
-                        <div className="flex flex-col items-end">
-                          <span className="text-[10px] uppercase text-gray-500 font-medium leading-none mb-1">WIN%</span>
-                          <span className="text-xs font-bold text-gray-900 dark:text-gray-100 leading-none">
-                            {dayData?.performanceMetrics?.winRate || dayData?.tradingData?.performanceMetrics?.winRate || '0'}%
-                          </span>
-                        </div>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => setIsPostDialogOpen(true)}
-                          className="h-8 w-8 ml-2 bg-blue-50 hover:bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:hover:bg-blue-900/50 dark:text-blue-400"
-                          title="Post to feed"
-                        >
-                          <Send className="w-4 h-4" />
-                        </Button>
-                      </>
-                    );
-                  })()}
+              {isFeedMode && onFeedPost && (
+                <div className="flex items-center gap-0.5 ml-auto">
+                  <button
+                    className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium bg-violet-600 hover:bg-violet-700 text-white transition-colors"
+                    data-testid="button-post-dynamic"
+                    onClick={() => selectedDate ? onFeedPost('selected') : onFeedPost('today')}
+                  >
+                    <Send className="w-2.5 h-2.5" />
+                    {selectedDate
+                      ? selectedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                      : 'Today'}
+                  </button>
+                  <button
+                    className="flex items-center gap-0.5 h-6 px-1.5 rounded text-[10px] font-medium border border-violet-200 dark:border-violet-700 text-violet-700 dark:text-violet-300 hover:bg-violet-50 dark:hover:bg-violet-900/20 transition-colors"
+                    data-testid="button-post-range"
+                    onClick={() => {
+                      const yearStr = String(currentDate.getFullYear());
+                      const dataToPost = selectedRange
+                        ? (() => {
+                            const filtered: Record<string, any> = {};
+                            const startTime = selectedRange.from.getTime();
+                            const endTime = selectedRange.to.getTime();
+                            Object.keys(heatmapData).forEach(dateKey => {
+                              const d = new Date(dateKey + 'T12:00:00');
+                              if (d.getTime() >= startTime && d.getTime() <= endTime) {
+                                filtered[dateKey] = heatmapData[dateKey];
+                              }
+                            });
+                            return filtered;
+                          })()
+                        : Object.fromEntries(Object.entries(heatmapData).filter(([k]) => k.startsWith(yearStr)));
+                      onFeedPost('range', dataToPost);
+                    }}
+                  >
+                    <BookOpen className="w-2.5 h-2.5" />
+                    <Send className="w-2.5 h-2.5" />
+                  </button>
                 </div>
               )}
             </div>

@@ -4794,9 +4794,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [upstoxApiSecretInput, setUpstoxApiSecretInput] = useState("");
   const [angelOneApiKeyInput, setAngelOneApiKeyInput] = useState("");
   const [angelOneClientCodeInput, setAngelOneClientCodeInput] = useState("");
+  const [angelOnePinInput, setAngelOnePinInput] = useState("");
+  const [angelOneTotpInput, setAngelOneTotpInput] = useState("");
   const [showZerodhaSecret, setShowZerodhaSecret] = useState(false);
   const [showUpstoxSecret, setShowUpstoxSecret] = useState(false);
   const [showAngelOneSecret, setShowAngelOneSecret] = useState(false);
+  const [showAngelOnePin, setShowAngelOnePin] = useState(false);
+  const [showAngelOneTotp, setShowAngelOneTotp] = useState(false);
   const [fyersAppId, setFyersAppId] = useState("");
   const [fyersSecretId, setFyersSecretId] = useState("");
   const [isDeltaExchangeDialogOpen, setIsDeltaExchangeDialogOpen] = useState(false);
@@ -5755,6 +5759,73 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         description: error instanceof Error ? error.message : "Failed to connect" 
       });
     }
+  };
+
+  const handleUserAngelOneConnect = async () => {
+    try {
+      if (!angelOneClientCodeInput || !angelOneApiKeyInput || !angelOnePinInput || !angelOneTotpInput) {
+        toast({ variant: "destructive", title: "Missing fields", description: "Please fill in all fields." });
+        return;
+      }
+
+      toast({ title: "Connecting...", description: "Authenticating with Angel One..." });
+
+      const response = await fetch("/api/user/angelone/connect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          clientCode: angelOneClientCodeInput.trim(),
+          pin: angelOnePinInput.trim(),
+          apiKey: angelOneApiKeyInput.trim(),
+          totpSecret: angelOneTotpInput.trim(),
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!data.success) {
+        throw new Error(data.message || "Failed to connect");
+      }
+
+      localStorage.setItem("angel_one_token", data.token);
+      localStorage.setItem("angel_one_client_code", data.clientCode || angelOneClientCodeInput);
+
+      setAngelOneAccessToken(data.token);
+      setAngelOneIsConnected(true);
+      setIsAngelOneDialogOpen(false);
+
+      setAngelOneClientCodeInput("");
+      setAngelOneApiKeyInput("");
+      setAngelOnePinInput("");
+      setAngelOneTotpInput("");
+
+      toast({
+        title: "Connected",
+        description: `Angel One account${data.name ? ` (${data.name})` : ""} connected successfully!`,
+      });
+    } catch (error: any) {
+      console.error("❌ [USER-ANGELONE] Connect error:", error);
+      toast({
+        variant: "destructive",
+        title: "Connection Failed",
+        description: error.message || "Failed to connect Angel One account",
+      });
+    }
+  };
+
+  const handleUserAngelOneDisconnect = () => {
+    const clientCode = localStorage.getItem("angel_one_client_code");
+    if (clientCode) {
+      fetch("/api/user/angelone/disconnect", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ clientCode }),
+      }).catch(() => {});
+    }
+    localStorage.removeItem("angel_one_token");
+    localStorage.removeItem("angel_one_client_code");
+    setAngelOneAccessToken(null);
+    setAngelOneIsConnected(false);
   };
 
   const handleRevokeZerodha = () => {
@@ -24135,85 +24206,153 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               </DialogContent>
                             </Dialog>
                           )}
-                              <Dialog open={isAngelOneDialogOpen} onOpenChange={setIsAngelOneDialogOpen}>
-                                <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-                                  <DialogHeader>
-                                    <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
-                                      <img src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701" alt="Angel One" className="h-5" />
-                                      Connect Angel One Broker
-                                    </DialogTitle>
-                                  </DialogHeader>
-                                  <div className="space-y-4 py-4">
-                                    <div className="space-y-2">
-                                      <Label htmlFor="angelone-api-key" className="text-slate-700 dark:text-slate-300">API Key</Label>
-                                      <Input
-                                        id="angelone-api-key"
-                                        placeholder="Enter your Angel One API Key"
-                                        value={angelOneApiKeyInput}
-                                        onChange={(e) => setAngelOneApiKeyInput(e.target.value)}
-                                        className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                              {angelOneIsConnected ? (
+                                <div className="flex items-center gap-2">
+                                  <Button
+                                    variant="outline"
+                                    className="flex-1 h-10 bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700 cursor-default"
+                                    data-testid="button-angelone-connected-display"
+                                  >
+                                    <img
+                                      src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701"
+                                      alt="Angel One"
+                                      className="h-4 mr-2 rounded-full"
+                                    />
+                                    Angel One
+                                  </Button>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-red-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 h-10 w-10 border border-slate-200 hover:border-red-100"
+                                    onClick={handleUserAngelOneDisconnect}
+                                    title="Disconnect Angel One"
+                                  >
+                                    <X className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              ) : (
+                                <Dialog open={isAngelOneDialogOpen} onOpenChange={setIsAngelOneDialogOpen}>
+                                  <DialogTrigger asChild>
+                                    <Button
+                                      variant="outline"
+                                      className={`w-full h-10 ${
+                                        (zerodhaIsConnected || upstoxIsConnected || dhanIsConnected)
+                                          ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
+                                          : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
+                                      }`}
+                                      data-testid="button-angelone-dialog"
+                                      disabled={zerodhaIsConnected || upstoxIsConnected || dhanIsConnected}
+                                    >
+                                      <img
+                                        src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701"
+                                        alt="Angel One"
+                                        className="h-4 mr-2 rounded-full"
                                       />
-                                    </div>
-                                    <div className="space-y-2">
-                                      <Label htmlFor="angelone-api-secret" className="text-slate-700 dark:text-slate-300">API Secret</Label>
-                                      <div className="relative">
+                                      Angel One
+                                    </Button>
+                                  </DialogTrigger>
+                                  <DialogContent className="sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                    <DialogHeader>
+                                      <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
+                                        <img
+                                          src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701"
+                                          alt="Angel One"
+                                          className="h-5 rounded-full"
+                                        />
+                                        Connect Angel One Broker
+                                      </DialogTitle>
+                                    </DialogHeader>
+                                    <div className="space-y-4 py-2">
+                                      <div className="space-y-2">
+                                        <Label htmlFor="ao-client-code" className="text-slate-700 dark:text-slate-300">Client Code</Label>
                                         <Input
-                                          id="angelone-api-secret"
-                                          type={showAngelOneSecret ? "text" : "password"}
-                                          placeholder="Enter your Angel One API Secret"
+                                          id="ao-client-code"
+                                          placeholder="e.g. P176266"
                                           value={angelOneClientCodeInput}
                                           onChange={(e) => setAngelOneClientCodeInput(e.target.value)}
-                                          className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
+                                          className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                          data-testid="input-angelone-client-code"
                                         />
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          size="icon"
-                                          className="absolute right-0 top-0 h-10 w-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-transparent"
-                                          onClick={() => setShowAngelOneSecret(!showAngelOneSecret)}
-                                        >
-                                          {showAngelOneSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                                        </Button>
                                       </div>
-                                      <div className="flex items-center gap-2 mt-1 px-2 py-1 bg-slate-100 dark:bg-slate-900 rounded border border-slate-200 dark:border-slate-700 w-full group hover:border-blue-200 dark:hover:border-blue-900/40 transition-colors overflow-hidden">
-                                        <span className="text-[10px] text-slate-500 font-medium shrink-0">Redirect URL:</span>
-                                        <div className="flex-1 min-w-0 overflow-hidden">
-                                          <code className="text-[10px] font-mono text-blue-600 dark:text-blue-400 font-bold truncate block max-w-[200px]">{window.location.protocol}//{window.location.host}/api/angelone/callback</code>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="ao-api-key" className="text-slate-700 dark:text-slate-300">API Key</Label>
+                                        <Input
+                                          id="ao-api-key"
+                                          placeholder="Enter your Angel One API Key"
+                                          value={angelOneApiKeyInput}
+                                          onChange={(e) => setAngelOneApiKeyInput(e.target.value)}
+                                          className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                                          data-testid="input-angelone-api-key"
+                                        />
+                                      </div>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="ao-pin" className="text-slate-700 dark:text-slate-300">Login PIN</Label>
+                                        <div className="relative">
+                                          <Input
+                                            id="ao-pin"
+                                            type={showAngelOnePin ? "text" : "password"}
+                                            placeholder="Enter your Login PIN"
+                                            value={angelOnePinInput}
+                                            onChange={(e) => setAngelOnePinInput(e.target.value)}
+                                            className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
+                                            data-testid="input-angelone-pin"
+                                          />
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute right-0 top-0 h-10 w-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-transparent"
+                                            onClick={() => setShowAngelOnePin(!showAngelOnePin)}
+                                          >
+                                            {showAngelOnePin ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                          </Button>
                                         </div>
-                                        <Button
-                                          size="icon"
-                                          variant="ghost"
-                                          className="h-4 w-4 hover:bg-slate-200 dark:hover:bg-slate-800 shrink-0 ml-0.5"
-                                          onClick={() => {
-                                            navigator.clipboard.writeText(`${window.location.protocol}//${window.location.host}/api/angelone/callback`);
-                                            toast({
-                                              title: "Copied",
-                                              description: "Redirect URL copied to clipboard",
-                                            });
-                                          }}
-                                        >
-                                          <Copy className="h-2.5 w-2.5 text-slate-400 group-hover:text-blue-500 transition-colors" />
-                                        </Button>
                                       </div>
-                                      <p className="text-[10px] text-slate-500 mt-2">
-                                        Generate API keys at: <a href="https://smartapi.angelone.in" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">https://smartapi.angelone.in</a>
-                                      </p>
+                                      <div className="space-y-2">
+                                        <Label htmlFor="ao-totp" className="text-slate-700 dark:text-slate-300">TOTP (Secret Key or 6-digit Code)</Label>
+                                        <div className="relative">
+                                          <Input
+                                            id="ao-totp"
+                                            type={showAngelOneTotp ? "text" : "password"}
+                                            placeholder="Secret Key or 6-digit OTP"
+                                            value={angelOneTotpInput}
+                                            onChange={(e) => setAngelOneTotpInput(e.target.value)}
+                                            className="bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 pr-10"
+                                            data-testid="input-angelone-totp"
+                                          />
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute right-0 top-0 h-10 w-10 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-transparent"
+                                            onClick={() => setShowAngelOneTotp(!showAngelOneTotp)}
+                                          >
+                                            {showAngelOneTotp ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                          </Button>
+                                        </div>
+                                        <p className="text-[11px] text-amber-600 dark:text-amber-400 mt-1">
+                                          <span className="font-semibold">Important:</span> Use the{" "}
+                                          <a href="https://smartapi.angelone.in" target="_blank" rel="noopener noreferrer" className="underline">Secret Key</a>{" "}
+                                          (provided during QR setup) for a permanent connection, or a 6-digit code from your Authenticator app (valid for 30 seconds).
+                                        </p>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <div className="flex justify-end gap-3 pt-2">
-                                    <Button variant="outline" onClick={() => setIsAngelOneDialogOpen(false)}>
-                                      Cancel
-                                    </Button>
-                                    <Button 
-                                      onClick={handleAngelOneConnect} 
-                                      className="bg-blue-600 hover:bg-blue-700 text-white"
-                                      disabled={!angelOneApiKeyInput || !angelOneClientCodeInput}
-                                    >
-                                      Connect Account
-                                    </Button>
-                                  </div>
-                                </DialogContent>
-                              </Dialog>
+                                    <div className="flex justify-end gap-3 pt-2">
+                                      <Button variant="outline" onClick={() => setIsAngelOneDialogOpen(false)}>
+                                        Cancel
+                                      </Button>
+                                      <Button
+                                        onClick={handleUserAngelOneConnect}
+                                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                                        disabled={!angelOneClientCodeInput || !angelOneApiKeyInput || !angelOnePinInput || !angelOneTotpInput}
+                                        data-testid="button-angelone-connect-submit"
+                                      >
+                                        Connect Account
+                                      </Button>
+                                    </div>
+                                  </DialogContent>
+                                </Dialog>
+                              )}
                               {dhanIsConnected ? (
                             <div className="flex items-center gap-2">
                               <Button

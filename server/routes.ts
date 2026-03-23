@@ -24,6 +24,7 @@ const upload = multer({
 import crypto from "crypto";
 import { storage } from "./storage";
 import { angelOneApi } from "./angel-one-api";
+import { connectAngelOneUser, disconnectAngelOneUser } from "./angel-one-user-api";
 import { AnalysisProcessor } from "./analysis-processor";
 import { insertAnalysisInstructionsSchema, insertAnalysisResultsSchema, socialPosts, socialPostLikes, socialPostComments, socialPostReposts, userFollows, insertSocialPostSchema, type SocialPost, brokerImportRequestSchema, type BrokerImportRequest, type BrokerTradesResponse, insertVerifiedReportSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -10904,6 +10905,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: error.message || "Failed to connect to Angel One",
         error: error.message
       });
+    }
+  });
+
+  // Angel One - User personal broker connection (uses user-provided keys, NOT company env vars)
+  app.post("/api/user/angelone/connect", async (req, res) => {
+    try {
+      const { clientCode, pin, apiKey, totpSecret } = req.body;
+
+      if (!clientCode || !pin || !apiKey || !totpSecret) {
+        return res.status(400).json({
+          success: false,
+          message: "All fields required: Client Code, Login PIN, API Key, and TOTP Secret"
+        });
+      }
+
+      console.log(`🔶 [USER-ANGELONE] User connect request for: ${clientCode}`);
+
+      const session = await connectAngelOneUser({ clientCode, pin, apiKey, totpSecret });
+
+      res.json({
+        success: true,
+        message: "Angel One connected successfully",
+        token: session.jwtToken,
+        clientCode: session.clientCode,
+        name: session.name,
+        email: session.email,
+        connectedAt: session.connectedAt,
+      });
+    } catch (error: any) {
+      console.error("❌ [USER-ANGELONE] Connection error:", error.message);
+      res.status(500).json({
+        success: false,
+        message: error.message || "Failed to connect Angel One account",
+      });
+    }
+  });
+
+  // Angel One - User personal broker disconnect
+  app.post("/api/user/angelone/disconnect", async (req, res) => {
+    try {
+      const { clientCode } = req.body;
+      if (clientCode) {
+        disconnectAngelOneUser(clientCode);
+      }
+      res.json({ success: true, message: "Angel One disconnected" });
+    } catch (error: any) {
+      res.status(500).json({ success: false, message: error.message });
     }
   });
 

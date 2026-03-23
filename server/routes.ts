@@ -24,7 +24,7 @@ const upload = multer({
 import crypto from "crypto";
 import { storage } from "./storage";
 import { angelOneApi } from "./angel-one-api";
-import { connectAngelOneUser, disconnectAngelOneUser, getAngelOneSessionByToken, getAngelOneUserTrades, getAngelOneUserPositions, getAngelOneUserFunds } from "./angel-one-user-api";
+import { connectAngelOneUser, disconnectAngelOneUser, getAngelOneSessionByToken, getAngelOneUserTrades, getAngelOneUserOrders, getAngelOneUserPositions, getAngelOneUserFunds } from "./angel-one-user-api";
 import { AnalysisProcessor } from "./analysis-processor";
 import { insertAnalysisInstructionsSchema, insertAnalysisResultsSchema, socialPosts, socialPostLikes, socialPostComments, socialPostReposts, userFollows, insertSocialPostSchema, type SocialPost, brokerImportRequestSchema, type BrokerImportRequest, type BrokerTradesResponse, insertVerifiedReportSchema } from "@shared/schema";
 import { nanoid } from "nanoid";
@@ -10962,18 +10962,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
     const session = getAngelOneSessionByToken(token);
     if (!session) return res.status(401).json({ success: false, message: "Angel One session not found. Please reconnect." });
     try {
-      const trades = await getAngelOneUserTrades(session);
-      const normalized = trades.map((t: any) => ({
-        symbol: t.tradingsymbol || t.symbolname || '',
-        order: t.transactiontype || t.side || '',
-        qty: Number(t.quantity || t.qty || 0),
-        price: Number(t.tradeprice || t.averageprice || t.price || 0),
-        orderId: t.orderid || t.uniqueorderid || '',
-        type: t.producttype || t.product || '',
-        exchange: t.exchange || 'NSE',
-        status: t.orderstatus || t.status || '',
-        time: t.updatetime || t.ordertime || '',
+      const orders = await getAngelOneUserOrders(session);
+
+      // Map Angel One product types to user-friendly names
+      const mapProductType = (p: string): string => {
+        const map: Record<string, string> = {
+          'INTRADAY': 'MIS', 'DELIVERY': 'CNC', 'CARRYFORWARD': 'NRML',
+          'MARGIN': 'MARGIN', 'BO': 'BO', 'CO': 'CO',
+        };
+        return map[String(p).toUpperCase()] || p || '';
+      };
+
+      // Map Angel One orderstatus strings to normalised uppercase status
+      const mapStatus = (s: string): string => {
+        const lower = String(s).toLowerCase().trim();
+        if (lower === 'complete') return 'COMPLETE';
+        if (lower === 'open') return 'OPEN';
+        if (lower === 'open pending') return 'PENDING';
+        if (lower === 'rejected') return 'REJECTED';
+        if (lower.startsWith('cancel')) return 'CANCELLED';
+        return String(s).toUpperCase();
+      };
+
+      // Convert "06-Mar-2025 09:30:00" → ISO so browser Date can parse it
+      const parseAngelOneTime = (t: string): string => {
+        if (!t) return '';
+        // Already ISO-ish
+        if (t.includes('T') || t.match(/^\d{4}-\d{2}-\d{2}/)) return t;
+        // "DD-Mon-YYYY HH:MM:SS"
+        const m = t.match(/^(\d{2})-([A-Za-z]{3})-(\d{4})\s+(\d{2}:\d{2}:\d{2})$/);
+        if (m) {
+          const months: Record<string, string> = {
+            Jan:'01',Feb:'02',Mar:'03',Apr:'04',May:'05',Jun:'06',
+            Jul:'07',Aug:'08',Sep:'09',Oct:'10',Nov:'11',Dec:'12',
+          };
+          return `${m[3]}-${months[m[2]] || '01'}-${m[1]}T${m[4]}`;
+        }
+        return t;
+      };
+
+      const normalized = orders.map((o: any) => ({
+        symbol: o.tradingsymbol || o.symbolname || '',
+        order: String(o.transactiontype || '').toUpperCase(),
+        qty: Number(o.quantity || o.qty || 0),
+        filledQty: Number(o.filledshares || 0),
+        price: Number(o.averageprice || o.price || 0),
+        orderId: o.orderid || o.uniqueorderid || '',
+        type: mapProductType(o.producttype || o.product || ''),
+        orderType: o.ordertype || '',
+        exchange: o.exchange || 'NSE',
+        status: mapStatus(o.orderstatus || o.status || ''),
+        time: parseAngelOneTime(o.updatetime || o.ordertime || o.exchtime || ''),
+        rejectionReason: o.text || '',
       }));
+
       res.json({ success: true, trades: normalized });
     } catch (err: any) {
       res.status(500).json({ success: false, message: err.message });

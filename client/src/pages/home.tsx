@@ -23705,7 +23705,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 />
                               </Button>
                             )}
-                            {angelOneIsConnected && (
+                            {(angelOneIsConnected || userAngelOneIsConnected) && (
                               <Button
                                 variant="ghost"
                                 size="sm"
@@ -24052,12 +24052,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               onClick={handleZerodhaConnect}
                               variant="outline"
                               className={`w-full h-10 ${
-                                (upstoxIsConnected || angelOneIsConnected || dhanIsConnected)
+                                (upstoxIsConnected || angelOneIsConnected || userAngelOneIsConnected || dhanIsConnected)
                                   ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
                                   : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:bg-slate-800 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                               }`}
                               data-testid="button-zerodha-dialog"
-                              disabled={upstoxIsConnected || angelOneIsConnected || dhanIsConnected}
+                              disabled={upstoxIsConnected || angelOneIsConnected || userAngelOneIsConnected || dhanIsConnected}
                             >
                               <img 
                                 src="https://zerodha.com/static/images/products/kite-logo.svg" 
@@ -24093,12 +24093,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 <Button
                                   variant="outline"
                                   className={`w-full h-10 ${
-                                    (zerodhaIsConnected || angelOneIsConnected || dhanIsConnected)
+                                    (zerodhaIsConnected || angelOneIsConnected || userAngelOneIsConnected || dhanIsConnected)
                                       ? 'bg-slate-100 dark:bg-slate-900 text-slate-500 dark:text-slate-400 dark:text-slate-600 border-slate-300 dark:border-slate-700 cursor-not-allowed opacity-50'
                                       : 'bg-white dark:bg-slate-800 text-black dark:text-white hover:bg-slate-50 dark:hover:bg-slate-700 border-slate-200 dark:border-slate-700'
                                   }`}
                                   data-testid="button-upstox-dialog"
-                                  disabled={zerodhaIsConnected || angelOneIsConnected || dhanIsConnected}
+                                  disabled={zerodhaIsConnected || angelOneIsConnected || userAngelOneIsConnected || dhanIsConnected}
                                 >
                                   <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-4 mr-2" />
                                   Upstox

@@ -6548,9 +6548,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         case 'upstox':
           return { token: upstoxAccessToken, ordersEp: '/api/broker/upstox/trades', positionsEp: '/api/broker/upstox/positions', fundsEp: '/api/broker/upstox/margins' };
         case 'angelone':
-          return { token: userAngelOneToken, ordersEp: '/api/broker/angelone/trades', positionsEp: '/api/broker/angelone/positions', fundsEp: null };
+          return { token: userAngelOneToken, ordersEp: '/api/broker/angelone/trades', positionsEp: '/api/broker/angelone/positions', fundsEp: '/api/broker/angelone/margins' };
         case 'dhan':
-          return { token: dhanAccessToken, ordersEp: '/api/broker/dhan/trades', positionsEp: '/api/broker/dhan/positions', fundsEp: null };
+          return { token: dhanAccessToken, ordersEp: '/api/broker/dhan/trades', positionsEp: '/api/broker/dhan/positions', fundsEp: '/api/broker/dhan/margins' };
         case 'groww':
           return { token: growwAccessToken, ordersEp: `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken || '')}`, positionsEp: null, fundsEp: null };
         default:
@@ -6582,7 +6582,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           const res = await fetch(fundsEp, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
           if (!cancelled && res.ok) {
             const data = await res.json();
-            if (data.availableCash !== undefined) setBroker2Funds(data.availableCash);
+            const funds = data.availableCash ?? data.availableFunds ?? data.funds ?? null;
+            if (funds !== null) setBroker2Funds(funds);
           }
         }
       } catch (err) {

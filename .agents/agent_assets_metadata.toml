@@ -6,3 +6,9 @@ id = "BbPpSHrvxc5_9k3SLq8Sh"
 uri = "file://aws-cost-analysis-report.pdf"
 type = "pdf"
 title = "AWS Cost Analysis Report — Perala Trading Platform"
+
+[[outputs]]
+id = "fzJRccX6985PP_WNmNYN4"
+uri = "file://aws-cost-analysis.xlsx"
+type = "table"
+title = "AWS Cost Analysis — Perala Platform (Excel)"

@@ -72,6 +72,8 @@ interface BrokerDataProps {
   secondaryBrokerPositions?: any[];
   secondaryBrokerFunds?: number | null;
   fetchingSecondaryBroker?: boolean;
+  showSecondaryOrderModal?: boolean;
+  setShowSecondaryOrderModal?: (open: boolean) => void;
 }
 
 export function BrokerData(props: BrokerDataProps) {
@@ -99,20 +101,13 @@ export function BrokerData(props: BrokerDataProps) {
     secondaryBrokerPositions = [],
     secondaryBrokerFunds,
     fetchingSecondaryBroker,
+    showSecondaryOrderModal = false,
+    setShowSecondaryOrderModal = () => {},
   } = props;
 
   const queryClient = useQueryClient();
 
-  // Secondary broker dialog has its own independent open state
-  const [showSecondaryOrderModal, setShowSecondaryOrderModal] = useState(false);
   const [secondaryOrderTab, setSecondaryOrderTab] = useState("history");
-
-  // Sync secondary dialog open state with primary when secondary broker is present
-  useEffect(() => {
-    if (secondaryBroker) {
-      setShowSecondaryOrderModal(showOrderModal);
-    }
-  }, [showOrderModal, secondaryBroker]);
 
   const isFyersConnected = fyersStatus?.connected && fyersStatus?.authenticated;
   const isConnected = zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken || growwAccessToken || deltaExchangeIsConnected || isFyersConnected;

@@ -6317,6 +6317,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Order Modal State
   const [showOrderModal, setShowOrderModal] = useState(false);
+  const [showSecondaryOrderModal, setShowSecondaryOrderModal] = useState(false);
   const [orderTab, setOrderTab] = useState("history");
   // Fetch broker positions when tab changes - supports all 4 brokers (Zerodha, Upstox, Angel One, Dhan)
   useEffect(() => {
@@ -23682,7 +23683,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     variant="ghost"
                                     size="sm"
                                     className="h-7 px-2 text-xs shrink-0"
-                                    onClick={() => setShowOrderModal(true)}
+                                    onClick={() => secondaryBroker === 'zerodha' ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                                     data-testid="button-broker-orders-zerodha-mobile"
                                   >
                                     <img 
@@ -23697,7 +23698,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     variant="ghost"
                                     size="sm"
                                     className="h-7 px-2 text-xs shrink-0"
-                                    onClick={() => setShowOrderModal(true)}
+                                    onClick={() => secondaryBroker === 'fyers' ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                                     data-testid="button-broker-orders-fyers-mobile"
                                   >
                                     <img 
@@ -23796,7 +23797,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs"
-                                onClick={() => setShowOrderModal(true)}
+                                onClick={() => secondaryBroker === 'zerodha' ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                                 data-testid="button-broker-orders-zerodha"
                                 title="View Orders & Positions (Zerodha)"
                               >
@@ -23812,7 +23813,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs"
-                                onClick={() => setShowOrderModal(true)}
+                                onClick={() => secondaryBroker === 'upstox' ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                                 data-testid="button-broker-orders-upstox"
                                 title="View Orders & Positions (Upstox)"
                               >
@@ -23828,7 +23829,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs"
-                                onClick={() => setShowOrderModal(true)}
+                                onClick={() => secondaryBroker === 'angelone' ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                                 data-testid="button-broker-orders-angelone"
                                 title="View Orders & Positions (Angel One)"
                               >
@@ -23844,7 +23845,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs"
-                                onClick={() => setShowOrderModal(true)}
+                                onClick={() => secondaryBroker === 'dhan' ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                                 data-testid="button-broker-orders-dhan"
                                 title="View Orders & Positions (Dhan)"
                               >
@@ -23860,7 +23861,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs"
-                                onClick={() => setShowOrderModal(true)}
+                                onClick={() => secondaryBroker === 'delta' ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                                 data-testid="button-broker-orders-delta"
                                 title="View Orders & Positions (Delta Exchange)"
                               >
@@ -23876,7 +23877,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs"
-                                onClick={() => setShowOrderModal(true)}
+                                onClick={() => secondaryBroker === 'fyers' ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                                 data-testid="button-broker-orders-fyers"
                                 title="View Orders & Positions (Fyers)"
                               >
@@ -23892,7 +23893,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 variant="ghost"
                                 size="sm"
                                 className="h-7 px-2 text-xs"
-                                onClick={() => setShowOrderModal(true)}
+                                onClick={() => secondaryBroker === 'groww' ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                                 data-testid="button-broker-orders-groww"
                                 title="View Orders & Positions (Groww)"
                               >
@@ -27809,7 +27810,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         <BrokerData 
           showOrderModal={showOrderModal} 
-          setShowOrderModal={setShowOrderModal} 
+          setShowOrderModal={setShowOrderModal}
+          showSecondaryOrderModal={showSecondaryOrderModal}
+          setShowSecondaryOrderModal={setShowSecondaryOrderModal} 
           orderTab={orderTab} 
           setOrderTab={setOrderTab} 
           showUserId={showUserId} 

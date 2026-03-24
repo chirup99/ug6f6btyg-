@@ -1375,45 +1375,50 @@ export async function getFollowingList(username: string): Promise<any[]> {
 
 export async function getUserProfileByUsername(username: string): Promise<any> {
   try {
-    // Normalize to lowercase for consistent matching
     const normalizedUsername = username.toLowerCase();
     
-    // Step 1: Get the userId from username mapping (pk: USERNAME#username, sk: MAPPING)
+    // Step 1: Try the fast path — USERNAME#username MAPPING → USER#userId PROFILE
     const mappingResult = await docClient.send(new GetCommand({
       TableName: TABLES.USER_PROFILES,
-      Key: {
-        pk: `USERNAME#${normalizedUsername}`,
-        sk: 'MAPPING'
-      }
+      Key: { pk: `USERNAME#${normalizedUsername}`, sk: 'MAPPING' }
     }));
     
-    if (!mappingResult.Item) {
-      console.log(`🖼️ [getUserProfileByUsername] No username mapping found for ${normalizedUsername}`);
-      return null;
+    if (mappingResult.Item?.userId) {
+      const userId = mappingResult.Item.userId;
+      const profileResult = await docClient.send(new GetCommand({
+        TableName: TABLES.USER_PROFILES,
+        Key: { pk: `USER#${userId}`, sk: 'PROFILE' }
+      }));
+      if (profileResult.Item) {
+        return profileResult.Item;
+      }
     }
-    
-    const userId = mappingResult.Item.userId;
-    console.log(`🖼️ [getUserProfileByUsername] Found userId ${userId} for username ${normalizedUsername}`);
-    
-    // Step 2: Get the actual profile using the userId (pk: USER#userId, sk: PROFILE)
-    const profileResult = await docClient.send(new GetCommand({
+
+    // Step 2: Fallback — scan for a PROFILE record with matching username attribute
+    // (handles users whose MAPPING record was not yet created)
+    const scanResult = await docClient.send(new ScanCommand({
       TableName: TABLES.USER_PROFILES,
-      Key: {
-        pk: `USER#${userId}`,
-        sk: 'PROFILE'
-      }
+      FilterExpression: 'sk = :profile AND #un = :username',
+      ExpressionAttributeNames: { '#un': 'username' },
+      ExpressionAttributeValues: {
+        ':profile': 'PROFILE',
+        ':username': normalizedUsername
+      },
+      Limit: 1
     }));
     
-    const profile = profileResult.Item || null;
-    if (profile) {
-      console.log(`🖼️ [getUserProfileByUsername] Found profile for ${normalizedUsername}:`, {
-        username: profile.username,
-        dob: profile.dob,
-        hasProfilePicUrl: !!profile.profilePicUrl,
-        profilePicUrl: profile.profilePicUrl ? profile.profilePicUrl.substring(0, 60) + '...' : 'NONE'
-      });
+    const found = scanResult.Items?.[0] || null;
+    if (found) {
+      // Back-fill the MAPPING so future calls use the fast path
+      const userId = found.userId || (found.pk as string).replace('USER#', '');
+      if (userId) {
+        docClient.send(new PutCommand({
+          TableName: TABLES.USER_PROFILES,
+          Item: { pk: `USERNAME#${normalizedUsername}`, sk: 'MAPPING', userId, username: normalizedUsername, updatedAt: new Date().toISOString() }
+        })).catch(() => {});
+      }
     }
-    return profile;
+    return found;
   } catch (error) {
     console.log(`🖼️ [getUserProfileByUsername] Error for ${username}:`, error);
     return null;

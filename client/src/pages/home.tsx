@@ -26911,7 +26911,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               });
                               const totalDurMin = totalDMs/60000;
                               const effRpM = totalDurMin>0 ? dayPnL/totalDurMin : 0;
-                              if(trades.length>0) sums.push({date:dateStr,label:lbl,avgLossDurMs:lossN>0?lossDMs/lossN:0,avgProfitDurMs:profN>0?profDMs/profN:0,totalPnL:dayPnL,lossCount:lossN,profitCount:profN,totalDurMs,efficiencyRpM:effRpM});
+                              if(trades.length>0) sums.push({date:dateStr,label:lbl,avgLossDurMs:lossN>0?lossDMs/lossN:0,avgProfitDurMs:profN>0?profDMs/profN:0,totalPnL:dayPnL,lossCount:lossN,profitCount:profN,totalDurMs:totalDMs,efficiencyRpM:effRpM});
                             });
 
                             const withDur = allTrades.filter(t=>t.durationMs>0);

@@ -14459,8 +14459,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Calculate P&L for the successfully parsed trades
       const processedData = calculateSimplePnL(trades);
 
-      // Add imported trades to existing trade history (not replace)
-      setTradeHistoryData((prev) => [...processedData, ...prev]);
+      // Add imported trades to the active tab's trade history (not replace)
+      if (tradeHistoryWindow === 2) {
+        setTradeHistoryData2((prev) => [...processedData, ...prev]);
+      } else {
+        setTradeHistoryData((prev) => [...processedData, ...prev]);
+      }
 
       // Show success message with counts
       if (errors.length > 0) {

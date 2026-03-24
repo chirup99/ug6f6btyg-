@@ -23872,7 +23872,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       )}
                     </div>
                     {/* Desktop: TRADE HISTORY SUMMARY - Left Side - MINIMALIST WITH BRIGHT COLORS */}
-                    <Card className={`hidden md:block h-[420px] border transition-colors ${tradeHistoryWindow === 2 ? 'bg-violet-50 dark:bg-violet-950/30 border-violet-300 dark:border-violet-700' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
+                    <Card className="hidden md:block h-[420px] border transition-colors bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between mb-3 gap-2">
                           <div className="flex items-center gap-2">
@@ -24076,7 +24076,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[50px]">Duration</th>
                               </tr>
                             </thead>
-                            <tbody className={tradeHistoryWindow === 2 ? 'bg-violet-50 dark:bg-violet-950/20' : 'bg-white dark:bg-slate-900'}>
+                            <tbody className="bg-white dark:bg-slate-900">
                               {tradeHistoryWindow === 2 ? (
                                 tradeHistoryData2.length === 0 ? (
                                   <tr>

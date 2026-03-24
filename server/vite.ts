@@ -24,11 +24,14 @@ export function log(message: string, source = "express") {
 export async function setupVite(app: Express, server: Server) {
   const serverOptions = {
     middlewareMode: true,
-    hmr: { 
-      server,
-      clientPort: 443,
-      host: process.env.REPLIT_DEV_DOMAIN || undefined,
-    },
+    hmr: process.env.REPLIT_DEV_DOMAIN
+      ? {
+          server,
+          clientPort: 443,
+          host: process.env.REPLIT_DEV_DOMAIN,
+          protocol: "wss" as const,
+        }
+      : { server },
     allowedHosts: true as const,
   };
 

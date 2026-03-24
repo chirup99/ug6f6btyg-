@@ -6459,6 +6459,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   });
   const previousBrokerOrdersLengthRef = useRef<number>(0);
   const previousCompleteOrdersLengthRef = useRef<number>(0);
+  const previousSecondaryCompleteOrdersLengthRef = useRef<number>(0);
 
   // Save Confirmation Dialog State
   const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
@@ -7861,6 +7862,31 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     // Keep tracking total for reference (but don't use for trigger)
     previousBrokerOrdersLengthRef.current = brokerOrders.length;
   }, [brokerOrders]);
+
+  // Auto-tap: Automatically record secondary broker orders to Window 2 when new COMPLETE orders arrive
+  useEffect(() => {
+    const secondaryOrders =
+      secondaryBroker === 'fyers' ? (fyersOrders || []) :
+      secondaryBroker === 'delta' ? (deltaExchangeTradesData || []) :
+      broker2Orders || [];
+
+    if (!secondaryBroker || secondaryOrders.length === 0) return;
+
+    const completeOrders = (secondaryOrders as any[]).filter((order: any) =>
+      String(order.status || '').toUpperCase().trim() === 'COMPLETE' ||
+      String(order.status || '').toUpperCase().trim() === 'COMPLETED'
+    );
+    const completeCount = completeOrders.length;
+
+    if (completeCount > previousSecondaryCompleteOrdersLengthRef.current && completeCount > 0) {
+      console.log(`🤖 [AUTO-TAP W2] Detected ${completeCount} COMPLETE secondary orders (was ${previousSecondaryCompleteOrdersLengthRef.current}), auto-recording to Window 2...`);
+      setTimeout(() => {
+        recordSecondaryBrokerOrders(secondaryOrders as any[]);
+      }, 500);
+    }
+
+    previousSecondaryCompleteOrdersLengthRef.current = completeCount;
+  }, [fyersOrders, deltaExchangeTradesData, broker2Orders, secondaryBroker]);
 
   const recordSecondaryBrokerOrders = (secondaryOrders: any[]) => {
     if (!secondaryOrders || secondaryOrders.length === 0) {

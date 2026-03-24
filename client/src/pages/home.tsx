@@ -6515,9 +6515,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     }
   }, [activeBroker, orderTab, getBrokerEndpoints]);
 
-  // Fetch second broker ORDERS (5s polling) — uses central registry, auto-supports new brokers
+  // Fetch second broker ORDERS (5s polling) — runs in background for auto-record to work
   useEffect(() => {
-    if (!secondaryBroker || (!showOrderModal && !showSecondaryOrderModal)) {
+    if (!secondaryBroker) {
       setBroker2Orders([]);
       return;
     }
@@ -6548,7 +6548,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     fetchOrders();
     const interval = setInterval(fetchOrders, 5000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, getBrokerEndpoints]);
+  }, [secondaryBroker, getBrokerEndpoints]);
 
   // Fetch second broker POSITIONS (700ms polling, live prices, change detection) — uses central registry
   useEffect(() => {

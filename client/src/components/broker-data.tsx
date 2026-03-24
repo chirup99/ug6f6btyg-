@@ -267,26 +267,26 @@ export function BrokerData(props: BrokerDataProps) {
     return (
       <div className={`sticky top-0 z-10 border-b px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2 ${
         isSecondary
-          ? 'bg-purple-700 dark:bg-purple-800 border-purple-600 dark:border-purple-700'
+          ? 'bg-violet-100 dark:bg-violet-900/40 border-violet-200 dark:border-violet-700'
           : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'
       }`}>
         <div className="flex items-center justify-between sm:w-1/3">
-          <span className={`text-sm font-semibold ${isSecondary ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>
+          <span className={`text-sm font-semibold ${isSecondary ? 'text-violet-800 dark:text-violet-200' : 'text-slate-800 dark:text-slate-100'}`}>
             Orders & Positions
           </span>
         </div>
         <div className="flex items-center justify-between sm:w-1/3 sm:flex-col sm:items-center sm:justify-center gap-1">
-          <span className={`text-[10px] font-medium uppercase tracking-wider ${isSecondary ? 'text-purple-200' : 'text-slate-500 dark:text-slate-400'}`}>
+          <span className={`text-[10px] font-medium uppercase tracking-wider ${isSecondary ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-slate-400'}`}>
             Available Funds
           </span>
-          <span className={`text-xs font-bold ${isSecondary ? 'text-green-300' : 'text-green-600 dark:text-green-400'}`}>
+          <span className={`text-xs font-bold ${isSecondary ? 'text-green-600 dark:text-green-400' : 'text-green-600 dark:text-green-400'}`}>
             {showUserId ? fundsDisplay : (isDelta ? "$***" : "₹***")}
           </span>
         </div>
         <div className="flex items-center justify-end sm:w-1/3 gap-2 flex-wrap">
           {info && renderBrokerChip(broker)}
-          <button onClick={onToggleUserId} className={`p-1 rounded transition-colors flex-shrink-0 ${isSecondary ? 'hover:bg-purple-600 dark:hover:bg-purple-700' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`} data-testid="button-toggle-user-id" title={showUserId ? "Hide ID" : "Show ID"}>
-            {showUserId ? <Eye className={`w-3 h-3 ${isSecondary ? 'text-white' : ''}`} /> : <EyeOff className={`w-3 h-3 ${isSecondary ? 'text-white' : ''}`} />}
+          <button onClick={onToggleUserId} className={`p-1 rounded transition-colors flex-shrink-0 ${isSecondary ? 'hover:bg-violet-200 dark:hover:bg-violet-800' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`} data-testid="button-toggle-user-id" title={showUserId ? "Hide ID" : "Show ID"}>
+            {showUserId ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
           </button>
         </div>
       </div>

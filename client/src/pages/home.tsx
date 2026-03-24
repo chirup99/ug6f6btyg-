@@ -24118,14 +24118,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 tradeHistoryData2.length === 0 ? (
                                   <tr>
                                     <td colSpan={9} className="p-6 text-center">
-                                      <div className="flex flex-col items-center gap-3">
-                                        <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
-                                          <svg className="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                                        </div>
-                                        <div>
-                                          <p className="text-xs font-medium text-violet-700 dark:text-violet-300">No trades in Window 2</p>
-                                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Connect a broker or import a CSV to add trades</p>
-                                        </div>
+                                      <div className="flex flex-col items-center gap-1">
+                                        <p className="text-xs font-medium text-violet-700 dark:text-violet-300">Connect your secondary broker to view trades here</p>
                                       </div>
                                     </td>
                                   </tr>

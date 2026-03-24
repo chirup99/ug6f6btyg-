@@ -1,3 +1,12 @@
+# Replit Migration Notes
+
+## Migration Status: Complete
+- Fixed broken `tsx` symlink caused by deprecated `@esbuild-kit` devDependency aliases
+- Removed `@esbuild-kit/core-utils` and `@esbuild-kit/esm-loader` npm aliases from devDependencies
+- Database schema pushed to PostgreSQL via `drizzle-kit push`
+- App runs on port 5000 (development), Vite HMR configured for Replit proxy (`wss`, port 443)
+- Deployment configured: `npm run build` → `node ./dist/index.cjs`
+
 # Overview
 
 This project is a full-stack trading platform providing real-time market data analysis, AI-powered trading insights, and a social feed. It integrates an AI agent with web search for financial queries, live market data from Angel One WebSockets, and a unified sharing system for trading journal reports, allowing users to preview and share performance metrics. The business vision is to empower traders with sophisticated analytical tools, AI-driven insights, and a collaborative community to enhance decision-making.

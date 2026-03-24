@@ -6319,44 +6319,59 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [showOrderModal, setShowOrderModal] = useState(false);
   const [showSecondaryOrderModal, setShowSecondaryOrderModal] = useState(false);
   const [orderTab, setOrderTab] = useState("history");
-  // Fetch broker positions when tab changes - supports all 4 brokers (Zerodha, Upstox, Angel One, Dhan)
+
+  // ─── CENTRAL BROKER REGISTRY ───────────────────────────────────────────
+  // ADD NEW BROKERS HERE ONLY — both the primary and secondary order/position
+  // dialogs automatically pick up the correct endpoints, tokens, and URLs.
+  // No other fetch code needs to change when a new broker is integrated.
+  // ────────────────────────────────────────────────────────────────────────
+  const getBrokerEndpoints = useCallback((broker: string | null): {
+    token: string | null;
+    ordersEp: string | null;
+    positionsEp: string | null;
+    fundsEp: string | null;
+  } => {
+    switch (broker) {
+      case 'zerodha': {
+        const apiKey = localStorage.getItem("zerodha_api_key");
+        return {
+          token: zerodhaAccessToken,
+          ordersEp: apiKey ? `/api/zerodha/trades?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/trades',
+          positionsEp: apiKey ? `/api/zerodha/positions?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/positions',
+          fundsEp: apiKey ? `/api/zerodha/margins?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/margins',
+        };
+      }
+      case 'upstox':
+        return { token: upstoxAccessToken, ordersEp: '/api/broker/upstox/trades', positionsEp: '/api/broker/upstox/positions', fundsEp: '/api/broker/upstox/margins' };
+      case 'angelone':
+        return { token: userAngelOneToken, ordersEp: '/api/broker/angelone/trades', positionsEp: '/api/broker/angelone/positions', fundsEp: '/api/broker/angelone/margins' };
+      case 'dhan':
+        return { token: dhanAccessToken, ordersEp: '/api/broker/dhan/trades', positionsEp: '/api/broker/dhan/positions', fundsEp: '/api/broker/dhan/margins' };
+      case 'groww':
+        return {
+          token: growwAccessToken,
+          ordersEp: growwAccessToken ? `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken)}` : null,
+          positionsEp: null,
+          fundsEp: growwAccessToken ? `/api/broker/groww/funds?accessToken=${encodeURIComponent(growwAccessToken)}` : null,
+        };
+      case 'fyers':
+        return { token: 'fyers_connected', ordersEp: '/api/fyers/trades', positionsEp: '/api/fyers/positions', fundsEp: '/api/fyers/positions' };
+      case 'delta':
+        return { token: deltaExchangeIsConnected ? deltaExchangeApiKey : null, ordersEp: '/api/broker/delta/trades', positionsEp: '/api/broker/delta/positions', fundsEp: '/api/broker/delta/margins' };
+      // ── ADD NEW BROKER CASE BELOW ──────────────────────────────────────
+      default:
+        return { token: null, ordersEp: null, positionsEp: null, fundsEp: null };
+    }
+  }, [zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken, deltaExchangeIsConnected, deltaExchangeApiKey]);
+
+  // Fetch broker positions when tab changes
   useEffect(() => {
-    if (orderTab === "positions" && (zerodhaAccessToken || upstoxAccessToken || userAngelOneToken || dhanAccessToken)) {
+    if (orderTab === "positions" && activeBroker) {
       let lastPositionsKey = '__uninit__';
       const fetchPositions = async () => {
         try {
-          // Determine which broker is connected and get correct endpoint/token
-          let endpoint = '';
-          let token = '';
-          let broker = '';
-          
-          if (zerodhaAccessToken) {
-            endpoint = '/api/zerodha/positions';
-            token = zerodhaAccessToken;
-            broker = 'Zerodha';
-
-            // Add API Key to query or headers for Zerodha
-            const apiKey = localStorage.getItem("zerodha_api_key");
-            if (apiKey) {
-              endpoint += `?api_key=${encodeURIComponent(apiKey)}`;
-            }
-          } else if (upstoxAccessToken) {
-            endpoint = '/api/broker/upstox/positions';
-            token = upstoxAccessToken;
-            broker = 'Upstox';
-          } else if (userAngelOneToken) {
-            endpoint = '/api/broker/angelone/positions';
-            token = userAngelOneToken;
-            broker = 'Angel One';
-          } else if (dhanAccessToken) {
-            endpoint = '/api/broker/dhan/positions';
-            token = dhanAccessToken;
-            broker = 'Dhan';
-          } else if (fyersIsConnected) {
-            endpoint = '/api/fyers/positions';
-            token = 'fyers_connected';
-            broker = 'Fyers';
-          }
+          const { token, positionsEp: endpoint } = getBrokerEndpoints(activeBroker);
+          const broker = activeBroker || '';
           
           if (!endpoint) return;
           
@@ -6422,7 +6437,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Cleanup: clear interval when tab changes
       return () => clearInterval(pollInterval);
     }
-  }, [zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, orderTab]);
+  }, [activeBroker, orderTab, getBrokerEndpoints]);
   const [brokerOrders, setBrokerOrders] = useState<any[]>([]);
   const [fetchingBrokerOrders, setFetchingBrokerOrders] = useState(false);
   const [brokerPositions, setBrokerPositions] = useState<any[]>([]);
@@ -6452,45 +6467,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Trade History Data State
   const [tradeHistoryData, setTradeHistoryData] = useState([]);
 
-  // Fetch broker orders when Orders dialog opens - supports all 4 brokers (Zerodha, Upstox, Angel One, Dhan)
+  // Fetch broker orders when Orders dialog opens
   useEffect(() => {
-    if (orderTab === 'history' && (zerodhaAccessToken || upstoxAccessToken || userAngelOneToken || dhanAccessToken)) {
+    if (orderTab === 'history' && activeBroker) {
       const fetchOrders = async () => {
         setFetchingBrokerOrders(true);
         try {
-          // Determine which broker is connected and get correct endpoint/token
-          let endpoint = '';
-          let token = '';
-          let broker = '';
-          
-          if (zerodhaAccessToken) {
-            endpoint = '/api/zerodha/trades';
-            token = zerodhaAccessToken;
-            broker = 'Zerodha';
+          const { token, ordersEp: endpoint } = getBrokerEndpoints(activeBroker);
+          const broker = activeBroker || '';
 
-            // Add API Key to query or headers for Zerodha
-            const apiKey = localStorage.getItem("zerodha_api_key");
-            if (apiKey) {
-              endpoint += `?api_key=${encodeURIComponent(apiKey)}`;
-            }
-          } else if (upstoxAccessToken) {
-            endpoint = '/api/broker/upstox/trades';
-            token = upstoxAccessToken;
-            broker = 'Upstox';
-          } else if (userAngelOneToken) {
-            endpoint = '/api/broker/angelone/trades';
-            token = userAngelOneToken;
-            broker = 'Angel One';
-          } else if (dhanAccessToken) {
-            endpoint = '/api/broker/dhan/trades';
-            token = dhanAccessToken;
-            broker = 'Dhan';
-          } else if (fyersIsConnected) {
-            endpoint = '/api/fyers/trades';
-            token = 'fyers_connected';
-            broker = 'Fyers';
-          }
-          
           if (!endpoint) return;
           
           const res = await fetch(endpoint, {
@@ -6525,31 +6510,17 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Cleanup: clear interval when dialog closes
       return () => clearInterval(pollInterval);
     }
-  }, [zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, orderTab]);
+  }, [activeBroker, orderTab, getBrokerEndpoints]);
 
-  // Fetch second broker ORDERS (5s polling) — mirrors broker 1 orders fetch exactly
+  // Fetch second broker ORDERS (5s polling) — uses central registry, auto-supports new brokers
   useEffect(() => {
     if (!secondaryBroker || (!showOrderModal && !showSecondaryOrderModal)) {
       setBroker2Orders([]);
       return;
     }
-    const getOrdersConfig = (): { token: string | null; ep: string | null } => {
-      switch (secondaryBroker) {
-        case 'zerodha': {
-          const apiKey = localStorage.getItem("zerodha_api_key");
-          return { token: zerodhaAccessToken, ep: apiKey ? `/api/zerodha/trades?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/trades' };
-        }
-        case 'upstox': return { token: upstoxAccessToken, ep: '/api/broker/upstox/trades' };
-        case 'angelone': return { token: userAngelOneToken, ep: '/api/broker/angelone/trades' };
-        case 'dhan': return { token: dhanAccessToken, ep: '/api/broker/dhan/trades' };
-        case 'groww': return { token: growwAccessToken, ep: `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken || '')}` };
-        case 'fyers': return { token: 'fyers_connected', ep: '/api/fyers/trades' };
-        default: return { token: null, ep: null };
-      }
-    };
     let cancelled = false;
     const fetchOrders = async () => {
-      const { token, ep } = getOrdersConfig();
+      const { token, ordersEp: ep } = getBrokerEndpoints(secondaryBroker);
       if (!ep || (!token && secondaryBroker !== 'groww')) return;
       setFetchingBroker2(true);
       try {
@@ -6574,31 +6545,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     fetchOrders();
     const interval = setInterval(fetchOrders, 5000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken]);
+  }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, getBrokerEndpoints]);
 
-  // Fetch second broker POSITIONS (700ms polling, live prices, change detection) — mirrors broker 1 exactly
+  // Fetch second broker POSITIONS (700ms polling, live prices, change detection) — uses central registry
   useEffect(() => {
     if (!secondaryBroker || (!showOrderModal && !showSecondaryOrderModal)) {
       setBroker2Positions([]);
       return;
     }
-    const getPositionsConfig = (): { token: string | null; ep: string | null } => {
-      switch (secondaryBroker) {
-        case 'zerodha': {
-          const apiKey = localStorage.getItem("zerodha_api_key");
-          return { token: zerodhaAccessToken, ep: apiKey ? `/api/zerodha/positions?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/positions' };
-        }
-        case 'upstox': return { token: upstoxAccessToken, ep: '/api/broker/upstox/positions' };
-        case 'angelone': return { token: userAngelOneToken, ep: '/api/broker/angelone/positions' };
-        case 'dhan': return { token: dhanAccessToken, ep: '/api/broker/dhan/positions' };
-        case 'fyers': return { token: 'fyers_connected', ep: '/api/fyers/positions' };
-        default: return { token: null, ep: null };
-      }
-    };
     let cancelled = false;
     let lastPositionsKey = '__uninit__';
     const fetchPositions = async () => {
-      const { token, ep } = getPositionsConfig();
+      const { token, positionsEp: ep } = getBrokerEndpoints(secondaryBroker);
       if (!ep) return;
       try {
         const res = await fetch(ep, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
@@ -6643,31 +6601,17 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     fetchPositions();
     const interval = setInterval(fetchPositions, 700);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken]);
+  }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, getBrokerEndpoints]);
 
-  // Fetch second broker FUNDS (2s polling) — mirrors broker 1 exactly
+  // Fetch second broker FUNDS (2s polling) — uses central registry
   useEffect(() => {
     if (!secondaryBroker || (!showOrderModal && !showSecondaryOrderModal)) {
       setBroker2Funds(null);
       return;
     }
-    const getFundsConfig = (): { token: string | null; ep: string | null } => {
-      switch (secondaryBroker) {
-        case 'zerodha': {
-          const apiKey = localStorage.getItem("zerodha_api_key");
-          return { token: zerodhaAccessToken, ep: apiKey ? `/api/zerodha/margins?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/margins' };
-        }
-        case 'upstox': return { token: upstoxAccessToken, ep: '/api/broker/upstox/margins' };
-        case 'angelone': return { token: userAngelOneToken, ep: '/api/broker/angelone/margins' };
-        case 'dhan': return { token: dhanAccessToken, ep: '/api/broker/dhan/margins' };
-        case 'groww': return { token: growwAccessToken, ep: `/api/broker/groww/funds?accessToken=${growwAccessToken}` };
-        case 'fyers': return { token: 'fyers_connected', ep: '/api/fyers/positions' };
-        default: return { token: null, ep: null };
-      }
-    };
     let cancelled = false;
     const fetchFunds = async () => {
-      const { token, ep } = getFundsConfig();
+      const { token, fundsEp: ep } = getBrokerEndpoints(secondaryBroker);
       if (!ep) return;
       try {
         const res = await fetch(ep, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });

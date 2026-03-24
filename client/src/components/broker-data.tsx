@@ -74,6 +74,7 @@ interface BrokerDataProps {
   fetchingSecondaryBroker?: boolean;
   showSecondaryOrderModal?: boolean;
   setShowSecondaryOrderModal?: (open: boolean) => void;
+  recordSecondaryBrokerOrders?: (orders: any[]) => void;
 }
 
 export function BrokerData(props: BrokerDataProps) {
@@ -103,6 +104,7 @@ export function BrokerData(props: BrokerDataProps) {
     fetchingSecondaryBroker,
     showSecondaryOrderModal = false,
     setShowSecondaryOrderModal = () => {},
+    recordSecondaryBrokerOrders,
   } = props;
 
   const queryClient = useQueryClient();
@@ -478,7 +480,7 @@ export function BrokerData(props: BrokerDataProps) {
                   <TabsTrigger value="positions">Positions</TabsTrigger>
                 </TabsList>
                 <TabsContent value="history" className="space-y-4">
-                  {renderOrdersTable(secondaryBrokerOrders, fetchingSecondaryBroker || false)}
+                  {renderOrdersTable(secondaryBrokerOrders, fetchingSecondaryBroker || false, recordSecondaryBrokerOrders ? () => recordSecondaryBrokerOrders(secondaryBrokerOrders) : undefined)}
                 </TabsContent>
                 <TabsContent value="positions" className="space-y-4">
                   {renderPositionsTable(secondaryBrokerPositions)}

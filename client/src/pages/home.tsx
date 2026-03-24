@@ -6466,6 +6466,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Trade History Data State
   const [tradeHistoryData, setTradeHistoryData] = useState([]);
+  const [tradeHistoryData2, setTradeHistoryData2] = useState<any[]>([]);
+  const [tradeHistoryWindow, setTradeHistoryWindow] = useState(1);
 
   // Fetch broker orders when Orders dialog opens
   useEffect(() => {
@@ -7859,6 +7861,38 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     // Keep tracking total for reference (but don't use for trigger)
     previousBrokerOrdersLengthRef.current = brokerOrders.length;
   }, [brokerOrders]);
+
+  const recordSecondaryBrokerOrders = (secondaryOrders: any[]) => {
+    if (!secondaryOrders || secondaryOrders.length === 0) {
+      toast({ title: "No Orders", description: "No secondary broker orders to record", variant: "destructive" });
+      return;
+    }
+    const completeOrders = secondaryOrders.filter((order: any) =>
+      String(order.status || '').toUpperCase().trim() === 'COMPLETE' ||
+      String(order.status || '').toUpperCase().trim() === 'COMPLETED'
+    );
+    if (completeOrders.length === 0) {
+      toast({ title: "No Complete Orders", description: "Only COMPLETE orders are imported.", variant: "destructive" });
+      return;
+    }
+    const convertedTrades = completeOrders.map((trade: any) => ({
+      time: trade.time,
+      order: trade.order,
+      symbol: trade.symbol,
+      type: trade.type || 'MIS',
+      qty: trade.qty,
+      price: trade.price,
+      pnl: trade.pnl || '-',
+      duration: trade.duration || '-'
+    }));
+    const processedData = calculateSimplePnL(convertedTrades);
+    setTradeHistoryData2(processedData);
+    setTradeHistoryWindow(2);
+    setShowSecondaryOrderModal(false);
+    toast({ title: "Orders Recorded to Window 2", description: `Recorded ${completeOrders.length} orders` });
+    setPersonalHeatmapRevision(prev => prev + 1);
+  };
+
   const exitAllPaperPositions = () => {
     const openPositions = paperPositions.filter(p => p.isOpen);
     if (openPositions.length === 0) {
@@ -23812,12 +23846,26 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       )}
                     </div>
                     {/* Desktop: TRADE HISTORY SUMMARY - Left Side - MINIMALIST WITH BRIGHT COLORS */}
-                    <Card className="hidden md:block bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 h-[420px]">
+                    <Card className={`hidden md:block h-[420px] border transition-colors ${tradeHistoryWindow === 2 ? 'bg-violet-50 dark:bg-violet-950/30 border-violet-300 dark:border-violet-700' : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800'}`}>
                       <CardContent className="p-3">
                         <div className="flex items-center justify-between mb-3 gap-2">
-                          <h3 className="text-sm font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-                            Trade History
-                          </h3>
+                          <div className="flex items-center gap-2">
+                            <h3 className={`text-sm font-medium uppercase tracking-wide ${tradeHistoryWindow === 2 ? 'text-violet-700 dark:text-violet-300' : 'text-slate-700 dark:text-slate-300'}`}>
+                              Trade History
+                            </h3>
+                            <div className="flex items-center gap-0.5">
+                              <button
+                                onClick={() => setTradeHistoryWindow(1)}
+                                data-testid="button-trade-history-window-1"
+                                className={`w-6 h-6 rounded text-xs font-bold transition-colors ${tradeHistoryWindow === 1 ? 'bg-slate-700 dark:bg-slate-200 text-white dark:text-slate-900 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                              >1</button>
+                              <button
+                                onClick={() => setTradeHistoryWindow(2)}
+                                data-testid="button-trade-history-window-2"
+                                className={`w-6 h-6 rounded text-xs font-bold transition-colors ${tradeHistoryWindow === 2 ? 'bg-violet-600 text-white shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                              >2</button>
+                            </div>
+                          </div>
                           <div className="flex gap-1.5">
                             <Button
                               variant="ghost"
@@ -23982,14 +24030,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             <div className="h-7 px-3 bg-blue-50 dark:bg-blue-900/30 border border-blue-300 dark:border-blue-700 rounded-md flex items-center justify-center text-xs font-semibold text-blue-600 dark:text-blue-300" title="Average Trade Duration">
                               <span className="mr-1">Avg</span>
                               <Timer className="h-4 w-4 mr-1.5" />
-                              {calculateAverageDuration(tradeHistoryData)}
+                              {calculateAverageDuration(tradeHistoryWindow === 2 ? tradeHistoryData2 : tradeHistoryData)}
                             </div>
                           </div>
                         </div>
 
                         <div className="max-h-80 overflow-y-auto overflow-x-auto custom-thin-scrollbar">
                           <table className="text-xs" style={{minWidth: "100%"}}>
-                            <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                            <thead className={`sticky top-0 border-b ${tradeHistoryWindow === 2 ? 'bg-violet-100 dark:bg-violet-900/40 border-violet-200 dark:border-violet-700' : 'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
                               <tr>
                                 <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[60px]">Time</th>
                                 <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[50px]">Order</th>
@@ -24002,28 +24050,24 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[50px]">Duration</th>
                               </tr>
                             </thead>
-                            <tbody className="bg-white dark:bg-slate-900">
-                              {isLoadingHeatmapData && tradeHistoryData.length === 0 ? (
-                                <tr>
-                                  <td colSpan={9} className="p-6 text-center">
-                                    <div className="flex flex-col items-center gap-2">
-                                      <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-                                      <span className="text-xs text-slate-500 dark:text-slate-400">Loading...</span>
-                                    </div>
-                                  </td>
-                                </tr>
-                              ) : tradeHistoryData.length === 0 ? (
-                                <tr>
-                                  <td colSpan={9} className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
-                                    {!isDemoMode 
-                                      ? "No data yet" 
-                                      : selectedDate 
-                                        ? "No trades for this date" 
-                                        : "Select a date to view trades"}
-                                  </td>
-                                </tr>
-                              ) : (
-                                tradeHistoryData.map((trade, index) => (
+                            <tbody className={tradeHistoryWindow === 2 ? 'bg-violet-50 dark:bg-violet-950/20' : 'bg-white dark:bg-slate-900'}>
+                              {tradeHistoryWindow === 2 ? (
+                                tradeHistoryData2.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={9} className="p-6 text-center">
+                                      <div className="flex flex-col items-center gap-3">
+                                        <div className="w-10 h-10 rounded-full bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center">
+                                          <svg className="w-5 h-5 text-violet-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                                        </div>
+                                        <div>
+                                          <p className="text-xs font-medium text-violet-700 dark:text-violet-300">No trades in Window 2</p>
+                                          <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Connect a broker or import a CSV to add trades</p>
+                                        </div>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  tradeHistoryData2.map((trade, index) => (
                                   <tr
                                     key={index}
                                     className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
@@ -24106,6 +24150,56 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     <td className="px-2 py-2 text-violet-600 dark:text-violet-300 font-medium">{normalizeDurationForDisplay(trade.duration)}</td>
                                   </tr>
                                 ))
+                              )
+                              ) : (
+                                isLoadingHeatmapData && tradeHistoryData.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={9} className="p-6 text-center">
+                                      <div className="flex flex-col items-center gap-2">
+                                        <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+                                        <span className="text-xs text-slate-500 dark:text-slate-400">Loading...</span>
+                                      </div>
+                                    </td>
+                                  </tr>
+                                ) : tradeHistoryData.length === 0 ? (
+                                  <tr>
+                                    <td colSpan={9} className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                                      {!isDemoMode
+                                        ? "No data yet"
+                                        : selectedDate
+                                          ? "No trades for this date"
+                                          : "Select a date to view trades"}
+                                    </td>
+                                  </tr>
+                                ) : (
+                                  tradeHistoryData.map((trade, index) => (
+                                    <tr
+                                      key={index}
+                                      className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                                    >
+                                      <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{(() => { if (!trade.time) return "-"; const timeMatch = trade.time.match(/(\d{1,2}):(\d{2}):(\d{2})/); if (timeMatch) { let [_, hours, minutes, seconds] = timeMatch.map(Number); const ampm = hours >= 12 ? "PM" : "AM"; hours = hours % 12 || 12; return `${hours.toString().padStart(2, "0")}:${minutes.toString().padStart(2, "0")}:${seconds.toString().padStart(2, "0")} ${ampm}`; } return trade.time; })()}</td>
+                                      <td className="px-2 py-2">
+                                        <span className={`text-xs font-bold px-1.5 py-0.5 rounded ${trade.order === "BUY" ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"}`}>{trade.order}</span>
+                                      </td>
+                                      <td className="px-2 py-2 text-slate-700 dark:text-slate-300 font-medium">
+                                        {(() => {
+                                          if (!selectedDate) return trade.symbol;
+                                          const monthNames = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+                                          const selectedMonth = monthNames[selectedDate.getMonth()];
+                                          return trade.symbol.replace(/\b(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)\b/, selectedMonth);
+                                        })()}
+                                      </td>
+                                      <td className="px-2 py-2 text-indigo-600 dark:text-indigo-300 font-semibold">MIS</td>
+                                      <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{trade.qty}</td>
+                                      <td className="px-2 py-2 text-amber-600 dark:text-amber-300 font-medium">₹{typeof trade.price === "number" ? trade.price.toFixed(2) : trade.price}</td>
+                                      <td className={`px-2 py-2 font-bold ${(trade.pnl || "").includes("+") ? "text-emerald-600 dark:text-emerald-400" : (trade.pnl || "").includes("-") ? "text-red-600 dark:text-red-400" : "text-slate-600 dark:text-slate-400"}`}>{trade.pnl}</td>
+                                      <td className={`px-2 py-2 font-bold ${(() => { if (!trade.pnl || trade.pnl === "-") return "text-slate-500 dark:text-slate-400"; const pnlStr = (trade.pnl || "").replace(/[₹,+\s]/g, ""); const pnlValue = parseFloat(pnlStr) || 0; const totalInvestment = trade.price * trade.qty || 1; const percentage = (pnlValue / totalInvestment) * 100; return percentage > 0 ? "text-emerald-600 dark:text-emerald-400" : percentage < 0 ? "text-red-600 dark:text-red-400" : "text-slate-600"; })()}`}>
+                                        {(() => { if (!trade.pnl || trade.pnl === "-") return "-"; const pnlStr = (trade.pnl || "").replace(/[₹,+\s]/g, ""); const pnlValue = parseFloat(pnlStr) || 0; const totalInvestment = trade.price * trade.qty || 1; const percentage = (pnlValue / totalInvestment) * 100; return `${percentage >= 0 ? "+" : ""}${percentage.toFixed(2)}%`; })()}
+                                      </td>
+                                      <td className="px-2 py-2 text-violet-600 dark:text-violet-300 font-medium">{normalizeDurationForDisplay(trade.duration)}</td>
+                                    </tr>
+                                  ))
+                                )
                               )}
                             </tbody>
                           </table>
@@ -27848,7 +27942,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           showOrderModal={showOrderModal} 
           setShowOrderModal={setShowOrderModal}
           showSecondaryOrderModal={showSecondaryOrderModal}
-          setShowSecondaryOrderModal={setShowSecondaryOrderModal} 
+          setShowSecondaryOrderModal={setShowSecondaryOrderModal}
+          recordSecondaryBrokerOrders={recordSecondaryBrokerOrders}
           orderTab={orderTab} 
           setOrderTab={setOrderTab} 
           showUserId={showUserId} 

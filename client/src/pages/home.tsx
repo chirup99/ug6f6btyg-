@@ -25280,7 +25280,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     <div className="relative">
                     <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
                       <CardContent className="p-6 px-0.5 md:px-4 md:py-4 pt-[10px] pb-[10px]">
-                        <div className="text-[10px] uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 flex items-center justify-between gap-2">
+                        <div className={`text-[10px] uppercase tracking-wider mb-2 flex items-center justify-between gap-2 rounded-md px-1 -mx-1 ${heatmapMode === 2 ? 'text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-900/20 py-0.5' : 'text-gray-500 dark:text-gray-400'}`}>
                           <div className="flex items-center gap-1">
                             <div>Trade Book</div>
                             <Dialog>

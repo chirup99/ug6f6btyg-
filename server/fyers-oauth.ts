@@ -199,6 +199,32 @@ class FyersOAuthManager {
     }
   }
 
+  async getFunds(): Promise<number> {
+    try {
+      if (!this.state.accessToken || !this.state.userId) return 0;
+
+      const response = await axios.get('https://api-t1.fyers.in/api/v3/funds', {
+        headers: {
+          'Authorization': `${this.appId}:${this.state.accessToken}`
+        }
+      });
+
+      if (response.data.s === 'ok' && response.data.fund_limit) {
+        const equityFund = response.data.fund_limit.find((f: any) => f.id === 10 || f.title === 'Brokerage Balance' || f.title === 'Available Balance');
+        if (equityFund) return equityFund.equityAmount || equityFund.commodityAmount || 0;
+        const total = response.data.fund_limit.reduce((sum: number, f: any) => {
+          if (f.id === 1) return f.equityAmount || 0;
+          return sum;
+        }, 0);
+        return total;
+      }
+      return 0;
+    } catch (error: any) {
+      console.error('🔴 [FYERS] Funds fetch error:', error.message);
+      return 0;
+    }
+  }
+
   disconnect(): void {
     this.state = {
       accessToken: null,

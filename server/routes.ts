@@ -20073,6 +20073,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get Fyers available funds (margins)
+  app.get('/api/broker/fyers/margins', async (req, res) => {
+    try {
+      const availableCash = await fyersOAuthManager.getFunds();
+      res.json({ success: true, availableCash });
+    } catch (error: any) {
+      console.error('🔴 [FYERS] Error fetching margins:', error.message);
+      res.json({ success: false, availableCash: 0 });
+    }
+  });
+
   // Get Dhan trades
   app.get('/api/broker/dhan/trades', async (req, res) => {
     try {

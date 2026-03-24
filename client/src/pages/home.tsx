@@ -6355,7 +6355,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           fundsEp: growwAccessToken ? `/api/broker/groww/funds?accessToken=${encodeURIComponent(growwAccessToken)}` : null,
         };
       case 'fyers':
-        return { token: 'fyers_connected', ordersEp: '/api/fyers/trades', positionsEp: '/api/fyers/positions', fundsEp: '/api/fyers/positions' };
+        return { token: 'fyers_connected', ordersEp: '/api/broker/fyers/orders', positionsEp: '/api/broker/fyers/positions', fundsEp: '/api/broker/fyers/margins' };
       case 'delta':
         return { token: deltaExchangeIsConnected ? deltaExchangeApiKey : null, ordersEp: '/api/broker/delta/trades', positionsEp: '/api/broker/delta/positions', fundsEp: '/api/broker/delta/margins' };
       // ── ADD NEW BROKER CASE BELOW ──────────────────────────────────────
@@ -6719,7 +6719,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             token = dhanAccessToken;
             broker = 'Dhan';
           } else if (fyersIsConnected) {
-            endpoint = '/api/fyers/positions';
+            endpoint = '/api/broker/fyers/margins';
             token = 'fyers_connected';
             broker = 'Fyers';
           }
@@ -6808,7 +6808,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             token = growwAccessToken;
             broker = 'Groww';
           } else if (activeBroker === 'fyers' && fyersIsConnected) {
-            endpoint = '/api/fyers/positions'; // Using positions as proxy if specific margins missing
+            endpoint = '/api/broker/fyers/margins';
             token = 'fyers_connected';
             broker = 'Fyers';
           }

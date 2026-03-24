@@ -131,7 +131,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
   const { toast } = useToast();
   const [refreshKey, setRefreshKey] = useState(0); // Add refresh trigger
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const titleStorageKey = `heatmapTitle_${defaultTitle.replace(/\s+/g, '_')}`;
+  const titleStorageKey = `heatmapTitle_${userId || defaultTitle.replace(/\s+/g, '_')}`;
   const [editableTitle, setEditableTitle] = useState(defaultTitle);
   const inputRef = useRef<HTMLInputElement>(null);
 

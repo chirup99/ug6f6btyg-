@@ -6529,7 +6529,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Fetch second broker orders & positions when 2 brokers are connected
   useEffect(() => {
-    if (!secondaryBroker || !showOrderModal) {
+    if (!secondaryBroker || (!showOrderModal && !showSecondaryOrderModal)) {
       setBroker2Orders([]);
       setBroker2Positions([]);
       setBroker2Funds(null);
@@ -6563,14 +6563,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       if (!token && secondaryBroker !== 'groww') return;
       setFetchingBroker2(true);
       try {
-        if (ordersEp && orderTab === 'history') {
+        // Always fetch both orders and positions so data is ready regardless of which tab is active
+        if (ordersEp) {
           const res = await fetch(ordersEp, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
           if (!cancelled && res.ok) {
             const data = await res.json();
             setBroker2Orders(data.trades || data.orders || []);
           }
         }
-        if (positionsEp && orderTab === 'positions') {
+        if (positionsEp) {
           const res = await fetch(positionsEp, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
           if (!cancelled && res.ok) {
             const data = await res.json();
@@ -6594,7 +6595,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     fetchBroker2Data();
     const interval = setInterval(fetchBroker2Data, 5000);
     return () => { cancelled = true; clearInterval(interval); };
-  }, [secondaryBroker, showOrderModal, orderTab, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken]);
+  }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken]);
 
 // Fetch broker funds when dialog opens - with auto-refresh polling
   useEffect(() => {

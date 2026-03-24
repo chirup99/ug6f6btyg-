@@ -3264,6 +3264,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
   
   // Range report countdown: shown in post header
   const [rangeCountdown, setRangeCountdown] = useState<{ hoursLeft: number; expired: boolean } | null>(null);
+  const [rangeAutoDeleted, setRangeAutoDeleted] = useState(false);
   useEffect(() => {
     if (post.metadata?.type !== 'range_report' || !post.createdAt) return;
     const compute = () => {
@@ -3642,6 +3643,19 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
       toast({ description: "Failed to delete post", variant: "destructive" });
     }
   });
+
+  // Auto-delete own expired range posts and invalidate feed cache
+  useEffect(() => {
+    if (!rangeCountdown?.expired || rangeAutoDeleted) return;
+    setRangeAutoDeleted(true);
+    if (isOwnPost) {
+      // Silently delete expired range post for own posts
+      deleteMutation.mutate();
+    } else {
+      // For others' expired posts, just invalidate so next fetch removes them
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
+    }
+  }, [rangeCountdown?.expired]);
 
   // Follow/Unfollow mutation with Cognito authentication
   // IMPORTANT: Pass action explicitly to avoid stale closure issues

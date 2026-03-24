@@ -498,6 +498,16 @@ export function registerNeoFeedAwsRoutes(app: any) {
     }
   });
 
+  const RANGE_POST_EXPIRY_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+  function isExpiredRangePost(post: any): boolean {
+    return (
+      post.metadata?.type === 'range_report' &&
+      !!post.createdAt &&
+      Date.now() - new Date(post.createdAt).getTime() > RANGE_POST_EXPIRY_MS
+    );
+  }
+
   app.get('/api/social-posts', async (req: any, res: any) => {
     try {
       console.log('📱 Fetching social posts from AWS DynamoDB');
@@ -505,16 +515,24 @@ export function registerNeoFeedAwsRoutes(app: any) {
       const { items: userPosts } = await getAllUserPosts(100);
       const financePosts = await getFinanceNews(20);
       
-      // User posts now include reposts stored as separate entries with isRepost: true
-      // No need to dynamically create repost feed items anymore
-      const allPosts = [
-        ...userPosts.map((post: any) => ({ ...post, source: 'aws' })),
+      // Auto-delete expired range posts from DynamoDB in the background
+      const expiredRangePosts = userPosts.filter(isExpiredRangePost);
+      if (expiredRangePosts.length > 0) {
+        console.log(`🗑️ Auto-deleting ${expiredRangePosts.length} expired range post(s) from DynamoDB`);
+        Promise.all(expiredRangePosts.map((post: any) => deleteUserPost(post.id))).catch((err: any) =>
+          console.error('❌ Error auto-deleting expired range posts:', err)
+        );
+      }
+
+      // Filter out expired range posts from the feed
+      const activePosts = [
+        ...userPosts.filter((post: any) => !isExpiredRangePost(post)).map((post: any) => ({ ...post, source: 'aws' })),
         ...financePosts.map((post: any) => ({ ...post, source: 'aws', isFinanceNews: true }))
       ].sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       
       // Fetch real engagement counts for all posts from DynamoDB tables
       const enrichedPosts = await Promise.all(
-        allPosts.map(post => enrichPostWithRealCounts(post))
+        activePosts.map(post => enrichPostWithRealCounts(post))
       );
       
       const repostCount = userPosts.filter((p: any) => p.isRepost).length;
@@ -548,10 +566,22 @@ export function registerNeoFeedAwsRoutes(app: any) {
       const matchingPosts = userPosts.filter((post: any) => 
         post.authorUsername?.toLowerCase() === username?.toLowerCase()
       );
+
+      // Auto-delete expired range posts for this user in the background
+      const expiredRangePosts = matchingPosts.filter(isExpiredRangePost);
+      if (expiredRangePosts.length > 0) {
+        console.log(`🗑️ Auto-deleting ${expiredRangePosts.length} expired range post(s) for user ${username}`);
+        Promise.all(expiredRangePosts.map((post: any) => deleteUserPost(post.id))).catch((err: any) =>
+          console.error('❌ Error auto-deleting expired range posts:', err)
+        );
+      }
+
+      // Only return active (non-expired) posts
+      const activePosts = matchingPosts.filter((post: any) => !isExpiredRangePost(post));
       
       // Fetch real engagement counts for matching posts
       const enrichedPosts = await Promise.all(
-        matchingPosts.map(post => enrichPostWithRealCounts(post))
+        activePosts.map(post => enrichPostWithRealCounts(post))
       );
       
       console.log(`✅ Found ${enrichedPosts.length} posts for user ${username} with real engagement counts`);
@@ -619,15 +649,31 @@ export function registerNeoFeedAwsRoutes(app: any) {
   app.delete('/api/social-posts/:postId', async (req: any, res: any) => {
     try {
       const { postId } = req.params;
-      const userId = req.body?.userId;
+      const bodyUserId = req.body?.userId;
 
       const post = await getUserPost(postId);
       if (!post) {
         return res.status(404).json({ error: 'Post not found' });
       }
 
-      if (userId && post.userId !== userId) {
-        return res.status(403).json({ error: 'You can only delete your own posts' });
+      // Try Cognito token auth first (most reliable)
+      const authenticatedUser = await getAuthenticatedUser(req);
+
+      if (authenticatedUser) {
+        const isOwner =
+          post.authorUsername?.toLowerCase() === authenticatedUser.username?.toLowerCase() ||
+          post.userId === authenticatedUser.userId;
+        if (!isOwner) {
+          return res.status(403).json({ error: 'You can only delete your own posts' });
+        }
+      } else if (bodyUserId) {
+        // Fallback: check body userId against both userId and authorUsername fields
+        const isOwner =
+          post.userId === bodyUserId ||
+          post.authorUsername?.toLowerCase() === bodyUserId?.toLowerCase();
+        if (!isOwner) {
+          return res.status(403).json({ error: 'You can only delete your own posts' });
+        }
       }
 
       await deleteUserPost(postId);

@@ -12765,7 +12765,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     setSelectedTags([]);
     setSelectedDailyFactors([]);
     setSelectedIndicators([]);
-    setTradeHistoryData([]);
+    if (heatmapMode === 2) {
+      setTradeHistoryData2([]);
+      setTradeHistoryWindow(2);
+    } else {
+      setTradeHistoryData([]);
+    }
     setTradingImages([]);
     setTradedSymbols([]);
     setCurrentSymbolIndex(0);
@@ -12814,7 +12819,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         }
 
         if (journalData.tradeHistory && Array.isArray(journalData.tradeHistory)) {
-          setTradeHistoryData(journalData.tradeHistory);
+          heatmapMode === 2 ? setTradeHistoryData2(journalData.tradeHistory) : setTradeHistoryData(journalData.tradeHistory);
           console.log("📊 Loaded trade history from AWS:", journalData.tradeHistory.length, "trades");
 
           // Extract symbols with most trades
@@ -12932,7 +12937,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             Array.isArray(journalData.tradeHistory) &&
             journalData.tradeHistory.length > 0
           ) {
-            setTradeHistoryData(journalData.tradeHistory);
+            heatmapMode === 2 ? setTradeHistoryData2(journalData.tradeHistory) : setTradeHistoryData(journalData.tradeHistory);
             console.log(
               "✅ Loaded REAL trade history from AWS:",
               journalData.tradeHistory.length,
@@ -12956,7 +12961,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             }
           } else {
             // No trade history in AWS - keep empty state, DO NOT construct fake data
-            setTradeHistoryData([]);
+            heatmapMode === 2 ? setTradeHistoryData2([]) : setTradeHistoryData([]);
             console.log("📭 No trade history in AWS for this date - showing empty state");
           }
 
@@ -25455,7 +25460,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       localStorage.setItem("tradingJournalDemoMode", String(mode === 0));
                                       setSelectedDailyFactors([]);
                                       setSelectedIndicators([]);
-                                      setTradeHistoryData([]);
+                                      if (mode === 2) {
+                                        setTradeHistoryData2([]);
+                                        setTradeHistoryWindow(2);
+                                      } else {
+                                        setTradeHistoryData([]);
+                                        setTradeHistoryWindow(1);
+                                      }
                                       setTradingImages([]);
                                       setTradingDataByDate({});
                                       if (mode === 2) {

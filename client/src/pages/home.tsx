@@ -112,7 +112,6 @@ import { Input } from "@/components/ui/input";
 
 import { Label } from "@/components/ui/label";
 
-import { Switch } from "@/components/ui/switch";
 
 import {
   Dialog,
@@ -8293,34 +8292,45 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Personal heatmap data (Heatmap loaded from AWS DynamoDB
   const [personalTradingDataByDate, setPersonalTradingDataByDate] = useState<Record<string, any>>({});
 
+  // Personal Heatmap 2 data (Tab2 / secondary broker trades)
+  const [personal2TradingDataByDate, setPersonal2TradingDataByDate] = useState<Record<string, any>>({});
+
   // ✅ PERSONAL HEATMAP REVISION: Track updates to force React re-renders
   // This counter increments after personal auto-clicking completes
   // Ensures heatmap cells update when personalTradingDataByDate changes
   const [personalHeatmapRevision, setPersonalHeatmapRevision] = useState(0);
+  const [personal2HeatmapRevision, setPersonal2HeatmapRevision] = useState(0);
 
-  // Demo mode state - toggle between demo data (same for all users) and user-specific data
-  // Switch ON (true) = Demo mode active (shared demo data, Heatmap #1)
-  // Switch OFF (false) = Personal mode active (user-specific data, Heatmap #2)
-  const [isDemoMode, setIsDemoMode] = useState(() => {
+  // 3-state heatmap mode: 0 = Demo, 1 = Personal Heatmap 1 (Tab1), 2 = Personal Heatmap 2 (Tab2)
+  const [heatmapMode, setHeatmapMode] = useState<0 | 1 | 2>(() => {
     if (typeof window !== "undefined") {
-      const stored = localStorage.getItem("tradingJournalDemoMode");
-      // If user has explicitly set a preference, respect it
+      const stored = localStorage.getItem("heatmapMode");
       if (stored !== null) {
-        return stored === "true";
+        const n = parseInt(stored);
+        if (n === 0 || n === 1 || n === 2) return n as 0 | 1 | 2;
       }
-
-      // ✅ SMART DEFAULT: If no userId exists, automatically start in Demo mode
-      // This ensures heatmap loads instantly without needing to toggle
+      // Fall back to old isDemoMode logic
+      const oldDemoMode = localStorage.getItem("tradingJournalDemoMode");
       const userId = localStorage.getItem("currentUserId");
-      if (!userId) {
-        console.log("🎯 Auto-default: Demo mode ON (no userId found)");
-        return true; // Demo mode
+      if (oldDemoMode === "true" || !userId) {
+        console.log("🎯 Auto-default: Demo mode (heatmapMode=0)");
+        return 0;
       }
+      console.log("🎯 Default: Personal mode (heatmapMode=1)");
+      return 1;
     }
-    // If userId exists, default to personal mode
-    console.log("🎯 Default: Personal mode (userId found)");
-    return false;
+    return 0;
   });
+
+  // Derived boolean for backward compatibility with existing code
+  const isDemoMode = heatmapMode === 0;
+  // setIsDemoMode kept for backward compat (true → Demo=0, false → Personal1=1)
+  const setIsDemoMode = (val: boolean) => {
+    const newMode = val ? 0 : 1;
+    setHeatmapMode(newMode);
+    localStorage.setItem("heatmapMode", String(newMode));
+    localStorage.setItem("tradingJournalDemoMode", String(val));
+  };
 
   // Loading state for heatmap data
   const [isLoadingHeatmapData, setIsLoadingHeatmapData] = useState(false);
@@ -8345,14 +8355,17 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Loading state for date selection
   const [isDateLoading, setIsDateLoading] = useState(false);
 
-  // ✅ FIXED: Use useMemo with personalHeatmapRevision dependency to force re-renders
-  // When personal mode auto-clicking completes, personalHeatmapRevision increments
+  // ✅ FIXED: Use useMemo with revision dependencies to force re-renders
+  // When personal mode auto-clicking completes, revisions increment
   // This triggers React to re-compute tradingDataByDate and re-render the heatmap
   const tradingDataByDate = useMemo(() => {
-    const activeData = isDemoMode ? demoTradingDataByDate : personalTradingDataByDate;
-    console.log(`🔄 tradingDataByDate recomputed [Mode: ${isDemoMode ? 'DEMO' : 'PERSONAL'}, Revision: ${personalHeatmapRevision}, Dates: ${Object.keys(activeData).length}]`);
+    const activeData = heatmapMode === 0 ? demoTradingDataByDate
+                     : heatmapMode === 1 ? personalTradingDataByDate
+                     : personal2TradingDataByDate;
+    const modeLabel = heatmapMode === 0 ? 'DEMO' : heatmapMode === 1 ? 'PERSONAL-1' : 'PERSONAL-2';
+    console.log(`🔄 tradingDataByDate recomputed [Mode: ${modeLabel}, Dates: ${Object.keys(activeData).length}]`);
     return activeData;
-  }, [isDemoMode, demoTradingDataByDate, personalTradingDataByDate, personalHeatmapRevision]);
+  }, [heatmapMode, demoTradingDataByDate, personalTradingDataByDate, personal2TradingDataByDate, personalHeatmapRevision, personal2HeatmapRevision]);
 
   // Mini sparkline data for navigation bar icon - shows performance trend
   const navSparklineData = useMemo(() => {
@@ -8399,8 +8412,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   }, [personalTradingDataByDate, demoTradingDataByDate]);
 
 
-  const setTradingDataByDate = isDemoMode ? setDemoTradingDataByDate : setPersonalTradingDataByDate;
-  const getActiveStorageKey = () => isDemoMode ? "demoTradingDataByDate" : "personalTradingDataByDate";
+  const setTradingDataByDate = heatmapMode === 0 ? setDemoTradingDataByDate
+                             : heatmapMode === 1 ? setPersonalTradingDataByDate
+                             : setPersonal2TradingDataByDate;
+  const getActiveStorageKey = () => heatmapMode === 0 ? "demoTradingDataByDate" : heatmapMode === 1 ? "personalTradingDataByDate" : "personal2TradingDataByDate";
 
   // Helper function to get AWS userId from localStorage
   // Returns null if user is not logged in with AWS
@@ -12221,16 +12236,19 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // ✅ NEW: Callbacks to receive heatmap data and date range
   // ✅ FIXED: Now updates the correct state (demo OR personal) based on isDemoMode
   const handleHeatmapDataUpdate = (data: Record<string, any>) => {
-    console.log(`📊 Received heatmap data update: ${Object.keys(data).length} dates [Mode: ${isDemoMode ? 'DEMO' : 'PERSONAL'}]`);
+    const modeLabel = heatmapMode === 0 ? 'DEMO' : heatmapMode === 1 ? 'PERSONAL-1' : 'PERSONAL-2';
+    console.log(`📊 Received heatmap data update: ${Object.keys(data).length} dates [Mode: ${modeLabel}]`);
 
     // ✅ CRITICAL FIX: Update the correct state based on current mode
-    // This prevents demo and personal data from merging
-    if (isDemoMode) {
+    if (heatmapMode === 0) {
       console.log("📊 Updating DEMO heatmap state");
       setDemoTradingDataByDate(data);
-    } else {
-      console.log("👤 Updating PERSONAL heatmap state");
+    } else if (heatmapMode === 1) {
+      console.log("👤 Updating PERSONAL-1 heatmap state");
       setPersonalTradingDataByDate(data);
+    } else {
+      console.log("👤 Updating PERSONAL-2 heatmap state");
+      setPersonal2TradingDataByDate(data);
     }
 
     // Also update the legacy shared state for backward compatibility
@@ -13324,8 +13342,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       const selectedDateStr = formatDateKey(selectedDate);
 
       // Safe data collection with fallbacks to prevent crashes
-      const safeTradeHistory = Array.isArray(tradeHistoryData)
-        ? tradeHistoryData
+      // Mode 2 saves Tab2 trades (tradeHistoryData2); modes 0 and 1 save Tab1 trades
+      const rawTradeHistory = heatmapMode === 2 ? tradeHistoryData2 : tradeHistoryData;
+      const safeTradeHistory = Array.isArray(rawTradeHistory)
+        ? rawTradeHistory
         : [];
       const safeNotesContent =
         typeof notesContent === "string" ? notesContent : "";
@@ -13361,11 +13381,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       console.log(`  💰 Net P&L: ₹${safePerformanceMetrics.netPnL}`);
       console.log(`🔄 Attempting to save data for date: ${selectedDateStr}`, journalData);
 
-      // Choose endpoint based on demo mode
-      // Switch ON (true) = Demo mode, Switch OFF (false) = Personal mode
+      // Choose endpoint based on heatmap mode
+      // Mode 0 = Demo (shared), Mode 1 = Personal Heatmap 1 (Tab1), Mode 2 = Personal Heatmap 2 (Tab2)
       let response;
-      if (isDemoMode) {
-        // Switch ON = Demo mode: Save to shared Google Cloud journal database
+      if (heatmapMode === 0) {
+        // Demo mode: Save to shared Google Cloud journal database
         console.log("📊 Saving to demo data (shared)");
         response = await fetch(`/api/journal/${selectedDateStr}`, {
           method: "POST",
@@ -13375,21 +13395,24 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           body: JSON.stringify(journalData),
         });
       } else {
-        // Switch OFF = Personal mode: Save to AWS (user-specific)
+        // Personal mode (1 or 2): Save to AWS (user-specific)
         const userId = getUserId();
         if (!userId) {
           console.error("❌ Cannot save in personal mode - no AWS user logged in");
           alert("⚠️ Please log in with your AWS account to save personal trading data.\n\nSwitch to Demo mode or log in to continue.");
           throw new Error("No AWS user logged in - cannot save to personal mode");
         }
-        console.log(`👤 Saving to user-specific data (userId: ${userId})`);
+        // Mode 2 uses "2_" prefix to create separate DynamoDB key space (user2_{userId}_{date})
+        const effectiveUserId = heatmapMode === 2 ? `2_${userId}` : userId;
+        const modeLabel = heatmapMode === 2 ? 'Personal-2 (Tab2)' : 'Personal-1 (Tab1)';
+        console.log(`👤 Saving to ${modeLabel} data (effectiveUserId: ${effectiveUserId})`);
         response = await fetch(`/api/user-journal`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            userId,
+            userId: effectiveUserId,
             date: selectedDateStr,
             tradingData: journalData,
           }),
@@ -13422,8 +13445,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         console.log("🔄 Reloading FULL heatmap data to sync all windows...");
 
         // Reload the full heatmap data based on current mode
-        setPersonalHeatmapRevision(prev => prev + 1);
-        if (isDemoMode) {
+        if (heatmapMode === 0) {
+          setPersonalHeatmapRevision(prev => prev + 1);
           console.log("📊 Refreshing demo mode heatmap...");
           const allDatesResponse = await fetch("/api/journal/all-dates");
           if (allDatesResponse.ok) {
@@ -13431,14 +13454,28 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             console.log(`✅ Heatmap refreshed with ${Object.keys(allDatesData).length} dates`);
             setTradingDataByDate(allDatesData);
           }
-        } else {
+        } else if (heatmapMode === 1) {
+          setPersonalHeatmapRevision(prev => prev + 1);
           const userId = getUserId();
           if (userId) {
-            console.log(`👤 Refreshing personal mode heatmap for user: ${userId}`);
+            console.log(`👤 Refreshing Personal-1 heatmap for user: ${userId}`);
             const allUserDataResponse = await fetch(`/api/user-journal/${userId}/all`);
             if (allUserDataResponse.ok) {
               const allUserData = await allUserDataResponse.json();
               console.log(`✅ Heatmap refreshed with ${Object.keys(allUserData).length} dates`);
+              setTradingDataByDate(allUserData);
+            }
+          }
+        } else {
+          setPersonal2HeatmapRevision(prev => prev + 1);
+          const userId = getUserId();
+          if (userId) {
+            const effectiveUserId = `2_${userId}`;
+            console.log(`👤 Refreshing Personal-2 heatmap for user: ${effectiveUserId}`);
+            const allUserDataResponse = await fetch(`/api/user-journal/${effectiveUserId}/all`);
+            if (allUserDataResponse.ok) {
+              const allUserData = await allUserDataResponse.json();
+              console.log(`✅ Heatmap-2 refreshed with ${Object.keys(allUserData).length} dates`);
               setTradingDataByDate(allUserData);
             }
           }
@@ -13457,7 +13494,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             year: "numeric",
           });
 
-          const saveLocation = isDemoMode ? "Demo" : "Personal";
+          const saveLocation = heatmapMode === 0 ? "Demo" : heatmapMode === 1 ? "Personal-1" : "Personal-2";
 
           setSaveConfirmationData({
             formattedDate,
@@ -25404,34 +25441,58 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             </Dialog>
                           </div>
                           <div className="flex items-center gap-1">
-                            <span className="text-[10px] text-gray-600 dark:text-gray-400">
-                              {isDemoMode ? "Demo" : "Personal"}
-                            </span>
-                            <Switch
-                              checked={isDemoMode}
-                              onCheckedChange={(checked) => {
-                                console.log(`🔄 Demo mode toggle: ${checked ? 'ON (Demo)' : 'OFF (Personal)'}`);
-                                setHasManuallyToggledMode(true);
-                                localStorage.setItem("hasManuallyToggledMode", "true");
-                                setIsDemoMode(checked);
-                                setSelectedDailyFactors([]);
-                                setSelectedIndicators([]);
-                                setTradeHistoryData([]);
-                                setTradingImages([]);
-                                setTradingDataByDate({});
-                                setPersonalHeatmapRevision(prev => prev + 1);
-                                console.log(`✅ Switched to ${checked ? 'Demo' : 'Personal'} mode - CLEARED cache, heatmap fetching fresh AWS data...`);
-                              }}
-                              data-testid="switch-demo-mode"
-                              className="scale-75"
-                            />
+                            {/* 3-state heatmap mode toggle: 0=Demo, 1=Personal-1, 2=Personal-2 */}
+                            <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-800 rounded p-0.5" data-testid="heatmap-mode-toggle">
+                              {([0, 1, 2] as const).map((mode) => {
+                                const labels = ['D', '1', '2'];
+                                const titles = ['Demo mode', 'Personal Heatmap 1 (Tab 1)', 'Personal Heatmap 2 (Tab 2)'];
+                                const isActive = heatmapMode === mode;
+                                return (
+                                  <button
+                                    key={mode}
+                                    title={titles[mode]}
+                                    data-testid={`heatmap-mode-btn-${mode}`}
+                                    onClick={() => {
+                                      console.log(`🔄 Switching heatmap mode to ${mode}`);
+                                      setHasManuallyToggledMode(true);
+                                      localStorage.setItem("hasManuallyToggledMode", "true");
+                                      setHeatmapMode(mode);
+                                      localStorage.setItem("heatmapMode", String(mode));
+                                      localStorage.setItem("tradingJournalDemoMode", String(mode === 0));
+                                      setSelectedDailyFactors([]);
+                                      setSelectedIndicators([]);
+                                      setTradeHistoryData([]);
+                                      setTradingImages([]);
+                                      setTradingDataByDate({});
+                                      if (mode === 2) {
+                                        setPersonal2HeatmapRevision(prev => prev + 1);
+                                      } else {
+                                        setPersonalHeatmapRevision(prev => prev + 1);
+                                      }
+                                      console.log(`✅ Switched to mode ${mode} - CLEARED cache`);
+                                    }}
+                                    className={`w-5 h-4 rounded text-[9px] font-bold transition-colors ${
+                                      isActive
+                                        ? mode === 0
+                                          ? 'bg-blue-500 text-white'
+                                          : mode === 1
+                                          ? 'bg-emerald-600 text-white'
+                                          : 'bg-violet-600 text-white'
+                                        : 'bg-transparent text-gray-500 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700'
+                                    }`}
+                                  >
+                                    {labels[mode]}
+                                  </button>
+                                );
+                              })}
+                            </div>
                             <Button
                               onClick={saveAllTradingData}
                               size="sm"
                               variant="outline"
-                              disabled={isDemoMode && localStorage.getItem('currentUserId') !== 'c06ce90c-20a1-7033-d457-efac5a682529'}
+                              disabled={heatmapMode === 0 && localStorage.getItem('currentUserId') !== 'c06ce90c-20a1-7033-d457-efac5a682529'}
                               className={`h-5 px-2 text-[10px] border-gray-300 dark:border-gray-700 ${
-                                (isDemoMode && localStorage.getItem('currentUserId') !== 'c06ce90c-20a1-7033-d457-efac5a682529')
+                                (heatmapMode === 0 && localStorage.getItem('currentUserId') !== 'c06ce90c-20a1-7033-d457-efac5a682529')
                                   ? 'text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed' 
                                   : 'text-gray-600 dark:text-gray-400'
                               }`}
@@ -25444,7 +25505,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         {/* ✅ NEW CLEAN HEATMAP IMPLEMENTATION - Separate components for Demo & Personal */}
                         <div className="relative">
                          <div ref={heatmapContainerRef} className="pt-0.5">
-                          {isDemoMode ? (
+                          {heatmapMode === 0 ? (
                             <DemoHeatmap 
                               onDateSelect={handleDateSelect}
                               selectedDate={selectedDate}
@@ -25481,7 +25542,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 setShowReportPostDialog(true);
                               }}
                             />
-                          ) : (
+                          ) : heatmapMode === 1 ? (
                             <PersonalHeatmap
                               userId={getUserId()}
                               onDateSelect={handleDateSelect}
@@ -25490,6 +25551,26 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               onRangeChange={handleDateRangeChange}
                               highlightedDates={activeTagHighlight}
                               refreshTrigger={personalHeatmapRevision}
+                              onFeedPost={(mode, data) => {
+                                setReportPostMode(mode);
+                                if (mode === 'selected') {
+                                  setReportPostSelectedDate(heatmapSelectedDate || new Date().toISOString().split('T')[0]);
+                                }
+                                if (mode === 'range' && data) {
+                                  setRangePostOverrideData(data);
+                                }
+                                setShowReportPostDialog(true);
+                              }}
+                            />
+                          ) : (
+                            <PersonalHeatmap
+                              userId={(() => { const uid = getUserId(); return uid ? `2_${uid}` : null; })()}
+                              onDateSelect={handleDateSelect}
+                              selectedDate={selectedDate}
+                              onDataUpdate={handleHeatmapDataUpdate}
+                              onRangeChange={handleDateRangeChange}
+                              highlightedDates={activeTagHighlight}
+                              refreshTrigger={personal2HeatmapRevision}
                               onFeedPost={(mode, data) => {
                                 setReportPostMode(mode);
                                 if (mode === 'selected') {

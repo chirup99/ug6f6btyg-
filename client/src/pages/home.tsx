@@ -6527,76 +6527,166 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     }
   }, [zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, orderTab]);
 
-  // Fetch second broker orders & positions when 2 brokers are connected
+  // Fetch second broker ORDERS (5s polling) — mirrors broker 1 orders fetch exactly
   useEffect(() => {
     if (!secondaryBroker || (!showOrderModal && !showSecondaryOrderModal)) {
       setBroker2Orders([]);
-      setBroker2Positions([]);
-      setBroker2Funds(null);
       return;
     }
-    let cancelled = false;
-
-    const getTokenAndEndpoints = () => {
+    const getOrdersConfig = (): { token: string | null; ep: string | null } => {
       switch (secondaryBroker) {
         case 'zerodha': {
           const apiKey = localStorage.getItem("zerodha_api_key");
-          const ordersEp = apiKey ? `/api/zerodha/trades?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/trades';
-          const positionsEp = apiKey ? `/api/zerodha/positions?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/positions';
-          return { token: zerodhaAccessToken, ordersEp, positionsEp, fundsEp: apiKey ? `/api/zerodha/margins?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/margins' };
+          return { token: zerodhaAccessToken, ep: apiKey ? `/api/zerodha/trades?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/trades' };
         }
-        case 'upstox':
-          return { token: upstoxAccessToken, ordersEp: '/api/broker/upstox/trades', positionsEp: '/api/broker/upstox/positions', fundsEp: '/api/broker/upstox/margins' };
-        case 'angelone':
-          return { token: userAngelOneToken, ordersEp: '/api/broker/angelone/trades', positionsEp: '/api/broker/angelone/positions', fundsEp: '/api/broker/angelone/margins' };
-        case 'dhan':
-          return { token: dhanAccessToken, ordersEp: '/api/broker/dhan/trades', positionsEp: '/api/broker/dhan/positions', fundsEp: '/api/broker/dhan/margins' };
-        case 'groww':
-          return { token: growwAccessToken, ordersEp: `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken || '')}`, positionsEp: null, fundsEp: null };
-        default:
-          return { token: null, ordersEp: null, positionsEp: null, fundsEp: null };
+        case 'upstox': return { token: upstoxAccessToken, ep: '/api/broker/upstox/trades' };
+        case 'angelone': return { token: userAngelOneToken, ep: '/api/broker/angelone/trades' };
+        case 'dhan': return { token: dhanAccessToken, ep: '/api/broker/dhan/trades' };
+        case 'groww': return { token: growwAccessToken, ep: `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken || '')}` };
+        case 'fyers': return { token: 'fyers_connected', ep: '/api/fyers/trades' };
+        default: return { token: null, ep: null };
       }
     };
-
-    const fetchBroker2Data = async () => {
-      const { token, ordersEp, positionsEp, fundsEp } = getTokenAndEndpoints();
-      if (!token && secondaryBroker !== 'groww') return;
+    let cancelled = false;
+    const fetchOrders = async () => {
+      const { token, ep } = getOrdersConfig();
+      if (!ep || (!token && secondaryBroker !== 'groww')) return;
       setFetchingBroker2(true);
       try {
-        // Always fetch both orders and positions so data is ready regardless of which tab is active
-        if (ordersEp) {
-          const res = await fetch(ordersEp, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
-          if (!cancelled && res.ok) {
+        const res = await fetch(ep, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        if (!cancelled) {
+          if (!res.ok) {
+            if (res.status === 401) console.warn('⚠️ [BROKER2 ORDERS] Session expired, please reconnect broker');
+            setBroker2Orders([]);
+          } else {
             const data = await res.json();
             setBroker2Orders(data.trades || data.orders || []);
-          }
-        }
-        if (positionsEp) {
-          const res = await fetch(positionsEp, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
-          if (!cancelled && res.ok) {
-            const data = await res.json();
-            setBroker2Positions(data.positions || []);
-          }
-        }
-        if (fundsEp) {
-          const res = await fetch(fundsEp, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
-          if (!cancelled && res.ok) {
-            const data = await res.json();
-            const funds = data.availableCash ?? data.availableFunds ?? data.funds ?? null;
-            if (funds !== null) setBroker2Funds(funds);
+            console.log('✅ [BROKER2 ORDERS]', secondaryBroker, 'Fetched', (data.trades || data.orders || []).length, 'trades');
           }
         }
       } catch (err) {
-        console.error('❌ [BROKER2] Error fetching secondary broker data:', err);
+        console.error('❌ [BROKER2 ORDERS] Error:', err);
+        if (!cancelled) setBroker2Orders([]);
       } finally {
         if (!cancelled) setFetchingBroker2(false);
       }
     };
-
-    fetchBroker2Data();
-    const interval = setInterval(fetchBroker2Data, 5000);
+    fetchOrders();
+    const interval = setInterval(fetchOrders, 5000);
     return () => { cancelled = true; clearInterval(interval); };
   }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken]);
+
+  // Fetch second broker POSITIONS (700ms polling, live prices, change detection) — mirrors broker 1 exactly
+  useEffect(() => {
+    if (!secondaryBroker || (!showOrderModal && !showSecondaryOrderModal)) {
+      setBroker2Positions([]);
+      return;
+    }
+    const getPositionsConfig = (): { token: string | null; ep: string | null } => {
+      switch (secondaryBroker) {
+        case 'zerodha': {
+          const apiKey = localStorage.getItem("zerodha_api_key");
+          return { token: zerodhaAccessToken, ep: apiKey ? `/api/zerodha/positions?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/positions' };
+        }
+        case 'upstox': return { token: upstoxAccessToken, ep: '/api/broker/upstox/positions' };
+        case 'angelone': return { token: userAngelOneToken, ep: '/api/broker/angelone/positions' };
+        case 'dhan': return { token: dhanAccessToken, ep: '/api/broker/dhan/positions' };
+        case 'fyers': return { token: 'fyers_connected', ep: '/api/fyers/positions' };
+        default: return { token: null, ep: null };
+      }
+    };
+    let cancelled = false;
+    let lastPositionsKey = '__uninit__';
+    const fetchPositions = async () => {
+      const { token, ep } = getPositionsConfig();
+      if (!ep) return;
+      try {
+        const res = await fetch(ep, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        if (!res.ok) {
+          if (res.status === 401) console.warn('⚠️ [BROKER2 POSITIONS] Session expired, please reconnect broker');
+          return;
+        }
+        const data = await res.json();
+        let positions = data.positions || [];
+        // Enrich with live prices — same as broker 1
+        if (positions.length > 0) {
+          const livePositions = await Promise.all(
+            positions.map(async (pos: any) => {
+              try {
+                const symbol = pos.symbol || '';
+                const liveRes = await fetch(`/api/live-quotes/NSE:${symbol}-EQ`);
+                if (liveRes.ok) {
+                  const liveData = await liveRes.json();
+                  return { ...pos, currentPrice: liveData.price || pos.currentPrice || pos.current_price || 0 };
+                }
+              } catch {
+                console.warn(`⚠️ [BROKER2 LIVE-PRICE] Could not fetch live price for ${pos.symbol}`);
+              }
+              return pos;
+            })
+          );
+          positions = livePositions;
+        }
+        // Change detection — only update state when positions actually changed
+        const newKey = positions.map((p: any) =>
+          `${p.symbol}:${p.qty ?? p.quantity ?? p.netQty ?? 0}:${p.status ?? ''}`
+        ).join('|');
+        if (!cancelled && newKey !== lastPositionsKey) {
+          lastPositionsKey = newKey;
+          setBroker2Positions(positions);
+          console.log('✅ [BROKER2 POSITIONS]', secondaryBroker, 'Updated', positions.length, 'positions');
+        }
+      } catch (err) {
+        console.error('❌ [BROKER2 POSITIONS] Error:', err);
+      }
+    };
+    fetchPositions();
+    const interval = setInterval(fetchPositions, 700);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken]);
+
+  // Fetch second broker FUNDS (2s polling) — mirrors broker 1 exactly
+  useEffect(() => {
+    if (!secondaryBroker || (!showOrderModal && !showSecondaryOrderModal)) {
+      setBroker2Funds(null);
+      return;
+    }
+    const getFundsConfig = (): { token: string | null; ep: string | null } => {
+      switch (secondaryBroker) {
+        case 'zerodha': {
+          const apiKey = localStorage.getItem("zerodha_api_key");
+          return { token: zerodhaAccessToken, ep: apiKey ? `/api/zerodha/margins?api_key=${encodeURIComponent(apiKey)}` : '/api/zerodha/margins' };
+        }
+        case 'upstox': return { token: upstoxAccessToken, ep: '/api/broker/upstox/margins' };
+        case 'angelone': return { token: userAngelOneToken, ep: '/api/broker/angelone/margins' };
+        case 'dhan': return { token: dhanAccessToken, ep: '/api/broker/dhan/margins' };
+        case 'groww': return { token: growwAccessToken, ep: `/api/broker/groww/funds?accessToken=${growwAccessToken}` };
+        case 'fyers': return { token: 'fyers_connected', ep: '/api/fyers/positions' };
+        default: return { token: null, ep: null };
+      }
+    };
+    let cancelled = false;
+    const fetchFunds = async () => {
+      const { token, ep } = getFundsConfig();
+      if (!ep) return;
+      try {
+        const res = await fetch(ep, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          const funds = data.availableCash ?? data.availableFunds ?? data.funds ?? null;
+          if (funds !== null) {
+            setBroker2Funds(funds);
+            console.log('✅ [BROKER2 FUNDS]', secondaryBroker, 'Fetched funds:', funds);
+          }
+        }
+      } catch (err) {
+        console.error('❌ [BROKER2 FUNDS] Error:', err);
+      }
+    };
+    fetchFunds();
+    const interval = setInterval(fetchFunds, 2000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken, fyersIsConnected]);
 
 // Fetch broker funds when dialog opens - with auto-refresh polling
   useEffect(() => {

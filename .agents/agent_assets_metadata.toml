@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "BbPpSHrvxc5_9k3SLq8Sh"
+uri = "file://aws-cost-analysis-report.pdf"
+type = "pdf"
+title = "AWS Cost Analysis Report — Perala Trading Platform"

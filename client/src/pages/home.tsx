@@ -2301,6 +2301,9 @@ export default function Home() {
   const [loadingBugReports, setLoadingBugReports] = useState(false);
   const [expandedBugId, setExpandedBugId] = useState<string | null>(null);
   const [bugListFilter, setBugListFilter] = useState<'all' | 'critical' | 'repeated' | 'priority'>('all');
+  const [durFilterMonth, setDurFilterMonth] = useState<string>('all');
+  const [durFilterYear, setDurFilterYear] = useState<string>('all');
+  const [durExpandedRows, setDurExpandedRows] = useState<Set<string>>(new Set());
   
   // Primary owner email - only this user can manage admin access
   const PRIMARY_OWNER_EMAIL = "chiranjeevi.perala99@gmail.com";
@@ -27105,59 +27108,163 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       </div>
 
                                       {/* Date breakdown table */}
-                                      {sums.length > 0 && (
-                                        <div>
-                                          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                                            <CalendarDays className="w-4 h-4 text-amber-500" />
-                                            Date-wise Duration Breakdown
-                                          </h4>
-                                          <div className="overflow-x-auto rounded-2xl border border-slate-100 dark:border-slate-800">
-                                            <table className="w-full text-xs">
-                                              <thead>
-                                                <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold text-[10px]">
-                                                  <th className="px-4 py-3 text-left">Date</th>
-                                                  <th className="px-4 py-3 text-center">Loss / Avg Hold</th>
-                                                  <th className="px-4 py-3 text-center">Profit / Avg Hold</th>
-                                                  <th className="px-4 py-3 text-center">₹/min</th>
-                                                  <th className="px-4 py-3 text-right">Day P&L</th>
-                                                  <th className="px-4 py-3 text-center">Signal</th>
-                                                </tr>
-                                              </thead>
-                                              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                                                {sums.slice().reverse().map((d, i) => {
-                                                  const overHold = d.avgLossDurMs>0&&d.avgProfitDurMs>0&&d.avgLossDurMs>d.avgProfitDurMs*1.3;
-                                                  const isProfitDay = d.totalPnL >= 0;
-                                                  const effColor = d.efficiencyRpM>0?'text-green-600 dark:text-green-400':d.efficiencyRpM<0?'text-red-500':'text-slate-400';
-                                                  return (
-                                                    <tr key={i} className={`${i%2===0?'bg-white dark:bg-slate-900':'bg-slate-50/50 dark:bg-slate-800/30'}`}>
-                                                      <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300">{d.label}</td>
-                                                      <td className="px-4 py-3 text-center">
-                                                        <span className="text-red-500 font-medium">{d.lossCount>0?d.lossCount:'—'}</span>
-                                                        {d.avgLossDurMs>0&&<span className="text-slate-400"> · {fmtDur(d.avgLossDurMs)}</span>}
-                                                      </td>
-                                                      <td className="px-4 py-3 text-center">
-                                                        <span className="text-emerald-600 font-medium">{d.profitCount>0?d.profitCount:'—'}</span>
-                                                        {d.avgProfitDurMs>0&&<span className="text-slate-400"> · {fmtDur(d.avgProfitDurMs)}</span>}
-                                                      </td>
-                                                      <td className={`px-4 py-3 text-center font-bold ${effColor}`}>
-                                                        {d.efficiencyRpM!==0?`${d.efficiencyRpM>=0?'+':''}₹${Math.abs(d.efficiencyRpM).toFixed(0)}`:'—'}
-                                                      </td>
-                                                      <td className={`px-4 py-3 text-right font-bold ${isProfitDay?'text-emerald-600':'text-red-500'}`}>
-                                                        {isProfitDay?'+':'-'}₹{Math.abs(d.totalPnL).toLocaleString('en-IN')}
-                                                      </td>
-                                                      <td className="px-4 py-3 text-center">
-                                                        {overHold?<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/15 text-red-600 dark:text-red-400 text-[10px] font-bold">⚠️ Over-held</span>
-                                                        :d.lossCount===0?<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-500/15 text-green-600 dark:text-green-400 text-[10px] font-bold">✅ No losses</span>
-                                                        :<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 text-[10px] font-bold">✓ OK</span>}
-                                                      </td>
+                                      {sums.length > 0 && (() => {
+                                        const allYears = Array.from(new Set(sums.map(d => d.date.slice(0,4)))).sort((a,b)=>b.localeCompare(a));
+                                        const allMonths = Array.from(new Set(sums.map(d => d.date.slice(0,7)))).sort((a,b)=>b.localeCompare(a));
+                                        const monthNames: Record<string,string> = {'01':'Jan','02':'Feb','03':'Mar','04':'Apr','05':'May','06':'Jun','07':'Jul','08':'Aug','09':'Sep','10':'Oct','11':'Nov','12':'Dec'};
+                                        const filteredSums = sums.slice().reverse().filter(d => {
+                                          const [yr, mo] = d.date.split('-');
+                                          const yearOk = durFilterYear==='all' || yr===durFilterYear;
+                                          const monthOk = durFilterMonth==='all' || `${yr}-${mo}`===durFilterMonth;
+                                          return yearOk && monthOk;
+                                        });
+                                        return (
+                                          <div>
+                                            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                                                <CalendarDays className="w-4 h-4 text-amber-500" />
+                                                Date-wise Duration Breakdown
+                                                <span className="text-[10px] font-normal text-slate-400 ml-1">· tap row to see trades</span>
+                                              </h4>
+                                              <div className="flex items-center gap-2">
+                                                <select
+                                                  value={durFilterYear}
+                                                  onChange={e => { setDurFilterYear(e.target.value); setDurFilterMonth('all'); }}
+                                                  className="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
+                                                >
+                                                  <option value="all">All Years</option>
+                                                  {allYears.map(y => <option key={y} value={y}>{y}</option>)}
+                                                </select>
+                                                <select
+                                                  value={durFilterMonth}
+                                                  onChange={e => setDurFilterMonth(e.target.value)}
+                                                  className="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
+                                                >
+                                                  <option value="all">All Months</option>
+                                                  {allMonths
+                                                    .filter(m => durFilterYear==='all' || m.startsWith(durFilterYear))
+                                                    .map(m => {
+                                                      const [y, mo] = m.split('-');
+                                                      return <option key={m} value={m}>{monthNames[mo]} {y}</option>;
+                                                    })}
+                                                </select>
+                                                {(durFilterMonth!=='all'||durFilterYear!=='all') && (
+                                                  <button onClick={() => { setDurFilterMonth('all'); setDurFilterYear('all'); }} className="text-[10px] text-amber-500 hover:text-amber-600 font-semibold underline">
+                                                    Clear
+                                                  </button>
+                                                )}
+                                              </div>
+                                            </div>
+                                            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                                              <div className="overflow-x-auto">
+                                                <table className="w-full text-xs">
+                                                  <thead>
+                                                    <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold text-[10px]">
+                                                      <th className="px-4 py-3 text-left w-8"></th>
+                                                      <th className="px-4 py-3 text-left">Date</th>
+                                                      <th className="px-4 py-3 text-center">Loss / Avg Hold</th>
+                                                      <th className="px-4 py-3 text-center">Profit / Avg Hold</th>
+                                                      <th className="px-4 py-3 text-center">₹/min</th>
+                                                      <th className="px-4 py-3 text-right">Day P&L</th>
+                                                      <th className="px-4 py-3 text-center">Signal</th>
                                                     </tr>
-                                                  );
-                                                })}
-                                              </tbody>
-                                            </table>
+                                                  </thead>
+                                                  <tbody>
+                                                    {filteredSums.length === 0 ? (
+                                                      <tr>
+                                                        <td colSpan={7} className="px-4 py-8 text-center text-slate-400 text-xs">No data for selected filter</td>
+                                                      </tr>
+                                                    ) : filteredSums.map((d, i) => {
+                                                      const overHold = d.avgLossDurMs>0&&d.avgProfitDurMs>0&&d.avgLossDurMs>d.avgProfitDurMs*1.3;
+                                                      const isProfitDay = d.totalPnL >= 0;
+                                                      const effColor = d.efficiencyRpM>0?'text-green-600 dark:text-green-400':d.efficiencyRpM<0?'text-red-500':'text-slate-400';
+                                                      const isExpanded = durExpandedRows.has(d.date);
+                                                      const dayTrades = allTrades.filter(t => t.date === d.date);
+                                                      const rowBg = i%2===0?'bg-white dark:bg-slate-900':'bg-slate-50/50 dark:bg-slate-800/30';
+                                                      return (
+                                                        <React.Fragment key={d.date}>
+                                                          <tr
+                                                            className={`${rowBg} cursor-pointer hover:bg-amber-50/40 dark:hover:bg-amber-500/5 transition-colors border-t border-slate-100 dark:border-slate-800`}
+                                                            onClick={() => setDurExpandedRows(prev => {
+                                                              const next = new Set(prev);
+                                                              if (next.has(d.date)) next.delete(d.date); else next.add(d.date);
+                                                              return next;
+                                                            })}
+                                                          >
+                                                            <td className="px-3 py-3 text-center">
+                                                              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isExpanded?'rotate-180':''}`} />
+                                                            </td>
+                                                            <td className="px-4 py-3 font-semibold text-slate-700 dark:text-slate-300 whitespace-nowrap">{d.label}</td>
+                                                            <td className="px-4 py-3 text-center">
+                                                              <span className="text-red-500 font-medium">{d.lossCount>0?d.lossCount:'—'}</span>
+                                                              {d.avgLossDurMs>0&&<span className="text-slate-400"> · {fmtDur(d.avgLossDurMs)}</span>}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                              <span className="text-emerald-600 font-medium">{d.profitCount>0?d.profitCount:'—'}</span>
+                                                              {d.avgProfitDurMs>0&&<span className="text-slate-400"> · {fmtDur(d.avgProfitDurMs)}</span>}
+                                                            </td>
+                                                            <td className={`px-4 py-3 text-center font-bold ${effColor}`}>
+                                                              {d.efficiencyRpM!==0?`${d.efficiencyRpM>=0?'+':''}₹${Math.abs(d.efficiencyRpM).toFixed(0)}`:'—'}
+                                                            </td>
+                                                            <td className={`px-4 py-3 text-right font-bold whitespace-nowrap ${isProfitDay?'text-emerald-600':'text-red-500'}`}>
+                                                              {isProfitDay?'+':'-'}₹{Math.abs(d.totalPnL).toLocaleString('en-IN')}
+                                                            </td>
+                                                            <td className="px-4 py-3 text-center">
+                                                              {overHold?<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-500/15 text-red-600 dark:text-red-400 text-[10px] font-bold">⚠️ Over-held</span>
+                                                              :d.lossCount===0?<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-green-100 dark:bg-green-500/15 text-green-600 dark:text-green-400 text-[10px] font-bold">✅ No losses</span>
+                                                              :<span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-500 text-[10px] font-bold">✓ OK</span>}
+                                                            </td>
+                                                          </tr>
+                                                          {isExpanded && (
+                                                            <tr className={rowBg}>
+                                                              <td colSpan={7} className="px-4 pb-3 pt-0">
+                                                                <div className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/60 overflow-hidden">
+                                                                  <div className="px-3 py-2 bg-slate-100 dark:bg-slate-700/60 border-b border-slate-200 dark:border-slate-700">
+                                                                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Trades on {d.label}</span>
+                                                                  </div>
+                                                                  {dayTrades.length === 0 ? (
+                                                                    <div className="px-4 py-3 text-xs text-slate-400 text-center">No trade duration data available</div>
+                                                                  ) : (
+                                                                    <div className="max-h-48 overflow-y-auto">
+                                                                      <table className="w-full text-xs">
+                                                                        <thead className="sticky top-0 bg-slate-100 dark:bg-slate-700/80">
+                                                                          <tr className="text-[10px] uppercase text-slate-400 font-bold">
+                                                                            <th className="px-3 py-2 text-left">Symbol</th>
+                                                                            <th className="px-3 py-2 text-center">Duration</th>
+                                                                            <th className="px-3 py-2 text-right">P&L</th>
+                                                                          </tr>
+                                                                        </thead>
+                                                                        <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                                                          {dayTrades.map((t, ti) => {
+                                                                            const isWin = t.pnl >= 0;
+                                                                            return (
+                                                                              <tr key={ti} className="hover:bg-slate-100 dark:hover:bg-slate-700/40 transition-colors">
+                                                                                <td className="px-3 py-2 font-medium text-slate-700 dark:text-slate-300">{t.symbol||'—'}</td>
+                                                                                <td className="px-3 py-2 text-center text-slate-500 dark:text-slate-400">{t.durationLabel&&t.durationLabel!=='-'?t.durationLabel:fmtDur(t.durationMs)||'—'}</td>
+                                                                                <td className={`px-3 py-2 text-right font-semibold ${isWin?'text-emerald-600':'text-red-500'}`}>
+                                                                                  {isWin?'+':''}{t.pnl>=0?'':'-'}₹{Math.abs(t.pnl).toLocaleString('en-IN')}
+                                                                                </td>
+                                                                              </tr>
+                                                                            );
+                                                                          })}
+                                                                        </tbody>
+                                                                      </table>
+                                                                    </div>
+                                                                  )}
+                                                                </div>
+                                                              </td>
+                                                            </tr>
+                                                          )}
+                                                        </React.Fragment>
+                                                      );
+                                                    })}
+                                                  </tbody>
+                                                </table>
+                                              </div>
+                                            </div>
                                           </div>
-                                        </div>
-                                      )}
+                                        );
+                                      })()}
 
                                       {/* Insight cards — 5 cards */}
                                       <div className="grid md:grid-cols-3 gap-4">

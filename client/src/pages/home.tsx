@@ -25445,7 +25445,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-800 rounded p-0.5" data-testid="heatmap-mode-toggle">
                               {([0, 1, 2] as const).map((mode) => {
                                 const labels = ['D', '1', '2'];
-                                const titles = ['Demo mode', 'Personal Heatmap 1 (Tab 1)', 'Personal Heatmap 2 (Tab 2)'];
+                                const titles = ['Demo mode', 'Personal 1', 'Personal 2'];
                                 const isActive = heatmapMode === mode;
                                 return (
                                   <button

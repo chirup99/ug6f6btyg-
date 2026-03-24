@@ -12,3 +12,9 @@ id = "fzJRccX6985PP_WNmNYN4"
 uri = "file://aws-cost-analysis.xlsx"
 type = "table"
 title = "AWS Cost Analysis — Perala Platform (Excel)"
+
+[[outputs]]
+id = "pn3r8a8GfXEpgqbuPueWI"
+uri = "file://perala-business-model-valuation.xlsx"
+type = "table"
+title = "Perala Platform — Business Model Validation & Valuation"

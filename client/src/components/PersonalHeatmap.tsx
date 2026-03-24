@@ -87,7 +87,7 @@ function calculatePnL(data: any): number {
 
 // Get color based on P&L value - SIMPLE AND CLEAR
 function getPnLColor(pnl: number): string {
-  if (pnl === 0) return "bg-purple-500 dark:bg-purple-400"; // Added purple for 0 P&L
+  if (pnl === 0) return "bg-amber-400 dark:bg-amber-400"; // Amber for breakeven (0 P&L)
 
   const amount = Math.abs(pnl);
 
@@ -857,11 +857,11 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
     setSelectedDatesForRange([]);
   };
 
-  // Count only dates with actual trading data (non-zero P&L)
+  // Count dates that have any stored trading data (including breakeven days)
   const countDatesWithData = (data: typeof heatmapData) => {
     return Object.keys(data).filter(dateKey => {
-      const pnl = calculatePnL(data[dateKey]);
-      return pnl !== 0;
+      const entry = data[dateKey];
+      return entry && Object.keys(entry).length > 0;
     }).length;
   };
 
@@ -1176,7 +1176,11 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
             <div className="w-2.5 h-2.5 bg-red-300 dark:bg-red-300 rounded-full" title="Small Loss"></div>
           </div>
         </div>
-        
+
+        <div className="flex items-center gap-1" title="Breakeven (₹0)">
+          <div className="w-2.5 h-2.5 bg-amber-400 dark:bg-amber-400 rounded-full"></div>
+          <span className="text-[9px] text-gray-500 dark:text-gray-400">BE</span>
+        </div>
 
         <div className="flex items-center gap-2">
           <div className="flex gap-1">

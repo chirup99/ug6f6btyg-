@@ -29,6 +29,7 @@ interface PersonalHeatmapProps {
   onFeedPost?: (mode: 'today' | 'selected' | 'range', data?: Record<string, any>) => void;
   hideNavigation?: boolean;
   initialDate?: Date;
+  defaultTitle?: string;
 }
 
 // Simple function to calculate P&L from trade data
@@ -104,7 +105,7 @@ function getPnLColor(pnl: number): string {
   }
 }
 
-export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView = false, refreshTrigger = 0, onFeedPost, hideNavigation = false, initialDate }: PersonalHeatmapProps) {
+export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView = false, refreshTrigger = 0, onFeedPost, hideNavigation = false, initialDate, defaultTitle = "Personal Trading Calendar" }: PersonalHeatmapProps) {
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
   const [isLoading, setIsLoading] = useState(false);
@@ -130,12 +131,13 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
   const { toast } = useToast();
   const [refreshKey, setRefreshKey] = useState(0); // Add refresh trigger
   const [isEditingTitle, setIsEditingTitle] = useState(false);
-  const [editableTitle, setEditableTitle] = useState("Personal Trading Calendar");
+  const titleStorageKey = `heatmapTitle_${defaultTitle.replace(/\s+/g, '_')}`;
+  const [editableTitle, setEditableTitle] = useState(defaultTitle);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Load saved title from localStorage on mount
   useEffect(() => {
-    const savedTitle = localStorage.getItem('heatmapTitle');
+    const savedTitle = localStorage.getItem(titleStorageKey);
     if (savedTitle) {
       setEditableTitle(savedTitle);
     }
@@ -890,12 +892,12 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
               onChange={(e) => setEditableTitle(e.target.value)}
               onBlur={() => {
                 setIsEditingTitle(false);
-                localStorage.setItem('heatmapTitle', editableTitle);
+                localStorage.setItem(titleStorageKey, editableTitle);
               }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter') {
                   setIsEditingTitle(false);
-                  localStorage.setItem('heatmapTitle', editableTitle);
+                  localStorage.setItem(titleStorageKey, editableTitle);
                 }
               }}
               className="bg-transparent border-b border-gray-400 dark:border-gray-500 px-1 py-0.5 text-[10px] focus:outline-none text-gray-500 dark:text-gray-400"

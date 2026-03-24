@@ -25545,6 +25545,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           ) : heatmapMode === 1 ? (
                             <PersonalHeatmap
                               userId={getUserId()}
+                              defaultTitle="Personal 1"
                               onDateSelect={handleDateSelect}
                               selectedDate={selectedDate}
                               onDataUpdate={handleHeatmapDataUpdate}
@@ -25565,6 +25566,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           ) : (
                             <PersonalHeatmap
                               userId={(() => { const uid = getUserId(); return uid ? `2_${uid}` : null; })()}
+                              defaultTitle="Personal 2"
                               onDateSelect={handleDateSelect}
                               selectedDate={selectedDate}
                               onDataUpdate={handleHeatmapDataUpdate}

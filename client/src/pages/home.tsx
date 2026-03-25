@@ -24954,6 +24954,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 </DialogTitle>
                               </DialogHeader>
                               <div className="space-y-4 py-4">
+                                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                                  <span className="text-amber-500 text-sm mt-0.5">⚠️</span>
+                                  <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                                    <span className="font-semibold">Daily Approval Required:</span> Before connecting, go to the{" "}
+                                    <a href="https://groww.in/trade-api/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-medium">Groww Cloud API Keys page</a>
+                                    {" "}and approve your API key for today.
+                                  </p>
+                                </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="groww-api-key" className="text-slate-700 dark:text-slate-300">API Key</Label>
                                   <Input
@@ -25014,6 +25022,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 </DialogTitle>
                               </DialogHeader>
                               <div className="space-y-4 py-4">
+                                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                                  <span className="text-amber-500 text-sm mt-0.5">⚠️</span>
+                                  <p className="text-[11px] text-amber-700 dark:text-amber-400 leading-relaxed">
+                                    <span className="font-semibold">Daily Approval Required:</span> Before connecting, go to the{" "}
+                                    <a href="https://groww.in/trade-api/api-keys" target="_blank" rel="noopener noreferrer" className="underline font-medium">Groww Cloud API Keys page</a>
+                                    {" "}and approve your API key for today.
+                                  </p>
+                                </div>
                                 <div className="space-y-2">
                                   <Label htmlFor="groww-api-key" className="text-slate-700 dark:text-slate-300">API Key</Label>
                                   <Input

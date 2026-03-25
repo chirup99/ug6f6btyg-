@@ -1,62 +1,83 @@
 import axios from 'axios';
+import crypto from 'crypto';
+import { v4 as uuidv4 } from 'uuid';
 
 /**
- * Groww API Service
- * Uses the Groww Trade API (growwapi.in) with API Key + Secret flow.
- * Reference: https://groww.in/trade-api/docs/python-sdk
+ * Groww Trade API Service
+ *
+ * Reverse-engineered from the official Python SDK (growwapi v1.5.0).
+ * Authentication flow:
+ *   POST https://api.groww.in/v1/token/api/access
+ *   Headers:  Authorization: Bearer <api_key>
+ *   Body:     { key_type: "approval", timestamp: <unix_seconds>, checksum: SHA256(secret + timestamp_str) }
+ *   Response: { token: "<access_token>" }
  */
 
-const BASE_URL = 'https://growwapi.in';
+const BASE_URL = 'https://api.groww.in/v1';
+
+function buildHeaders(apiKeyOrToken: string): Record<string, string> {
+  return {
+    'Authorization': `Bearer ${apiKeyOrToken}`,
+    'Content-Type': 'application/json',
+    'x-request-id': uuidv4(),
+    'x-client-id': 'growwapi',
+    'x-client-platform': 'growwapi-python-client',
+    'x-client-platform-version': '1.5.0',
+    'x-api-version': '1.0',
+  };
+}
+
+function generateChecksum(secret: string, timestamp: number): string {
+  const input = secret + String(timestamp);
+  return crypto.createHash('sha256').update(input, 'utf8').digest('hex');
+}
 
 export async function getGrowwAccessToken(apiKey: string, apiSecret: string): Promise<string> {
-  try {
-    console.log(`🔐 Authenticating with Groww for API Key: ${apiKey.substring(0, 5)}...`);
+  const timestamp = Math.floor(Date.now() / 1000);
+  const checksum = generateChecksum(apiSecret, timestamp);
 
-    // POST /v1/login with api_key and secret to get access_token
-    const response = await axios.post(`${BASE_URL}/v1/login`, {
-      api_key: apiKey,
-      secret: apiSecret
-    }, {
-      headers: { 'Content-Type': 'application/json' }
+  const body = {
+    key_type: 'approval',
+    checksum,
+    timestamp,
+  };
+
+  console.log(`🔐 Authenticating with Groww — API Key: ${apiKey.substring(0, 5)}... endpoint: ${BASE_URL}/token/api/access`);
+
+  try {
+    const response = await axios.post(`${BASE_URL}/token/api/access`, body, {
+      headers: buildHeaders(apiKey),
+      timeout: 15000,
     });
 
-    if (response.data && response.data.access_token) {
+    const token = response.data?.token;
+    if (token) {
       console.log('✅ Groww authentication successful');
-      return response.data.access_token;
+      return token;
     }
 
-    // Some versions return the token at a different key
-    if (response.data && response.data.data && response.data.data.access_token) {
-      console.log('✅ Groww authentication successful');
-      return response.data.data.access_token;
-    }
-
-    throw new Error('No access_token in Groww response');
+    console.error('❌ Groww: no token in response', JSON.stringify(response.data));
+    throw new Error('No token in Groww response');
   } catch (error: any) {
-    console.error('❌ Groww Auth Error:', error.response?.data || error.message);
-    throw new Error(`Groww authentication failed: ${error.response?.data?.message || error.message}`);
+    const status = error.response?.status;
+    const body = error.response?.data;
+    const displayMsg = body?.error?.displayMessage || body?.message || error.message;
+    console.error(`❌ Groww Auth Error (HTTP ${status}):`, JSON.stringify(body));
+    throw new Error(`Groww authentication failed (${status}): ${displayMsg}`);
   }
 }
 
 export async function fetchGrowwFunds(accessToken: string): Promise<number> {
   try {
     console.log('💰 Fetching funds from Groww...');
-    const response = await axios.get(`${BASE_URL}/v1/accounts/funds`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
+    const response = await axios.get(`${BASE_URL}/accounts/funds`, {
+      headers: buildHeaders(accessToken),
+      timeout: 10000,
     });
 
-    if (response.data && response.data.available_cash !== undefined) {
-      return response.data.available_cash;
-    }
-    if (response.data && response.data.data && response.data.data.available_cash !== undefined) {
-      return response.data.data.available_cash;
-    }
-    return 0;
+    return response.data?.available_cash ?? response.data?.data?.available_cash ?? 0;
   } catch (error: any) {
-    console.error('❌ Groww Funds Error:', error.message);
+    console.error('❌ Groww Funds Error:', error.response?.data || error.message);
     return 0;
   }
 }
@@ -64,14 +85,17 @@ export async function fetchGrowwFunds(accessToken: string): Promise<number> {
 export async function fetchGrowwTrades(accessToken: string): Promise<any[]> {
   try {
     console.log('📜 Fetching orders from Groww...');
-    const response = await axios.get(`${BASE_URL}/v1/orders`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
+    const response = await axios.get(`${BASE_URL}/orders/list`, {
+      headers: buildHeaders(accessToken),
+      timeout: 10000,
     });
 
-    const orderList = response.data?.order_list || response.data?.data?.order_list || response.data || [];
+    const orderList =
+      response.data?.order_list ||
+      response.data?.data?.order_list ||
+      response.data?.payload?.order_list ||
+      response.data ||
+      [];
 
     if (Array.isArray(orderList)) {
       return orderList.map((order: any) => ({
@@ -82,13 +106,13 @@ export async function fetchGrowwTrades(accessToken: string): Promise<any[]> {
         qty: order.quantity,
         price: order.average_fill_price || order.average_price || order.price,
         status: order.order_status,
-        groww_order_id: order.groww_order_id || order.order_id
+        groww_order_id: order.groww_order_id || order.order_id,
       }));
     }
 
     return [];
   } catch (error: any) {
-    console.error('❌ Groww Orders Error:', error.message);
+    console.error('❌ Groww Orders Error:', error.response?.data || error.message);
     return [];
   }
 }
@@ -96,20 +120,21 @@ export async function fetchGrowwTrades(accessToken: string): Promise<any[]> {
 export async function fetchGrowwPositions(accessToken: string): Promise<any[]> {
   try {
     console.log('💼 Fetching positions from Groww...');
-    const response = await axios.get(`${BASE_URL}/v1/positions`, {
-      headers: {
-        'Authorization': `Bearer ${accessToken}`,
-        'Content-Type': 'application/json'
-      }
+    const response = await axios.get(`${BASE_URL}/positions`, {
+      headers: buildHeaders(accessToken),
+      timeout: 10000,
     });
 
-    const positions = response.data?.data || response.data || [];
-    if (Array.isArray(positions)) {
-      return positions;
-    }
+    const positions =
+      response.data?.payload ||
+      response.data?.data ||
+      response.data ||
+      [];
+
+    if (Array.isArray(positions)) return positions;
     return [];
   } catch (error: any) {
-    console.error('❌ Groww Positions Error:', error.message);
+    console.error('❌ Groww Positions Error:', error.response?.data || error.message);
     return [];
   }
 }

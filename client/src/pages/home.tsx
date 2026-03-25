@@ -26437,7 +26437,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                             {/* Time period tab switcher */}
                             <div className="flex gap-0.5 mb-4 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-                              {(['1D', '1M', '3M', '6M', '1Y'] as const).map((tab) => (
+                              {(['1D', '1M', '3M', '1Y'] as const).map((tab) => (
                                 <button
                                   key={tab}
                                   onClick={() => setPerfTrendTab(tab)}
@@ -26599,42 +26599,63 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             ) : (
                               (() => {
                                 const now = new Date();
-                                const cutoff = new Date();
-                                if (perfTrendTab === '1M') cutoff.setMonth(now.getMonth() - 1);
-                                else if (perfTrendTab === '3M') cutoff.setMonth(now.getMonth() - 3);
-                                else if (perfTrendTab === '6M') cutoff.setMonth(now.getMonth() - 6);
-                                else if (perfTrendTab === '1Y') cutoff.setFullYear(now.getFullYear() - 1);
 
-                                // Read from tradingDataByDate directly for full tradebook sync
+                                // Smart P&L extractor — reads from every possible data path
+                                const getDayPnL = (dayData: any): number => {
+                                  if (!dayData) return 0;
+                                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                                  if (metrics?.netPnL !== undefined && metrics.netPnL !== 0) return metrics.netPnL;
+                                  // Try top-level fields used by demo/personal data storage
+                                  if (dayData.profitLossAmount !== undefined && dayData.profitLossAmount !== 0) return dayData.profitLossAmount;
+                                  if (dayData.totalPnL !== undefined && dayData.totalPnL !== 0) return dayData.totalPnL;
+                                  if (dayData.pnl !== undefined && dayData.pnl !== 0) return dayData.pnl;
+                                  // Fallback: sum trade-level PnL
+                                  const trades: any[] = dayData?.tradingData?.tradeHistory || dayData?.tradeHistory || dayData?.trades || [];
+                                  if (trades.length > 0) {
+                                    return trades.reduce((sum: number, t: any) => {
+                                      const p = typeof t.pnl === 'number' ? t.pnl : parseFloat((t.pnl || '0').replace(/[₹,+\s]/g, '')) || 0;
+                                      return sum + p;
+                                    }, 0);
+                                  }
+                                  return 0;
+                                };
+
+                                const getDayTrades = (dayData: any): number => {
+                                  if (!dayData) return 0;
+                                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                                  if ((metrics?.totalTrades || 0) > 0) return metrics.totalTrades;
+                                  if ((dayData.totalTrades || 0) > 0) return dayData.totalTrades;
+                                  const arr: any[] = dayData?.tradingData?.tradeHistory || dayData?.tradeHistory || dayData?.trades || [];
+                                  return arr.length;
+                                };
+
+                                // Read ALL dates from tradingDataByDate (fully synced with tradebook)
                                 const sourceData = tradingDataByDate;
-
-                                const allDates = Object.keys(sourceData)
-                                  .filter(date => {
-                                    if (perfTrendTab === '1Y') {
-                                      // Show full heatmap year (e.g. 2025 when calendar is on 2025)
-                                      return new Date(date).getFullYear() === heatmapYear;
-                                    }
-                                    return new Date(date) >= cutoff && new Date(date) <= now;
-                                  })
-                                  .filter(date => {
-                                    const d = sourceData[date];
-                                    const metrics = d?.tradingData?.performanceMetrics || d?.performanceMetrics;
-                                    return (metrics?.totalTrades || 0) > 0 || (d?.tradingData?.tradeHistory || d?.tradeHistory || d?.trades || []).length > 0;
-                                  })
+                                const allAvailableDates = Object.keys(sourceData)
+                                  .filter(date => getDayTrades(sourceData[date]) > 0 || Math.abs(getDayPnL(sourceData[date])) > 0)
                                   .sort();
 
-                                const chartData = allDates.map((dateStr) => {
+                                // Filter dates by selected period
+                                let filteredDates: string[];
+                                if (perfTrendTab === '1Y') {
+                                  // Show the whole calendar year that's currently selected on the heatmap
+                                  filteredDates = allAvailableDates.filter(d => new Date(d).getFullYear() === heatmapYear);
+                                  // Fallback: if nothing found for heatmapYear, show all available
+                                  if (filteredDates.length === 0) filteredDates = allAvailableDates;
+                                } else {
+                                  const cutoff = new Date();
+                                  if (perfTrendTab === '1M') cutoff.setMonth(now.getMonth() - 1);
+                                  else if (perfTrendTab === '3M') cutoff.setMonth(now.getMonth() - 3);
+                                  filteredDates = allAvailableDates.filter(d => new Date(d) >= cutoff);
+                                  // If not enough data in range, show all available (don't leave chart empty)
+                                  if (filteredDates.length === 0) filteredDates = allAvailableDates;
+                                }
+
+                                const chartData = filteredDates.map((dateStr) => {
                                   const date = new Date(dateStr);
                                   const dayData = sourceData[dateStr];
-                                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-                                  // Compute netPnL from trades if metrics missing
-                                  const trades: any[] = dayData?.tradingData?.tradeHistory || dayData?.tradeHistory || dayData?.trades || [];
-                                  const computedPnL = trades.reduce((sum: number, t: any) => {
-                                    const p = typeof t.pnl === 'number' ? t.pnl : parseFloat((t.pnl || '0').replace(/[₹,+\s]/g, '')) || 0;
-                                    return sum + p;
-                                  }, 0);
-                                  const netPnL = metrics?.netPnL ?? computedPnL;
-                                  const totalTrades = metrics?.totalTrades || trades.length;
+                                  const netPnL = getDayPnL(dayData);
+                                  const totalTrades = getDayTrades(dayData);
                                   return {
                                     day: `${date.getDate()}/${date.getMonth() + 1}`,
                                     value: netPnL,
@@ -26642,48 +26663,65 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     trades: totalTrades,
                                     formattedDate: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
                                   };
-                                }).filter(item => item.trades > 0);
+                                });
+
+                                // Show period label and total
+                                const totalPeriodPnL = chartData.reduce((s, d) => s + d.value, 0);
+                                const isPosPeriod = totalPeriodPnL >= 0;
+                                const periodLabel = perfTrendTab === '1Y'
+                                  ? `${heatmapYear}`
+                                  : perfTrendTab === '3M' ? 'Last 3 months' : 'Last month';
 
                                 if (chartData.length === 0) {
                                   return (
                                     <div className="flex items-center justify-center h-56 text-slate-500 dark:text-slate-400">
                                       <div className="text-center">
                                         <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                        <p className="text-sm">No data for this period</p>
+                                        <p className="text-sm">No trading data found</p>
+                                        <p className="text-xs mt-1 opacity-60">Add trades via the tradebook to see your trend</p>
                                       </div>
                                     </div>
                                   );
                                 }
 
-                                const chartStrokeColor = theme === 'dark' ? '#ffffff' : '#000000';
+                                const periodStroke = isPosPeriod ? '#10b981' : '#ef4444';
                                 const tooltipBg2 = theme === 'dark' ? '#1e293b' : '#ffffff';
                                 const tooltipText3 = theme === 'dark' ? '#e2e8f0' : '#1e293b';
 
                                 return (
                                   <div className="h-56 w-full">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                                        {chartData.length} trading day{chartData.length !== 1 ? 's' : ''} · {periodLabel}
+                                      </span>
+                                      <span className={`text-sm font-bold ${isPosPeriod ? 'text-emerald-600' : 'text-red-500'}`}>
+                                        {isPosPeriod ? '+' : ''}₹{Math.abs(totalPeriodPnL).toLocaleString()}
+                                      </span>
+                                    </div>
                                     <ResponsiveContainer width="100%" height="100%">
-                                      <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                      <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                                         <defs>
-                                          <linearGradient id="areaGradientPositive" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="0%" stopColor="rgb(107, 114, 128)" stopOpacity={0.6} />
-                                            <stop offset="100%" stopColor="rgb(107, 114, 128)" stopOpacity={0.1} />
+                                          <linearGradient id="periodGrad" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor={periodStroke} stopOpacity={0.35} />
+                                            <stop offset="100%" stopColor={periodStroke} stopOpacity={0.04} />
                                           </linearGradient>
                                         </defs>
                                         <XAxis dataKey="day" axisLine={false} tickLine={false} tick={false} />
                                         <YAxis
                                           axisLine={false}
                                           tickLine={false}
-                                          tick={{ fontSize: 12, fill: theme === 'dark' ? '#cbd5e1' : '#64748b' }}
+                                          tick={{ fontSize: 11, fill: theme === 'dark' ? '#cbd5e1' : '#64748b' }}
                                           tickFormatter={v => `${v >= 0 ? '' : '-'}${(Math.abs(v) / 1000).toFixed(0)}K`}
-                                          domain={['dataMin - 1000', 'dataMax + 1000']}
+                                          domain={['dataMin - 500', 'dataMax + 500']}
                                         />
+                                        <ReferenceLine y={0} stroke={theme === 'dark' ? '#475569' : '#cbd5e1'} strokeDasharray="4 4" />
                                         <Tooltip
                                           contentStyle={{ background: tooltipBg2, border: `1px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, borderRadius: '12px', color: tooltipText3, fontSize: '12px', padding: '8px 12px' }}
                                           formatter={(v: any) => [`${v >= 0 ? '₹' : '-₹'}${Math.abs(v).toLocaleString()}`, 'Daily P&L']}
                                           labelFormatter={(label, payload) => {
                                             if (payload && payload[0] && payload[0].payload) {
                                               const data = payload[0].payload;
-                                              return `${data.formattedDate} • ${data.trades} trades`;
+                                              return `${data.formattedDate} • ${data.trades} trade${data.trades !== 1 ? 's' : ''}`;
                                             }
                                             return label;
                                           }}
@@ -26691,11 +26729,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <Area
                                           type="natural"
                                           dataKey="value"
-                                          stroke={chartStrokeColor}
-                                          strokeWidth={3}
-                                          fill="url(#areaGradientPositive)"
-                                          dot={false}
-                                          activeDot={{ r: 6, fill: chartStrokeColor, stroke: 'white', strokeWidth: 2 }}
+                                          stroke={periodStroke}
+                                          strokeWidth={2.5}
+                                          fill="url(#periodGrad)"
+                                          dot={(p: any) => p.payload.value !== 0
+                                            ? <circle key={`pd-${p.payload.date}`} cx={p.cx} cy={p.cy} r={3} fill={p.payload.value >= 0 ? '#10b981' : '#ef4444'} stroke="white" strokeWidth={1.5} />
+                                            : <g key={`pd-empty-${p.payload.date}`} />}
+                                          activeDot={{ r: 5, fill: periodStroke, stroke: 'white', strokeWidth: 2 }}
                                           isAnimationActive={true}
                                           animationDuration={600}
                                           animationEasing="ease-in-out"

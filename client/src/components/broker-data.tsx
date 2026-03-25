@@ -154,27 +154,11 @@ export function BrokerData(props: BrokerDataProps) {
     return () => clearInterval(interval);
   }, [deltaExchangeIsConnected, showOrderModal, queryClient]);
 
-  // Refresh Groww funds every 30 seconds if connected
-  useEffect(() => {
-    if (activeBroker !== 'groww' || !showOrderModal) return;
-
-    const refreshGrowwFunds = async () => {
-      try {
-        const response = await apiRequest("GET", `/api/broker/groww/funds?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
-        console.log("🔍 [GROWW] Funds refresh response:", response);
-        queryClient.invalidateQueries({ queryKey: ["/api/broker/groww/funds"] });
-      } catch (error) {
-        console.error("Error refreshing Groww funds:", error);
-      }
-    };
-
-    refreshGrowwFunds();
-    const interval = setInterval(refreshGrowwFunds, 30000);
-    return () => clearInterval(interval);
-  }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
 
   const [growwOrders, setGrowwOrders] = useState<any[]>([]);
   const [fetchingGrowwOrders, setFetchingGrowwOrders] = useState(false);
+  const [growwPositions, setGrowwPositions] = useState<any[]>([]);
+  const [growwFundsValue, setGrowwFundsValue] = useState<number>(0);
 
   // Refresh Groww orders every 15 seconds if connected
   useEffect(() => {
@@ -188,7 +172,6 @@ export function BrokerData(props: BrokerDataProps) {
         if (response.success && response.orders) {
           setGrowwOrders(response.orders);
         }
-        queryClient.invalidateQueries({ queryKey: ["/api/broker/groww/orders"] });
       } catch (error) {
         console.error("Error refreshing Groww orders:", error);
       } finally {
@@ -196,12 +179,42 @@ export function BrokerData(props: BrokerDataProps) {
       }
     };
 
+    const refreshGrowwPositions = async () => {
+      try {
+        const response = await apiRequest("GET", `/api/broker/groww/positions?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
+        console.log("🔍 [GROWW] Positions refresh response:", response);
+        if (response.success && response.positions) {
+          setGrowwPositions(response.positions);
+        }
+      } catch (error) {
+        console.error("Error refreshing Groww positions:", error);
+      }
+    };
+
+    const refreshGrowwFunds = async () => {
+      try {
+        const response = await apiRequest("GET", `/api/broker/groww/funds?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
+        if (response.success && response.funds !== undefined) {
+          setGrowwFundsValue(response.funds);
+        }
+      } catch (error) {
+        console.error("Error refreshing Groww funds:", error);
+      }
+    };
+
     refreshGrowwOrders();
-    const interval = setInterval(refreshGrowwOrders, 15000);
+    refreshGrowwPositions();
+    refreshGrowwFunds();
+    const interval = setInterval(() => {
+      refreshGrowwOrders();
+      refreshGrowwPositions();
+      refreshGrowwFunds();
+    }, 15000);
     return () => clearInterval(interval);
   }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
 
   const displayOrders = activeBroker === 'groww' ? growwOrders : brokerOrders;
+  const displayPositions = activeBroker === 'groww' ? growwPositions : brokerPositions;
   const isFetchingOrders = activeBroker === 'groww' ? fetchingGrowwOrders : fetchingBrokerOrders;
 
   const formatSymbol = (symbol: string) => {
@@ -227,14 +240,14 @@ export function BrokerData(props: BrokerDataProps) {
   };
 
   const brokerFundsValue = activeBroker === 'groww'
-    ? (queryClient.getQueryData<{funds: number}>(["/api/broker/groww/funds"])?.funds ?? brokerFunds)
+    ? (growwFundsValue || brokerFunds || 0)
     : brokerFunds;
 
   const allBrokerInfo: Record<string, { logo: string; id: string; name: string; rounded?: boolean }> = {
     zerodha:  { logo: "https://zerodha.com/static/images/products/kite-logo.svg", id: zerodhaClientId || "N/A", name: zerodhaUserName || "N/A" },
     upstox:   { logo: "https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png", id: upstoxUserId || "N/A", name: (upstoxUserName && upstoxUserName !== "undefined" && upstoxUserName !== "N/A" ? upstoxUserName : "Upstox User") },
     dhan:     { logo: "https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701", id: dhanClientId || dhanUserId || "N/A", name: dhanClientName || "Dhan User" },
-    groww:    { logo: "https://groww.in/logo-groww-rectangular.svg", id: growwUserId || "N/A", name: growwUserName || "Groww User" },
+    groww:    { logo: "https://play-lh.googleusercontent.com/LHjOai6kf1IsstKNWO9jbMxD-ix_FVYaJSLodKCqYQdoFVzQBuV9z5txxzcTagQcyX8=s48-rw", id: growwUserId || "N/A", name: growwUserName || "Groww User", rounded: true },
     delta:    { logo: "https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw", id: (deltaExchangeUserId && deltaExchangeUserId !== "Fetching..." ? deltaExchangeUserId : "N/A"), name: (deltaExchangeAccountName && deltaExchangeAccountName !== "Delta User" ? deltaExchangeAccountName : "Delta User"), rounded: true },
     fyers:    { logo: "https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw", id: fyersStatus?.userId || "N/A", name: fyersStatus?.userName || "Fyers User", rounded: true },
     angelone: { logo: "https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701", id: angelOneClientCode || "N/A", name: angelOneUserName || "Angel One User", rounded: true },

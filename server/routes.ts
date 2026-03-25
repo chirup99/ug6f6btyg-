@@ -12225,6 +12225,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.get("/api/broker/groww/positions", async (req, res) => {
+    try {
+      const { accessToken } = req.query;
+      if (!accessToken) return res.status(400).json({ error: "Access token required" });
+      const { fetchGrowwPositions } = await import('./services/broker-integrations/growwService');
+      const positions = await fetchGrowwPositions(accessToken as string);
+      res.json({ success: true, positions });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.get("/api/broker/groww/profile", async (req, res) => {
+    try {
+      const { accessToken } = req.query;
+      if (!accessToken) return res.status(400).json({ error: "Access token required" });
+      const { getGrowwUserProfile } = await import('./services/broker-integrations/growwService');
+      const profile = await getGrowwUserProfile(accessToken as string);
+      res.json({ success: true, ...profile });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
   // Fyers authentication URL
   app.get("/api/auth/url", async (req, res) => {
     try {

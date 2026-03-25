@@ -4918,8 +4918,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
       if (response.success) {
         const accessToken = response.accessToken;
-        const userId = growwApiKeyInput.substring(0, 6);
-        const userName = "Groww User";
+
+        // Fetch real user profile from Groww
+        let userId = growwApiKeyInput.substring(0, 6);
+        let userName = "Groww User";
+        try {
+          const profileRes = await fetch(`/api/broker/groww/profile?accessToken=${encodeURIComponent(accessToken)}`);
+          const profileData = await profileRes.json();
+          if (profileData.success) {
+            userId = profileData.userId || userId;
+            userName = profileData.userName || userName;
+          }
+        } catch (e) {
+          console.error("Failed to fetch Groww profile", e);
+        }
 
         localStorage.setItem("growwIsConnected", "true");
         localStorage.setItem("growwAccessToken", accessToken);
@@ -4934,7 +4946,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         
         // Fetch funds after connection
         try {
-          const fundsRes = await fetch(`/api/broker/groww/funds?accessToken=${accessToken}`);
+          const fundsRes = await fetch(`/api/broker/groww/funds?accessToken=${encodeURIComponent(accessToken)}`);
           const fundsData = await fundsRes.json();
           if (fundsData.success) {
             setBrokerFunds(fundsData.funds);
@@ -4946,7 +4958,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         toast({
           title: "Connected",
-          description: "Groww account connected successfully",
+          description: `Groww account connected — ${userName}`,
         });
       }
     } catch (error: any) {

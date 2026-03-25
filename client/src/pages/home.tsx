@@ -12938,21 +12938,21 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           heatmapMode === 2 ? setTradeHistoryData2(journalData.tradeHistory) : setTradeHistoryData(journalData.tradeHistory);
           console.log("📊 Loaded trade history from AWS:", journalData.tradeHistory.length, "trades");
 
-          // Extract symbols with most trades
+          // Extract index symbols for the symbol cycler (NIFTY50, BANKNIFTY, etc.)
           const symbols = extractTradedSymbols(journalData.tradeHistory);
           if (symbols.length > 0) {
             setTradedSymbols(symbols);
             setCurrentSymbolIndex(0);
-
             console.log(`📊 Extracted traded symbols:`, symbols);
-            // ✅ SYNC HEATMAP HEADER: Update when date is selected from trade book
-            const firstSymbol = symbols[0];
-            setHeatmapSelectedSymbol(`NSE:${firstSymbol}-INDEX`);
+          }
+
+          // Use the raw symbol from the first trade for the chart — smart resolution handles EQ/FUT/MCX
+          const rawFirstSymbol = journalData.tradeHistory[0]?.symbol || journalData.tradeHistory[0]?.tradingSymbol || '';
+          if (rawFirstSymbol) {
             setHeatmapSelectedDate(dateString);
-            console.log(`🗓️ [TRADE BOOK SELECT] Syncing heatmap header with date: ${dateString}, symbol: ${firstSymbol}`);
-            // ✅ DO NOT set selectedJournalSymbol here - manual search chart is independent from heatmap
-            // ✅ FETCH CHART DATA: Load chart for this date and symbol from PersonalHeatmap
-            fetchHeatmapChartData(`NSE:${firstSymbol}-INDEX`, dateString);
+            console.log(`🗓️ [TRADE BOOK SELECT] Fetching chart for raw symbol: ${rawFirstSymbol} on ${dateString}`);
+            // ✅ FETCH CHART DATA: Smart resolution handles EQ, FUT, CE/PE, MCX, INDEX
+            fetchHeatmapChartData(rawFirstSymbol, dateString);
           }
         }
 
@@ -13061,19 +13061,21 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             );
             console.log("📊 Trade data source: DYNAMODB (no hardcoded data)");
 
-            // Extract symbols with most trades
+            // Extract index symbols for the symbol cycler (NIFTY50, BANKNIFTY, etc.)
             const symbols = extractTradedSymbols(journalData.tradeHistory);
             if (symbols.length > 0) {
               setTradedSymbols(symbols);
               setCurrentSymbolIndex(0);
-
               console.log(`📊 Extracted traded symbols:`, symbols);
-              // ✅ SYNC HEATMAP HEADER: Update when date is selected from trade book
-              const firstSymbol = symbols[0];
-              setHeatmapSelectedSymbol(`NSE:${firstSymbol}-INDEX`);
+            }
+
+            // Use the raw symbol from the first trade for the chart — smart resolution handles EQ/FUT/MCX
+            const rawFirstSymbol = journalData.tradeHistory[0]?.symbol || journalData.tradeHistory[0]?.tradingSymbol || '';
+            if (rawFirstSymbol) {
               setHeatmapSelectedDate(dateString);
-              console.log(`🗓️ [TRADE BOOK SELECT] Syncing heatmap header with date: ${dateString}, symbol: ${firstSymbol}`);
-              // ✅ DO NOT set selectedJournalSymbol here - manual search chart is independent from heatmap
+              console.log(`🗓️ [TRADE BOOK SELECT] Fetching chart for raw symbol: ${rawFirstSymbol} on ${dateString}`);
+              // ✅ FETCH CHART DATA: Smart resolution handles EQ, FUT, CE/PE, MCX, INDEX
+              fetchHeatmapChartData(rawFirstSymbol, dateString);
             }
           } else {
             // No trade history in AWS - keep empty state, DO NOT construct fake data

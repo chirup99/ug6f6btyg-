@@ -2304,6 +2304,7 @@ export default function Home() {
   const [durFilterMonth, setDurFilterMonth] = useState<string>('all');
   const [durFilterYear, setDurFilterYear] = useState<string>('all');
   const [durExpandedRows, setDurExpandedRows] = useState<Set<string>>(new Set());
+  const [durTableOpen, setDurTableOpen] = useState<boolean>(false);
   
   // Primary owner email - only this user can manage admin access
   const PRIMARY_OWNER_EMAIL = "chiranjeevi.perala99@gmail.com";
@@ -27147,42 +27148,48 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         });
                                         return (
                                           <div>
-                                            <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                                            <div
+                                              className="flex flex-wrap items-center justify-between gap-3 mb-3 cursor-pointer select-none"
+                                              onClick={() => setDurTableOpen(prev => !prev)}
+                                            >
                                               <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                                                 <CalendarDays className="w-4 h-4 text-amber-500" />
                                                 Date-wise Duration Breakdown
                                                 <span className="text-[10px] font-normal text-slate-400 ml-1">· tap row to see trades</span>
+                                                <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${durTableOpen ? 'rotate-180' : ''}`} />
                                               </h4>
-                                              <div className="flex items-center gap-2">
-                                                <select
-                                                  value={durFilterYear}
-                                                  onChange={e => { setDurFilterYear(e.target.value); setDurFilterMonth('all'); }}
-                                                  className="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
-                                                >
-                                                  <option value="all">All Years</option>
-                                                  {allYears.map(y => <option key={y} value={y}>{y}</option>)}
-                                                </select>
-                                                <select
-                                                  value={durFilterMonth}
-                                                  onChange={e => setDurFilterMonth(e.target.value)}
-                                                  className="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
-                                                >
-                                                  <option value="all">All Months</option>
-                                                  {allMonths
-                                                    .filter(m => durFilterYear==='all' || m.startsWith(durFilterYear))
-                                                    .map(m => {
-                                                      const [y, mo] = m.split('-');
-                                                      return <option key={m} value={m}>{monthNames[mo]} {y}</option>;
-                                                    })}
-                                                </select>
-                                                {(durFilterMonth!=='all'||durFilterYear!=='all') && (
-                                                  <button onClick={() => { setDurFilterMonth('all'); setDurFilterYear('all'); }} className="text-[10px] text-amber-500 hover:text-amber-600 font-semibold underline">
-                                                    Clear
-                                                  </button>
-                                                )}
-                                              </div>
+                                              {durTableOpen && (
+                                                <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
+                                                  <select
+                                                    value={durFilterYear}
+                                                    onChange={e => { setDurFilterYear(e.target.value); setDurFilterMonth('all'); }}
+                                                    className="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
+                                                  >
+                                                    <option value="all">All Years</option>
+                                                    {allYears.map(y => <option key={y} value={y}>{y}</option>)}
+                                                  </select>
+                                                  <select
+                                                    value={durFilterMonth}
+                                                    onChange={e => setDurFilterMonth(e.target.value)}
+                                                    className="text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-amber-400/40 cursor-pointer"
+                                                  >
+                                                    <option value="all">All Months</option>
+                                                    {allMonths
+                                                      .filter(m => durFilterYear==='all' || m.startsWith(durFilterYear))
+                                                      .map(m => {
+                                                        const [y, mo] = m.split('-');
+                                                        return <option key={m} value={m}>{monthNames[mo]} {y}</option>;
+                                                      })}
+                                                  </select>
+                                                  {(durFilterMonth!=='all'||durFilterYear!=='all') && (
+                                                    <button onClick={() => { setDurFilterMonth('all'); setDurFilterYear('all'); }} className="text-[10px] text-amber-500 hover:text-amber-600 font-semibold underline">
+                                                      Clear
+                                                    </button>
+                                                  )}
+                                                </div>
+                                              )}
                                             </div>
-                                            <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
+                                            {durTableOpen && <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
                                               <div className="overflow-x-auto">
                                                 <table className="w-full text-xs">
                                                   <thead>
@@ -27288,7 +27295,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                   </tbody>
                                                 </table>
                                               </div>
-                                            </div>
+                                            </div>}
                                           </div>
                                         );
                                       })()}

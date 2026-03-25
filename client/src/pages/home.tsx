@@ -20655,7 +20655,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           >
                             <Button
                               variant="secondary"
-                              className="bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                              className="hidden bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
                               onClick={() => {
                                 const userId = localStorage.getItem('currentUserId');
                                 const userEmail = localStorage.getItem('currentUserEmail');

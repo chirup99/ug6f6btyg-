@@ -12240,7 +12240,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // ✅ NEW: Heatmap data and date range state for Performance Trend filtering
   const [heatmapDataFromComponent, setHeatmapDataFromComponent] = useState<Record<string, any>>({});
   const [selectedDateRange, setSelectedDateRange] = useState<{ from: Date; to: Date } | null>(null);
-  const [perfTrendTab, setPerfTrendTab] = useState<string>('1M');
+  const [perfTrendTab, setPerfTrendTab] = useState<string>('1Y');
 
   // Track if user has manually toggled the switch (to prevent auto-switching after manual toggle)
   const [hasManuallyToggledMode, setHasManuallyToggledMode] = useState(() => {
@@ -26460,7 +26460,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 const selectedDateLabel = selectedDate
                                   ? selectedDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
                                   : 'Today';
-                                const todayData = filteredHeatmapData[selectedDateStr];
+                                // Read directly from tradingDataByDate to stay in sync with tradebook
+                                const todayData = tradingDataByDate[selectedDateStr] || filteredHeatmapData[selectedDateStr];
                                 const raw = todayData?.tradingData || todayData;
                                 const allTodayTrades: any[] = raw?.tradeHistory || raw?.trades || [];
 
@@ -26476,33 +26477,41 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   return h * 60 + m;
                                 };
 
-                                const MARKET_OPEN = 9 * 60 + 15;
-                                const MARKET_CLOSE = 15 * 60 + 30;
-
+                                // Include ALL trades regardless of time/symbol (no market hours filter)
+                                // This covers equity, commodity, currency, and any other segment
                                 const sortedTrades = [...allTodayTrades]
-                                  .map(t => ({
+                                  .map((t, idx) => ({
                                     ...t,
                                     pnl: typeof t.pnl === 'number' ? t.pnl : parseFloat((t.pnl || '0').replace(/[₹,+\s]/g, '')) || 0,
-                                    timeMin: parseTimeToMin(t.time || '')
+                                    timeMin: parseTimeToMin(t.time || ''),
+                                    tradeIdx: idx,
                                   }))
-                                  .filter(t => t.timeMin >= MARKET_OPEN && t.timeMin <= MARKET_CLOSE)
-                                  .sort((a, b) => a.timeMin - b.timeMin);
+                                  .sort((a, b) => {
+                                    // Sort by parsed time if available, otherwise preserve original order
+                                    if (a.timeMin !== -1 && b.timeMin !== -1) return a.timeMin - b.timeMin;
+                                    if (a.timeMin !== -1) return -1;
+                                    if (b.timeMin !== -1) return 1;
+                                    return a.tradeIdx - b.tradeIdx;
+                                  });
 
                                 let cumulative = 0;
-                                const intradayData: any[] = [{ label: '9:15', cumPnL: 0, timeMin: MARKET_OPEN }];
-                                sortedTrades.forEach(t => {
+                                const firstLabel = sortedTrades.length > 0 && sortedTrades[0].timeMin !== -1
+                                  ? (() => { const h = Math.floor(sortedTrades[0].timeMin / 60); const m = sortedTrades[0].timeMin % 60; return `${h}:${m.toString().padStart(2,'0')}`; })()
+                                  : 'Start';
+                                const intradayData: any[] = [{ label: firstLabel, cumPnL: 0, timeMin: sortedTrades[0]?.timeMin ?? 0 }];
+                                sortedTrades.forEach((t, idx) => {
                                   cumulative += t.pnl;
-                                  const h = Math.floor(t.timeMin / 60);
-                                  const m = t.timeMin % 60;
+                                  const label = t.timeMin !== -1
+                                    ? `${Math.floor(t.timeMin / 60)}:${(t.timeMin % 60).toString().padStart(2, '0')}`
+                                    : `T${idx + 1}`;
                                   intradayData.push({
-                                    label: `${h}:${m.toString().padStart(2, '0')}`,
+                                    label,
                                     cumPnL: cumulative,
                                     timeMin: t.timeMin,
                                     pnl: t.pnl,
                                     symbol: t.symbol || t.stock || '',
                                   });
                                 });
-                                intradayData.push({ label: '15:30', cumPnL: cumulative, timeMin: MARKET_CLOSE });
 
                                 if (sortedTrades.length === 0) {
                                   return (
@@ -26510,7 +26519,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       <div className="text-center">
                                         <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
                                         <p className="text-sm font-medium">No trades on {selectedDateLabel}</p>
-                                        <p className="text-xs mt-1 opacity-60">Market hours: 9:15 AM – 3:30 PM</p>
+                                        <p className="text-xs mt-1 opacity-60">Select a date from the tradebook to view performance</p>
                                       </div>
                                     </div>
                                   );
@@ -26594,21 +26603,38 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 if (perfTrendTab === '1M') cutoff.setMonth(now.getMonth() - 1);
                                 else if (perfTrendTab === '3M') cutoff.setMonth(now.getMonth() - 3);
                                 else if (perfTrendTab === '6M') cutoff.setMonth(now.getMonth() - 6);
+                                else if (perfTrendTab === '1Y') cutoff.setFullYear(now.getFullYear() - 1);
 
-                                const allDates = Object.keys(filteredHeatmapData)
+                                // Read from tradingDataByDate directly for full tradebook sync
+                                const sourceData = tradingDataByDate;
+
+                                const allDates = Object.keys(sourceData)
                                   .filter(date => {
-                                    if (perfTrendTab === '1Y') return new Date(date).getFullYear() === heatmapYear;
-                                    return new Date(date) >= cutoff;
+                                    if (perfTrendTab === '1Y') {
+                                      // Show full heatmap year (e.g. 2025 when calendar is on 2025)
+                                      return new Date(date).getFullYear() === heatmapYear;
+                                    }
+                                    return new Date(date) >= cutoff && new Date(date) <= now;
                                   })
-                                  .filter(date => filteredHeatmapData[date] !== undefined)
+                                  .filter(date => {
+                                    const d = sourceData[date];
+                                    const metrics = d?.tradingData?.performanceMetrics || d?.performanceMetrics;
+                                    return (metrics?.totalTrades || 0) > 0 || (d?.tradingData?.tradeHistory || d?.tradeHistory || d?.trades || []).length > 0;
+                                  })
                                   .sort();
 
                                 const chartData = allDates.map((dateStr) => {
                                   const date = new Date(dateStr);
-                                  const dayData = filteredHeatmapData[dateStr];
+                                  const dayData = sourceData[dateStr];
                                   const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-                                  const netPnL = metrics?.netPnL || 0;
-                                  const totalTrades = metrics?.totalTrades || 0;
+                                  // Compute netPnL from trades if metrics missing
+                                  const trades: any[] = dayData?.tradingData?.tradeHistory || dayData?.tradeHistory || dayData?.trades || [];
+                                  const computedPnL = trades.reduce((sum: number, t: any) => {
+                                    const p = typeof t.pnl === 'number' ? t.pnl : parseFloat((t.pnl || '0').replace(/[₹,+\s]/g, '')) || 0;
+                                    return sum + p;
+                                  }, 0);
+                                  const netPnL = metrics?.netPnL ?? computedPnL;
+                                  const totalTrades = metrics?.totalTrades || trades.length;
                                   return {
                                     day: `${date.getDate()}/${date.getMonth() + 1}`,
                                     value: netPnL,

@@ -22961,30 +22961,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               </div>
                               <div>
                                 <p className="text-gray-500 dark:text-gray-400 text-[10px] uppercase font-medium">
-                                  Max %
-                                </p>
-                                <p className="text-sm font-bold text-green-600 mt-0.5">
-                                  {performanceMetrics.maxPnLPercent}%
-                                </p>
-                                <div className="flex items-center justify-center gap-0.5 text-[9px] text-gray-400 mt-0.5">
-                                  <Clock className="w-2 h-2" />
-                                  <span>{performanceMetrics.maxPnLDuration}</span>
-                                </div>
-                              </div>
-                              <div>
-                                <p className="text-gray-500 dark:text-gray-400 text-[10px] uppercase font-medium">
-                                  Min %
-                                </p>
-                                <p className="text-sm font-bold text-red-600 mt-0.5">
-                                  {performanceMetrics.minPnLPercent}%
-                                </p>
-                                <div className="flex items-center justify-center gap-0.5 text-[9px] text-gray-400 mt-0.5">
-                                  <Clock className="w-2 h-2" />
-                                  <span>{performanceMetrics.minPnLDuration}</span>
-                                </div>
-                              </div>
-                              <div>
-                                <p className="text-gray-500 dark:text-gray-400 text-[10px] uppercase font-medium">
                                   Net P&L
                                 </p>
                                 <p
@@ -22998,13 +22974,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   {performanceMetrics.netPnL.toLocaleString(
                                     "en-IN",
                                   )}
-                                </p>
-                                <p className={`text-[9px] font-medium ${
-                                  parseFloat(performanceMetrics.pnlPercentage) >= 0
-                                    ? "text-green-500"
-                                    : "text-red-500"
-                                }`}>
-                                  ({performanceMetrics.pnlPercentage}%)
                                 </p>
                               </div>
                             </div>

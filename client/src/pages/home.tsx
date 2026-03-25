@@ -12226,6 +12226,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // ✅ NEW: Heatmap data and date range state for Performance Trend filtering
   const [heatmapDataFromComponent, setHeatmapDataFromComponent] = useState<Record<string, any>>({});
   const [selectedDateRange, setSelectedDateRange] = useState<{ from: Date; to: Date } | null>(null);
+  const [perfTrendTab, setPerfTrendTab] = useState<string>('Overall');
 
   // Track if user has manually toggled the switch (to prevent auto-switching after manual toggle)
   const [hasManuallyToggledMode, setHasManuallyToggledMode] = useState(() => {
@@ -26424,167 +26425,233 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                           {/* Performance Trend Chart - Desktop: Middle */}
                           <div className="md:col-span-6 bg-white dark:bg-slate-900 rounded-3xl p-4 md:p-8 shadow-lg border border-slate-200 dark:border-slate-800">
-                          <div className="flex items-center justify-between mb-6">
-                            <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
-                              Performance Trend
-                            </h3>
-                            {(() => {
-                              return (
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className={`w-3 h-3 ${
-                                      isProfitable
-                                        ? "bg-emerald-400"
-                                        : "bg-red-400"
-                                    } rounded-full`}
-                                  ></div>
-                                  <span className="text-sm text-slate-600 dark:text-slate-400">
-                                    {isProfitable
-                                      ? "Profitable"
-                                      : "Not Profitable"}
-                                  </span>
-                                </div>
-                              );
-                            })()}
-                          </div>
+                            <div className="flex items-center justify-between mb-3">
+                              <h3 className="text-lg font-semibold text-slate-800 dark:text-white">
+                                Performance Trend
+                              </h3>
+                              <div className="flex items-center gap-2">
+                                <div className={`w-3 h-3 ${isProfitable ? "bg-emerald-400" : "bg-red-400"} rounded-full`}></div>
+                                <span className="text-sm text-slate-600 dark:text-slate-400">
+                                  {isProfitable ? "Profitable" : "Not Profitable"}
+                                </span>
+                              </div>
+                            </div>
 
-                          {Object.keys(filteredHeatmapData).length > 0 ? (
-                            <div className="h-64 w-full">
-                              {(() => {
-                                // ✅ NEW: Get filtered heatmap data and prepare daily chart data
-                                const allDates = Object.keys(filteredHeatmapData).filter(date => filteredHeatmapData[date] !== undefined).sort();
+                            {/* Time period tab switcher */}
+                            <div className="flex gap-0.5 mb-4 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
+                              {(['1D', '10D', '1M', '3M', '6M', '1Y', 'Overall'] as const).map((tab) => (
+                                <button
+                                  key={tab}
+                                  onClick={() => setPerfTrendTab(tab)}
+                                  className={`flex-1 text-[11px] font-semibold py-1.5 rounded-lg transition-all duration-200 ${
+                                    perfTrendTab === tab
+                                      ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white shadow-sm'
+                                      : 'text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300'
+                                  }`}
+                                >
+                                  {tab}
+                                </button>
+                              ))}
+                            </div>
 
-                                // ✅ NEW: Convert filtered heatmap data to daily chart data format
-                                const chartData = allDates.map(
+                            {perfTrendTab === '1D' ? (
+                              (() => {
+                                const today = new Date().toISOString().slice(0, 10);
+                                const todayData = filteredHeatmapData[today];
+                                const raw = todayData?.tradingData || todayData;
+                                const allTodayTrades: any[] = raw?.tradeHistory || raw?.trades || [];
 
-                                  (dateStr, idx) => {
-                                    const date = new Date(dateStr);
-                                    const dayData = filteredHeatmapData[dateStr];
+                                const parseTimeToMin = (timeStr: string): number => {
+                                  if (!timeStr) return -1;
+                                  const match = timeStr.match(/(\d+):(\d+)(?::(\d+))?\s*(AM|PM)/i);
+                                  if (!match) return -1;
+                                  let h = parseInt(match[1]);
+                                  const m = parseInt(match[2]);
+                                  const ampm = match[4].toUpperCase();
+                                  if (ampm === 'PM' && h !== 12) h += 12;
+                                  if (ampm === 'AM' && h === 12) h = 0;
+                                  return h * 60 + m;
+                                };
 
-                                    // Handle both wrapped (AWS) and unwrapped formats
-                                    const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                                const MARKET_OPEN = 9 * 60 + 15;
+                                const MARKET_CLOSE = 15 * 60 + 30;
 
-                                    const netPnL = metrics?.netPnL || 0;
-                                    const totalTrades = metrics?.totalTrades || 0;
+                                const sortedTrades = [...allTodayTrades]
+                                  .map(t => ({
+                                    ...t,
+                                    pnl: typeof t.pnl === 'number' ? t.pnl : parseFloat((t.pnl || '0').replace(/[₹,+\s]/g, '')) || 0,
+                                    timeMin: parseTimeToMin(t.time || '')
+                                  }))
+                                  .filter(t => t.timeMin >= MARKET_OPEN && t.timeMin <= MARKET_CLOSE)
+                                  .sort((a, b) => a.timeMin - b.timeMin);
 
-                                    return {
-                                      day: `${date.getDate()}/${
-                                        date.getMonth() + 1
-                                      }`,
-                                      value: netPnL,
-                                      pnl: netPnL,
-                                      date: dateStr,
-                                      trades: totalTrades,
-                                      formattedDate: date.toLocaleDateString(
-                                        "en-IN",
-                                        {
-                                          day: "numeric",
-                                          month: "short",
-                                        },
-                                      ),
-                                    };
-                                  },
-                                ).filter((item) => item.trades > 0);
+                                let cumulative = 0;
+                                const intradayData: any[] = [{ label: '9:15', cumPnL: 0, timeMin: MARKET_OPEN }];
+                                sortedTrades.forEach(t => {
+                                  cumulative += t.pnl;
+                                  const h = Math.floor(t.timeMin / 60);
+                                  const m = t.timeMin % 60;
+                                  intradayData.push({
+                                    label: `${h}:${m.toString().padStart(2, '0')}`,
+                                    cumPnL: cumulative,
+                                    timeMin: t.timeMin,
+                                    pnl: t.pnl,
+                                    symbol: t.symbol || t.stock || '',
+                                  });
+                                });
+                                intradayData.push({ label: '15:30', cumPnL: cumulative, timeMin: MARKET_CLOSE });
 
-                                // Find peak value for indicator
-                                const peakData = chartData.reduce(
-                                  (max, current) =>
-                                    current.value > max.value ? current : max,
-                                  chartData[0] || { value: 0, day: "", pnl: 0 },
-                                );
+                                if (sortedTrades.length === 0) {
+                                  return (
+                                    <div className="flex items-center justify-center h-56 text-slate-500 dark:text-slate-400">
+                                      <div className="text-center">
+                                        <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                        <p className="text-sm font-medium">No trades today</p>
+                                        <p className="text-xs mt-1 opacity-60">Market hours: 9:15 AM – 3:30 PM</p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                const finalPnL = cumulative;
+                                const isPos = finalPnL >= 0;
+                                const strokeColor = isPos ? '#10b981' : '#ef4444';
+                                const fillId = isPos ? 'intraDayGradPos' : 'intraDayGradNeg';
+                                const tooltipBg = theme === 'dark' ? '#1e293b' : '#ffffff';
+                                const tooltipText2 = theme === 'dark' ? '#e2e8f0' : '#1e293b';
 
                                 return (
-                                  <div className="relative h-full">
-                                    <ResponsiveContainer
-                                      width="100%"
-                                      height="100%"
-                                    >
-                                      {(() => {
-                                        const chartStrokeColor = theme === 'dark' ? '#ffffff' : '#000000';
-                                        const tooltipBg = theme === 'dark' ? '#1e293b' : '#ffffff';
-                                        const tooltipText = theme === 'dark' ? '#e2e8f0' : '#1e293b';
-                                        return (
-                                        <AreaChart
-                                        data={chartData}
-                                        margin={{
-                                          top: 40,
-                                          right: 30,
-                                          left: 0,
-                                          bottom: 5,
-                                        }}
-                                      >
+                                  <div className="h-56 w-full">
+                                    <div className="flex items-center justify-between mb-2">
+                                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                                        {sortedTrades.length} trade{sortedTrades.length !== 1 ? 's' : ''} today
+                                      </span>
+                                      <span className={`text-sm font-bold ${isPos ? 'text-emerald-600' : 'text-red-500'}`}>
+                                        {isPos ? '+' : ''}₹{Math.abs(finalPnL).toLocaleString()}
+                                      </span>
+                                    </div>
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <AreaChart data={intradayData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                                         <defs>
-                                          <linearGradient
-                                            id="areaGradientPositive"
-                                            x1="0"
-                                            y1="0"
-                                            x2="0"
-                                            y2="1"
-                                          >
-                                            <stop
-                                              offset="0%"
-                                              stopColor="rgb(107, 114, 128)"
-                                              stopOpacity={0.6}
-                                            />
-                                            <stop
-                                              offset="100%"
-                                              stopColor="rgb(107, 114, 128)"
-                                              stopOpacity={0.1}
-                                            />
+                                          <linearGradient id="intraDayGradPos" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#10b981" stopOpacity={0.4} />
+                                            <stop offset="100%" stopColor="#10b981" stopOpacity={0.05} />
+                                          </linearGradient>
+                                          <linearGradient id="intraDayGradNeg" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="#ef4444" stopOpacity={0.4} />
+                                            <stop offset="100%" stopColor="#ef4444" stopOpacity={0.05} />
                                           </linearGradient>
                                         </defs>
                                         <XAxis
-                                          dataKey="day"
+                                          dataKey="label"
                                           axisLine={false}
                                           tickLine={false}
-                                          tick={false}
-                                          className="text-slate-500 dark:text-slate-400"
+                                          tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#64748b' }}
+                                          interval="preserveStartEnd"
                                         />
                                         <YAxis
                                           axisLine={false}
                                           tickLine={false}
-                                          tick={{
-                                            fontSize: 12,
-                                            fill: theme === 'dark' ? '#cbd5e1' : '#64748b',
+                                          tick={{ fontSize: 11, fill: theme === 'dark' ? '#cbd5e1' : '#64748b' }}
+                                          tickFormatter={v => `${v >= 0 ? '' : '-'}${(Math.abs(v) / 1000).toFixed(1)}K`}
+                                          domain={['dataMin - 500', 'dataMax + 500']}
+                                        />
+                                        <ReferenceLine y={0} stroke={theme === 'dark' ? '#475569' : '#cbd5e1'} strokeDasharray="4 4" />
+                                        <Tooltip
+                                          contentStyle={{ background: tooltipBg, border: `1px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, borderRadius: '10px', color: tooltipText2, fontSize: '12px', padding: '8px 12px' }}
+                                          formatter={(v: any) => [`${v >= 0 ? '₹' : '-₹'}${Math.abs(v).toLocaleString()}`, 'Cumulative P&L']}
+                                          labelFormatter={(label, payload) => {
+                                            if (payload && payload[0] && payload[0].payload.symbol) {
+                                              return `${label} • ${payload[0].payload.symbol}`;
+                                            }
+                                            return label;
                                           }}
-                                          tickFormatter={(value) =>
-                                            `${value >= 0 ? "" : "-"}${(
-                                              Math.abs(value) / 1000
-                                            ).toFixed(0)}K`
-                                          }
-                                          domain={[
-                                            "dataMin - 1000",
-                                            "dataMax + 1000",
-                                          ]}
-                                          className="text-slate-500 dark:text-slate-400"
+                                        />
+                                        <Area
+                                          type="monotone"
+                                          dataKey="cumPnL"
+                                          stroke={strokeColor}
+                                          strokeWidth={2.5}
+                                          fill={`url(#${fillId})`}
+                                          dot={(p: any) => p.payload.pnl !== undefined
+                                            ? <circle key={`dot-${p.payload.timeMin}`} cx={p.cx} cy={p.cy} r={3.5} fill={p.payload.pnl >= 0 ? '#10b981' : '#ef4444'} stroke="white" strokeWidth={1.5} />
+                                            : <g key={`dot-empty-${p.payload.timeMin}`} />}
+                                          activeDot={{ r: 5, fill: strokeColor, stroke: 'white', strokeWidth: 2 }}
+                                          animationDuration={500}
+                                        />
+                                      </AreaChart>
+                                    </ResponsiveContainer>
+                                  </div>
+                                );
+                              })()
+                            ) : (
+                              (() => {
+                                const now = new Date();
+                                const cutoff = new Date();
+                                if (perfTrendTab === '10D') cutoff.setDate(now.getDate() - 10);
+                                else if (perfTrendTab === '1M') cutoff.setMonth(now.getMonth() - 1);
+                                else if (perfTrendTab === '3M') cutoff.setMonth(now.getMonth() - 3);
+                                else if (perfTrendTab === '6M') cutoff.setMonth(now.getMonth() - 6);
+                                else if (perfTrendTab === '1Y') cutoff.setFullYear(now.getFullYear() - 1);
+
+                                const allDates = Object.keys(filteredHeatmapData)
+                                  .filter(date => perfTrendTab === 'Overall' ? true : new Date(date) >= cutoff)
+                                  .filter(date => filteredHeatmapData[date] !== undefined)
+                                  .sort();
+
+                                const chartData = allDates.map((dateStr) => {
+                                  const date = new Date(dateStr);
+                                  const dayData = filteredHeatmapData[dateStr];
+                                  const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+                                  const netPnL = metrics?.netPnL || 0;
+                                  const totalTrades = metrics?.totalTrades || 0;
+                                  return {
+                                    day: `${date.getDate()}/${date.getMonth() + 1}`,
+                                    value: netPnL,
+                                    date: dateStr,
+                                    trades: totalTrades,
+                                    formattedDate: date.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' }),
+                                  };
+                                }).filter(item => item.trades > 0);
+
+                                if (chartData.length === 0) {
+                                  return (
+                                    <div className="flex items-center justify-center h-56 text-slate-500 dark:text-slate-400">
+                                      <div className="text-center">
+                                        <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                                        <p className="text-sm">No data for this period</p>
+                                      </div>
+                                    </div>
+                                  );
+                                }
+
+                                const chartStrokeColor = theme === 'dark' ? '#ffffff' : '#000000';
+                                const tooltipBg2 = theme === 'dark' ? '#1e293b' : '#ffffff';
+                                const tooltipText3 = theme === 'dark' ? '#e2e8f0' : '#1e293b';
+
+                                return (
+                                  <div className="h-56 w-full">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                      <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+                                        <defs>
+                                          <linearGradient id="areaGradientPositive" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="0%" stopColor="rgb(107, 114, 128)" stopOpacity={0.6} />
+                                            <stop offset="100%" stopColor="rgb(107, 114, 128)" stopOpacity={0.1} />
+                                          </linearGradient>
+                                        </defs>
+                                        <XAxis dataKey="day" axisLine={false} tickLine={false} tick={false} />
+                                        <YAxis
+                                          axisLine={false}
+                                          tickLine={false}
+                                          tick={{ fontSize: 12, fill: theme === 'dark' ? '#cbd5e1' : '#64748b' }}
+                                          tickFormatter={v => `${v >= 0 ? '' : '-'}${(Math.abs(v) / 1000).toFixed(0)}K`}
+                                          domain={['dataMin - 1000', 'dataMax + 1000']}
                                         />
                                         <Tooltip
-                                          contentStyle={{
-                                            background: tooltipBg,
-                                            border: `1px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`,
-                                            borderRadius: "12px",
-                                            color: tooltipText,
-                                            fontSize: "12px",
-                                            padding: "8px 12px",
-                                          }}
-                                          formatter={(
-                                            value: any,
-                                            name: any,
-                                            props: any,
-                                          ) => [
-                                            `${
-                                              value >= 0 ? "₹" : "-₹"
-                                            }${Math.abs(
-                                              value,
-                                            ).toLocaleString()}`,
-                                            "Daily P&L",
-                                          ]}
+                                          contentStyle={{ background: tooltipBg2, border: `1px solid ${theme === 'dark' ? '#334155' : '#e2e8f0'}`, borderRadius: '12px', color: tooltipText3, fontSize: '12px', padding: '8px 12px' }}
+                                          formatter={(v: any) => [`${v >= 0 ? '₹' : '-₹'}${Math.abs(v).toLocaleString()}`, 'Daily P&L']}
                                           labelFormatter={(label, payload) => {
-                                            if (
-                                              payload &&
-                                              payload[0] &&
-                                              payload[0].payload
-                                            ) {
+                                            if (payload && payload[0] && payload[0].payload) {
                                               const data = payload[0].payload;
                                               return `${data.formattedDate} • ${data.trades} trades`;
                                             }
@@ -26598,33 +26665,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                           strokeWidth={3}
                                           fill="url(#areaGradientPositive)"
                                           dot={false}
-                                          activeDot={{
-                                            r: 6,
-                                            fill: chartStrokeColor,
-                                            stroke: "white",
-                                            strokeWidth: 2,
-                                          }}
+                                          activeDot={{ r: 6, fill: chartStrokeColor, stroke: 'white', strokeWidth: 2 }}
                                           isAnimationActive={true}
                                           animationDuration={600}
                                           animationEasing="ease-in-out"
                                         />
                                       </AreaChart>
-                                        );
-                                      })()}
                                     </ResponsiveContainer>
                                   </div>
                                 );
-                              })()}
-                            </div>
-                          ) : (
-                            <div className="flex items-center justify-center h-48 text-slate-500 dark:text-slate-400">
-                              <div className="text-center">
-                                <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                <p>No trend data available</p>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                              })()
+                            )}
+                          </div>
 
                           {/* Top Tags - Desktop: Right side */}
                           <div className="md:col-span-3 bg-white dark:bg-slate-900 rounded-3xl p-6 shadow-lg border border-slate-200 dark:border-slate-800">

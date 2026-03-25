@@ -10134,10 +10134,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         cleanSymbol = raw.replace(/[-_]EQ$/i, '').toUpperCase();
         resolvedExchange = 'NSE';
 
-      // 2. Compact futures: NIFTY25JUNFUT, IDEA25JUNFUT, GOLD25DECFUT (no space)
-      } else if (/\d{2}[A-Z]{3}FUT$/i.test(raw)) {
-        const underlying = raw.replace(/\d{2}[A-Z]{3}FUT$/i, '').toUpperCase();
-        cleanSymbol = underlying === 'NIFTY' ? 'NIFTY50' : underlying;
+      // 2. Compact futures: YYMONFUT (NIFTY25JUNFUT) or DDMONYYFUT (CRUDEOILM18DEC25FUT)
+      } else if (/\d{2}[A-Z]{3}\d{2}FUT$/i.test(raw) || /\d{2}[A-Z]{3}FUT$/i.test(raw)) {
+        // Strip expiry — try DDMONYYFUT first, then YYMONFUT
+        const underlying = raw
+          .replace(/\d{2}[A-Z]{3}\d{2}FUT$/i, '')
+          .replace(/\d{2}[A-Z]{3}FUT$/i, '')
+          .toUpperCase();
+        // Map MCX mini variants to base commodity (CRUDEOILM → CRUDEOIL, GOLDM → GOLD, SILVERM → SILVER)
+        const miniMap: Record<string, string> = { 'CRUDEOILM': 'CRUDEOIL', 'GOLDM': 'GOLD', 'SILVERM': 'SILVER' };
+        cleanSymbol = underlying === 'NIFTY' ? 'NIFTY50' : (miniMap[underlying] || underlying);
         resolvedExchange = MCX_BASE.some(c => cleanSymbol.startsWith(c)) ? 'MCX' : 'NSE';
 
       // 3. Spaced futures: "IDEA APR FUT", "NIFTY APR FUT", "GOLD APR FUT"
@@ -11289,26 +11295,37 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         if (heatmapTradeHistory && heatmapTradeHistory.length > 0) {
           const markers: any[] = [];
 
-          // Extract the underlying symbol from the current chart
+          // MCX mini variant normalisation (shared for both chart and trade symbols)
+          const MCX_MINI_MAP: Record<string, string> = { 'CRUDEOILM': 'CRUDEOIL', 'GOLDM': 'GOLD', 'SILVERM': 'SILVER' };
+
+          // Extract and normalise the underlying from the currently-displayed chart symbol
           let currentChartUnderlying = heatmapSelectedSymbol
-            .replace(/^(NSE|BSE):/, '')
-            .replace(/-INDEX$/, '')
-            .replace(/-EQ$/, '');
+            .replace(/^(NSE|BSE|MCX|NFO|BFO):/, '')
+            .replace(/-INDEX$/i, '')
+            .replace(/-EQ$/i, '')
+            .replace(/\d{2}[A-Z]{3}\d{2}FUT$/i, '') // DDMONYYFUT (CRUDEOILM18DEC25FUT)
+            .replace(/\d{2}[A-Z]{3}FUT$/i, '')        // YYMONFUT   (NIFTY25JUNFUT)
+            .split(' ')[0]
+            .toUpperCase();
+          if (currentChartUnderlying === 'NIFTY') currentChartUnderlying = 'NIFTY50';
+          currentChartUnderlying = MCX_MINI_MAP[currentChartUnderlying] || currentChartUnderlying;
 
           console.log(`🔍 [HEATMAP MARKERS] Processing ${heatmapTradeHistory.length} trades, filtering for symbol: ${currentChartUnderlying}...`);
 
           heatmapTradeHistory.forEach((trade) => {
-            // FILTER BY SYMBOL: Extract underlying from trade symbol and compare
+            // FILTER BY SYMBOL: strip exchange prefix + expiry/type suffixes, then compare
             const tradeSymbol = trade.symbol || '';
-            const tradeParts = tradeSymbol.split(' ');
-            let tradeUnderlying = tradeParts[0]; // e.g., "NIFTY", "SENSEX", "BANKNIFTY"
+            let tradeUnderlying = (tradeSymbol.replace(/^(NSE|BSE|MCX|NFO|BFO):/, '').split(' ')[0])
+              .replace(/-EQ$/i, '')
+              .replace(/-INDEX$/i, '')
+              .replace(/\d{2}[A-Z]{3}\d{2}FUT$/i, '') // DDMONYYFUT
+              .replace(/\d{2}[A-Z]{3}FUT$/i, '')        // YYMONFUT
+              .replace(/\d{2}[A-Z]{3}\d{2}(CE|PE)$/i, '') // options
+              .toUpperCase();
+            if (tradeUnderlying === 'NIFTY') tradeUnderlying = 'NIFTY50';
+            tradeUnderlying = MCX_MINI_MAP[tradeUnderlying] || tradeUnderlying;
 
-            // Normalize trade underlying to match chart symbol
-            if (tradeUnderlying === 'NIFTY') {
-              tradeUnderlying = 'NIFTY50';
-            }
-
-            // Only process trades for the current chart's underlying symbol
+            // Only process trades whose underlying matches the current chart
             if (tradeUnderlying !== currentChartUnderlying) {
               console.log(`⏭️ [HEATMAP MARKERS] Skipping trade for ${tradeUnderlying} (current chart: ${currentChartUnderlying})`);
               return;
@@ -12805,53 +12822,47 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     localStorage.setItem("calendarData", JSON.stringify(data));
   };
 
-  // Helper function to extract traded symbols from tradeHistory - ONLY INDEX SYMBOLS
+  // Helper function to extract unique raw trade symbols from tradeHistory for Next-button cycling.
+  // Returns the raw symbol (first occurrence per unique underlying) so fetchHeatmapChartData can
+  // resolve any instrument type: index, equity, commodity, options, futures.
   const extractTradedSymbols = (tradeHistory: any[]): string[] => {
     if (!Array.isArray(tradeHistory)) return [];
-    const symbolMap = new Map<string, number>();
 
-    // Mapping from contract names to proper index symbols
-    const contractToIndex: Record<string, string> = {
-      'NIFTY': 'NIFTY50',
-      'BANKNIFTY': 'BANKNIFTY',
-      'SENSEX': 'SENSEX',
-      'NIFTYIT': 'NIFTYIT',
-      'FINNIFTY': 'FINNIFTY',
-      'MIDCPNIFTY': 'MIDCPNIFTY',
-      'NIFTYINFRA': 'NIFTYINFRA',
-      'NIFTY50': 'NIFTY50'
-    };
+    const NIFTY_ALIAS: Record<string, string> = { 'NIFTY': 'NIFTY50' };
+    const MCX_MINI: Record<string, string> = { 'CRUDEOILM': 'CRUDEOIL', 'GOLDM': 'GOLD', 'SILVERM': 'SILVER' };
+
+    // Map from normalised underlying → first raw symbol seen for that underlying
+    const underlyingToRaw = new Map<string, string>();
 
     tradeHistory.forEach((trade: any) => {
-      let symbol = trade.symbol || trade.tradingSymbol || '';
+      const rawSymbol = (trade.symbol || trade.tradingSymbol || '').trim();
+      if (!rawSymbol) return;
 
-      // Skip if empty
-      if (!symbol) return;
+      // Strip exchange prefix, then derive underlying
+      const noPrefix = rawSymbol.replace(/^(NSE|BSE|MCX|NFO|BFO|NCDEX):/, '');
+      let underlying = (noPrefix.split(' ')[0])
+        .replace(/-EQ$/i, '')
+        .replace(/-INDEX$/i, '')
+        .replace(/\d{2}[A-Z]{3}\d{2}FUT$/i, '') // DDMONYYFUT  e.g. 18DEC25FUT
+        .replace(/\d{2}[A-Z]{3}FUT$/i, '')        // YYMONFUT    e.g. 25JUNFUT
+        .replace(/\d{2}[A-Z]{3}\d{2}(CE|PE)$/i, '') // options    e.g. 25000CE
+        .toUpperCase();
 
-      // Remove exchange prefix if present
-      symbol = symbol.replace('NSE:', '').replace('NFO:', '').replace('MCX:', '').replace('NCDEX:', '').trim();
+      if (!underlying) return;
 
-      // Extract base symbol - get first word or continuous letters before space/number
-      const baseSymbol = symbol.match(/^([A-Z]+)/)?.[1] || '';
+      // Normalise well-known aliases
+      underlying = NIFTY_ALIAS[underlying] || underlying;
+      underlying = MCX_MINI[underlying] || underlying;
 
-      if (!baseSymbol) return;
-
-      // Map to proper index symbol
-      const indexSymbol = contractToIndex[baseSymbol.toUpperCase()] || baseSymbol.toUpperCase();
-
-      // Only add if it's a known index
-      if (Object.values(contractToIndex).includes(indexSymbol)) {
-        symbolMap.set(indexSymbol, (symbolMap.get(indexSymbol) || 0) + 1);
-        console.log(`📊 Mapped "${symbol}" → "${indexSymbol}"`);
+      // Keep the FIRST raw symbol encountered for each unique underlying
+      if (!underlyingToRaw.has(underlying)) {
+        underlyingToRaw.set(underlying, rawSymbol);
+        console.log(`📊 Mapped underlying "${underlying}" → raw symbol "${rawSymbol}"`);
       }
     });
 
-    // Sort by trade count (descending) and return symbols
-    const result = Array.from(symbolMap.entries())
-      .sort(([, countA], [, countB]) => countB - countA)
-      .map(([symbol]) => symbol);
-
-    console.log(`📊 Final extracted symbols:`, result);
+    const result = Array.from(underlyingToRaw.values());
+    console.log(`📊 Final extracted traded symbols (raw):`, result);
     return result;
   };
 
@@ -22545,15 +22556,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         }
 
                                         setCurrentSymbolIndex(nextIdx);
-                                        const newSymbol = `NSE:${nextSymbol}-INDEX`;
-                                        setHeatmapSelectedSymbol(newSymbol);
+                                        // nextSymbol is already a raw trade symbol (e.g. "CRUDEOILM18DEC25FUT",
+                                        // "IDEA-EQ", "NIFTY 24500 CE") — pass it directly so fetchHeatmapChartData
+                                        // can resolve any instrument type (equity, commodity, options, futures).
                                         setHeatmapChartData([]);
                                         setHeatmapHoveredOhlc(null);
-                                        console.log(`⏭️  [HEATMAP] Symbol updated to ${nextSymbol}, refetching chart...`);
+                                        console.log(`⏭️  [HEATMAP] Switching to raw symbol "${nextSymbol}", refetching chart...`);
 
-                                        // Fetch heatmap data with new symbol and current date
+                                        // Fetch heatmap data with raw symbol and current date
                                         if (heatmapSelectedDate) {
-                                          fetchHeatmapChartData(newSymbol, heatmapSelectedDate);
+                                          fetchHeatmapChartData(nextSymbol, heatmapSelectedDate);
                                         }
                                       }}
                                       data-testid="button-next-symbol"

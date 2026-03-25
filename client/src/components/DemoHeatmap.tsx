@@ -787,8 +787,8 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
       if (tradingData?.tradeHistory && tradingData.tradeHistory.length > 0) {
         const firstTrade = tradingData.tradeHistory[0];
         if (firstTrade.symbol) {
-          const cleanSym = firstTrade.symbol.replace(/NSE:|BSE:|-INDEX|-EQ/g, '');
-          symbolForDate = `NSE:${cleanSym}-INDEX`;
+          // Pass raw symbol directly — let fetchHeatmapChartData handle EQ/FUT/CE/PE/MCX resolution
+          symbolForDate = firstTrade.symbol;
         }
       }
       

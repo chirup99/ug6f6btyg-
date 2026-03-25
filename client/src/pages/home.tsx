@@ -10118,31 +10118,129 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       setHeatmapSelectedDate(formattedDate);
       console.log(`🗓️ [HEATMAP SYNC] Updated header - Date: ${formattedDate}, Symbol: ${symbol}`);
 
-      // STEP 3: Extract clean symbol and underlying symbol
-      let cleanSymbol = symbol
-        .replace(/^(NSE|BSE):/, '')
-        .replace(/-INDEX$/, '')
-        .replace(/-EQ$/, '');
+      // STEP 3: Smart symbol resolution — handle EQ, FUT, CE/PE, MCX commodities
+      const raw = symbol.replace(/^(NSE|BSE|MCX|NFO|BFO|NCDEX|CDS):/, '').trim();
 
-      // Extract underlying from options/futures (e.g., "NIFTY 22nd w MAY PE" -> "NIFTY50", "SENSEX 4th w SEP PE" -> "SENSEX")
-      const parts = cleanSymbol.split(' ');
-      if (parts.length > 1) {
-        // This is likely an option/future symbol, extract underlying
-        const underlyingPart = parts[0];
-        if (underlyingPart === 'NIFTY') {
-          cleanSymbol = 'NIFTY50';
-        } else if (['SENSEX', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY'].includes(underlyingPart)) {
-          cleanSymbol = underlyingPart;
+      const INDICES = ['NIFTY50', 'NIFTY', 'BANKNIFTY', 'FINNIFTY', 'MIDCPNIFTY', 'SENSEX'];
+      const MCX_BASE = ['GOLD', 'SILVER', 'CRUDEOIL', 'COPPER', 'ZINC', 'NATURALGAS', 'COTTON',
+                        'LEAD', 'NICKEL', 'ALUMINIUM', 'GOLDPETAL', 'GOLDM', 'SILVERM', 'CRUDEOILM',
+                        'MENTHAOIL', 'CASTORSEED'];
+
+      let cleanSymbol = '';
+      let resolvedExchange = 'NSE';
+
+      // 1. Equity: ends with -EQ  (e.g. IDEA-EQ, YESBANK-EQ)
+      if (/[-_]EQ$/i.test(raw)) {
+        cleanSymbol = raw.replace(/[-_]EQ$/i, '').toUpperCase();
+        resolvedExchange = 'NSE';
+
+      // 2. Compact futures: NIFTY25JUNFUT, IDEA25JUNFUT, GOLD25DECFUT (no space)
+      } else if (/\d{2}[A-Z]{3}FUT$/i.test(raw)) {
+        const underlying = raw.replace(/\d{2}[A-Z]{3}FUT$/i, '').toUpperCase();
+        cleanSymbol = underlying === 'NIFTY' ? 'NIFTY50' : underlying;
+        resolvedExchange = MCX_BASE.some(c => cleanSymbol.startsWith(c)) ? 'MCX' : 'NSE';
+
+      // 3. Spaced futures: "IDEA APR FUT", "NIFTY APR FUT", "GOLD APR FUT"
+      } else if (/\bFUT\b/i.test(raw)) {
+        const underlying = raw.split(/\s+/)[0].toUpperCase();
+        cleanSymbol = underlying === 'NIFTY' ? 'NIFTY50' : underlying;
+        resolvedExchange = MCX_BASE.some(c => cleanSymbol.startsWith(c)) ? 'MCX' : 'NSE';
+
+      // 4. Options CE/PE: "NIFTY 22nd w MAY PE", "IDEA 100 CE", "BANKNIFTY 45000 CE"
+      } else if (/\b(CE|PE)\b/i.test(raw)) {
+        const underlying = raw.split(/\s+/)[0].toUpperCase();
+        cleanSymbol = underlying === 'NIFTY' ? 'NIFTY50' : underlying;
+        resolvedExchange = 'NSE';
+
+      // 5. Index with -INDEX suffix
+      } else if (/-INDEX$/i.test(raw)) {
+        const base = raw.replace(/-INDEX$/i, '').toUpperCase();
+        cleanSymbol = base === 'NIFTY' ? 'NIFTY50' : base;
+        resolvedExchange = cleanSymbol === 'SENSEX' ? 'BSE' : 'NSE';
+
+      // 6. Direct symbol (NIFTY50, BANKNIFTY, GOLD, etc.)
+      } else {
+        cleanSymbol = raw.toUpperCase();
+        if (cleanSymbol === 'NIFTY') cleanSymbol = 'NIFTY50';
+        resolvedExchange = MCX_BASE.some(c => cleanSymbol.startsWith(c)) ? 'MCX' : 'NSE';
+      }
+
+      console.log(`🗓️ [HEATMAP FETCH] Resolved: "${symbol}" → "${cleanSymbol}" (${resolvedExchange})`);
+
+      // Try static token map first
+      let stockToken = journalAngelOneTokens[cleanSymbol] || null;
+
+      // Dynamic lookup via instrument search if not in static map
+      if (!stockToken) {
+        console.log(`🔍 [HEATMAP] "${cleanSymbol}" not in static map — searching dynamically...`);
+        try {
+          // For MCX commodities: find the nearest active futures contract
+          const isMcx = resolvedExchange === 'MCX';
+          const searchExchange = isMcx ? 'MCX' : 'NSE,BSE';
+          const searchResp = await fetch(
+            `/api/angelone/search-instruments?query=${encodeURIComponent(cleanSymbol)}&exchange=${searchExchange}&limit=20`
+          );
+          if (searchResp.ok) {
+            const searchData = await searchResp.json();
+            const instruments: any[] = searchData.instruments || [];
+
+            if (isMcx) {
+              // For MCX: find active FUT contracts, sort by nearest expiry
+              const today = new Date();
+              today.setHours(0, 0, 0, 0);
+              const futContracts = instruments
+                .filter((inst: any) =>
+                  inst.instrumentType === 'FUTCOM' || inst.instrumentType === 'FUT' ||
+                  String(inst.tradingSymbol || '').toUpperCase().includes('FUT')
+                )
+                .filter((inst: any) => {
+                  if (!inst.expiry) return true;
+                  const parts = inst.expiry.split(/[-\/]/);
+                  if (parts.length < 3) return true;
+                  const expDate = new Date(inst.expiry);
+                  return expDate >= today;
+                })
+                .sort((a: any, b: any) => {
+                  if (!a.expiry) return 1;
+                  if (!b.expiry) return -1;
+                  return new Date(a.expiry).getTime() - new Date(b.expiry).getTime();
+                });
+              const best = futContracts[0];
+              if (best) {
+                stockToken = { token: best.token, exchange: best.exchange || 'MCX', tradingSymbol: best.tradingSymbol || cleanSymbol };
+                console.log(`✅ [HEATMAP] MCX active contract: ${best.tradingSymbol} expiry: ${best.expiry}`);
+              }
+            } else {
+              // For NSE/BSE: prefer EQ instrument type exact match
+              const eqMatch = instruments.find((inst: any) =>
+                inst.instrumentType === 'EQ' &&
+                (String(inst.tradingSymbol || '').toUpperCase() === `${cleanSymbol}-EQ` ||
+                 String(inst.tradingSymbol || '').toUpperCase() === cleanSymbol ||
+                 String(inst.symbol || '').toUpperCase() === cleanSymbol)
+              );
+              const anyMatch = eqMatch || instruments[0];
+              if (anyMatch) {
+                stockToken = { token: anyMatch.token, exchange: anyMatch.exchange || 'NSE', tradingSymbol: anyMatch.tradingSymbol || cleanSymbol };
+                console.log(`✅ [HEATMAP] Dynamically resolved: ${cleanSymbol} → token ${stockToken.token}`);
+              }
+            }
+          }
+        } catch (searchErr) {
+          console.warn(`⚠️ [HEATMAP] Dynamic search failed for ${cleanSymbol}:`, searchErr);
         }
       }
 
-      const stockToken = journalAngelOneTokens[cleanSymbol];
       console.log(`🗓️ [HEATMAP FETCH] Symbol: ${cleanSymbol}, Token: ${stockToken?.token}`);
 
       if (!stockToken) {
-        console.warn(`❌ [HEATMAP FETCH] No token for: ${cleanSymbol}`);
+        console.warn(`❌ [HEATMAP FETCH] No token found for: ${cleanSymbol}`);
         setHeatmapChartLoading(false);
         return;
+      }
+
+      // Override exchange with resolved one when using dynamic lookup for MCX
+      if (resolvedExchange === 'MCX') {
+        stockToken = { ...stockToken, exchange: 'MCX' };
       }
 
       // STEP 4: Build API request

@@ -24041,7 +24041,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 title="View Orders & Positions (Groww)"
                               >
                                 <img 
-                                  src="https://groww.in/logo-groww-rectangular.svg" 
+                                  src="https://play-lh.googleusercontent.com/LHjOai6kf1IsstKNWO9jbMxD-ix_FVYaJSLodKCqYQdoFVzQBuV9z5txxzcTagQcyX8=s48-rw" 
                                   alt="Groww" 
                                   className="h-4 w-4 rounded-full"
                                 />

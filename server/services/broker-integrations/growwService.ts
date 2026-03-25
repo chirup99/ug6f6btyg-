@@ -86,6 +86,7 @@ export async function getGrowwUserProfile(accessToken: string): Promise<{ userId
     console.log('👤 Groww profile raw:', JSON.stringify(data));
 
     const userId =
+      data?.ucc ||
       data?.growwId ||
       data?.customerId ||
       data?.userId ||
@@ -94,6 +95,7 @@ export async function getGrowwUserProfile(accessToken: string): Promise<{ userId
       'N/A';
 
     const userName =
+      data?.client_name ||
       data?.name ||
       data?.fullName ||
       data?.userName ||
@@ -121,6 +123,7 @@ export async function fetchGrowwFunds(accessToken: string): Promise<number> {
     console.log('💰 Groww funds raw:', JSON.stringify(data));
 
     return (
+      data?.clear_cash ??
       data?.available_balance ??
       data?.availableBalance ??
       data?.available_cash ??

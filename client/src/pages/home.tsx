@@ -22942,8 +22942,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         {/* Top 30% - Performance Insights */}
                         <div className="h-[30%] border-b border-gray-200 dark:border-gray-700">
                           <CardContent className="p-2 h-full">
-                            <div className="grid grid-cols-5 gap-1 text-center items-start">
-                              <div>
+                            <div className="flex items-start justify-between px-2">
+                              <div className="text-left">
                                 <p className="text-gray-500 dark:text-gray-400 text-[10px] uppercase font-medium">
                                   Total Trades
                                 </p>
@@ -22951,7 +22951,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   {performanceMetrics.totalTrades}
                                 </p>
                               </div>
-                              <div>
+                              <div className="text-center">
                                 <p className="text-gray-500 dark:text-gray-400 text-[10px] uppercase font-medium">
                                   Win Rate
                                 </p>
@@ -22959,7 +22959,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   {performanceMetrics.winRate}%
                                 </p>
                               </div>
-                              <div>
+                              <div className="text-right">
                                 <p className="text-gray-500 dark:text-gray-400 text-[10px] uppercase font-medium">
                                   Net P&L
                                 </p>
@@ -22982,7 +22982,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               <div className="space-y-0.5 bg-white dark:bg-gray-900/50 rounded-lg p-2">
                                 <div className="flex justify-between">
                                   <span className="text-gray-600 dark:text-gray-400">
-                                    Winning Trades:
+                                    Winning:
                                   </span>
                                   <span className="text-green-600 font-medium">
                                     {performanceMetrics.winningTrades}
@@ -23003,7 +23003,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               <div className="space-y-0.5 bg-white dark:bg-gray-900/50 rounded-lg p-2">
                                 <div className="flex justify-between">
                                   <span className="text-gray-600 dark:text-gray-400">
-                                    Losing Trades:
+                                    Losing:
                                   </span>
                                   <span className="text-red-600 font-medium">
                                     {performanceMetrics.losingTrades}

@@ -26563,8 +26563,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               })()
                             ) : (
                               (() => {
-                                // Full heatmap performance trend — all dates with trades
-                                const sourceData = tradingDataByDate;
+                                // Full heatmap performance trend — only the active heatmap's dates
+                                // filteredHeatmapData is derived from getFilteredHeatmapData() which
+                                // uses tradingDataByDate (already mode-aware: demo / personal-1 / personal-2)
+                                const sourceData = filteredHeatmapData;
                                 const allDates = Object.keys(sourceData)
                                   .filter(date => {
                                     const d = sourceData[date];

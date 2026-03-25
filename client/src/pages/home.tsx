@@ -27191,8 +27191,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             </div>
                                             {durTableOpen && <div className="rounded-2xl border border-slate-100 dark:border-slate-800 overflow-hidden">
                                               <div className="overflow-x-auto">
+                                                <div className="max-h-[264px] overflow-y-auto">
                                                 <table className="w-full text-xs">
-                                                  <thead>
+                                                  <thead className="sticky top-0 z-10">
                                                     <tr className="bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 uppercase tracking-wider font-bold text-[10px]">
                                                       <th className="px-4 py-3 text-left w-8"></th>
                                                       <th className="px-4 py-3 text-left">Date</th>
@@ -27294,6 +27295,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                     })}
                                                   </tbody>
                                                 </table>
+                                                </div>
                                               </div>
                                             </div>}
                                           </div>

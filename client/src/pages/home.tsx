@@ -16694,7 +16694,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     e.stopPropagation();
                     setIsNavOpen(!isNavOpen);
                   }}
-                  className="md:hidden fixed top-4 right-4 z-50 w-10 h-10 flex flex-col items-center justify-center gap-1.5 bg-transparent hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-all duration-300"
+                  className={`fixed top-4 right-4 z-50 w-10 h-10 flex flex-col items-center justify-center gap-1.5 bg-transparent hover:bg-black/10 dark:hover:bg-white/10 rounded-lg transition-all duration-300 ${searchResults ? 'hidden' : 'md:hidden'}`}
                   data-testid="button-nav-toggle"
                 >
                   <div
@@ -17232,7 +17232,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             <div className="flex items-center justify-between px-4 py-2.5 border-b border-gray-800">
                                               <div className="flex items-center gap-2.5">
                                                 <Newspaper className="h-3.5 w-3.5 text-gray-400" />
-                                                <span className="text-xs font-medium text-gray-300">Market News</span>
                                                 {rawNewsItems.length > 0 && (
                                                   <span className="text-[11px] text-gray-600">
                                                     {newsSelectedSector

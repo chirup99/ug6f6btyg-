@@ -2153,6 +2153,7 @@ function RangeHeatmapPreview({ filteredData }: { filteredData: Record<string, an
 }
 
 export default function Home() {
+  const queryClient = useQueryClient();
   const [activeVoiceProfileId, setActiveVoiceProfileId] = useState<string>(() => { if (typeof window !== 'undefined') { return localStorage.getItem('activeVoiceProfileId') || 'ravi'; } return 'ravi'; });
   const [voiceLanguage, setVoiceLanguage] = useState("en"); // Multilingual support: en, hi, bn, ta, te, mr, gu, kn, ml
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);

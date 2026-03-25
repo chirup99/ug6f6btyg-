@@ -12226,7 +12226,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // ✅ NEW: Heatmap data and date range state for Performance Trend filtering
   const [heatmapDataFromComponent, setHeatmapDataFromComponent] = useState<Record<string, any>>({});
   const [selectedDateRange, setSelectedDateRange] = useState<{ from: Date; to: Date } | null>(null);
-  const [perfTrendTab, setPerfTrendTab] = useState<string>('Overall');
+  const [perfTrendTab, setPerfTrendTab] = useState<string>('1M');
 
   // Track if user has manually toggled the switch (to prevent auto-switching after manual toggle)
   const [hasManuallyToggledMode, setHasManuallyToggledMode] = useState(() => {
@@ -26439,7 +26439,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                             {/* Time period tab switcher */}
                             <div className="flex gap-0.5 mb-4 bg-slate-100 dark:bg-slate-800 rounded-xl p-1">
-                              {(['1D', '10D', '1M', '3M', '6M', '1Y', 'Overall'] as const).map((tab) => (
+                              {(['1D', '1M', '3M', '6M', '1Y'] as const).map((tab) => (
                                 <button
                                   key={tab}
                                   onClick={() => setPerfTrendTab(tab)}
@@ -26456,8 +26456,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                             {perfTrendTab === '1D' ? (
                               (() => {
-                                const today = new Date().toISOString().slice(0, 10);
-                                const todayData = filteredHeatmapData[today];
+                                const selectedDateStr = selectedDate
+                                  ? `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`
+                                  : new Date().toISOString().slice(0, 10);
+                                const selectedDateLabel = selectedDate
+                                  ? selectedDate.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })
+                                  : 'Today';
+                                const todayData = filteredHeatmapData[selectedDateStr];
                                 const raw = todayData?.tradingData || todayData;
                                 const allTodayTrades: any[] = raw?.tradeHistory || raw?.trades || [];
 
@@ -26506,7 +26511,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     <div className="flex items-center justify-center h-56 text-slate-500 dark:text-slate-400">
                                       <div className="text-center">
                                         <BarChart3 className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                                        <p className="text-sm font-medium">No trades today</p>
+                                        <p className="text-sm font-medium">No trades on {selectedDateLabel}</p>
                                         <p className="text-xs mt-1 opacity-60">Market hours: 9:15 AM – 3:30 PM</p>
                                       </div>
                                     </div>
@@ -26524,7 +26529,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   <div className="h-56 w-full">
                                     <div className="flex items-center justify-between mb-2">
                                       <span className="text-xs text-slate-500 dark:text-slate-400">
-                                        {sortedTrades.length} trade{sortedTrades.length !== 1 ? 's' : ''} today
+                                        {sortedTrades.length} trade{sortedTrades.length !== 1 ? 's' : ''} · {selectedDateLabel}
                                       </span>
                                       <span className={`text-sm font-bold ${isPos ? 'text-emerald-600' : 'text-red-500'}`}>
                                         {isPos ? '+' : ''}₹{Math.abs(finalPnL).toLocaleString()}
@@ -26588,14 +26593,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               (() => {
                                 const now = new Date();
                                 const cutoff = new Date();
-                                if (perfTrendTab === '10D') cutoff.setDate(now.getDate() - 10);
-                                else if (perfTrendTab === '1M') cutoff.setMonth(now.getMonth() - 1);
+                                if (perfTrendTab === '1M') cutoff.setMonth(now.getMonth() - 1);
                                 else if (perfTrendTab === '3M') cutoff.setMonth(now.getMonth() - 3);
                                 else if (perfTrendTab === '6M') cutoff.setMonth(now.getMonth() - 6);
-                                else if (perfTrendTab === '1Y') cutoff.setFullYear(now.getFullYear() - 1);
 
                                 const allDates = Object.keys(filteredHeatmapData)
-                                  .filter(date => perfTrendTab === 'Overall' ? true : new Date(date) >= cutoff)
+                                  .filter(date => {
+                                    if (perfTrendTab === '1Y') return new Date(date).getFullYear() === heatmapYear;
+                                    return new Date(date) >= cutoff;
+                                  })
                                   .filter(date => filteredHeatmapData[date] !== undefined)
                                   .sort();
 

@@ -37,8 +37,11 @@ export default function PrivacyPolicy() {
             </p>
           </section>
           
-          <div className="pt-8">
-            <Link href="/landing" className="text-purple-500 hover:text-purple-400 transition-colors">
+          <div className="flex gap-6 pt-8">
+            <Link href="/terms" className="text-purple-500 hover:text-purple-400 transition-colors text-sm">
+              Terms of Service
+            </Link>
+            <Link href="/landing" className="text-purple-500 hover:text-purple-400 transition-colors text-sm">
               Back to Login
             </Link>
           </div>

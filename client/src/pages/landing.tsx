@@ -2111,6 +2111,9 @@ export default function Landing() {
           <a href="/privacy" className="hover:text-gray-400 transition-colors">
             Privacy Policy
           </a>
+          <a href="/terms" className="hover:text-gray-400 transition-colors">
+            Terms of Service
+          </a>
           <span>© 2026 Perala</span>
         </div>
       </div>

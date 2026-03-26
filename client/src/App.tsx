@@ -36,6 +36,7 @@ import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import Dashboard from "@/pages/home";
 import Landing from "@/pages/landing";
 import PrivacyPolicy from "@/pages/privacy";
+import TermsOfService from "@/pages/terms";
 import NotFound from "@/pages/not-found";
 import PublicHeatmap from "@/pages/public-heatmap";
 import SharedReport from "@/pages/shared-report";
@@ -469,6 +470,7 @@ function Router() {
       <Route path="/market-news" component={MarketNews} />
       <Route path="/zerodha-debug" component={ZerodhaDebug} />
       <Route path="/privacy" component={PrivacyPolicy} />
+      <Route path="/terms" component={TermsOfService} />
       <Route component={NotFound} />
     </Switch>
   );

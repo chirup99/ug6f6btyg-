@@ -379,7 +379,7 @@ function SwipeableCardStack({
     return `${sector}-${lang}-${speaker}`;
   };
 
-  // Fetch news text for a sector
+  // Fetch news text for a sector — kept short and clean for accurate translation
   const buildNewsText = async (sector: string): Promise<string> => {
     const symbol = SECTOR_NEWS_SYMBOL[sector] || 'NIFTY';
     try {
@@ -387,10 +387,19 @@ function SwipeableCardStack({
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
       const items = Array.isArray(data) ? data : (data.news || []);
-      const headlines = items.slice(0, 5).map((item: any) => item.title || '').filter(Boolean);
-      return headlines.join('. ') || `${sector.toLowerCase()} market update. Trading activity continues.`;
+      // Use only 3 headlines, each trimmed to 120 chars so the total stays under 400 chars
+      // This ensures MyMemory can translate the full text without truncation
+      const headlines = items
+        .slice(0, 3)
+        .map((item: any) => {
+          const title = (item.title || '').trim();
+          return title.length > 120 ? title.substring(0, 117) + '...' : title;
+        })
+        .filter(Boolean);
+      if (headlines.length === 0) return `${sector} market update. Trading activity is ongoing.`;
+      return headlines.join('. ') + '.';
     } catch {
-      return `${sector.toLowerCase()} market update. Trading activity continues.`;
+      return `${sector} market update. Trading activity is ongoing.`;
     }
   };
 

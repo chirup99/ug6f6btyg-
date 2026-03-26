@@ -1,26 +1,76 @@
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import axios from 'axios';
 
+// Translate a single chunk (≤450 chars) via MyMemory
+async function translateChunk(chunk: string, targetLanguage: string): Promise<string> {
+  const encoded = encodeURIComponent(chunk.trim());
+  const url = `https://api.mymemory.translated.net/get?q=${encoded}&langpair=en|${targetLanguage}`;
+  const response = await axios.get(url, { timeout: 10000 });
+  const translated = response.data?.responseData?.translatedText;
+  if (translated && translated !== chunk && !translated.toLowerCase().includes('mymemory')) {
+    return translated;
+  }
+  return chunk;
+}
+
 // MyMemory free translation API — no API key required
-// Supports 500 words/day free, sufficient for post-length texts
+// Splits long texts into sentence-level chunks so nothing gets truncated
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
   const supportedLangs = ['hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml'];
   if (!supportedLangs.includes(targetLanguage)) return text;
 
   try {
-    console.log(`🌐 [TTS] Translating to ${targetLanguage} via MyMemory...`);
-    const encoded = encodeURIComponent(text.substring(0, 500)); // MyMemory limit
-    const url = `https://api.mymemory.translated.net/get?q=${encoded}&langpair=en|${targetLanguage}`;
-    const response = await axios.get(url, { timeout: 8000 });
-    const translated = response.data?.responseData?.translatedText;
-    if (translated && translated !== text) {
-      console.log(`✅ [TTS] Translated to ${targetLanguage}: "${translated.substring(0, 60)}..."`);
-      return translated;
+    console.log(`🌐 [TTS] Translating to ${targetLanguage} (${text.length} chars)...`);
+
+    // Split into individual sentences so each chunk stays well under 450 chars
+    const sentences = text.split(/(?<=[.!?।])\s+/).filter(s => s.trim().length > 0);
+    const chunks: string[] = [];
+    let current = '';
+
+    for (const sentence of sentences) {
+      if ((current + ' ' + sentence).trim().length <= 420) {
+        current = (current + ' ' + sentence).trim();
+      } else {
+        if (current) chunks.push(current);
+        // If a single sentence is itself too long, split at commas
+        if (sentence.length > 420) {
+          const parts = sentence.split(/,\s*/);
+          let part = '';
+          for (const p of parts) {
+            if ((part + ', ' + p).trim().length <= 420) {
+              part = (part + ', ' + p).trim();
+            } else {
+              if (part) chunks.push(part);
+              part = p.trim();
+            }
+          }
+          if (part) chunks.push(part);
+          current = '';
+        } else {
+          current = sentence.trim();
+        }
+      }
     }
-    console.warn(`⚠️ [TTS] Translation returned same text, using original`);
-    return text;
+    if (current) chunks.push(current);
+
+    console.log(`🌐 [TTS] Translating ${chunks.length} chunks to ${targetLanguage}...`);
+
+    // Translate each chunk sequentially (avoid rate-limit issues)
+    const translatedChunks: string[] = [];
+    for (const chunk of chunks) {
+      try {
+        const t = await translateChunk(chunk, targetLanguage);
+        translatedChunks.push(t);
+      } catch {
+        translatedChunks.push(chunk); // fallback to original on error
+      }
+    }
+
+    const result = translatedChunks.join(' ');
+    console.log(`✅ [TTS] Translated to ${targetLanguage}: "${result.substring(0, 80)}..."`);
+    return result;
   } catch (err: any) {
-    console.error('[TTS] MyMemory translation error:', err?.message || err);
+    console.error('[TTS] Translation error:', err?.message || err);
     return text;
   }
 }

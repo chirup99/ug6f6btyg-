@@ -16043,7 +16043,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             )}
                             {false && (
                             <Dialog open={isAngelOneDialogOpen} onOpenChange={setIsAngelOneDialogOpen}>
-                                <DialogContent className="sm:max-w-[425px]">
+                                <DialogContent className="w-[95vw] sm:max-w-[425px] rounded-2xl max-h-[90dvh] overflow-y-auto">
                                   <DialogHeader>
                                     <DialogTitle className="flex items-center gap-2">
                                       <img 
@@ -24309,7 +24309,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 <Plus className="w-3 h-3" />
                                               </button>
                                             </DialogTrigger>
-                                            <DialogContent className="sm:max-w-[300px]">
+                                            <DialogContent className="w-[95vw] sm:max-w-[300px] rounded-2xl max-h-[90dvh] overflow-y-auto">
                                               <DialogHeader>
                                                 <DialogTitle>Custom Timeframe</DialogTitle>
                                               </DialogHeader>
@@ -25308,7 +25308,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </Card>
                     {/* Connect Dialog - Shows Zerodha and Upstox broker options */}
                     <Dialog open={showConnectDialog} onOpenChange={setShowConnectDialog}>
-                      <DialogContent className="w-[95vw] max-w-md">
+                      <DialogContent className="w-[95vw] max-w-md rounded-2xl max-h-[90dvh] overflow-y-auto">
                         <DialogHeader>
                           <DialogTitle className="flex items-center justify-between gap-2">
                             <div className="flex items-center gap-2">
@@ -25455,7 +25455,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   Upstox
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                              <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[90dvh] overflow-y-auto">
                                 <DialogHeader>
                                   <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
                                     <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-5" />
@@ -25579,7 +25579,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       Angel One
                                     </Button>
                                   </DialogTrigger>
-                                  <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                                  <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[90dvh] overflow-y-auto">
                                     <DialogHeader>
                                       <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
                                         <img
@@ -25920,7 +25920,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           
 
                           <Dialog open={isDhanDialogOpen} onOpenChange={setIsDhanDialogOpen}>
-                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[90dvh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
                                   <img src="https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701" alt="Dhan" className="h-5" />
@@ -26004,7 +26004,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           </Dialog>
 
                           <Dialog open={isGrowwDialogOpen} onOpenChange={setIsGrowwDialogOpen}>
-                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[90dvh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
                                   <img src="https://play-lh.googleusercontent.com/LHjOai6kf1IsstKNWO9jbMxD-ix_FVYaJSLodKCqYQdoFVzQBuV9z5txxzcTagQcyX8=s48-rw" alt="Groww" className="h-5" />
@@ -26072,7 +26072,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           </Dialog>
 
                           <Dialog open={isGrowwDialogOpen} onOpenChange={setIsGrowwDialogOpen}>
-                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[90dvh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
                                   <img src="https://play-lh.googleusercontent.com/LHjOai6kf1IsstKNWO9jbMxD-ix_FVYaJSLodKCqYQdoFVzQBuV9z5txxzcTagQcyX8=s48-rw" alt="Groww" className="h-5" />
@@ -26140,7 +26140,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           </Dialog>
 
                           <Dialog open={isZerodhaDialogOpen} onOpenChange={setIsZerodhaDialogOpen}>
-                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[90dvh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
                                   <img src="https://kite.zerodha.com/static/images/kite-logo.svg" alt="Zerodha" className="h-5" />
@@ -26224,7 +26224,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           </Dialog>
 
                           <Dialog open={isFyersDialogOpen} onOpenChange={setIsFyersDialogOpen}>
-                            <DialogContent className="w-[95vw] sm:max-w-md p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl">
+                            <DialogContent className="w-[95vw] sm:max-w-md p-6 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-2xl max-h-[90dvh] overflow-y-auto">
                               {!fyersIsConnected && (
                                 <AuthButtonFyers 
                                   externalAppId={fyersAppId} 
@@ -26237,7 +26237,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           </Dialog>
 
                           <Dialog open={isDeltaExchangeDialogOpen} onOpenChange={setIsDeltaExchangeDialogOpen}>
-                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                            <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[90dvh] overflow-y-auto">
                               <DialogHeader>
                                 <DialogTitle className="flex items-center gap-2 text-slate-900 dark:text-white">
                                   <img src="https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw" alt="Delta Exchange India" className="h-5 rounded-full" />
@@ -28579,7 +28579,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                     <Info className="w-3 h-3" />
                                                   </button>
                                                 </DialogTrigger>
-                                                <DialogContent className="w-[95vw] max-w-md bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800">
+                                                <DialogContent className="w-[95vw] max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[90dvh] overflow-y-auto">
                                                   <DialogHeader>
                                                     <DialogTitle className="flex items-center gap-2 text-xl font-bold">
                                                       <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-600 dark:text-indigo-400">
@@ -29972,7 +29972,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     </DialogContent>
   </Dialog>
         <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
-          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto custom-thin-scrollbar p-0">
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto custom-thin-scrollbar p-0 rounded-2xl">
             {/* Compact Header */}
             <div className="sticky top-0 z-10 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 px-4 py-3">
               <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Import P&L Data</span>
@@ -31058,7 +31058,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Trading Challenge Coming Soon Modal */}
         <Dialog open={showTradingChallengeModal} onOpenChange={setShowTradingChallengeModal}>
-          <DialogContent className="w-[95vw] max-w-sm">
+          <DialogContent className="w-[95vw] max-w-sm rounded-2xl max-h-[90dvh] overflow-y-auto">
             <DialogHeader className="text-center">
               <div className="flex justify-center mb-4">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
@@ -31108,7 +31108,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Paper Trading (Demo Trading) Modal - Minimalist Design */}
         <Dialog open={showPaperTradingModal} onOpenChange={setShowPaperTradingModal}>
-          <DialogContent className="w-full h-auto sm:max-w-2xl sm:max-h-[85vh] rounded-none sm:rounded-lg overflow-hidden p-0 bg-white sm:dark:bg-gray-900 hidden sm:flex flex-col">
+          <DialogContent className="w-full h-auto sm:max-w-2xl sm:max-h-[85vh] rounded-none sm:rounded-2xl overflow-hidden p-0 bg-white sm:dark:bg-gray-900 hidden sm:flex flex-col">
             {/* Mobile Wallet-Style View */}
             <div className="flex flex-col h-full sm:hidden">
               {/* Hero Balance Section - Dark gradient background */}
@@ -32123,7 +32123,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Save Confirmation Dialog - Minimalistic Design */}
         <Dialog open={showSaveConfirmation} onOpenChange={setShowSaveConfirmation}>
-          <DialogContent className="w-[95vw] max-w-sm">
+          <DialogContent className="w-[95vw] max-w-sm rounded-2xl max-h-[90dvh] overflow-y-auto">
             <DialogHeader className="space-y-2">
               {saveConfirmationData?.error ? (
                 <>
@@ -32183,7 +32183,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Passcode Modal */}
         <Dialog open={showPasscodeModal} onOpenChange={setShowPasscodeModal}>
-          <DialogContent className="w-[95vw] max-w-sm">
+          <DialogContent className="w-[95vw] max-w-sm rounded-2xl max-h-[90dvh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="text-center">Enter Passcode</DialogTitle>
             </DialogHeader>
@@ -32230,7 +32230,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Option Chain Modal */}
         <Dialog open={showOptionChain} onOpenChange={(open) => { setShowOptionChain(open); if (open) { fetchOptionChainData(selectedOptionIndex); } }}>
-          <DialogContent className="w-[95vw] max-w-2xl p-0 bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-700 max-h-[90dvh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-2xl p-0 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 max-h-[90dvh] overflow-y-auto">
 
             {/* Desktop Header */}
             <div className="block border-b border-gray-200 dark:border-gray-700 px-4 py-2">
@@ -32394,7 +32394,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Trading Master Coming Soon Modal */}
         <Dialog open={showTradingMasterComingSoon} onOpenChange={setShowTradingMasterComingSoon}>
-          <DialogContent className="w-[95vw] max-w-md">
+          <DialogContent className="w-[95vw] max-w-md rounded-2xl max-h-[90dvh] overflow-y-auto">
             <div className="space-y-6 py-6">
               <div className="flex flex-col items-center justify-center space-y-4">
                 <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center animate-pulse">
@@ -32427,7 +32427,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Journal AI Dialog */}
         <Dialog open={showJournalAI} onOpenChange={setShowJournalAI}>
-          <DialogContent className="w-[95vw] max-w-5xl max-h-[85vh] h-auto sm:h-[85vh] overflow-y-auto p-0">
+          <DialogContent className="w-[95vw] max-w-5xl max-h-[85vh] h-auto sm:h-[85vh] overflow-y-auto p-0 rounded-2xl">
             <DialogHeader className="p-6 pb-4 border-b border-gray-200 dark:border-gray-700">
               <DialogTitle className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
@@ -34252,7 +34252,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Brokerage Charges Breakdown Dialog */}
         <Dialog open={showBrokerageChargesDialog} onOpenChange={setShowBrokerageChargesDialog}>
-          <DialogContent className="w-[95vw] max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-4xl max-h-[90dvh] overflow-y-auto rounded-2xl">
             <DialogHeader>
               <DialogTitle>Brokerage Charges Breakdown</DialogTitle>
               <DialogDescription>

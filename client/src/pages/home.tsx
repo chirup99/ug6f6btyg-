@@ -22031,53 +22031,56 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     {/* Tutor Vertical Sidebar - Slides from right */}
 {/* Coming Soon Dialog for Mini Cast */}
         <Dialog open={showComingSoonDialog} onOpenChange={setShowComingSoonDialog}>
-          <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-950 border-none shadow-2xl rounded-3xl p-0 overflow-hidden max-h-[92dvh] overflow-y-auto [&>button]:hidden">
+          <DialogContent className="w-[90vw] max-w-xs bg-white dark:bg-slate-950 border-none shadow-2xl rounded-2xl p-0 overflow-hidden [&>button]:hidden">
             {/* Gradient header */}
-            <div className="relative bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 px-6 pt-8 pb-10 text-center overflow-hidden">
-              <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)', backgroundSize: '30px 30px'}} />
+            <div className="relative bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 px-4 pt-5 pb-6 text-center overflow-hidden rounded-t-2xl">
+              <button
+                onClick={() => setShowComingSoonDialog(false)}
+                className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                data-testid="button-close-minicast-x"
+              >
+                <X className="h-3.5 w-3.5 text-white" />
+              </button>
+              <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)', backgroundSize: '20px 20px'}} />
               <div className="relative">
-                <div className="mx-auto w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl mb-4 border border-white/30">
-                  <Play className="h-9 w-9 text-white fill-white" />
+                <div className="mx-auto w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg mb-2.5 border border-white/30">
+                  <Play className="h-6 w-6 text-white fill-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">Mini Cast</h2>
-                <p className="text-violet-200 text-sm font-medium mt-1">Streaming Platform</p>
-                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-3 py-1 mt-3">
+                <h2 className="text-lg font-bold text-white tracking-tight">Mini Cast</h2>
+                <p className="text-violet-200 text-xs font-medium mt-0.5">Streaming Platform</p>
+                <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-2.5 py-0.5 mt-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
-                  <span className="text-xs font-semibold text-white uppercase tracking-wider">Coming Soon</span>
+                  <span className="text-[10px] font-semibold text-white uppercase tracking-wider">Coming Soon</span>
                 </div>
               </div>
             </div>
 
             {/* Content */}
-            <div className="px-5 py-5 space-y-4">
+            <div className="px-4 py-4 space-y-3">
               {/* Warning stat */}
-              <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-2xl px-4 py-3 text-center">
-                <p className="text-red-600 dark:text-red-400 text-sm font-bold">⚠️ 90% of retail investors lose money</p>
-                <p className="text-red-500/80 dark:text-red-500/70 text-xs mt-0.5">due to fake influencers &amp; non-SEBI certified traders.</p>
+              <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl px-3 py-2 text-center">
+                <p className="text-red-600 dark:text-red-400 text-xs font-bold">⚠️ 90% of retail investors lose money</p>
+                <p className="text-red-500/80 dark:text-red-500/70 text-[10px] mt-0.5">due to fake influencers &amp; non-SEBI certified traders.</p>
               </div>
 
               {/* Features */}
-              <div className="space-y-2.5">
+              <div className="space-y-1.5">
                 {[
                   { icon: '✅', label: 'SEBI-Certified educators only' },
                   { icon: '🎯', label: 'Zero noise, zero scams' },
                   { icon: '📡', label: 'Live sessions & recorded content' },
                   { icon: '🏆', label: 'Verified trading professionals' },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl px-4 py-2.5">
-                    <span className="text-base">{item.icon}</span>
-                    <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.label}</span>
+                  <div key={i} className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-lg px-3 py-2">
+                    <span className="text-sm">{item.icon}</span>
+                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{item.label}</span>
                   </div>
                 ))}
               </div>
 
-              <p className="text-slate-500 dark:text-slate-400 text-xs text-center leading-relaxed">
-                We're building a curated platform with only real, trustworthy financial content.
-              </p>
-
               <Button
                 onClick={() => setShowComingSoonDialog(false)}
-                className="w-full h-11 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]"
+                className="w-full h-9 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md shadow-indigo-500/20 transition-all active:scale-[0.98] text-sm"
                 data-testid="button-close-minicast-coming-soon"
               >
                 Got It, I'll Wait!

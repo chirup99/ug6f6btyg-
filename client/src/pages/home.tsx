@@ -2382,6 +2382,9 @@ export default function Home() {
   const [statisticsTab, setStatisticsTab] = useState("overview");
   const [journalReportActiveTab, setJournalReportActiveTab] = useState<'personal1' | 'personal2'>('personal1');
   const [journalReportMetrics, setJournalReportMetrics] = useState<any>(null);
+  const [journalScreenTimeStart, setJournalScreenTimeStart] = useState<number | null>(null);
+  const [journalCurrentSessionSecs, setJournalCurrentSessionSecs] = useState(0);
+  const [journalScreenTimeSessions, setJournalScreenTimeSessions] = useState<Array<{date: string; totalSeconds: number}>>([]);
   // Calendar state - declared early to avoid temporal dead zone issues
   const [selectedDate, setSelectedDate] = useState(null as Date | null);
   // Shared timeframe state for chart and crossings display
@@ -4706,6 +4709,46 @@ ${fundamentalInsights}**📈 Essential Analysis Framework:**
       setIsSearchLoading(false);
     }
   };
+
+  // Screen time tracker for journal report
+  useEffect(() => {
+    const isOpen = searchResults.includes("[CHART:JOURNAL_REPORT]");
+    if (!isOpen) return;
+    // Load saved sessions from localStorage
+    try {
+      const saved = localStorage.getItem('journalScreenTimeSessions');
+      if (saved) {
+        const parsed = JSON.parse(saved) as Array<{date: string; totalSeconds: number}>;
+        setJournalScreenTimeSessions(parsed);
+      }
+    } catch {}
+    const startMs = Date.now();
+    setJournalScreenTimeStart(startMs);
+    setJournalCurrentSessionSecs(0);
+    const iv = setInterval(() => {
+      setJournalCurrentSessionSecs(Math.floor((Date.now() - startMs) / 1000));
+    }, 1000);
+    return () => {
+      clearInterval(iv);
+      const duration = Math.floor((Date.now() - startMs) / 1000);
+      if (duration < 3) return;
+      const today = new Date().toISOString().slice(0, 10);
+      setJournalScreenTimeSessions(prev => {
+        const updated = [...prev];
+        const idx = updated.findIndex(s => s.date === today);
+        if (idx >= 0) {
+          updated[idx] = { ...updated[idx], totalSeconds: updated[idx].totalSeconds + duration };
+        } else {
+          updated.push({ date: today, totalSeconds: duration });
+        }
+        const trimmed = updated.slice(-30);
+        try { localStorage.setItem('journalScreenTimeSessions', JSON.stringify(trimmed)); } catch {}
+        return trimmed;
+      });
+      setJournalScreenTimeStart(null);
+      setJournalCurrentSessionSecs(0);
+    };
+  }, [searchResults.includes("[CHART:JOURNAL_REPORT]")]);
 
   // Function to fetch trending podcasts for a specific sector
   const fetchTrendingPodcasts = async (sector: string) => {
@@ -21007,6 +21050,152 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     </div>
                                   </>
                                 )}
+
+                                {/* ===== SCREEN TIME / DURATION REPORT ===== */}
+                                {(() => {
+                                  const sessions = journalScreenTimeSessions;
+                                  // Get last 14 calendar days for chart
+                                  const today = new Date();
+                                  const last14: Array<{date: string; label: string; secs: number}> = [];
+                                  for (let i = 13; i >= 0; i--) {
+                                    const d = new Date(today);
+                                    d.setDate(d.getDate() - i);
+                                    const iso = d.toISOString().slice(0, 10);
+                                    const found = sessions.find(s => s.date === iso);
+                                    const todaySecs = iso === today.toISOString().slice(0, 10) ? journalCurrentSessionSecs : 0;
+                                    last14.push({
+                                      date: iso,
+                                      label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
+                                      secs: (found?.totalSeconds || 0) + (iso === today.toISOString().slice(0, 10) ? todaySecs : 0),
+                                    });
+                                  }
+                                  const hasSomeData = last14.some(d => d.secs > 0);
+                                  const totalSecsAllTime = sessions.reduce((a, b) => a + b.totalSeconds, 0) + journalCurrentSessionSecs;
+                                  const avgSecsPerDay = sessions.length > 0 ? Math.round((sessions.reduce((a, b) => a + b.totalSeconds, 0)) / sessions.length) : 0;
+                                  const todaySecs = last14[last14.length - 1].secs;
+                                  const fmtTime = (s: number) => {
+                                    if (s < 60) return `${s}s`;
+                                    const m = Math.floor(s / 60);
+                                    const rem = s % 60;
+                                    if (m < 60) return rem > 0 ? `${m}m ${rem}s` : `${m}m`;
+                                    return `${Math.floor(m / 60)}h ${m % 60}m`;
+                                  };
+                                  // SVG line chart
+                                  const W = 280, H = 72, PAD = 4;
+                                  const maxSecs = Math.max(...last14.map(d => d.secs), avgSecsPerDay, 60);
+                                  const pts = last14.map((d, i) => {
+                                    const x = PAD + (i / (last14.length - 1)) * (W - PAD * 2);
+                                    const y = H - PAD - (d.secs / maxSecs) * (H - PAD * 2);
+                                    return { x, y, ...d };
+                                  });
+                                  const polyline = pts.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' ');
+                                  const avgY = H - PAD - (avgSecsPerDay / maxSecs) * (H - PAD * 2);
+                                  const todayPt = pts[pts.length - 1];
+                                  return (
+                                    <>
+                                      {/* Section header */}
+                                      <div className="px-3 py-2 bg-gray-900/40 flex items-center justify-between">
+                                        <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Journal Screen Time</span>
+                                        {journalCurrentSessionSecs > 0 && (
+                                          <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400">
+                                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
+                                            Live · {fmtTime(journalCurrentSessionSecs)}
+                                          </span>
+                                        )}
+                                      </div>
+                                      {/* Duration meter row */}
+                                      <div className="grid grid-cols-3 divide-x divide-gray-800/50">
+                                        <div className="px-3 py-2.5 flex flex-col items-center text-center">
+                                          <span className="text-sm font-bold text-emerald-400">{fmtTime(todaySecs)}</span>
+                                          <span className="text-[10px] text-gray-600 mt-0.5">Today</span>
+                                        </div>
+                                        <div className="px-3 py-2.5 flex flex-col items-center text-center">
+                                          <span className="text-sm font-bold text-blue-400">{fmtTime(avgSecsPerDay)}</span>
+                                          <span className="text-[10px] text-gray-600 mt-0.5">Daily Avg</span>
+                                        </div>
+                                        <div className="px-3 py-2.5 flex flex-col items-center text-center">
+                                          <span className="text-sm font-bold text-violet-400">{fmtTime(totalSecsAllTime)}</span>
+                                          <span className="text-[10px] text-gray-600 mt-0.5">All Time</span>
+                                        </div>
+                                      </div>
+                                      {/* Line chart */}
+                                      <div className="px-3 pb-3">
+                                        {!hasSomeData && journalCurrentSessionSecs === 0 ? (
+                                          <div className="flex items-center justify-center h-16 text-[10px] text-gray-700">No sessions yet — this is your first visit!</div>
+                                        ) : (
+                                          <div className="relative w-full overflow-hidden rounded-lg bg-gray-900/60 border border-gray-800/60 p-2">
+                                            <svg
+                                              viewBox={`0 0 ${W} ${H}`}
+                                              className="w-full"
+                                              style={{ height: 72 }}
+                                              xmlns="http://www.w3.org/2000/svg"
+                                            >
+                                              {/* Grid lines */}
+                                              {[0.25, 0.5, 0.75, 1].map(f => (
+                                                <line key={f} x1={PAD} y1={H - PAD - f * (H - PAD * 2)} x2={W - PAD} y2={H - PAD - f * (H - PAD * 2)} stroke="#374151" strokeWidth="0.5" strokeDasharray="2,3" />
+                                              ))}
+                                              {/* Average line */}
+                                              {avgSecsPerDay > 0 && (
+                                                <>
+                                                  <line x1={PAD} y1={avgY} x2={W - PAD} y2={avgY} stroke="#6366f1" strokeWidth="1" strokeDasharray="4,3" opacity="0.6" />
+                                                  <text x={W - PAD - 2} y={avgY - 3} fill="#818cf8" fontSize="6" textAnchor="end">avg</text>
+                                                </>
+                                              )}
+                                              {/* Area fill */}
+                                              {pts.length > 1 && (
+                                                <polygon
+                                                  points={`${pts[0].x.toFixed(1)},${H - PAD} ${polyline} ${pts[pts.length-1].x.toFixed(1)},${H - PAD}`}
+                                                  fill="url(#stGrad)"
+                                                  opacity="0.25"
+                                                />
+                                              )}
+                                              <defs>
+                                                <linearGradient id="stGrad" x1="0" y1="0" x2="0" y2="1">
+                                                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.6" />
+                                                  <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                                                </linearGradient>
+                                              </defs>
+                                              {/* Line */}
+                                              {pts.length > 1 && (
+                                                <polyline points={polyline} fill="none" stroke="#10b981" strokeWidth="1.5" strokeLinejoin="round" strokeLinecap="round" />
+                                              )}
+                                              {/* Data points */}
+                                              {pts.map((p, i) => p.secs > 0 && (
+                                                <circle key={i} cx={p.x} cy={p.y} r="2" fill={i === pts.length - 1 ? '#10b981' : '#059669'} />
+                                              ))}
+                                              {/* Today pulsing dot */}
+                                              {journalCurrentSessionSecs > 0 && (
+                                                <>
+                                                  <circle cx={todayPt.x} cy={todayPt.y} r="5" fill="#10b981" opacity="0.2">
+                                                    <animate attributeName="r" values="3;7;3" dur="2s" repeatCount="indefinite" />
+                                                    <animate attributeName="opacity" values="0.3;0;0.3" dur="2s" repeatCount="indefinite" />
+                                                  </circle>
+                                                  <circle cx={todayPt.x} cy={todayPt.y} r="2.5" fill="#10b981" />
+                                                </>
+                                              )}
+                                              {/* X-axis labels for first, middle, last */}
+                                              {[0, 6, 13].map(i => (
+                                                <text key={i} x={pts[i].x} y={H + 1} fill="#4b5563" fontSize="5.5" textAnchor="middle">{pts[i].label}</text>
+                                              ))}
+                                            </svg>
+                                          </div>
+                                        )}
+                                        {/* Discipline insight */}
+                                        <div className="mt-2 flex items-start gap-1.5">
+                                          <span className="text-[9px] leading-relaxed text-gray-600 flex-1">
+                                            {todaySecs > avgSecsPerDay && avgSecsPerDay > 0
+                                              ? `📈 Above average today (${fmtTime(todaySecs)} vs ${fmtTime(avgSecsPerDay)} avg) — great journal discipline!`
+                                              : avgSecsPerDay > 120
+                                              ? `✅ You average ${fmtTime(avgSecsPerDay)}/day reviewing your journal — strong habit.`
+                                              : sessions.length === 0
+                                              ? '💡 Tip: Regular journal review (5–10 min/day) improves trading discipline significantly.'
+                                              : `⏱ Keep building the habit — aim for 5–10 min of daily journal review.`}
+                                          </span>
+                                        </div>
+                                      </div>
+                                    </>
+                                  );
+                                })()}
 
                                 {/* AI Insight */}
                                 <div className="px-4 py-3 bg-indigo-900/10 border-t border-indigo-800/20 flex items-start gap-2">

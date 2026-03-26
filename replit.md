@@ -121,6 +121,22 @@ The platform now uses **openai-edge-tts** compatible voice mapping for perfect v
 - Converts speed values to SSML rate format
 - Returns base64-encoded MP3 audio
 
+## Journal Report Screen Time Tracker
+
+The Journal Report panel (`[CHART:JOURNAL_REPORT]`) includes a live screen-time tracker that records how long the user spends reviewing their journal analysis:
+
+**State**: `journalScreenTimeStart` (session start ms), `journalCurrentSessionSecs` (live counter), `journalScreenTimeSessions` (persisted array of `{date, totalSeconds}`).
+
+**Persistence**: Sessions stored in `localStorage` key `journalScreenTimeSessions` (last 30 days, auto-trimmed).
+
+**Tracking lifecycle**: `useEffect` fires when `[CHART:JOURNAL_REPORT]` opens — starts 1s interval counter; cleanup saves duration to localStorage when the panel closes (ignores flickers < 3s).
+
+**UI Section (before AI Insight)**:
+- "Journal Screen Time" header with live "Live · Xs" indicator (green pulsing dot)
+- 3-col meter row: Today · Daily Avg · All Time
+- 14-day SVG line chart: green area fill, emerald polyline, dashed indigo average line, animated pulsing dot for current session on today's bar, X-axis date labels at first/mid/last
+- Discipline insight text: adapts to whether today is above/below average or the user is new
+
 # External Dependencies
 
 -   **Market Data Providers**:

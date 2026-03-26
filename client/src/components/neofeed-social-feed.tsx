@@ -5451,7 +5451,7 @@ function ViewUserProfile({
   const bio = profileData?.bio || '';
   const profilePicUrl = profileData?.profilePicUrl;
   const initials = (displayName || 'U').charAt(0).toUpperCase();
-  const performanceIsPublic = profileData?.performancePublic === true;
+  const performanceIsPublic = profileData?.performancePublic !== false;
   const showPerformance = isOwnProfile || performanceIsPublic;
 
   const VIEW_MINDSET_CARDS = [
@@ -5665,7 +5665,7 @@ function ViewUserProfile({
               )}
             </div>
           </div>
-          {performanceIsPublic && (
+          {performanceIsPublic && !isOwnProfile && (
             <p className="text-[8px] text-blue-400 dark:text-blue-500 mb-2 flex items-center gap-1">
               <Eye className="w-2.5 h-2.5" /> Visible to everyone
             </p>
@@ -5728,8 +5728,8 @@ function ViewUserProfile({
             })()}
           </div>
 
-          {/* Performance Metric Cards — only shown when profile is public */}
-          {performanceIsPublic && (() => {
+          {/* Performance Metric Cards — shown when public or viewing own profile */}
+          {(performanceIsPublic || isOwnProfile) && (() => {
             const { last6Months, monthlyYield, totalTrades, disciplineData, currentStreak } = viewPerfMetrics;
             const miniLinePath = (data: number[], w = 80, h = 28) => {
               if (data.length < 2) return null;
@@ -5878,6 +5878,9 @@ function ViewUserProfile({
                       sentiment: post.sentiment as 'bullish' | 'bearish' | 'neutral' | null,
                       tags: post.tags || [],
                       stockMentions: post.stockMentions || [],
+                      isAudioPost: (post as any).isAudioPost || false,
+                      selectedPostIds: (post as any).selectedPostIds || [],
+                      selectedPosts: (post as any).selectedPosts || [],
                       user: {
                         initial: (post.authorDisplayName || 'U')[0].toUpperCase(),
                         username: post.authorDisplayName || '',

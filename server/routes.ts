@@ -5291,6 +5291,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
                  email: userData.email,
                  profilePicUrl: userData.profilePicUrl,
                  coverPicUrl: userData.coverPicUrl,
+                 certifiedRole: userData.certifiedRole || null,
+                 certificationImageUrl: userData.certificationImageUrl || null,
                  userId: claims.sub
                },
                userId: claims.sub,
@@ -5325,6 +5327,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           email: userData.email,
           profilePicUrl: userData.profilePicUrl,
           coverPicUrl: userData.coverPicUrl,
+          certifiedRole: userData.certifiedRole || null,
+          certificationImageUrl: userData.certificationImageUrl || null,
           userId: userId
         },
         userId: userId,

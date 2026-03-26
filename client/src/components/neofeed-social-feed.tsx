@@ -2383,6 +2383,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
   const [usernameMessage, setUsernameMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const setCertification = useSetCertification();
 
   // Certification state
   const [certifiedRole, setCertifiedRole] = useState<string>(profileData?.certifiedRole || '');
@@ -2533,6 +2534,15 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
 
       if (!response.ok) {
         throw new Error(result.message || 'Failed to update profile');
+      }
+
+      // Immediately push cert into the avatar context cache so post-feed badges update instantly
+      const profileUsername = (username || profileData?.username || '').toLowerCase();
+      if (profileUsername) {
+        setCertification(profileUsername, {
+          certifiedRole: certifiedRole || null,
+          certificationImageUrl: finalCertImageUrl || null,
+        });
       }
 
       toast({ description: "Profile updated successfully!" });

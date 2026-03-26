@@ -4678,12 +4678,15 @@ ${fundamentalInsights}**📈 Essential Analysis Framework:**
       const effectiveHasP2 = hasP2;
 
       // Decide which data to use
+      // isDemo is based on window globals (which match the heatmap state),
+      // NOT on effectiveHasP1 (which includes API fallback data).
+      // This ensures the journal report header matches the heatmap mode.
       let useData: Record<string, any>;
       let isDemo = false;
       let activeTab: 'personal1' | 'personal2' = tabOverride || journalReportActiveTab;
 
-      if (!effectiveHasP1 && !effectiveHasP2) {
-        // No user data — fall back to demo
+      if (!hasP1 && !hasP2) {
+        // No personal heatmap data in either slot — fall back to demo
         isDemo = true;
         useData = (window as any).__demoJournalData || {};
         if (Object.keys(useData).length === 0) {

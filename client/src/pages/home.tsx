@@ -2241,6 +2241,15 @@ export default function Home() {
   }, []);
 
   const [activeTab, setActiveTab] = useState("trading-home");
+
+  // Stop voice greeting when user switches to a different tab
+  useEffect(() => {
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+  }, [activeTab]);
+
   const [showTutorOverlay, setShowTutorOverlay] = useState(false);
   const [showComingSoonDialog, setShowComingSoonDialog] = useState(false);
   const userEmail = localStorage.getItem("currentUserEmail");
@@ -2269,6 +2278,22 @@ export default function Home() {
   const [isProfileActive, setIsProfileActive] = useState(false);
   const [isVoiceActive, setIsVoiceActive] = useState(false);
   const [isVoiceSettingsOpen, setIsVoiceSettingsOpen] = useState(false);
+
+  // Stop voice greeting when voice panel collapses or nav closes
+  useEffect(() => {
+    if (!isVoiceActive && currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+  }, [isVoiceActive]);
+
+  useEffect(() => {
+    if (!isNavOpen && currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+  }, [isNavOpen]);
+
   const [isFeedbackDialogOpen, setIsFeedbackDialogOpen] = useState(false);
   const [feedbackType, setFeedbackType] = useState<"feedback" | "request">("feedback");
   const [rating, setRating] = useState(0);

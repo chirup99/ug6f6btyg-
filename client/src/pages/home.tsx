@@ -12112,25 +12112,45 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   } | null>(null);
 
   // Stats customization state for purple panel
-  const [visibleStats, setVisibleStats] = useState({
-    pnl: true,
-    trend: true,
-    fomo: true,
-    winRate: true,
-    streak: true,
-    overtrading: true,
-    topTags: false,
-    aiAnalysis: false,
-    planned: false,
+  const [visibleStats, setVisibleStats] = useState(() => {
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    return {
+      pnl: true,
+      trend: true,
+      fomo: true,
+      winRate: true,
+      streak: !isMobile,   // desktop: on by default; mobile: off (5-slot limit)
+      overtrading: true,
+      topTags: false,
+      aiAnalysis: false,
+      planned: false,
+    };
   });
 
-  // Load Magic Bar preferences from localStorage on mount
+  // Load Magic Bar preferences from localStorage on mount (enforce device limits)
   useEffect(() => {
     const saved = localStorage.getItem("magicBarPrefs");
     if (saved) {
       try {
         const prefs = JSON.parse(saved);
-        setVisibleStats(prefs);
+        const isMobile = window.innerWidth < 768;
+        const limit = isMobile ? 5 : 6;
+        const activeKeys = Object.keys(prefs).filter((k) => prefs[k]);
+        if (activeKeys.length > limit) {
+          // Trim extras: keep first `limit` active keys, disable the rest
+          const trimmed = { ...prefs };
+          let kept = 0;
+          const order = ['pnl', 'trend', 'fomo', 'winRate', 'overtrading', 'planned', 'streak', 'topTags', 'aiAnalysis'];
+          order.forEach((k) => {
+            if (prefs[k]) {
+              if (kept < limit) { trimmed[k] = true; kept++; }
+              else { trimmed[k] = false; }
+            }
+          });
+          setVisibleStats(trimmed);
+        } else {
+          setVisibleStats(prefs);
+        }
       } catch (e) {
         console.log("Could not load Magic Bar preferences");
       }
@@ -26405,11 +26425,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       <div className="space-y-2">
                                         <div className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-start">
                                           <span>Customize Magic Bar</span>
-                                          <span className="text-xs opacity-70">{Object.values(visibleStats).filter(v => v).length}/8</span>
+                                          <span className="text-xs opacity-70">{Object.values(visibleStats).filter(v => v).length}/{window.innerWidth < 768 ? 5 : 6}</span>
                                         </div>
                                         {(() => {
                                           const selectedCount = Object.values(visibleStats).filter(v => v).length;
-                                          const isAtLimit = selectedCount >= 8;
+                                          const magicBarLimit = window.innerWidth < 768 ? 5 : 6;
+                                          const isAtLimit = selectedCount >= magicBarLimit;
                                           const handleCheckChange = (field: string, checked: boolean) => {
                                             if (checked && isAtLimit) return;
                                             const updated = {...visibleStats, [field]: checked}; setVisibleStats(updated); localStorage.setItem("magicBarPrefs", JSON.stringify(updated));

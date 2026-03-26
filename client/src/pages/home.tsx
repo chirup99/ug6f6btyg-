@@ -18995,7 +18995,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                                   </tr>
                                                                 </thead>
                                                                 <tbody>
-                                                                  {af.profitLoss.map((row: any, i: number) => (
+                                                                  {af.profitLoss.filter((row: any) => !/^\s*(10 Years|5 Years|3 Years|TTM|1 Year|Last Year)\s*:/.test(row.label || '')).map((row: any, i: number) => (
                                                                     <tr key={i} className="border-t border-gray-700/30 hover:bg-gray-800/30">
                                                                       <td className="py-2 px-3 text-gray-400 font-medium">{row.label}</td>
                                                                       {(af.years || []).slice(0, 5).map((_: string, yi: number) => {

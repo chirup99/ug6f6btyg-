@@ -2536,15 +2536,32 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
         throw new Error(result.message || 'Failed to update profile');
       }
 
-      // Immediately update the my-profile cache with the new cert data so the badge shows right away
+      // Use the actual saved DynamoDB record from the PATCH response so the cache always has
+      // the full profile (including profilePicUrl, coverPicUrl, certifiedRole, etc.)
+      const savedProfile = result.profile;
       const profileUsername = (username || profileData?.username || '').toLowerCase();
-      queryClient.setQueryData(['my-profile'], (old: any) => ({
-        ...(old || {}),
-        displayName: displayName || old?.displayName,
-        bio: bio || old?.bio,
-        certifiedRole: certifiedRole || null,
-        certificationImageUrl: finalCertImageUrl || null,
-      }));
+
+      if (savedProfile) {
+        // Replace the cache with the exact data stored in DynamoDB
+        queryClient.setQueryData(['my-profile'], (old: any) => ({
+          ...(old || {}),
+          ...savedProfile,
+        }));
+      } else {
+        // Fallback: merge manually, explicitly preserving avatar URLs
+        queryClient.setQueryData(['my-profile'], (old: any) => ({
+          ...(old || {}),
+          displayName: displayName || old?.displayName,
+          bio: bio || old?.bio,
+          profilePicUrl: old?.profilePicUrl ?? null,
+          coverPicUrl: old?.coverPicUrl ?? null,
+          certifiedRole: certifiedRole || null,
+          certificationImageUrl: finalCertImageUrl || null,
+        }));
+      }
+
+      // Force a background re-fetch so the confirmed DynamoDB state is loaded
+      queryClient.invalidateQueries({ queryKey: ['my-profile'] });
 
       // Immediately push cert into the avatar context cache so post-feed badges update instantly
       if (profileUsername) {

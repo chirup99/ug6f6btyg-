@@ -20908,7 +20908,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 <FileText className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
                                 <span className="text-xs font-semibold text-gray-200">Trading Journal Report</span>
                                 {m?.isDemo && (
-                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 uppercase tracking-wide">Demo Mode</span>
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30">Demo</span>
                                 )}
                                 {!m?.isDemo && m?.activeTab === 'personal2' && (
                                   <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">Personal 2</span>

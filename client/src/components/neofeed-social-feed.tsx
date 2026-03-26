@@ -242,15 +242,24 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
           if (url) {
             urlCache.current.set(key, url);
             nullCache.current.delete(key);
+            // Preload avatar image into browser cache so <img> renders instantly
+            const preloadAvatar = new window.Image();
+            preloadAvatar.src = url;
           } else {
             // Only cache null with a TTL — will be re-fetched after NULL_CACHE_TTL_MS
             nullCache.current.set(key, now);
           }
           // Always cache certification info (even if null) — it's fetched alongside avatar
-          certCache.current.set(key, {
+          const certInfo: CertificationInfo = {
             certifiedRole: info?.certifiedRole || null,
             certificationImageUrl: info?.certificationImageUrl || null,
-          });
+          };
+          certCache.current.set(key, certInfo);
+          // Preload certificate image into browser cache so dialog opens instantly
+          if (certInfo.certificationImageUrl) {
+            const preloadCert = new window.Image();
+            preloadCert.src = certInfo.certificationImageUrl;
+          }
         }
         setCacheRev(v => v + 1);
       })
@@ -312,12 +321,24 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
-  // Return the certification info for a given username (null if not yet fetched)
+  // Return the certification info for a given username (null if not yet fetched).
+  // If not in cache, queues a batch fetch exactly like getAvatar does so that
+  // the badge appears as soon as data arrives — no waiting on getAvatar.
   const getCertification = useCallback((username: string | undefined | null): CertificationInfo | null => {
     if (!username) return null;
     const key = username.toLowerCase();
-    return certCache.current.get(key) ?? null;
-  }, []);
+    if (certCache.current.has(key)) return certCache.current.get(key)!;
+
+    // Not fetched yet — queue it for the next batch flush
+    const nulledAt = nullCache.current.get(key);
+    const stale = nulledAt === undefined || (Date.now() - nulledAt) >= NULL_CACHE_TTL_MS;
+    if (stale && !pendingRef.current.has(key)) {
+      pendingRef.current.add(key);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(flush, 0);
+    }
+    return null;
+  }, [flush]);
 
   // Immediately update the certification info for a username and re-render consumers
   const setCertification = useCallback((username: string, info: CertificationInfo) => {

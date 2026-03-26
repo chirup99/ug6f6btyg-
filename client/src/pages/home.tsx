@@ -2749,14 +2749,24 @@ export default function Home() {
   const [authInitialized, setAuthInitialized] = useState(false);
   // View-only mode for unauthenticated users - they can view but not interact with protected features
   const [isViewOnlyMode, setIsViewOnlyMode] = useState(false);
-  const [selectedAudioTrack, setSelectedAudioTrack] = useState<{title: string, duration: string, id: string, youtubeId: string} | null>({ title: 'Bruce Lee: "Your Greatest Enemy Is Within"', duration: "22:30", id: "p1", youtubeId: "KnppzfiZcgM" });
+  const allAudioTracks = [
+    { title: "Deep Relaxation Meditation", duration: "10:05", id: "m1", youtubeId: "B7nkVhC10Gw" },
+    { title: 'Bruce Lee: "Your Greatest Enemy Is Within"', duration: "22:30", id: "p1", youtubeId: "KnppzfiZcgM" },
+  ];
+  const [selectedAudioTrack, setSelectedAudioTrack] = useState<{title: string, duration: string, id: string, youtubeId: string} | null>(allAudioTracks[1]);
   const [audioProgress, setAudioProgress] = useState(0);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isYTReady, setIsYTReady] = useState(false);
   const youtubePlayerRef = useRef<any>(null);
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    if ((window as any).YT && (window as any).YT.Player) {
+      setIsYTReady(true);
+      return;
+    }
     const tag = document.createElement("script");
     tag.src = "https://www.youtube.com/iframe_api";
     const firstScriptTag = document.getElementsByTagName("script")[0];
@@ -2764,68 +2774,90 @@ export default function Home() {
 
     (window as any).onYouTubeIframeAPIReady = () => {
       console.log("📺 YouTube IFrame API Ready");
+      setIsYTReady(true);
+    };
+    return () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
     };
   }, []);
 
   useEffect(() => {
-    if (selectedAudioTrack?.youtubeId) {
-      if (youtubePlayerRef.current) {
-        youtubePlayerRef.current.destroy();
-      }
+    if (!isYTReady || !selectedAudioTrack?.youtubeId) return;
 
-      const playerContainer = document.getElementById("youtube-audio-player");
-      if (playerContainer) {
-        youtubePlayerRef.current = new (window as any).YT.Player("youtube-audio-player", {
-          height: "0",
-          width: "0",
-          videoId: selectedAudioTrack.youtubeId,
-          playerVars: {
-            autoplay: 1,
-            controls: 0,
-            showinfo: 0,
-            modestbranding: 1,
-            loop: 1,
-            fs: 0,
-            cc_load_policy: 0,
-            iv_load_policy: 3,
-            autohide: 0
-          },
-          events: {
-            onReady: (event: any) => {
-              setDuration(event.target.getDuration());
-              const interval = setInterval(() => {
-                if (youtubePlayerRef.current && youtubePlayerRef.current.getCurrentTime) {
-                  const time = youtubePlayerRef.current.getCurrentTime();
-                  setCurrentTime(time);
-                  if (youtubePlayerRef.current.getDuration) {
-                    const dur = youtubePlayerRef.current.getDuration();
-                    setDuration(dur);
-                    setAudioProgress((time / dur) * 100);
-                  }
-                }
-              }, 1000);
-              console.log("🎵 YouTube Audio Ready");
-              if (currentTime > 0) event.target.seekTo(currentTime, true);
-              if (isAudioPlaying) event.target.playVideo(); else event.target.pauseVideo();
-            },
-            onStateChange: (event: any) => {
-              if (event.data === (window as any).YT.PlayerState.ENDED) {
-                event.target.playVideo();
+    if (youtubePlayerRef.current) {
+      try { youtubePlayerRef.current.destroy(); } catch {}
+      youtubePlayerRef.current = null;
+    }
+    if (progressIntervalRef.current) {
+      clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = null;
+    }
+    setCurrentTime(0);
+    setAudioProgress(0);
+    setDuration(0);
+
+    const playerContainer = document.getElementById("youtube-audio-player");
+    if (!playerContainer) return;
+
+    const shouldAutoPlay = isAudioPlaying;
+    youtubePlayerRef.current = new (window as any).YT.Player("youtube-audio-player", {
+      height: "0",
+      width: "0",
+      videoId: selectedAudioTrack.youtubeId,
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        showinfo: 0,
+        modestbranding: 1,
+        loop: 0,
+        fs: 0,
+        cc_load_policy: 0,
+        iv_load_policy: 3,
+        autohide: 0,
+        origin: window.location.origin,
+      },
+      events: {
+        onReady: (event: any) => {
+          const dur = event.target.getDuration();
+          if (dur > 0) setDuration(dur);
+          progressIntervalRef.current = setInterval(() => {
+            if (youtubePlayerRef.current && youtubePlayerRef.current.getCurrentTime) {
+              const time = youtubePlayerRef.current.getCurrentTime();
+              setCurrentTime(time);
+              const d = youtubePlayerRef.current.getDuration?.() || 0;
+              if (d > 0) {
+                setDuration(d);
+                setAudioProgress((time / d) * 100);
               }
             }
+          }, 500);
+          console.log("🎵 YouTube Audio Ready");
+          if (shouldAutoPlay) event.target.playVideo();
+        },
+        onStateChange: (event: any) => {
+          const YTState = (window as any).YT?.PlayerState;
+          if (!YTState) return;
+          if (event.data === YTState.ENDED) {
+            const currentIdx = allAudioTracks.findIndex(t => t.id === selectedAudioTrack?.id);
+            const nextTrack = allAudioTracks[(currentIdx + 1) % allAudioTracks.length];
+            setSelectedAudioTrack(nextTrack);
+            setIsAudioPlaying(true);
+          } else if (event.data === YTState.PLAYING) {
+            setIsAudioPlaying(true);
+          } else if (event.data === YTState.PAUSED) {
+            setIsAudioPlaying(false);
           }
-        });
+        }
       }
-    }
-  }, [selectedAudioTrack]);
+    });
+  }, [selectedAudioTrack, isYTReady]);
 
   useEffect(() => {
-    if (youtubePlayerRef.current) {
-      if (isAudioPlaying) {
-        if (youtubePlayerRef.current && typeof youtubePlayerRef.current.playVideo === "function") youtubePlayerRef.current.playVideo();
-      } else {
-        if (youtubePlayerRef.current && typeof youtubePlayerRef.current.pauseVideo === "function") youtubePlayerRef.current.pauseVideo();
-      }
+    if (!youtubePlayerRef.current) return;
+    if (isAudioPlaying) {
+      if (typeof youtubePlayerRef.current.playVideo === "function") youtubePlayerRef.current.playVideo();
+    } else {
+      if (typeof youtubePlayerRef.current.pauseVideo === "function") youtubePlayerRef.current.pauseVideo();
     }
   }, [isAudioPlaying]);
 
@@ -26368,15 +26400,19 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               {selectedAudioTrack ? selectedAudioTrack.title : "Select a session"}
                                             </div>
                                             <div className="text-[9px] text-slate-500 uppercase tracking-tighter">
-                                              {selectedAudioTrack ? `Playing • ${selectedAudioTrack.duration}` : "Ready to play"}
-                                            <div id="youtube-audio-player" className="hidden"></div>
+                                              {selectedAudioTrack ? `${isAudioPlaying ? 'Playing' : 'Paused'} • ${selectedAudioTrack.duration}` : "Ready to play"}
                                             </div>
                                           </div>
                                         </div>
                                         
                                         {/* Audio Controls */}
                                         <div className="flex items-center gap-1">
-                                          <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+                                          <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100" onClick={() => {
+                                            const currentIdx = allAudioTracks.findIndex(t => t.id === selectedAudioTrack?.id);
+                                            const prevTrack = allAudioTracks[(currentIdx - 1 + allAudioTracks.length) % allAudioTracks.length];
+                                            setSelectedAudioTrack(prevTrack);
+                                            setIsAudioPlaying(true);
+                                          }}>
                                             <SkipBack className="h-3 w-3" />
                                           </Button>
                                           <Button 
@@ -26387,7 +26423,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                           >
                                             {isAudioPlaying ? <Pause className="h-4 w-4 fill-current" /> : <Play className="h-4 w-4 fill-current" />}
                                           </Button>
-                                          <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100">
+                                          <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100" onClick={() => {
+                                            const currentIdx = allAudioTracks.findIndex(t => t.id === selectedAudioTrack?.id);
+                                            const nextTrack = allAudioTracks[(currentIdx + 1) % allAudioTracks.length];
+                                            setSelectedAudioTrack(nextTrack);
+                                            setIsAudioPlaying(true);
+                                          }}>
                                             <SkipForward className="h-3 w-3" />
                                           </Button>
                                         </div>
@@ -34388,6 +34429,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         </Dialog>
 
       </div>
+      {/* Persistent YouTube audio player - always in DOM so audio continues when dialog closes */}
+      <div id="youtube-audio-player" style={{ position: 'fixed', bottom: 0, left: 0, width: 0, height: 0, opacity: 0, pointerEvents: 'none', overflow: 'hidden' }}></div>
     </div>
   );
 }

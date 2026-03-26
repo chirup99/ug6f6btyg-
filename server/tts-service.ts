@@ -150,8 +150,19 @@ export const sarvamTTSService = {
   // Voice mapping following openai-edge-tts voice choices
   // Reference: https://github.com/travisvn/openai-edge-tts
   getVoiceNameForLanguage(language: string, speakerId?: string): string {
-    // If speakerId is already a full voice ID (contains "-Neural" or language code), use it directly
-    if (speakerId && (speakerId.includes('-') || speakerId.includes('Neural'))) {
+    // If speakerId is already a full voice ID (contains "-Neural"), use it only if it matches the target language
+    if (speakerId && speakerId.includes('Neural')) {
+      // Extract the language prefix from the voice ID (e.g. "hi" from "hi-IN-MadhurNeural", "en" from "en-US-AriaNeural")
+      const voiceLangPrefix = speakerId.split('-')[0].toLowerCase();
+      const targetLangPrefix = language.toLowerCase();
+      if (voiceLangPrefix === targetLangPrefix) {
+        console.log(`🎤 [TTS] Using speaker ID directly (language match): ${speakerId}`);
+        return speakerId;
+      }
+      // Voice language doesn't match target language — fall through to language map
+      console.log(`🎤 [TTS] Speaker ${speakerId} doesn't match language ${language}, using language-mapped voice`);
+    } else if (speakerId && speakerId.includes('-') && !speakerId.includes('Neural')) {
+      // Partial voice ID with dashes but not a Neural voice — use directly
       console.log(`🎤 [TTS] Using speaker ID directly: ${speakerId}`);
       return speakerId;
     }

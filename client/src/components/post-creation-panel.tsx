@@ -18,31 +18,31 @@ import type { InsertSocialPost } from '@shared/schema';
 import { useAudioMode } from '@/contexts/AudioModeContext';
 
 const STOCK_LIST = [
-  'Nifty', 'Banknifty', 'Sensex', 'Crude Oil', 'Gold', 'Silver',
-  'Adani Enterprises', 'Adani Ports', 'Apollo Hospitals', 'Asian Paints',
-  'Axis Bank', 'Bajaj Auto', 'Bajaj Finance', 'Bajaj Finserv', 'BPCL',
-  'Bharti Airtel', 'Britannia', 'Cipla', 'Coal India', "Divi's Laboratories",
-  "Dr Reddy's Laboratories", 'Eicher Motors', 'Grasim Industries', 'HCL Technologies',
-  'HDFC Bank', 'HDFC Life', 'Hero MotoCorp', 'Hindalco', 'Hindustan Unilever',
-  'ICICI Bank', 'ITC', 'IndusInd Bank', 'Infosys', 'JSW Steel',
-  'Kotak Mahindra Bank', 'Larsen & Toubro', 'LTIMindtree', 'Mahindra & Mahindra',
-  'Maruti Suzuki', 'Nestlé India', 'NTPC', 'ONGC', 'Power Grid',
-  'Reliance Industries', 'SBI Life Insurance', 'State Bank of India', 'Sun Pharma',
-  'Tata Consultancy Services', 'Tata Consumer Products', 'Tata Motors', 'Tata Steel',
-  'Tech Mahindra', 'Titan', 'UltraTech Cement', 'UPL', 'Wipro',
-  'AU Small Finance Bank', 'Bandhan Bank', 'Bank of Baroda', 'Canara Bank',
-  'Federal Bank', 'IDFC First Bank', 'ACC', 'Adani Green Energy', 'Adani Total Gas',
-  'Ambuja Cements', 'ABB India', 'Avenue Supermarts (DMart)', 'Bajaj Holdings & Investment',
-  'Berger Paints', 'Bharat Electronics', 'Biocon', 'Bosch',
-  'Cholamandalam Investment', 'Colgate-Palmolive India', 'DLF', 'Dabur India',
-  'FSN E-Commerce (Nykaa)', 'GAIL India', 'Gland Pharma', 'Godrej Consumer Products',
-  'Havells India', 'HDFC AMC', 'Hindustan Aeronautics', 'ICICI Lombard',
-  'ICICI Prudential Life', 'Indian Hotels', 'Indian Oil Corporation', 'IRCTC',
-  'Indus Towers', 'Info Edge (Naukri)', 'InterGlobe Aviation (IndiGo)', 'LIC',
-  'Marico', 'Mphasis', 'Muthoot Finance', 'One97 Communications (Paytm)',
-  'PI Industries', 'Pidilite Industries', 'P&G Hygiene', 'SBI Cards', 'SRF',
-  'Samvardhana Motherson', 'Shree Cement', 'Siemens India', 'Tata Power',
-  'Torrent Pharma', 'United Spirits', 'Vedanta', 'Zomato',
+  'NIFTY', 'BANKNIFTY', 'SENSEX', 'CRUDEOIL', 'GOLD', 'SILVER',
+  'ADANIENT', 'ADANIPORTS', 'APOLLOHOSP', 'ASIANPAINT',
+  'AXISBANK', 'BAJAJ-AUTO', 'BAJFINANCE', 'BAJAJFINSV', 'BPCL',
+  'BHARTIARTL', 'BRITANNIA', 'CIPLA', 'COALINDIA', 'DIVISLAB',
+  'DRREDDY', 'EICHERMOT', 'GRASIM', 'HCLTECH',
+  'HDFCBANK', 'HDFCLIFE', 'HEROMOTOCO', 'HINDALCO', 'HINDUNILVR',
+  'ICICIBANK', 'ITC', 'INDUSINDBK', 'INFY', 'JSWSTEEL',
+  'KOTAKBANK', 'LT', 'LTIM', 'M&M',
+  'MARUTI', 'NESTLEIND', 'NTPC', 'ONGC', 'POWERGRID',
+  'RELIANCE', 'SBILIFE', 'SBIN', 'SUNPHARMA',
+  'TCS', 'TATACONSUM', 'TATAMOTORS', 'TATASTEEL',
+  'TECHM', 'TITAN', 'ULTRACEMCO', 'UPL', 'WIPRO',
+  'AUBANK', 'BANDHANBNK', 'BANKBARODA', 'CANBK',
+  'FEDERALBNK', 'IDFCFIRSTB', 'ACC', 'ADANIGREEN', 'ATGL',
+  'AMBUJACEM', 'ABB', 'DMART', 'HAVELLS',
+  'BERGEPAINT', 'BEL', 'BIOCON', 'BOSCHLTD',
+  'CHOLAFIN', 'COLPAL', 'DLF', 'DABUR',
+  'NYKAA', 'GAIL', 'GLAND', 'GODREJCP',
+  'HDFCAMC', 'HAL', 'ICICIGI',
+  'ICICIPRULI', 'INDHOTEL', 'IOC', 'IRCTC',
+  'INDUSTOWER', 'NAUKRI', 'INDIGO', 'LICI',
+  'MARICO', 'MPHASIS', 'MUTHOOTFIN', 'PAYTM',
+  'PIIND', 'PIDILITIND', 'PGHH', 'SBICARD', 'SRF',
+  'MOTHERSON', 'SHREECEM', 'SIEMENS', 'TATAPOWER',
+  'TORNTPHARM', 'MCDOWELL-N', 'VEDL', 'ZOMATO',
 ];
 
 const SENTIMENTS = [
@@ -215,8 +215,8 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
   const detectStockMentions = useCallback((text: string) => {
     const words = text.toUpperCase().split(/\s+/);
     const mentions = words.filter(word => {
-      const cleanWord = word.replace(/[^\w]/g, '');
-      return POPULAR_STOCKS.includes(cleanWord) && !stockMentions.includes(cleanWord);
+      const cleanWord = word.replace(/[^\w&-]/g, '');
+      return STOCK_LIST.includes(cleanWord) && !stockMentions.includes(cleanWord);
     });
     return mentions;
   }, [stockMentions]);

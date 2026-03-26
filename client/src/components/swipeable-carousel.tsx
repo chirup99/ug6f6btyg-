@@ -8,8 +8,9 @@ interface SwipeableCarouselProps {
 export function SwipeableCarousel({ images }: SwipeableCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isTransitioning, setIsTransitioning] = useState(false);
-  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [dialogIndex, setDialogIndex] = useState<number | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const dialogContainerRef = useRef<HTMLDivElement>(null);
   const startX = useRef<number>(0);
   const currentX = useRef<number>(0);
   const isDragging = useRef<boolean>(false);
@@ -29,14 +30,22 @@ export function SwipeableCarousel({ images }: SwipeableCarouselProps) {
     setTimeout(() => setIsTransitioning(false), 300);
   };
 
-  const nextLightbox = () => {
-    if (lightboxIndex === null) return;
-    setLightboxIndex((lightboxIndex + 1) % images.length);
+  const nextDialog = () => {
+    if (dialogIndex === null) return;
+    const next = (dialogIndex + 1) % images.length;
+    setDialogIndex(next);
+    if (dialogContainerRef.current) {
+      dialogContainerRef.current.style.transform = `translateX(-${next * 100}%)`;
+    }
   };
 
-  const prevLightbox = () => {
-    if (lightboxIndex === null) return;
-    setLightboxIndex((lightboxIndex - 1 + images.length) % images.length);
+  const prevDialog = () => {
+    if (dialogIndex === null) return;
+    const prev = (dialogIndex - 1 + images.length) % images.length;
+    setDialogIndex(prev);
+    if (dialogContainerRef.current) {
+      dialogContainerRef.current.style.transform = `translateX(-${prev * 100}%)`;
+    }
   };
 
   const handleTouchStart = (e: React.TouchEvent) => {
@@ -128,27 +137,28 @@ export function SwipeableCarousel({ images }: SwipeableCarouselProps) {
     }
   }, [currentIndex]);
 
-  // Close lightbox on Escape key
   useEffect(() => {
-    if (lightboxIndex === null) return;
+    if (dialogIndex === null) return;
+    if (dialogContainerRef.current) {
+      dialogContainerRef.current.style.transform = `translateX(-${dialogIndex * 100}%)`;
+    }
+  }, [dialogIndex]);
+
+  useEffect(() => {
+    if (dialogIndex === null) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setLightboxIndex(null);
-      if (e.key === 'ArrowRight') nextLightbox();
-      if (e.key === 'ArrowLeft') prevLightbox();
+      if (e.key === 'Escape') setDialogIndex(null);
+      if (e.key === 'ArrowRight') nextDialog();
+      if (e.key === 'ArrowLeft') prevDialog();
     };
     document.addEventListener('keydown', onKey);
     return () => document.removeEventListener('keydown', onKey);
-  }, [lightboxIndex]);
+  }, [dialogIndex]);
 
-  // Prevent body scroll when lightbox is open
   useEffect(() => {
-    if (lightboxIndex !== null) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
+    document.body.style.overflow = dialogIndex !== null ? 'hidden' : '';
     return () => { document.body.style.overflow = ''; };
-  }, [lightboxIndex]);
+  }, [dialogIndex]);
 
   if (images.length === 0) return null;
 
@@ -173,12 +183,12 @@ export function SwipeableCarousel({ images }: SwipeableCarouselProps) {
                 <img
                   src={imageUrl}
                   alt={`Image ${index + 1} of ${images.length}`}
-                  className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 shadow-lg select-none cursor-zoom-in"
+                  className="w-full h-48 object-cover rounded-lg border border-gray-200 dark:border-gray-600 shadow-lg select-none cursor-pointer"
                   draggable={false}
                   onClick={(e) => {
                     if (Math.abs(dragDistance.current) < 5) {
                       e.stopPropagation();
-                      setLightboxIndex(index);
+                      setDialogIndex(index);
                     }
                   }}
                   data-testid={`img-feed-${index}`}
@@ -208,9 +218,11 @@ export function SwipeableCarousel({ images }: SwipeableCarouselProps) {
           )}
 
           {/* Image Counter */}
-          <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
-            {currentIndex + 1}/{images.length}
-          </div>
+          {images.length > 1 && (
+            <div className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-full">
+              {currentIndex + 1}/{images.length}
+            </div>
+          )}
         </div>
 
         {/* Dot Indicators */}
@@ -238,72 +250,102 @@ export function SwipeableCarousel({ images }: SwipeableCarouselProps) {
         )}
       </div>
 
-      {/* Fullscreen Lightbox */}
-      {lightboxIndex !== null && (
+      {/* Minimalist Image Dialog */}
+      {dialogIndex !== null && (
         <div
-          className="fixed inset-0 z-[9999] bg-black/95 flex items-center justify-center"
-          onClick={() => setLightboxIndex(null)}
-          data-testid="lightbox-overlay"
+          className="fixed inset-0 z-[9999] flex items-center justify-center"
+          onClick={() => setDialogIndex(null)}
+          data-testid="image-dialog-overlay"
         >
-          {/* Close Button */}
-          <button
-            className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-            onClick={(e) => { e.stopPropagation(); setLightboxIndex(null); }}
-            data-testid="button-close-lightbox"
-            aria-label="Close"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          {/* Backdrop */}
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" />
 
-          {/* Counter */}
-          {images.length > 1 && (
-            <div className="absolute top-4 left-1/2 -translate-x-1/2 bg-white/10 text-white text-xs px-3 py-1 rounded-full">
-              {lightboxIndex + 1} / {images.length}
-            </div>
-          )}
-
-          {/* Image */}
-          <img
-            src={images[lightboxIndex]}
-            alt={`Image ${lightboxIndex + 1}`}
-            className="max-w-full max-h-full object-contain select-none px-12"
-            draggable={false}
+          {/* Dialog Card */}
+          <div
+            className="relative z-10 w-[92vw] max-w-sm mx-auto bg-gray-900 border border-gray-700/60 rounded-2xl overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
-            data-testid="img-lightbox"
-          />
-
-          {/* Prev / Next arrows */}
-          {images.length > 1 && (
-            <>
+          >
+            {/* Header bar */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
+              <span className="text-xs text-gray-400 font-medium">
+                {images.length > 1 ? `${(dialogIndex ?? 0) + 1} of ${images.length}` : 'Image'}
+              </span>
               <button
-                className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors"
-                onClick={(e) => { e.stopPropagation(); prevLightbox(); }}
-                aria-label="Previous image"
+                className="w-7 h-7 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 flex items-center justify-center transition-colors"
+                onClick={() => setDialogIndex(null)}
+                data-testid="button-close-image-dialog"
+                aria-label="Close"
               >
-                <ChevronLeft className="w-5 h-5" />
+                <X className="w-3.5 h-3.5" />
               </button>
-              <button
-                className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-white/10 hover:bg-white/25 text-white flex items-center justify-center transition-colors"
-                onClick={(e) => { e.stopPropagation(); nextLightbox(); }}
-                aria-label="Next image"
-              >
-                <ChevronRight className="w-5 h-5" />
-              </button>
-            </>
-          )}
-
-          {/* Dot indicators at bottom */}
-          {images.length > 1 && (
-            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex gap-2">
-              {images.map((_, i) => (
-                <button
-                  key={i}
-                  className={`w-2 h-2 rounded-full transition-all ${i === lightboxIndex ? 'bg-white scale-125' : 'bg-white/40'}`}
-                  onClick={(e) => { e.stopPropagation(); setLightboxIndex(i); }}
-                />
-              ))}
             </div>
-          )}
+
+            {/* Image carousel strip */}
+            <div className="relative overflow-hidden bg-black">
+              <div
+                ref={dialogContainerRef}
+                className="flex transition-transform duration-300 ease-out"
+                style={{ transform: `translateX(-${dialogIndex * 100}%)` }}
+              >
+                {images.map((src, i) => (
+                  <div key={i} className="w-full flex-shrink-0 flex items-center justify-center">
+                    <img
+                      src={src}
+                      alt={`Image ${i + 1}`}
+                      className="w-full max-h-[60vh] object-contain select-none"
+                      draggable={false}
+                      data-testid={`img-dialog-${i}`}
+                    />
+                  </div>
+                ))}
+              </div>
+
+              {/* Prev / Next arrows */}
+              {images.length > 1 && (
+                <>
+                  <button
+                    className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gray-800/80 hover:bg-gray-700 text-gray-300 flex items-center justify-center transition-colors"
+                    onClick={prevDialog}
+                    aria-label="Previous image"
+                    data-testid="button-dialog-prev"
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </button>
+                  <button
+                    className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-gray-800/80 hover:bg-gray-700 text-gray-300 flex items-center justify-center transition-colors"
+                    onClick={nextDialog}
+                    aria-label="Next image"
+                    data-testid="button-dialog-next"
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </button>
+                </>
+              )}
+            </div>
+
+            {/* Dot indicators */}
+            {images.length > 1 && (
+              <div className="flex justify-center gap-1.5 py-3 border-t border-gray-700/50">
+                {images.map((_, i) => (
+                  <button
+                    key={i}
+                    className={`rounded-full transition-all duration-200 ${
+                      i === dialogIndex
+                        ? 'w-4 h-1.5 bg-blue-400'
+                        : 'w-1.5 h-1.5 bg-gray-600 hover:bg-gray-500'
+                    }`}
+                    onClick={() => {
+                      setDialogIndex(i);
+                      if (dialogContainerRef.current) {
+                        dialogContainerRef.current.style.transform = `translateX(-${i * 100}%)`;
+                      }
+                    }}
+                    aria-label={`Go to image ${i + 1}`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </>

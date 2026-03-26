@@ -3497,13 +3497,25 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
   const minT = Math.min(...trendData, 0);
   const rangeT = maxT - minT || 1;
   const svgW = 40, svgH = 20;
-  const trendPath = trendData.length > 1
-    ? trendData.map((v, i) => {
-        const x = (i / (trendData.length - 1)) * svgW;
-        const y = svgH - ((v - minT) / rangeT) * svgH;
-        return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-      }).join(' ')
-    : `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
+  const trendPoints = trendData.length > 1
+    ? trendData.map((v, i) => ({
+        x: (i / (trendData.length - 1)) * svgW,
+        y: svgH - ((v - minT) / rangeT) * svgH,
+      }))
+    : null;
+  const trendPath = trendPoints
+    ? trendPoints.reduce((d, pt, i) => {
+        if (i === 0) return `M ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+        const prev = trendPoints[i - 1];
+        const prevPrev = i >= 2 ? trendPoints[i - 2] : prev;
+        const next = i < trendPoints.length - 1 ? trendPoints[i + 1] : pt;
+        const cp1x = prev.x + (pt.x - prevPrev.x) / 5;
+        const cp1y = prev.y + (pt.y - prevPrev.y) / 5;
+        const cp2x = pt.x - (next.x - prev.x) / 5;
+        const cp2y = pt.y - (next.y - prev.y) / 5;
+        return `${d} C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+      }, '')
+    : `M 0,${svgH / 2} L ${svgW},${svgH / 2}`;
 
   const fromLabel = m.fromDate ? new Date(m.fromDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short' }) : '';
   const toLabel = m.toDate ? new Date(m.toDate).toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' }) : '';

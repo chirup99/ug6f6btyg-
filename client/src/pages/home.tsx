@@ -34193,7 +34193,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
               </div>
               <Button
                 onClick={handlePostToNeoFeed}
-                disabled={isPostingReport || (reportPostMode === 'selected' && !reportPostSelectedDate)}
+                disabled={isPostingReport || isDemoMode || (reportPostMode === 'selected' && !reportPostSelectedDate)}
                 className="h-7 px-3 rounded-full bg-violet-600 hover:bg-violet-700 text-white text-[10px] font-bold shadow-sm flex items-center gap-1 flex-shrink-0"
                 data-testid="button-submit-post"
               >

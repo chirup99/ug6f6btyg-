@@ -810,7 +810,7 @@ export async function createOrUpdateUserProfile(userId: string, profileData: any
     console.log(`🔍 existingProfile for ${userId}:`, JSON.stringify(existingProfile));
     
     // Explicitly merge fields to ensure nothing is lost
-    const item = {
+    const merged = {
       pk: `USER#${userId}`,
       sk: 'PROFILE',
       userId,
@@ -818,6 +818,15 @@ export async function createOrUpdateUserProfile(userId: string, profileData: any
       ...profileData,
       updatedAt: timestamp
     };
+
+    // Strip out null/undefined values so DynamoDB doesn't store NULL type attributes.
+    // For cert fields specifically: null means "remove the cert" so we delete the key.
+    const item: any = {};
+    for (const [k, v] of Object.entries(merged)) {
+      if (v !== null && v !== undefined) {
+        item[k] = v;
+      }
+    }
 
     console.log(`💾 Saving item to DynamoDB for ${userId}:`, JSON.stringify(item));
     await docClient.send(new PutCommand({ TableName: TABLES.USER_PROFILES, Item: item }));

@@ -1611,7 +1611,7 @@ export function registerNeoFeedAwsRoutes(app: any) {
         return res.status(401).json({ error: 'Unauthorized' });
       }
 
-      const { username, displayName, bio, location, dob, profilePicUrl, coverPicUrl } = req.body;
+      const { username, displayName, bio, location, dob, profilePicUrl, coverPicUrl, certifiedRole, certificationImageUrl } = req.body;
       const updates: any = {};
       if (username !== undefined) updates.username = username;
       if (displayName !== undefined) updates.displayName = displayName;
@@ -1620,6 +1620,10 @@ export function registerNeoFeedAwsRoutes(app: any) {
       if (dob !== undefined) updates.dob = dob;
       if (profilePicUrl !== undefined) updates.profilePicUrl = profilePicUrl;
       if (coverPicUrl !== undefined) updates.coverPicUrl = coverPicUrl;
+      // Cert fields — pass non-null values directly; pass null as a sentinel so
+      // createOrUpdateUserProfile can delete the attribute rather than storing DynamoDB NULL type
+      if (certifiedRole !== undefined) updates.certifiedRole = certifiedRole;
+      if (certificationImageUrl !== undefined) updates.certificationImageUrl = certificationImageUrl;
 
       console.log(`📥 UPDATE PROFILE for ${user.userId}:`, updates);
 

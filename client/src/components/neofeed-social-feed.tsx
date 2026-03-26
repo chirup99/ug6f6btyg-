@@ -334,8 +334,14 @@ const useGetCertification = () => useContext(UserAvatarContext).getCertification
 const useSetCertification = () => useContext(UserAvatarContext).setCertification;
 
 // ─── CertifiedBadge: tiny inline badge shown beside display name in posts ─────
-function CertifiedBadge({ certId, onClick }: { certId: string; onClick: () => void }) {
+function CertifiedBadge({ certId, onClick, certImageUrl }: { certId: string; onClick: () => void; certImageUrl?: string | null }) {
   const shortName = certShortName(certId);
+  useEffect(() => {
+    if (certImageUrl) {
+      const img = new Image();
+      img.src = certImageUrl;
+    }
+  }, [certImageUrl]);
   return (
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
@@ -361,7 +367,6 @@ function CertificationDialog({ username, certId, certImageUrl, isOpen, onClose }
   onClose: () => void;
 }) {
   const cert = NISM_CERTIFICATES.find(c => c.id === certId);
-  if (!isOpen) return null;
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-w-sm p-0 overflow-hidden rounded-2xl border border-border shadow-xl">
@@ -4313,7 +4318,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                     if (!cert?.certifiedRole) return null;
                     return (
                       <>
-                        <CertifiedBadge certId={cert.certifiedRole} onClick={() => setShowCertDialog(true)} />
+                        <CertifiedBadge certId={cert.certifiedRole} onClick={() => setShowCertDialog(true)} certImageUrl={cert.certificationImageUrl || null} />
                         <CertificationDialog
                           username={postAuthorKey || ''}
                           certId={cert.certifiedRole}
@@ -4471,7 +4476,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                   if (!cert?.certifiedRole) return null;
                   return (
                     <>
-                      <CertifiedBadge certId={cert.certifiedRole} onClick={() => setShowCertDialog(true)} />
+                      <CertifiedBadge certId={cert.certifiedRole} onClick={() => setShowCertDialog(true)} certImageUrl={cert.certificationImageUrl || null} />
                       <CertificationDialog
                         username={postAuthorKey}
                         certId={cert.certifiedRole}
@@ -5580,7 +5585,7 @@ function ViewUserProfile({
                 <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
               )}
               {profileData?.certifiedRole && (
-                <CertifiedBadge certId={profileData.certifiedRole} onClick={() => setShowCertDialog(true)} />
+                <CertifiedBadge certId={profileData.certifiedRole} onClick={() => setShowCertDialog(true)} certImageUrl={profileData.certificationImageUrl || null} />
               )}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-xs">

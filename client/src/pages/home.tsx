@@ -16304,14 +16304,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               const name = currentUser?.displayName || currentUser?.username || "Trader";
                                               // Multilingual greetings with Microsoft Edge TTS voices
                                               const voiceGreetings: { [key: string]: (name: string, profile: string) => string } = {
-                                                    en: (n, p) => `Hello ${n}, I am ${p}. How is your day? Welcome to perala!`,
-                                                    hi: (n, p) => `नमस्ते ${n}, मैं ${p} हूँ। आपका दिन कैसा है? परला में आपका स्वागत है!`,
-                                                    bn: (n, p) => `হ্যালো ${n}, আমি ${p}। আপনার দিन কেমন? পেরালায় আপনাকে স্বাগতম!`,
-                                                    ta: (n, p) => `வணக்கம் ${n}, நான் ${p}. உங்கள் நாள் எப்படி? பெரால்லாவில் உங்களை வரவேற்கிறேன்!`,
-                                                    te: (n, p) => `హలో ${n}, నేను ${p}. మీ రోజు ఎలా ఉంది? పెరాలాలో మీకు స్వాగతం!`,
-                                                    mr: (n, p) => `नमस्कार ${n}, मी ${p} आहे. तुमचा दिवस कसा? पेरला मध्ये तुमचे स्वागत आहे!`,
-                                                    gu: (n, p) => `હેલો ${n}, હું ${p} છું. તમારો દિવસ કેમ છે? પેરાલામાં તમારું સ્વાગત છે!`,
-                                                    kn: (n, p) => `ಹೆಲೋ ${n}, ನಾನು ${p}. ನಿಮ್ಮ ದಿನ ಹೇಗಿದೆ? ಪೆರಾಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+                                                    en: (n, p) => `Hello ${n}, I am ${p}. How is your day? Welcome to Perala!`,
+                                                    hi: (n, p) => `नमस्ते ${n}, मैं ${p} हूँ। आपका दिन कैसा है? पेरला में आपका स्वागत है!`,
+                                                    bn: (n, p) => `নমস্কার ${n}, আমি ${p}। আপনার দিন কেমন যাচ্ছে? পেরলায় আপনাকে স্বাগত!`,
+                                                    ta: (n, p) => `வணக்கம் ${n}, நான் ${p}. உங்கள் நாள் எப்படி இருக்கிறது? பெரலாவில் உங்களை வரவேற்கிறோம்!`,
+                                                    te: (n, p) => `నమస్కారం ${n}, నేను ${p}. మీ రోజు ఎలా ఉంది? పెరలాలో మీకు స్వాగతం!`,
+                                                    mr: (n, p) => `नमस्कार ${n}, मी ${p} आहे. तुमचा दिवस कसा आहे? पेरलामध्ये तुमचे स्वागत आहे!`,
+                                                    gu: (n, p) => `નમસ્તે ${n}, હું ${p} છું. તમારો દિવસ કેવો છે? પેરલામાં તમારું સ્વાગત છે!`,
+                                                    kn: (n, p) => `ನಮಸ್ಕಾರ ${n}, ನಾನು ${p}. ನಿಮ್ಮ ದಿನ ಹೇಗಿದೆ? ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+                                                    ml: (n, p) => `നമസ്കാരം ${n}, ഞാൻ ${p} ആണ്. നിങ്ങളുടെ ദിവസം എങ്ങനെയുണ്ട്? പെരലയിലേക്ക് സ്വാഗതം!`,
                                               };
                                               const baseText = voiceGreetings[voiceLanguage] ? voiceGreetings[voiceLanguage](name, profile.name) : `Hello ${name}, I am ${profile.name}. How is your day? Welcome to perala!`;
                                               

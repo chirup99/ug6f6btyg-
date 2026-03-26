@@ -1612,8 +1612,8 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
       <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 mb-6">
         <div className="px-5 pt-4 pb-0">
 
-          {/* ── Row 1: Compact identity + stats ── */}
-          <div className="flex items-center gap-3 mb-3">
+          {/* ── Row 1: Avatar + Name / handle / bio ── */}
+          <div className="flex items-start gap-3 mb-2.5">
             {/* Avatar */}
             <div
               className="relative group cursor-pointer flex-shrink-0"
@@ -1634,57 +1634,62 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
               </div>
             </div>
 
-            {/* Name + handle + cert + bio */}
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <h2 className="font-bold text-[15px] text-gray-900 dark:text-white leading-tight truncate">
+            {/* Name + handle + bio */}
+            <div className="flex-1 min-w-0 pt-0.5">
+              <div className="flex items-center gap-1.5">
+                <h2 className="font-bold text-[15px] text-gray-900 dark:text-white leading-tight break-words">
                   {displayName || username}
                 </h2>
                 {profileData?.verified && (
                   <CheckCircle className="w-3.5 h-3.5 text-blue-500 fill-current flex-shrink-0" />
                 )}
               </div>
-              <p className="text-[11px] text-gray-400 dark:text-gray-500">@{username}{profileData?.location ? ` · ${profileData.location}` : ''}</p>
+              <p className="text-[11px] text-gray-400 dark:text-gray-500">@{username}</p>
+              {bio && (
+                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug line-clamp-2">{bio}</p>
+              )}
+            </div>
+          </div>
+
+          {/* ── Row 2: Stats + Cert badge + Edit Profile ── */}
+          <div className="flex items-center gap-2 mb-3">
+            {/* Stats */}
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <button className="text-center flex-shrink-0" onClick={() => setShowFollowingDialog(true)} data-testid="button-show-following">
+                <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{formatCount(following)}</p>
+                <p className="text-[9px] text-gray-400 uppercase tracking-wide">Following</p>
+              </button>
+              <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+              <button className="text-center flex-shrink-0" onClick={() => setShowFollowersDialog(true)} data-testid="button-show-followers">
+                <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{formatCount(followers)}</p>
+                <p className="text-[9px] text-gray-400 uppercase tracking-wide">Followers</p>
+              </button>
+              <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+              <div className="text-center flex-shrink-0">
+                <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{formatCount(postCount)}</p>
+                <p className="text-[9px] text-gray-400 uppercase tracking-wide">Posts</p>
+              </div>
+            </div>
+
+            {/* Cert badge + Edit Profile in same row */}
+            <div className="flex items-center gap-1.5 flex-shrink-0">
               {profileData?.certifiedRole && (
                 <button
                   onClick={() => setShowCertDialog(true)}
-                  className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+                  className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
                   data-testid="button-cert-badge-profile"
                 >
                   <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 12 12" fill="none">
                     <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
                     <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                   </svg>
-                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 leading-none">
+                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 leading-none hidden sm:inline">
                     {NISM_CERTIFICATES.find(c => c.id === profileData.certifiedRole)?.label || profileData.certifiedRole}
                   </span>
                 </button>
               )}
-              {bio && (
-                <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug line-clamp-1">{bio}</p>
-              )}
-            </div>
-
-            {/* Stats + Edit */}
-            <div className="flex-shrink-0 flex flex-col items-end gap-2">
-              <div className="flex items-center gap-3">
-                <button className="text-center" onClick={() => setShowFollowingDialog(true)} data-testid="button-show-following">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{formatCount(following)}</p>
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Following</p>
-                </button>
-                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
-                <button className="text-center" onClick={() => setShowFollowersDialog(true)} data-testid="button-show-followers">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{formatCount(followers)}</p>
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Followers</p>
-                </button>
-                <div className="w-px h-6 bg-gray-200 dark:bg-gray-700" />
-                <div className="text-center">
-                  <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{formatCount(postCount)}</p>
-                  <p className="text-[9px] text-gray-400 uppercase tracking-wide">Posts</p>
-                </div>
-              </div>
               <Button
-                className="h-7 px-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[11px] font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors"
+                className="h-7 px-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[11px] font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors whitespace-nowrap"
                 onClick={() => setShowEditProfile(true)}
                 data-testid="button-edit-profile"
               >

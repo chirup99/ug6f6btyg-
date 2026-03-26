@@ -5802,6 +5802,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.warn('⚠️ Could not bust profile cache:', cacheErr);
       }
 
+      // Always upsert the USERNAME MAPPING so the batch avatar lookup (fast path) always works.
+      // This runs even when only profilePicUrl is updated (not the username).
+      const currentUsername = (username !== undefined ? username.toLowerCase() : null) || oldUsername;
+      if (currentUsername) {
+        try {
+          await docClient.send(new PutCommand({
+            TableName: 'neofeed-user-profiles',
+            Item: {
+              pk: `USERNAME#${currentUsername}`,
+              sk: 'MAPPING',
+              userId: userId,
+              username: currentUsername,
+              updatedAt: new Date().toISOString()
+            }
+          }));
+          console.log('✅ USERNAME MAPPING upserted for:', currentUsername);
+        } catch (mappingErr) {
+          console.warn('⚠️ Could not upsert USERNAME MAPPING:', mappingErr);
+        }
+      }
+
       // If username changed, update the username mapping
       if (username !== undefined && username.toLowerCase() !== oldUsername) {
         // Delete old username mapping
@@ -8126,12 +8147,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
             credentials: { accessKeyId: awsAccessKeyId, secretAccessKey: awsSecretAccessKey }
           });
           const key = `profiles/${userId}/${imageType}-${timestamp}.${safeExt}`;
-          await s3Client.send(new PutObjectCommand({
-            Bucket: bucketName,
-            Key: key,
-            Body: file.data,
-            ContentType: file.mimetype || 'image/jpeg'
-          }));
+          // Upload with public-read ACL so the direct S3 URL is accessible without auth
+          try {
+            await s3Client.send(new PutObjectCommand({
+              Bucket: bucketName,
+              Key: key,
+              Body: file.data,
+              ContentType: file.mimetype || 'image/jpeg',
+              ACL: 'public-read' as any
+            }));
+          } catch (aclErr: any) {
+            // If public-read is blocked by bucket policy, try without ACL
+            if (aclErr.message?.includes('AccessControlListNotSupported') || aclErr.message?.includes('InvalidArgument')) {
+              console.warn(`⚠️ public-read ACL not supported, uploading without ACL...`);
+              await s3Client.send(new PutObjectCommand({
+                Bucket: bucketName,
+                Key: key,
+                Body: file.data,
+                ContentType: file.mimetype || 'image/jpeg'
+              }));
+            } else {
+              throw aclErr;
+            }
+          }
           uploadedUrl = `https://${bucketName}.s3.${awsRegion}.amazonaws.com/${key}`;
           console.log(`✅ ${imageType} image uploaded to S3:`, uploadedUrl);
         } catch (s3Error: any) {
@@ -8181,14 +8219,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { getUserProfileByUsername } = await import('./neofeed-dynamodb-migration');
       const results = await Promise.allSettled(limited.map(u => getUserProfileByUsername(u)));
 
-      // Normalize a stored image URL to a relative path so it survives Replit domain changes
+      // Normalize a stored image URL to a relative path so it survives Replit domain changes.
+      // For local /uploads/ paths, also verify the file actually exists on disk —
+      // local files can be lost if a new container instance is started. Returns null
+      // if the local file is missing so the frontend shows the correct fallback.
+      const fsSync = await import('fs');
+      const pathMod = await import('path');
       const normalizeImgUrl = (url: string | null | undefined): string | null => {
         if (!url) return null;
-        if (url.startsWith('/uploads/')) return url;
-        try {
-          const p = new URL(url);
-          if (p.pathname.startsWith('/uploads/')) return p.pathname;
-        } catch {}
+        // Handle full URLs that contain /uploads/ in their path (old Replit domain stored URLs)
+        let localPath: string | null = null;
+        if (url.startsWith('/uploads/')) {
+          localPath = url;
+        } else {
+          try {
+            const p = new URL(url);
+            if (p.pathname.startsWith('/uploads/')) localPath = p.pathname;
+          } catch {}
+        }
+        if (localPath) {
+          // Verify the file actually exists on this server instance
+          const absPath = pathMod.default.resolve(process.cwd(), localPath.replace(/^\//, ''));
+          if (!fsSync.default.existsSync(absPath)) {
+            console.warn(`⚠️ [avatars-batch] Local profile image not found on disk: ${localPath}`);
+            return null;
+          }
+          return localPath;
+        }
         return url;
       };
 

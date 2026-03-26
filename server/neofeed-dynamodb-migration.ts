@@ -1396,6 +1396,8 @@ export async function getUserProfileByUsername(username: string): Promise<any> {
 
     // Step 2: Fallback — scan for a PROFILE record with matching username attribute
     // (handles users whose MAPPING record was not yet created)
+    // NOTE: No Limit here — Limit in DynamoDB Scan limits items *evaluated* before filtering,
+    // not items returned, so Limit:1 would almost never find the target user.
     const scanResult = await docClient.send(new ScanCommand({
       TableName: TABLES.USER_PROFILES,
       FilterExpression: 'sk = :profile AND #un = :username',
@@ -1403,8 +1405,7 @@ export async function getUserProfileByUsername(username: string): Promise<any> {
       ExpressionAttributeValues: {
         ':profile': 'PROFILE',
         ':username': normalizedUsername
-      },
-      Limit: 1
+      }
     }));
     
     const found = scanResult.Items?.[0] || null;

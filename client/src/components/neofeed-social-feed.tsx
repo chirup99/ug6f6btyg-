@@ -128,12 +128,22 @@ function formatCommentTimestamp(dateStr: string): string {
 interface UserAvatarCtx {
   getAvatar: (username: string | undefined | null) => string | null;
   setAvatar: (username: string, url: string | null) => void;
+  markAvatarFailed: (username: string, url: string) => void;
 }
 
-const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null, setAvatar: () => {} });
+const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null, setAvatar: () => {}, markAvatarFailed: () => {} });
+
+// TTL for null (not-found / broken-image) cache entries — retry after 45 seconds.
+// This ensures that when a user uploads a new profile picture, other users see it
+// without needing a full page refresh.
+const NULL_CACHE_TTL_MS = 45_000;
 
 function UserAvatarProvider({ children }: { children: ReactNode }) {
-  const cacheRef = useRef<Map<string, string | null>>(new Map());
+  // urlCache stores confirmed URLs (non-null). Once a valid URL is stored it stays.
+  const urlCache  = useRef<Map<string, string>>(new Map());
+  // nullCache stores timestamps of when a "not found / broken" result was cached.
+  // Entries expire after NULL_CACHE_TTL_MS so they get re-fetched automatically.
+  const nullCache = useRef<Map<string, number>>(new Map());
   const pendingRef = useRef<Set<string>>(new Set());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // cacheRev increments each time the cache is populated — forces context consumers to re-render
@@ -151,14 +161,25 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
     })
       .then(r => (r.ok ? r.json() : {}))
       .then((data: Record<string, { profilePicUrl: string | null }>) => {
-        for (const u of toFetch) cacheRef.current.set(u, null);
-        for (const [u, info] of Object.entries(data)) {
-          cacheRef.current.set(u.toLowerCase(), info?.profilePicUrl || null);
+        const now = Date.now();
+        for (const u of toFetch) {
+          const key = u.toLowerCase();
+          const info = data[key] || data[u];
+          const url = info?.profilePicUrl || null;
+          if (url) {
+            urlCache.current.set(key, url);
+            nullCache.current.delete(key);
+          } else {
+            // Only cache null with a TTL — will be re-fetched after NULL_CACHE_TTL_MS
+            nullCache.current.set(key, now);
+          }
         }
         setCacheRev(v => v + 1);
       })
       .catch(() => {
-        for (const u of toFetch) cacheRef.current.set(u, null);
+        // On network error, cache null with TTL (will retry automatically)
+        const now = Date.now();
+        for (const u of toFetch) nullCache.current.set(u.toLowerCase(), now);
         setCacheRev(v => v + 1);
       });
   }, []);
@@ -166,7 +187,17 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
   const getAvatar = useCallback((username: string | undefined | null): string | null => {
     if (!username) return null;
     const key = username.toLowerCase();
-    if (cacheRef.current.has(key)) return cacheRef.current.get(key) ?? null;
+
+    // Return confirmed valid URL immediately
+    if (urlCache.current.has(key)) return urlCache.current.get(key)!;
+
+    // Check null cache — only skip re-fetch if the null entry is still fresh
+    const nulledAt = nullCache.current.get(key);
+    if (nulledAt !== undefined && (Date.now() - nulledAt) < NULL_CACHE_TTL_MS) {
+      return null; // Still within TTL — don't re-fetch yet
+    }
+
+    // Stale null or never fetched — queue for batch fetch
     pendingRef.current.add(key);
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(flush, 80);
@@ -178,19 +209,41 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
   // shows the new image without waiting for a page refresh.
   const setAvatar = useCallback((username: string, url: string | null) => {
     if (!username) return;
-    cacheRef.current.set(username.toLowerCase(), url);
+    const key = username.toLowerCase();
+    if (url) {
+      urlCache.current.set(key, url);
+      nullCache.current.delete(key);
+    } else {
+      urlCache.current.delete(key);
+      nullCache.current.set(key, Date.now());
+    }
     setCacheRev(v => v + 1);
+  }, []);
+
+  // Called by AvatarImage's onError handler when an image URL returns 404 or fails.
+  // Clears the broken URL from the confirmed cache and schedules a re-fetch.
+  const markAvatarFailed = useCallback((username: string, failedUrl: string) => {
+    if (!username) return;
+    const key = username.toLowerCase();
+    // Only evict if this is still the currently cached URL (avoid race conditions)
+    if (urlCache.current.get(key) === failedUrl) {
+      urlCache.current.delete(key);
+      // Cache null with a short TTL — allow re-fetch sooner since it might be a transient error
+      nullCache.current.set(key, Date.now() - (NULL_CACHE_TTL_MS - 10_000));
+      setCacheRev(v => v + 1);
+    }
   }, []);
 
   // cacheRev in the dep array ensures a new value object is created after each fetch,
   // which causes all context consumers to re-render and pick up fresh avatar URLs.
-  const value = useMemo(() => ({ getAvatar, setAvatar }), [getAvatar, setAvatar, cacheRev]); // eslint-disable-line react-hooks/exhaustive-deps
+  const value = useMemo(() => ({ getAvatar, setAvatar, markAvatarFailed }), [getAvatar, setAvatar, markAvatarFailed, cacheRev]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <UserAvatarContext.Provider value={value}>{children}</UserAvatarContext.Provider>;
 }
 
-const useUserAvatar = () => useContext(UserAvatarContext).getAvatar;
-const useSetAvatar  = () => useContext(UserAvatarContext).setAvatar;
+const useUserAvatar      = () => useContext(UserAvatarContext).getAvatar;
+const useSetAvatar       = () => useContext(UserAvatarContext).setAvatar;
+const useMarkAvatarFailed = () => useContext(UserAvatarContext).markAvatarFailed;
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Render comment content with clickable @mentions
@@ -3241,6 +3294,7 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
 
 const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserProfile }: { post: FeedPost; currentUserUsername?: string; onViewUserProfile?: (username: string) => void }) {
   const getAvatar = useUserAvatar();
+  const markAvatarFailed = useMarkAvatarFailed();
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [liked, setLiked] = useState(false);
   const [downtrended, setDowntrended] = useState(false);
@@ -3788,6 +3842,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
     const storedUrl = post.authorAvatar || post.user?.avatar;
     const avatarUrl = liveUrl || storedUrl;
     const isValidAvatar = avatarUrl && !avatarUrl.includes('ui-avatars.com') && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'));
+    const postAuthorKey = post.authorUsername || post.user?.handle;
     return (
       <Card className="bg-card border border-border shadow-none mb-2 rounded-xl overflow-hidden transition-none">
         <CardContent className="p-2.5 xl:p-4 pb-0 transition-none">
@@ -3796,7 +3851,12 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             <div className="flex items-center gap-2">
               <Avatar className="w-7 h-7 border border-border flex-shrink-0">
                 {isValidAvatar ? (
-                  <AvatarImage src={avatarUrl} alt={post.authorDisplayName || post.authorUsername} className="object-cover" />
+                  <AvatarImage
+                    src={avatarUrl}
+                    alt={post.authorDisplayName || post.authorUsername}
+                    className="object-cover"
+                    onError={() => { if (postAuthorKey && avatarUrl) markAvatarFailed(postAuthorKey, avatarUrl); }}
+                  />
                 ) : null}
                 <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs">
                   {post.user?.initial || post.authorDisplayName?.charAt(0) || post.authorUsername?.charAt(0) || 'U'}
@@ -3906,10 +3966,16 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 const storedUrl = post.authorAvatar || post.user?.avatar;
                 const avatarUrl = liveUrl || storedUrl;
                 const isValidAvatar = avatarUrl && !avatarUrl.includes('ui-avatars.com') && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'));
+                const authorKey = post.authorUsername || post.user?.handle;
                 return (
                   <Avatar className="w-7 h-7 xl:w-9 xl:h-9 border border-border">
                     {isValidAvatar ? (
-                      <AvatarImage src={avatarUrl} alt={post.authorDisplayName || post.authorUsername} className="object-cover" />
+                      <AvatarImage
+                        src={avatarUrl}
+                        alt={post.authorDisplayName || post.authorUsername}
+                        className="object-cover"
+                        onError={() => { if (authorKey && avatarUrl) markAvatarFailed(authorKey, avatarUrl); }}
+                      />
                     ) : null}
                     <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs xl:text-sm">
                       {post.user?.initial || 

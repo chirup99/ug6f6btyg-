@@ -8599,9 +8599,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     (window as any).__demoJournalData = demoTradingDataByDate;
   }, [personalTradingDataByDate, personal2TradingDataByDate, demoTradingDataByDate]);
 
-  // Mini sparkline data for navigation bar icon - shows performance trend
+  // Mini sparkline data for navigation bar icon - mirrors the Performance Trend chart exactly
   const navSparklineData = useMemo(() => {
-    // Helper: normalize an array of values to SVG polyline points (w=40, h=24)
+    // Helper: normalize values array → SVG polyline points string (w=40, h=24)
     const toPoints = (values: number[]) => {
       if (values.length === 0) return null;
       if (values.length === 1) values = [values[0], values[0]];
@@ -8610,44 +8610,64 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       const range = maxVal - minVal || 1;
       return values.map((val, idx) => {
         const x = (idx / (values.length - 1)) * 40;
-        const y = 20 - ((val - minVal) / range) * 16;
+        const y = 20 - ((val - minVal) / range) * 16; // 4px top/bottom padding
         return `${x.toFixed(1)},${y.toFixed(1)}`;
       }).join(" ");
     };
 
     // --- MODE 1: Selected date → intraday trade-by-trade cumulative P&L ---
-    if (selectedDate && tradeHistoryData && tradeHistoryData.length > 0) {
-      let cumPnL = 0;
-      const intradayValues: number[] = [0];
-      (tradeHistoryData as any[]).forEach(trade => {
-        const pnlStr = (trade.pnl || "").replace(/[₹,+\s]/g, "");
-        const pnlValue = parseFloat(pnlStr) || 0;
-        if (pnlValue !== 0) {
-          cumPnL += pnlValue;
-          intradayValues.push(cumPnL);
+    // Uses same data path as the full Performance Trend chart (tradingDataByDate)
+    if (selectedDate) {
+      const selectedDateStr = `${selectedDate.getFullYear()}-${String(selectedDate.getMonth()+1).padStart(2,'0')}-${String(selectedDate.getDate()).padStart(2,'0')}`;
+      const todayData = tradingDataByDate[selectedDateStr];
+      const raw = todayData?.tradingData || todayData;
+      const allTrades: any[] = raw?.tradeHistory || raw?.trades || [];
+
+      if (allTrades.length > 0) {
+        // Parse + sort by time (same logic as Performance Trend chart)
+        const parseTimeToMin = (t: string) => {
+          if (!t) return -1;
+          const m = t.match(/(\d+):(\d+)(?::(\d+))?\s*(AM|PM)/i);
+          if (!m) return -1;
+          let h = parseInt(m[1]);
+          const mn = parseInt(m[2]);
+          if (m[4].toUpperCase() === 'PM' && h !== 12) h += 12;
+          if (m[4].toUpperCase() === 'AM' && h === 12) h = 0;
+          return h * 60 + mn;
+        };
+        const trades = allTrades
+          .map((t: any) => {
+            const pnlNum = typeof t.pnl === 'number' ? t.pnl : parseFloat(String(t.pnl || '0').replace(/[₹,+\s]/g, '')) || 0;
+            return { pnl: pnlNum, timeMin: parseTimeToMin(t.time || t.exitTime || '') };
+          })
+          .filter((t: any) => t.pnl !== 0)
+          .sort((a: any, b: any) => a.timeMin - b.timeMin);
+
+        if (trades.length > 0) {
+          let cum = 0;
+          const vals: number[] = [0];
+          trades.forEach((t: any) => { cum += t.pnl; vals.push(cum); });
+          const pts = toPoints(vals)!;
+          return { points: pts, hasData: true, trend: cum >= 0 ? "up" : "down", mode: "1d" };
         }
-      });
-      if (intradayValues.length > 1) {
-        const pts = toPoints(intradayValues)!;
-        const trend = intradayValues[intradayValues.length - 1] >= 0 ? "up" : "down";
-        return { points: pts, hasData: true, trend, mode: "1d" };
       }
     }
 
-    // --- MODE 2: Multi-day cumulative P&L trend ---
-    const personalHasData = Object.keys(personalTradingDataByDate).length > 0;
-    const dataSource = personalHasData ? personalTradingDataByDate : demoTradingDataByDate;
-
-    if (Object.keys(dataSource).length > 0) {
-      const sortedDates = Object.keys(dataSource).sort();
-      const recentDates = sortedDates.slice(-10);
-      let cumulativePnL = 0;
+    // --- MODE 2: Multi-day cumulative P&L trend (all available dates) ---
+    // Uses same data path as the full Performance Trend chart (tradingDataByDate)
+    const allDates = Object.keys(tradingDataByDate).sort();
+    if (allDates.length > 0) {
+      let cumPnL = 0;
       const pnlValues: number[] = [];
-      recentDates.forEach(date => {
-        const dayData = dataSource[date];
-        const dailyPnL = dayData?.totalPnL || dayData?.pnl || dayData?.performanceMetrics?.netPnL || 0;
-        cumulativePnL += dailyPnL;
-        pnlValues.push(cumulativePnL);
+      allDates.forEach(dateKey => {
+        const dayData = tradingDataByDate[dateKey];
+        // Handle both wrapped (AWS) and unwrapped formats — same as heatmapMetrics
+        const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+        const netPnL = metrics?.netPnL || 0;
+        if (netPnL !== 0) {
+          cumPnL += netPnL;
+          pnlValues.push(cumPnL);
+        }
       });
       if (pnlValues.length > 0) {
         const pts = toPoints(pnlValues)!;
@@ -8656,9 +8676,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       }
     }
 
-    // --- MODE 3: No data — show a gentle placeholder curve ---
+    // --- MODE 3: No data — gentle placeholder wave ---
     return { points: "0,18 5,16 10,14 15,15 20,12 25,10 30,8 35,6 40,4", hasData: false, trend: "neutral", mode: "empty" };
-  }, [personalTradingDataByDate, demoTradingDataByDate, selectedDate, tradeHistoryData]);
+  }, [tradingDataByDate, selectedDate, heatmapMode]);
 
 
   const setTradingDataByDate = heatmapMode === 0 ? setDemoTradingDataByDate

@@ -1156,7 +1156,6 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   const [uploading, setUploading] = useState(false);
   const [showCertDialog, setShowCertDialog] = useState(false);
   const profileInputRef = useRef<HTMLInputElement>(null);
-  const coverInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const getAvatar = useUserAvatar();
@@ -1193,9 +1192,9 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
       return data.profile || null;
     },
     placeholderData: localStoragePlaceholder,
-    staleTime: 30 * 1000,
+    staleTime: 0,
     gcTime: 5 * 60 * 1000,
-    refetchOnMount: false,
+    refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 
@@ -1600,15 +1599,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
   return (
     <>
-      {/* Hidden file inputs for image selection */}
-      <input
-        ref={coverInputRef}
-        type="file"
-        accept="image/*"
-        className="hidden"
-        onChange={(e) => handleImageSelect(e, 'cover')}
-        data-testid="input-cover-image-hidden"
-      />
+      {/* Hidden file input for profile image */}
       <input
         ref={profileInputRef}
         type="file"
@@ -1643,7 +1634,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
               </div>
             </div>
 
-            {/* Name + handle + bio */}
+            {/* Name + handle + cert + bio */}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-1.5 flex-wrap">
                 <h2 className="font-bold text-[15px] text-gray-900 dark:text-white leading-tight truncate">
@@ -1652,11 +1643,23 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                 {profileData?.verified && (
                   <CheckCircle className="w-3.5 h-3.5 text-blue-500 fill-current flex-shrink-0" />
                 )}
-                {profileData?.certifiedRole && (
-                  <CertifiedBadge certId={profileData.certifiedRole} onClick={() => setShowCertDialog(true)} />
-                )}
               </div>
               <p className="text-[11px] text-gray-400 dark:text-gray-500">@{username}{profileData?.location ? ` · ${profileData.location}` : ''}</p>
+              {profileData?.certifiedRole && (
+                <button
+                  onClick={() => setShowCertDialog(true)}
+                  className="mt-1 inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+                  data-testid="button-cert-badge-profile"
+                >
+                  <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 12 12" fill="none">
+                    <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
+                    <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 leading-none">
+                    {NISM_CERTIFICATES.find(c => c.id === profileData.certifiedRole)?.label || profileData.certifiedRole}
+                  </span>
+                </button>
+              )}
               {bio && (
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug line-clamp-1">{bio}</p>
               )}
@@ -2007,8 +2010,8 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
         profileData={profileData}
         onSuccess={() => {
           setShowEditProfile(false);
-          queryClient.invalidateQueries({ queryKey: ['my-profile'] });
-          queryClient.invalidateQueries({ queryKey: ['/api/user/profile'] });
+          // Cache already updated directly in EditProfileDialog.handleSave
+          // Just invalidate background queries for consistency
           queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
           queryClient.invalidateQueries({ queryKey: ['/api/social-posts/news'] });
           queryClient.invalidateQueries({ queryKey: ['/api/social-posts/audio'] });
@@ -2017,11 +2020,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
             queryClient.invalidateQueries({ queryKey: ['user-posts', username] });
             queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/profile`] });
             queryClient.invalidateQueries({ queryKey: [`/api/social-posts/by-user/${username}`] });
-            queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/followers-count`] });
-            queryClient.invalidateQueries({ queryKey: ['followers-list', username] });
-            queryClient.invalidateQueries({ queryKey: ['following-list', username] });
           }
-          setTimeout(() => { window.location.reload(); }, 500);
         }}
       />
 
@@ -2383,6 +2382,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
   const [usernameMessage, setUsernameMessage] = useState('');
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const setCertification = useSetCertification();
 
   // Certification state
@@ -2536,8 +2536,17 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
         throw new Error(result.message || 'Failed to update profile');
       }
 
-      // Immediately push cert into the avatar context cache so post-feed badges update instantly
+      // Immediately update the my-profile cache with the new cert data so the badge shows right away
       const profileUsername = (username || profileData?.username || '').toLowerCase();
+      queryClient.setQueryData(['my-profile'], (old: any) => ({
+        ...(old || {}),
+        displayName: displayName || old?.displayName,
+        bio: bio || old?.bio,
+        certifiedRole: certifiedRole || null,
+        certificationImageUrl: finalCertImageUrl || null,
+      }));
+
+      // Immediately push cert into the avatar context cache so post-feed badges update instantly
       if (profileUsername) {
         setCertification(profileUsername, {
           certifiedRole: certifiedRole || null,

@@ -5293,6 +5293,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
                  coverPicUrl: userData.coverPicUrl,
                  certifiedRole: userData.certifiedRole || null,
                  certificationImageUrl: userData.certificationImageUrl || null,
+                 verified: userData.verified || false,
+                 location: userData.location || null,
+                 performancePublic: userData.performancePublic !== undefined ? userData.performancePublic : true,
+                 createdAt: userData.createdAt || null,
                  userId: claims.sub
                },
                userId: claims.sub,
@@ -5329,6 +5333,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           coverPicUrl: userData.coverPicUrl,
           certifiedRole: userData.certifiedRole || null,
           certificationImageUrl: userData.certificationImageUrl || null,
+          verified: userData.verified || false,
+          location: userData.location || null,
+          performancePublic: userData.performancePublic !== undefined ? userData.performancePublic : true,
+          createdAt: userData.createdAt || null,
           userId: userId
         },
         userId: userId,
@@ -5761,13 +5769,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { certifiedRole, certificationImageUrl } = req.body;
+      // Track attributes to remove (use REMOVE for null/empty values, SET for valid values)
+      const removeAttrs: string[] = [];
       if (certifiedRole !== undefined) {
-        updateExpression += ', certifiedRole = :certifiedRole';
-        expressionAttributeValues[':certifiedRole'] = certifiedRole || null;
+        if (certifiedRole) {
+          updateExpression += ', certifiedRole = :certifiedRole';
+          expressionAttributeValues[':certifiedRole'] = certifiedRole;
+        } else {
+          removeAttrs.push('certifiedRole');
+        }
       }
       if (certificationImageUrl !== undefined) {
-        updateExpression += ', certificationImageUrl = :certificationImageUrl';
-        expressionAttributeValues[':certificationImageUrl'] = certificationImageUrl || null;
+        if (certificationImageUrl) {
+          updateExpression += ', certificationImageUrl = :certificationImageUrl';
+          expressionAttributeValues[':certificationImageUrl'] = certificationImageUrl;
+        } else {
+          removeAttrs.push('certificationImageUrl');
+        }
       }
 
       const { performancePublic } = req.body;
@@ -5786,6 +5804,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         updateExpression += ', #location = :location';
         expressionAttributeNames['#location'] = 'location';
         expressionAttributeValues[':location'] = location;
+      }
+
+      // Append REMOVE clause at the very end (after all SET clauses)
+      if (removeAttrs.length > 0) {
+        updateExpression += ' REMOVE ' + removeAttrs.join(', ');
       }
 
       console.log('💾 Updating profile with DynamoDB...');

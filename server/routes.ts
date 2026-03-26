@@ -70,7 +70,7 @@ import { upstoxOAuthManager } from './upstox-oauth';
 import { angelOneOAuthManager } from './angel-one-oauth';
 import { dhanOAuthManager } from './dhan-oauth';
 import { fyersOAuthManager } from './fyers-oauth';
-import { sarvamTTSService } from './tts-service';
+import { sarvamTTSService, translateText } from './tts-service';
 
 const ANGEL_ONE_STOCK_TOKENS: { [key: string]: { token: string; exchange: string; tradingSymbol: string } } = {
   'NIFTY50': { token: '99926000', exchange: 'NSE', tradingSymbol: 'Nifty 50' },
@@ -20040,9 +20040,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
+      const targetLanguage = language || 'en';
+      const textToSpeak = targetLanguage !== 'en'
+        ? await translateText(text, targetLanguage)
+        : text;
+
       const result = await sarvamTTSService.generateSpeech({
-        text,
-        language: language || 'en',
+        text: textToSpeak,
+        language: targetLanguage,
         speaker: speaker,
         speed: speed || 1.0
       });

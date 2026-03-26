@@ -110,14 +110,16 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
 
   // Helper: fetch TTS and return an object URL (or null on failure)
   const fetchAndCacheTTS = async (card: AudioCard, cancelled: { value: boolean }): Promise<string | null> => {
-    const cached = audioCacheRef.current.get(card.id);
+    const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
+    const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
+
+    // Cache key includes voice + language so switching voice/language invalidates cache
+    const cacheKey = `${card.id}::${voiceLanguage}::${savedVoiceProfileId}`;
+    const cached = audioCacheRef.current.get(cacheKey);
     if (cached) return cached;
 
     const textToSpeak = cleanTextForSpeech(card.content);
     if (!textToSpeak) return null;
-
-    const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
-    const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
 
     try {
       const response = await fetch('/api/tts/generate', {
@@ -135,7 +137,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
       const blob = new Blob([bytes], { type: 'audio/mpeg' });
       const url = URL.createObjectURL(blob);
-      audioCacheRef.current.set(card.id, url);
+      audioCacheRef.current.set(cacheKey, url);
       return url;
     } catch {
       return null;

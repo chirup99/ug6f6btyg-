@@ -2385,6 +2385,7 @@ export default function Home() {
   const [journalScreenTimeStart, setJournalScreenTimeStart] = useState<number | null>(null);
   const [journalCurrentSessionSecs, setJournalCurrentSessionSecs] = useState(0);
   const [journalScreenTimeSessions, setJournalScreenTimeSessions] = useState<Array<{date: string; totalSeconds: number}>>([]);
+  const [journalTabCurrentSecs, setJournalTabCurrentSecs] = useState(0);
   // Calendar state - declared early to avoid temporal dead zone issues
   const [selectedDate, setSelectedDate] = useState(null as Date | null);
   // Shared timeframe state for chart and crossings display
@@ -4749,6 +4750,43 @@ ${fundamentalInsights}**📈 Essential Analysis Framework:**
       setJournalCurrentSessionSecs(0);
     };
   }, [searchResults.includes("[CHART:JOURNAL_REPORT]")]);
+
+  // Screen time tracker for Journal tab (tracks time spent on the journal tab)
+  useEffect(() => {
+    if (activeTab !== 'journal') return;
+    // Load saved sessions from localStorage on first open
+    try {
+      const saved = localStorage.getItem('journalScreenTimeSessions');
+      if (saved) {
+        const parsed = JSON.parse(saved) as Array<{date: string; totalSeconds: number}>;
+        setJournalScreenTimeSessions(parsed);
+      }
+    } catch {}
+    const startMs = Date.now();
+    setJournalTabCurrentSecs(0);
+    const iv = setInterval(() => {
+      setJournalTabCurrentSecs(Math.floor((Date.now() - startMs) / 1000));
+    }, 1000);
+    return () => {
+      clearInterval(iv);
+      const duration = Math.floor((Date.now() - startMs) / 1000);
+      if (duration < 3) return;
+      const today = new Date().toISOString().slice(0, 10);
+      setJournalScreenTimeSessions(prev => {
+        const updated = [...prev];
+        const idx = updated.findIndex(s => s.date === today);
+        if (idx >= 0) {
+          updated[idx] = { ...updated[idx], totalSeconds: updated[idx].totalSeconds + duration };
+        } else {
+          updated.push({ date: today, totalSeconds: duration });
+        }
+        const trimmed = updated.slice(-30);
+        try { localStorage.setItem('journalScreenTimeSessions', JSON.stringify(trimmed)); } catch {}
+        return trimmed;
+      });
+      setJournalTabCurrentSecs(0);
+    };
+  }, [activeTab === 'journal']);
 
   // Function to fetch trending podcasts for a specific sector
   const fetchTrendingPodcasts = async (sector: string) => {
@@ -20880,8 +20918,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 )}
                               </div>
                               {/* P1/P2 toggle */}
-                              {m?.hasBothPersonal && (
-                                <div className="flex items-center p-0.5 rounded-full" style={{ background: '#111' }}>
+                              {!m?.isDemo && (
+                                <div className="flex items-center p-0.5 rounded-full flex-shrink-0" style={{ background: '#111' }}>
                                   {[{ key: 'personal1', label: 'P1' }, { key: 'personal2', label: 'P2' }].map(tab => (
                                     <button
                                       key={tab.key}
@@ -21062,7 +21100,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     d.setDate(d.getDate() - i);
                                     const iso = d.toISOString().slice(0, 10);
                                     const found = sessions.find(s => s.date === iso);
-                                    const todaySecs = iso === today.toISOString().slice(0, 10) ? journalCurrentSessionSecs : 0;
+                                    const todaySecs = iso === today.toISOString().slice(0, 10) ? (journalCurrentSessionSecs + journalTabCurrentSecs) : 0;
                                     last14.push({
                                       date: iso,
                                       label: d.toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }),
@@ -21070,7 +21108,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     });
                                   }
                                   const hasSomeData = last14.some(d => d.secs > 0);
-                                  const totalSecsAllTime = sessions.reduce((a, b) => a + b.totalSeconds, 0) + journalCurrentSessionSecs;
+                                  const totalSecsAllTime = sessions.reduce((a, b) => a + b.totalSeconds, 0) + journalCurrentSessionSecs + journalTabCurrentSecs;
                                   const avgSecsPerDay = sessions.length > 0 ? Math.round((sessions.reduce((a, b) => a + b.totalSeconds, 0)) / sessions.length) : 0;
                                   const todaySecs = last14[last14.length - 1].secs;
                                   const fmtTime = (s: number) => {
@@ -21096,10 +21134,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       {/* Section header */}
                                       <div className="px-3 py-2 bg-gray-900/40 flex items-center justify-between">
                                         <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Journal Screen Time</span>
-                                        {journalCurrentSessionSecs > 0 && (
+                                        {(journalCurrentSessionSecs > 0 || journalTabCurrentSecs > 0) && (
                                           <span className="flex items-center gap-1 text-[10px] font-mono text-emerald-400">
                                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse inline-block" />
-                                            Live · {fmtTime(journalCurrentSessionSecs)}
+                                            Live · {fmtTime(journalCurrentSessionSecs + journalTabCurrentSecs)}
                                           </span>
                                         )}
                                       </div>
@@ -21120,7 +21158,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       </div>
                                       {/* Line chart */}
                                       <div className="px-3 pb-3">
-                                        {!hasSomeData && journalCurrentSessionSecs === 0 ? (
+                                        {!hasSomeData && journalCurrentSessionSecs === 0 && journalTabCurrentSecs === 0 ? (
                                           <div className="flex items-center justify-center h-16 text-[10px] text-gray-700">No sessions yet — this is your first visit!</div>
                                         ) : (
                                           <div className="relative w-full overflow-hidden rounded-lg bg-gray-900/60 border border-gray-800/60 p-2">
@@ -21164,7 +21202,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 <circle key={i} cx={p.x} cy={p.y} r="2" fill={i === pts.length - 1 ? '#10b981' : '#059669'} />
                                               ))}
                                               {/* Today pulsing dot */}
-                                              {journalCurrentSessionSecs > 0 && (
+                                              {(journalCurrentSessionSecs > 0 || journalTabCurrentSecs > 0) && (
                                                 <>
                                                   <circle cx={todayPt.x} cy={todayPt.y} r="5" fill="#10b981" opacity="0.2">
                                                     <animate attributeName="r" values="3;7;3" dur="2s" repeatCount="indefinite" />
@@ -21596,7 +21634,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           >
                             <Button
                               variant="secondary"
-                              className="flex bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                              className="hidden md:flex bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
                               onClick={() => {
                                 const userId = localStorage.getItem('currentUserId');
                                 const userEmail = localStorage.getItem('currentUserEmail');

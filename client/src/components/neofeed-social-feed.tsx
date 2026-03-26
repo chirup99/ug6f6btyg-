@@ -1154,6 +1154,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   const [imageType, setImageType] = useState<'profile' | 'cover'>('profile');
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [showCertDialog, setShowCertDialog] = useState(false);
   const profileInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
@@ -1644,12 +1645,15 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
             {/* Name + handle + bio */}
             <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1.5">
+              <div className="flex items-center gap-1.5 flex-wrap">
                 <h2 className="font-bold text-[15px] text-gray-900 dark:text-white leading-tight truncate">
                   {displayName || username}
                 </h2>
                 {profileData?.verified && (
                   <CheckCircle className="w-3.5 h-3.5 text-blue-500 fill-current flex-shrink-0" />
+                )}
+                {profileData?.certifiedRole && (
+                  <CertifiedBadge certId={profileData.certifiedRole} onClick={() => setShowCertDialog(true)} />
                 )}
               </div>
               <p className="text-[11px] text-gray-400 dark:text-gray-500">@{username}{profileData?.location ? ` · ${profileData.location}` : ''}</p>
@@ -2021,6 +2025,17 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
         }}
       />
 
+      {/* Certification Dialog */}
+      {profileData?.certifiedRole && (
+        <CertificationDialog
+          username={username}
+          certId={profileData.certifiedRole}
+          certImageUrl={profileData.certificationImageUrl || null}
+          isOpen={showCertDialog}
+          onClose={() => setShowCertDialog(false)}
+        />
+      )}
+
       {/* Followers Dialog */}
       <Dialog open={showFollowersDialog} onOpenChange={setShowFollowersDialog}>
         <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
@@ -2369,6 +2384,25 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
 
+  // Certification state
+  const [certifiedRole, setCertifiedRole] = useState<string>(profileData?.certifiedRole || '');
+  const [certificationImageUrl, setCertificationImageUrl] = useState<string>(profileData?.certificationImageUrl || '');
+  const [certSearchQuery, setCertSearchQuery] = useState('');
+  const [certDropdownOpen, setCertDropdownOpen] = useState(false);
+  const [certImagePreview, setCertImagePreview] = useState<string>(profileData?.certificationImageUrl || '');
+  const [certImageFile, setCertImageFile] = useState<File | null>(null);
+  const [uploadingCert, setUploadingCert] = useState(false);
+  const certInputRef = useRef<HTMLInputElement>(null);
+
+  // Filtered certs for searchable dropdown
+  const filteredCerts = NISM_CERTIFICATES.filter(c =>
+    c.label.toLowerCase().includes(certSearchQuery.toLowerCase()) ||
+    c.id.toLowerCase().includes(certSearchQuery.toLowerCase()) ||
+    c.category.toLowerCase().includes(certSearchQuery.toLowerCase())
+  );
+
+  const certCategories = Array.from(new Set(filteredCerts.map(c => c.category)));
+
   // Update state when profileData changes
   useEffect(() => {
     if (profileData) {
@@ -2378,6 +2412,10 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
       setOriginalUsername(profileData.username || '');
       setUsernameAvailable(null);
       setUsernameMessage('');
+      setCertifiedRole(profileData.certifiedRole || '');
+      setCertificationImageUrl(profileData.certificationImageUrl || '');
+      setCertImagePreview(profileData.certificationImageUrl || '');
+      setCertImageFile(null);
     }
   }, [profileData]);
 
@@ -2427,6 +2465,15 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
   const isUsernameChanged = username.toLowerCase() !== originalUsername.toLowerCase();
   const canSave = !saving && (!isUsernameChanged || usernameAvailable === true);
 
+  const handleCertImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCertImageFile(file);
+    const reader = new FileReader();
+    reader.onloadend = () => setCertImagePreview(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+
   const handleSave = async () => {
     // Validate username if changed
     if (isUsernameChanged && usernameAvailable !== true) {
@@ -2446,6 +2493,27 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
         return;
       }
 
+      // Upload cert image if a new one was picked
+      let finalCertImageUrl = certificationImageUrl;
+      if (certImageFile) {
+        setUploadingCert(true);
+        try {
+          const formData = new FormData();
+          formData.append('file', certImageFile, 'certificate.jpg');
+          formData.append('type', 'certificate');
+          const uploadRes = await fetch('/api/upload-profile-image', {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${idToken}` },
+            body: formData,
+          });
+          if (uploadRes.ok) {
+            const uploadData = await uploadRes.json();
+            if (uploadData.url) finalCertImageUrl = uploadData.url;
+          }
+        } catch (_) {}
+        setUploadingCert(false);
+      }
+
       const response = await fetch('/api/user/profile', {
         method: 'PATCH',
         headers: {
@@ -2455,7 +2523,9 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
         body: JSON.stringify({
           username: username || undefined,
           displayName: displayName || undefined,
-          bio: bio || undefined
+          bio: bio || undefined,
+          certifiedRole: certifiedRole || null,
+          certificationImageUrl: finalCertImageUrl || null,
         })
       });
 
@@ -2477,7 +2547,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm p-0 overflow-hidden rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl">
+      <DialogContent className="max-w-sm p-0 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-800">
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm transition-colors" data-testid="button-cancel-profile">
@@ -2495,7 +2565,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
         </div>
 
         {/* Fields */}
-        <div className="px-5 py-4 space-y-5">
+        <div className="px-5 py-4 space-y-5 overflow-y-auto flex-1">
           {/* Display Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Name</label>
@@ -2543,6 +2613,146 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
               className="border-0 border-b border-gray-200 dark:border-gray-700 rounded-none px-0 focus-visible:ring-0 focus-visible:border-blue-500 bg-transparent text-sm resize-none"
               data-testid="textarea-bio"
             />
+          </div>
+
+          {/* NISM / SEBI Certification */}
+          <div className="space-y-2">
+            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">NISM / SEBI Certification</label>
+
+            {/* Selected badge preview */}
+            {certifiedRole && (
+              <div className="flex items-center justify-between px-2.5 py-1.5 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-700/50">
+                <div className="flex items-center gap-1.5 min-w-0">
+                  <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 12 12" fill="none">
+                    <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
+                    <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  <span className="text-xs font-semibold text-amber-700 dark:text-amber-300 truncate">
+                    {NISM_CERTIFICATES.find(c => c.id === certifiedRole)?.label || certifiedRole}
+                  </span>
+                </div>
+                <button
+                  onClick={() => { setCertifiedRole(''); setCertificationImageUrl(''); setCertImagePreview(''); setCertImageFile(null); }}
+                  className="ml-1 text-amber-500 hover:text-red-500 transition-colors flex-shrink-0"
+                  data-testid="button-clear-cert"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
+
+            {/* Dropdown toggle */}
+            <button
+              type="button"
+              onClick={() => { setCertDropdownOpen(v => !v); setCertSearchQuery(''); }}
+              className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 hover:border-amber-400 transition-colors text-left"
+              data-testid="button-cert-dropdown"
+            >
+              <span className={certifiedRole ? 'text-foreground font-medium' : 'text-muted-foreground'}>
+                {certifiedRole ? certShortName(certifiedRole) : 'Select certification…'}
+              </span>
+              <svg className={`w-4 h-4 text-gray-400 transition-transform ${certDropdownOpen ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+
+            {/* Searchable cert list */}
+            {certDropdownOpen && (
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden shadow-lg bg-white dark:bg-gray-800">
+                {/* Search bar */}
+                <div className="p-2 border-b border-gray-100 dark:border-gray-700">
+                  <div className="relative">
+                    <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <input
+                      type="text"
+                      value={certSearchQuery}
+                      onChange={e => setCertSearchQuery(e.target.value)}
+                      placeholder="Search role…"
+                      className="w-full pl-8 pr-3 py-1.5 text-xs bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-md focus:outline-none focus:border-amber-400 transition-colors"
+                      autoFocus
+                      data-testid="input-cert-search"
+                    />
+                  </div>
+                </div>
+                {/* Certificate list grouped by category */}
+                <div className="max-h-48 overflow-y-auto">
+                  {certCategories.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-4">No certifications found</p>
+                  ) : certCategories.map(cat => (
+                    <div key={cat}>
+                      <div className="px-3 py-1 text-[9px] font-bold uppercase tracking-widest text-gray-400 dark:text-gray-500 bg-gray-50 dark:bg-gray-700/50 sticky top-0">
+                        {cat}
+                      </div>
+                      {filteredCerts.filter(c => c.category === cat).map(cert => (
+                        <button
+                          key={cert.id}
+                          type="button"
+                          onClick={() => { setCertifiedRole(cert.id); setCertDropdownOpen(false); setCertSearchQuery(''); }}
+                          className={`w-full text-left px-3 py-2 text-xs hover:bg-amber-50 dark:hover:bg-amber-900/20 transition-colors ${certifiedRole === cert.id ? 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 font-semibold' : 'text-gray-700 dark:text-gray-300'}`}
+                          data-testid={`button-cert-${cert.id}`}
+                        >
+                          {cert.label}
+                        </button>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Certificate image upload - shown when a cert is selected */}
+            {certifiedRole && (
+              <div className="space-y-1.5">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Certificate Image</label>
+                <input
+                  ref={certInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleCertImageSelect}
+                  data-testid="input-cert-image"
+                />
+                {certImagePreview ? (
+                  <div className="relative rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/10">
+                    <img src={certImagePreview} alt="Certificate preview" className="w-full object-contain max-h-32" />
+                    <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                      <button
+                        type="button"
+                        onClick={() => certInputRef.current?.click()}
+                        className="px-2.5 py-1 bg-white text-gray-800 text-xs font-semibold rounded-lg"
+                        data-testid="button-change-cert-image"
+                      >
+                        Change
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setCertImagePreview(''); setCertificationImageUrl(''); setCertImageFile(null); }}
+                        className="px-2.5 py-1 bg-red-500 text-white text-xs font-semibold rounded-lg"
+                        data-testid="button-remove-cert-image"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                    <p className="text-[10px] text-center text-amber-600 dark:text-amber-400 py-1">Certificate image</p>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => certInputRef.current?.click()}
+                    className="w-full border-2 border-dashed border-gray-200 dark:border-gray-700 rounded-xl py-4 flex flex-col items-center gap-1 hover:border-amber-400 hover:bg-amber-50/50 dark:hover:bg-amber-900/10 transition-colors"
+                    data-testid="button-upload-cert-image"
+                  >
+                    <svg className="w-6 h-6 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                    <span className="text-xs text-gray-500 dark:text-gray-400">Upload certificate image</span>
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">JPG, PNG, etc.</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
 
           <p className="text-xs text-gray-400 dark:text-gray-500">
@@ -3468,6 +3678,8 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
 const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserProfile }: { post: FeedPost; currentUserUsername?: string; onViewUserProfile?: (username: string) => void }) {
   const getAvatar = useUserAvatar();
   const markAvatarFailed = useMarkAvatarFailed();
+  const getCertification = useGetCertification();
+  const [showCertDialog, setShowCertDialog] = useState(false);
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [liked, setLiked] = useState(false);
   const [downtrended, setDowntrended] = useState(false);
@@ -4036,21 +4248,42 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 </AvatarFallback>
               </Avatar>
               <div>
-                {onViewUserProfile ? (
-                  <button
-                    onClick={() => {
-                      const username = post.user?.handle || post.authorUsername || '';
-                      if (username) onViewUserProfile(username);
-                    }}
-                    className="text-foreground font-semibold text-sm hover:underline leading-none"
-                  >
-                    {post.user?.username || post.authorDisplayName || post.authorUsername || 'Unknown'}
-                  </button>
-                ) : (
-                  <span className="text-foreground font-semibold text-sm leading-none">
-                    {post.user?.username || post.authorDisplayName || post.authorUsername || 'Unknown'}
-                  </span>
-                )}
+                <div className="flex items-center gap-1">
+                  {onViewUserProfile ? (
+                    <button
+                      onClick={() => {
+                        const username = post.user?.handle || post.authorUsername || '';
+                        if (username) onViewUserProfile(username);
+                      }}
+                      className="text-foreground font-semibold text-sm hover:underline leading-none"
+                    >
+                      {post.user?.username || post.authorDisplayName || post.authorUsername || 'Unknown'}
+                    </button>
+                  ) : (
+                    <span className="text-foreground font-semibold text-sm leading-none">
+                      {post.user?.username || post.authorDisplayName || post.authorUsername || 'Unknown'}
+                    </span>
+                  )}
+                  {(post.user?.verified || post.authorVerified) && (
+                    <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
+                  )}
+                  {(() => {
+                    const cert = getCertification(postAuthorKey || '');
+                    if (!cert?.certifiedRole) return null;
+                    return (
+                      <>
+                        <CertifiedBadge certId={cert.certifiedRole} onClick={() => setShowCertDialog(true)} />
+                        <CertificationDialog
+                          username={postAuthorKey || ''}
+                          certId={cert.certifiedRole}
+                          certImageUrl={cert.certificationImageUrl || null}
+                          isOpen={showCertDialog}
+                          onClose={() => setShowCertDialog(false)}
+                        />
+                      </>
+                    );
+                  })()}
+                </div>
                 <p className="text-muted-foreground text-xs leading-none mt-0.5">@{post.user?.handle || post.authorUsername}</p>
               </div>
             </div>
@@ -4190,6 +4423,24 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 {(post.user?.verified || post.authorVerified) && (
                   <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 fill-current" />
                 )}
+                {/* Certified role badge */}
+                {(() => {
+                  const postAuthorKey = post.user?.handle || post.authorUsername || '';
+                  const cert = getCertification(postAuthorKey);
+                  if (!cert?.certifiedRole) return null;
+                  return (
+                    <>
+                      <CertifiedBadge certId={cert.certifiedRole} onClick={() => setShowCertDialog(true)} />
+                      <CertificationDialog
+                        username={postAuthorKey}
+                        certId={cert.certifiedRole}
+                        certImageUrl={cert.certificationImageUrl || null}
+                        isOpen={showCertDialog}
+                        onClose={() => setShowCertDialog(false)}
+                      />
+                    </>
+                  );
+                })()}
                 {/* Repost attribution - shows original author with repost icon */}
                 {post.isRepost && post.originalAuthorUsername && (
                   <div className="flex items-center gap-1 text-gray-500 dark:text-gray-400">
@@ -5034,6 +5285,7 @@ function ViewUserProfile({
   const [showFollowersDialog, setShowFollowersDialog] = useState(false);
   const [showFollowingDialog, setShowFollowingDialog] = useState(false);
   const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showCertDialog, setShowCertDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const getAvatar = useUserAvatar();
@@ -5285,6 +5537,9 @@ function ViewUserProfile({
               {displayName}
               {profileData?.verified && (
                 <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
+              )}
+              {profileData?.certifiedRole && (
+                <CertifiedBadge certId={profileData.certifiedRole} onClick={() => setShowCertDialog(true)} />
               )}
             </h1>
             <p className="text-gray-500 dark:text-gray-400 text-xs">
@@ -5641,6 +5896,17 @@ function ViewUserProfile({
             queryClient.invalidateQueries({ queryKey: ['following-list', username] });
             setTimeout(() => window.location.reload(), 500);
           }}
+        />
+      )}
+
+      {/* Certification Dialog */}
+      {profileData?.certifiedRole && (
+        <CertificationDialog
+          username={username}
+          certId={profileData.certifiedRole}
+          certImageUrl={profileData.certificationImageUrl || null}
+          isOpen={showCertDialog}
+          onClose={() => setShowCertDialog(false)}
         />
       )}
 

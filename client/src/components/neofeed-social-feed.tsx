@@ -3766,7 +3766,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
       <AudioMinicastCard
         content={post.content}
         author={{
-          displayName: post.user?.username || post.authorDisplayName || 'Unknown User',
+          displayName: post.authorDisplayName || post.user?.username || 'Unknown User',
           username: audioPostUsername,
           avatar: liveAudioAvatar
         }}
@@ -5528,11 +5528,16 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   };
   
   // Handle scroll to hide/show app bar and bottom navigation
+  const isTransitioningRef = useRef(false);
   useEffect(() => {
-    const HIDE_THRESHOLD = 60;
+    const HIDE_THRESHOLD = 30;
     const SHOW_THRESHOLD = 10;
+    const LOCK_MS = 500;
 
     const handleScroll = () => {
+      // Ignore scroll events caused by layout shifts during header transition
+      if (isTransitioningRef.current) return;
+
       const currentScrollY = window.scrollY;
 
       // Stop all audio playback when scrolling
@@ -5553,17 +5558,20 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
         setShowBottomNav(true);
         lastScrollYRef.current = currentScrollY;
       } else if (delta > HIDE_THRESHOLD) {
-        // Scrolled down enough — hide
+        // Scrolled down enough — hide, then lock to prevent layout-shift flicker
         setShowAppBar(false);
         setShowBottomNav(false);
         lastScrollYRef.current = currentScrollY;
+        isTransitioningRef.current = true;
+        setTimeout(() => { isTransitioningRef.current = false; }, LOCK_MS);
       } else if (delta < -SHOW_THRESHOLD) {
-        // Scrolled up enough — show
+        // Scrolled up — show, then lock
         setShowAppBar(true);
         setShowBottomNav(true);
         lastScrollYRef.current = currentScrollY;
+        isTransitioningRef.current = true;
+        setTimeout(() => { isTransitioningRef.current = false; }, LOCK_MS);
       }
-      // Small movements are ignored — prevents layout-shift flicker loop
     };
 
     window.addEventListener('scroll', handleScroll, { passive: true });

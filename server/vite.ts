@@ -28,7 +28,6 @@ export async function setupVite(app: Express, server: Server) {
       ? {
           server,
           clientPort: 443,
-          host: process.env.REPLIT_DEV_DOMAIN,
           protocol: "wss" as const,
         }
       : { server },

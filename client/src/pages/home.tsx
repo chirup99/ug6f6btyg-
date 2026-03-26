@@ -17071,20 +17071,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </button>
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    We’re an early-stage startup looking for investors to help us scale. Get in touch.
-                  </p>
-                  <a 
-                    href="https://play.google.com/store/apps/details?id=com.linkedin.android" 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors"
-                    data-testid="link-linkedin-investor"
-                  >
-                    <Linkedin className="h-4 w-4" />
-                  </a>
-                </div>
               </div>
 
               <div className="relative mb-6">

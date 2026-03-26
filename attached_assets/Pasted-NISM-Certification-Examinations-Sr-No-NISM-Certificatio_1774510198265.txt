@@ -1,0 +1,49 @@
+NISM Certification Examinations
+Sr. No	NISM Certification Examination - Mandated By SEBI	Duration
+(in mins)	Maximum Marks	Pass Mark (%)	Negative Marks (%)	Certificate Validity (in years)	Fees (₹)
+1	NISM-Series-I: Currency Derivatives	120	100	60%	25%	3	1500
+2	NISM-Series-II-A: Registrars to an Issue and Share Transfer Agents - Corporate	120	100	50%	-	3	1500
+3	NISM-Series-II-B: Registrars to an Issue and Share Transfer Agents - Mutual Fund	120	100	50%	-	3	1500
+4	NISM-Series-III-A: Securities Intermediaries Compliance (Non-Fund)	120	100	60%	25%	3	1500
+5	NISM-Series-III-C: Securities Intermediaries Compliance (Fund)	120	100	60%	25%	3	1500
+6	NISM-Series-IV: Interest Rate Derivatives	120	100	60%	25%	3	1500
+7	NISM-Series-V-A: Mutual Fund Distributors (English)	120	100	50%	-	3	1500
+8	NISM-Series-V-A: Mutual Fund Distributors (Hindi)	120	100	50%	-	3	1500
+9	NISM-Series-V-B: Mutual Fund Foundation	120	50	50%	-	3	1500
+10	NISM-Series-VI: Depository Operations	120	100	60%	25%	3	1500
+11	NISM-Series-VII: Securities Operations and Risk Management	120	100	50%	25%	3	1500
+12	NISM-Series-VIII: Equity Derivatives	120	100	60%	25%	3	1500
+13	NISM-Series-IX: Merchant Banking	120	100	60%	25%	3	1500
+14	NISM-Series-X-A: Investment Adviser (Level 1)	180	150	60%	25%	3	3000
+15	NISM-Series-X-B: Investment Adviser (Level 2)	180	150	60%	25%	3	3000
+16	NISM-Series-X-C: Investment Adviser Certification (Renewal)	60	50	50%	-	3	2500
+17	NISM-Series-XIII: Common Derivatives	180	150	60%	25%	3	3000
+18	NISM-Series-XV: Research Analyst	120	100	60%	25%	3	1500
+19	NISM-Series-XV-B: Research Analyst Certification (Renewal)	60	50	50%	-	3	2500
+20	NISM-Series-XVI: Commodity Derivatives	120	100	60%	25%	3	1500
+21	NISM-Series-XIX-C: Alternative Investment Fund Managers	180	150	60%	25%	3	3000
+22	NISM-Series-XIX-D: Category I and II Alternative Investment Fund Managers	120	100	60%	25%	3	1500
+23	NISM-Series-XIX-E: Category III Alternative Investment Fund Managers	120	100	60%	25%	3	1500
+24	NISM-Series-XXI-A: Portfolio Management Services (PMS) Distributors	120	100	60%	10%	3	1500
+25	NISM-Series-XXI-B: Portfolio Managers	180	150	60%	25%	3	3000
+26	NISM-Series-XXV-A: Persons Associated with Research Services (Sales and Other Non-Core Services)	60	50	50%	-	3	2500
+Sr. No	NISM Certification Examination - Mandated By PFRDA	Duration
+(in mins)	Maximum Marks	Pass Mark (%)	Negative Marks (%)	Certificate Validity (in years)	Fees (₹)
+1	NISM-Series-XVII: Retirement Adviser	120	100	60%	25%	3	1500
+Sr. No	NISM Certification Examinations - Non-Mandatory	Duration
+(in mins)	Maximum Marks	Pass Mark (%)	Negative Marks (%)	Certificate Validity (in years)	Fees (₹)
+1	NISM-Series-XII: Securities Markets Foundation	120	100	60%	-	3	1770
+2	NISM-Series-XIX-A: Alternative Investment Funds (Category I and II) Distributors	120	100	60%	10%	3	1770
+3	NISM-Series-XIX-B: Alternative Investment Funds (Category III) Distributors	120	100	60%	10%	3	1770
+4	NISM-Series-XXIII: Social Impact Assessors	120	100	60%	25%	3	1770
+5	NISM-Series-XXIV: AML and CFT Provisions in Securities Markets	60	50	50%	-	3	885
+Sr. No	Investor Awareness Test	Duration
+(in mins)	Maximum Marks	Pass Mark (%)	Negative Marks (%)	Certificate Validity (in years)	Fees (₹)
+1	SEBI Investor Awareness Test
+(Available in English, Hindi, Marathi, Telugu, Bengali)	60	50	50%	-	2	Free
+Sr. No	IBBI Certification Examinations - Administered by NISM	Duration
+(in mins)	Maximum Marks	Pass Mark (%)	Negative Marks (%)	Certificate Validity (in years)	Fees (₹)
+1	IBBI: Valuation Examination in the Asset class: Land and Building	120	100	60%	25%	-	5900
+2	IBBI: Valuation Examination in the Asset class: Plant and Machinery	120	100	60%	25%	-	5900
+3	IBBI: Valuation Examination in the Asset class: Securities or Financial Assets	120	100	60%	25%	-	5900
+* Online Payment Gateway Charges extra

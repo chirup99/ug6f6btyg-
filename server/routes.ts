@@ -5756,6 +5756,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expressionAttributeValues[':coverPicUrl'] = coverPicUrl;
       }
 
+      const { certifiedRole, certificationImageUrl } = req.body;
+      if (certifiedRole !== undefined) {
+        updateExpression += ', certifiedRole = :certifiedRole';
+        expressionAttributeValues[':certifiedRole'] = certifiedRole || null;
+      }
+      if (certificationImageUrl !== undefined) {
+        updateExpression += ', certificationImageUrl = :certificationImageUrl';
+        expressionAttributeValues[':certificationImageUrl'] = certificationImageUrl || null;
+      }
+
       const { performancePublic } = req.body;
       if (performancePublic !== undefined) {
         updateExpression += ', performancePublic = :performancePublic';
@@ -8249,16 +8259,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return url;
       };
 
-      const out: Record<string, { profilePicUrl: string | null; coverPicUrl: string | null }> = {};
+      const out: Record<string, { profilePicUrl: string | null; coverPicUrl: string | null; certifiedRole?: string | null; certificationImageUrl?: string | null }> = {};
       results.forEach((r, i) => {
         const username = limited[i];
         if (r.status === 'fulfilled' && r.value) {
           out[username] = {
             profilePicUrl: normalizeImgUrl(r.value.profilePicUrl),
             coverPicUrl: normalizeImgUrl(r.value.coverPicUrl),
+            certifiedRole: r.value.certifiedRole || null,
+            certificationImageUrl: normalizeImgUrl(r.value.certificationImageUrl),
           };
         } else {
-          out[username] = { profilePicUrl: null, coverPicUrl: null };
+          out[username] = { profilePicUrl: null, coverPicUrl: null, certifiedRole: null, certificationImageUrl: null };
         }
       });
 

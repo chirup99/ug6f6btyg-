@@ -120,18 +120,83 @@ function formatCommentTimestamp(dateStr: string): string {
   return date.toLocaleDateString();
 }
 
+// ─── NISM / SEBI certificate list ─────────────────────────────────────────────
+const NISM_CERTIFICATES = [
+  // SEBI Mandated
+  { id: 'NISM-I', label: 'NISM-Series-I: Currency Derivatives', category: 'SEBI Mandated' },
+  { id: 'NISM-II-A', label: 'NISM-Series-II-A: Registrars to an Issue - Corporate', category: 'SEBI Mandated' },
+  { id: 'NISM-II-B', label: 'NISM-Series-II-B: Registrars to an Issue - Mutual Fund', category: 'SEBI Mandated' },
+  { id: 'NISM-III-A', label: 'NISM-Series-III-A: Securities Intermediaries Compliance (Non-Fund)', category: 'SEBI Mandated' },
+  { id: 'NISM-III-C', label: 'NISM-Series-III-C: Securities Intermediaries Compliance (Fund)', category: 'SEBI Mandated' },
+  { id: 'NISM-IV', label: 'NISM-Series-IV: Interest Rate Derivatives', category: 'SEBI Mandated' },
+  { id: 'NISM-V-A', label: 'NISM-Series-V-A: Mutual Fund Distributors', category: 'SEBI Mandated' },
+  { id: 'NISM-V-B', label: 'NISM-Series-V-B: Mutual Fund Foundation', category: 'SEBI Mandated' },
+  { id: 'NISM-VI', label: 'NISM-Series-VI: Depository Operations', category: 'SEBI Mandated' },
+  { id: 'NISM-VII', label: 'NISM-Series-VII: Securities Operations and Risk Management', category: 'SEBI Mandated' },
+  { id: 'NISM-VIII', label: 'NISM-Series-VIII: Equity Derivatives', category: 'SEBI Mandated' },
+  { id: 'NISM-IX', label: 'NISM-Series-IX: Merchant Banking', category: 'SEBI Mandated' },
+  { id: 'NISM-X-A', label: 'NISM-Series-X-A: Investment Adviser (Level 1)', category: 'SEBI Mandated' },
+  { id: 'NISM-X-B', label: 'NISM-Series-X-B: Investment Adviser (Level 2)', category: 'SEBI Mandated' },
+  { id: 'NISM-X-C', label: 'NISM-Series-X-C: Investment Adviser Certification (Renewal)', category: 'SEBI Mandated' },
+  { id: 'NISM-XIII', label: 'NISM-Series-XIII: Common Derivatives', category: 'SEBI Mandated' },
+  { id: 'NISM-XV', label: 'NISM-Series-XV: Research Analyst', category: 'SEBI Mandated' },
+  { id: 'NISM-XV-B', label: 'NISM-Series-XV-B: Research Analyst Certification (Renewal)', category: 'SEBI Mandated' },
+  { id: 'NISM-XVI', label: 'NISM-Series-XVI: Commodity Derivatives', category: 'SEBI Mandated' },
+  { id: 'NISM-XIX-C', label: 'NISM-Series-XIX-C: Alternative Investment Fund Managers', category: 'SEBI Mandated' },
+  { id: 'NISM-XIX-D', label: 'NISM-Series-XIX-D: Category I & II Alternative Investment Fund Managers', category: 'SEBI Mandated' },
+  { id: 'NISM-XIX-E', label: 'NISM-Series-XIX-E: Category III Alternative Investment Fund Managers', category: 'SEBI Mandated' },
+  { id: 'NISM-XXI-A', label: 'NISM-Series-XXI-A: PMS Distributors', category: 'SEBI Mandated' },
+  { id: 'NISM-XXI-B', label: 'NISM-Series-XXI-B: Portfolio Managers', category: 'SEBI Mandated' },
+  { id: 'NISM-XXV-A', label: 'NISM-Series-XXV-A: Persons Associated with Research Services', category: 'SEBI Mandated' },
+  // PFRDA Mandated
+  { id: 'NISM-XVII', label: 'NISM-Series-XVII: Retirement Adviser', category: 'PFRDA Mandated' },
+  // Non-Mandatory
+  { id: 'NISM-XII', label: 'NISM-Series-XII: Securities Markets Foundation', category: 'Non-Mandatory' },
+  { id: 'NISM-XIX-A', label: 'NISM-Series-XIX-A: AIF (Category I & II) Distributors', category: 'Non-Mandatory' },
+  { id: 'NISM-XIX-B', label: 'NISM-Series-XIX-B: AIF (Category III) Distributors', category: 'Non-Mandatory' },
+  { id: 'NISM-XXIII', label: 'NISM-Series-XXIII: Social Impact Assessors', category: 'Non-Mandatory' },
+  { id: 'NISM-XXIV', label: 'NISM-Series-XXIV: AML and CFT Provisions in Securities Markets', category: 'Non-Mandatory' },
+  // SEBI Investor
+  { id: 'SEBI-IAT', label: 'SEBI Investor Awareness Test', category: 'SEBI Investor' },
+  // IBBI
+  { id: 'IBBI-LB', label: 'IBBI Valuation: Land and Building', category: 'IBBI' },
+  { id: 'IBBI-PM', label: 'IBBI Valuation: Plant and Machinery', category: 'IBBI' },
+  { id: 'IBBI-SFA', label: 'IBBI Valuation: Securities or Financial Assets', category: 'IBBI' },
+];
+
+// Short display name for a certificate ID used as inline badge
+function certShortName(certId: string | null | undefined): string {
+  if (!certId) return '';
+  const cert = NISM_CERTIFICATES.find(c => c.id === certId);
+  if (!cert) return certId;
+  // Extract the series code e.g. "NISM-VIII" → "NISM VIII" or "Research Analyst"
+  const match = cert.label.match(/NISM-Series-([^:]+):\s*(.+)/);
+  if (match) {
+    const shortTitle = match[2].split('(')[0].trim();
+    return shortTitle.length > 22 ? shortTitle.substring(0, 20) + '…' : shortTitle;
+  }
+  return cert.label.split(':').pop()?.trim().substring(0, 22) || certId;
+}
+
 // ─── Live avatar mirror context ──────────────────────────────────────────────
 // Instead of relying on the stale authorAvatar stored in each post/comment/follow
 // record, we always fetch the CURRENT profilePicUrl from the user's profile.
 // getAvatar(username) returns the live URL (or null while loading / not found).
 
+interface CertificationInfo {
+  certifiedRole: string | null;
+  certificationImageUrl: string | null;
+}
+
 interface UserAvatarCtx {
   getAvatar: (username: string | undefined | null) => string | null;
   setAvatar: (username: string, url: string | null) => void;
   markAvatarFailed: (username: string, url: string) => void;
+  getCertification: (username: string | undefined | null) => CertificationInfo | null;
+  setCertification: (username: string, info: CertificationInfo) => void;
 }
 
-const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null, setAvatar: () => {}, markAvatarFailed: () => {} });
+const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null, setAvatar: () => {}, markAvatarFailed: () => {}, getCertification: () => null, setCertification: () => {} });
 
 // TTL for null (not-found / broken-image) cache entries — retry after 45 seconds.
 // This ensures that when a user uploads a new profile picture, other users see it
@@ -144,6 +209,8 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
   // nullCache stores timestamps of when a "not found / broken" result was cached.
   // Entries expire after NULL_CACHE_TTL_MS so they get re-fetched automatically.
   const nullCache = useRef<Map<string, number>>(new Map());
+  // certCache stores the certification info (certifiedRole + certificationImageUrl) per username
+  const certCache = useRef<Map<string, CertificationInfo>>(new Map());
   const pendingRef = useRef<Set<string>>(new Set());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // cacheRev increments each time the cache is populated — forces context consumers to re-render
@@ -160,7 +227,7 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
       body: JSON.stringify({ usernames: toFetch }),
     })
       .then(r => (r.ok ? r.json() : {}))
-      .then((data: Record<string, { profilePicUrl: string | null }>) => {
+      .then((data: Record<string, { profilePicUrl: string | null; certifiedRole?: string | null; certificationImageUrl?: string | null }>) => {
         const now = Date.now();
         for (const u of toFetch) {
           const key = u.toLowerCase();
@@ -173,6 +240,11 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
             // Only cache null with a TTL — will be re-fetched after NULL_CACHE_TTL_MS
             nullCache.current.set(key, now);
           }
+          // Always cache certification info (even if null) — it's fetched alongside avatar
+          certCache.current.set(key, {
+            certifiedRole: info?.certifiedRole || null,
+            certificationImageUrl: info?.certificationImageUrl || null,
+          });
         }
         setCacheRev(v => v + 1);
       })
@@ -234,16 +306,117 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  // Return the certification info for a given username (null if not yet fetched)
+  const getCertification = useCallback((username: string | undefined | null): CertificationInfo | null => {
+    if (!username) return null;
+    const key = username.toLowerCase();
+    return certCache.current.get(key) ?? null;
+  }, []);
+
+  // Immediately update the certification info for a username and re-render consumers
+  const setCertification = useCallback((username: string, info: CertificationInfo) => {
+    if (!username) return;
+    certCache.current.set(username.toLowerCase(), info);
+    setCacheRev(v => v + 1);
+  }, []);
+
   // cacheRev in the dep array ensures a new value object is created after each fetch,
   // which causes all context consumers to re-render and pick up fresh avatar URLs.
-  const value = useMemo(() => ({ getAvatar, setAvatar, markAvatarFailed }), [getAvatar, setAvatar, markAvatarFailed, cacheRev]); // eslint-disable-line react-hooks/exhaustive-deps
+  const value = useMemo(() => ({ getAvatar, setAvatar, markAvatarFailed, getCertification, setCertification }), [getAvatar, setAvatar, markAvatarFailed, getCertification, setCertification, cacheRev]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <UserAvatarContext.Provider value={value}>{children}</UserAvatarContext.Provider>;
 }
 
-const useUserAvatar      = () => useContext(UserAvatarContext).getAvatar;
-const useSetAvatar       = () => useContext(UserAvatarContext).setAvatar;
+const useUserAvatar       = () => useContext(UserAvatarContext).getAvatar;
+const useSetAvatar        = () => useContext(UserAvatarContext).setAvatar;
 const useMarkAvatarFailed = () => useContext(UserAvatarContext).markAvatarFailed;
+const useGetCertification = () => useContext(UserAvatarContext).getCertification;
+const useSetCertification = () => useContext(UserAvatarContext).setCertification;
+
+// ─── CertifiedBadge: tiny inline badge shown beside display name in posts ─────
+function CertifiedBadge({ certId, onClick }: { certId: string; onClick: () => void }) {
+  const shortName = certShortName(certId);
+  return (
+    <button
+      onClick={(e) => { e.stopPropagation(); onClick(); }}
+      className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold leading-none bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors flex-shrink-0"
+      title={NISM_CERTIFICATES.find(c => c.id === certId)?.label || certId}
+      data-testid="button-cert-badge"
+    >
+      <svg className="w-2.5 h-2.5 flex-shrink-0" viewBox="0 0 12 12" fill="none">
+        <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
+        <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+      {shortName}
+    </button>
+  );
+}
+
+// ─── CertificationDialog: shows full certification details when badge is tapped ──
+function CertificationDialog({ username, certId, certImageUrl, isOpen, onClose }: {
+  username: string;
+  certId: string;
+  certImageUrl: string | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) {
+  const cert = NISM_CERTIFICATES.find(c => c.id === certId);
+  if (!isOpen) return null;
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="max-w-sm p-0 overflow-hidden rounded-2xl border border-border shadow-xl">
+        {/* Header */}
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-border">
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+              <svg className="w-4 h-4" viewBox="0 0 12 12" fill="none">
+                <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
+                <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+            <h2 className="text-sm font-semibold text-foreground">Certified Trader</h2>
+          </div>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground transition-colors" data-testid="button-close-cert-dialog">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+        {/* Content */}
+        <div className="px-5 py-4 space-y-3">
+          <div className="flex items-start gap-3">
+            <div className="flex-1 min-w-0">
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wide mb-0.5">{cert?.category || 'NISM / SEBI'}</p>
+              <p className="text-sm font-semibold text-foreground leading-snug">{cert?.label || certId}</p>
+              <p className="text-xs text-muted-foreground mt-1">@{username}</p>
+            </div>
+          </div>
+          {/* Certificate image */}
+          {certImageUrl ? (
+            <div className="rounded-xl overflow-hidden border border-border bg-muted/30">
+              <img
+                src={certImageUrl}
+                alt="Certificate"
+                className="w-full object-contain max-h-48"
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+              />
+              <p className="text-[10px] text-muted-foreground text-center py-1.5">Official Certificate</p>
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-border bg-muted/20 flex items-center justify-center h-20">
+              <p className="text-xs text-muted-foreground">No certificate image uploaded</p>
+            </div>
+          )}
+          <div className="flex items-center gap-1.5 text-[10px] text-amber-600 dark:text-amber-400">
+            <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 12 12" fill="none">
+              <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
+              <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+            NISM / SEBI Certified Registered Professional
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 // ─────────────────────────────────────────────────────────────────────────────
 
 // Render comment content with clickable @mentions

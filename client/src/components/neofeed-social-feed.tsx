@@ -3575,7 +3575,7 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
           <div className="relative">
             <div
               ref={heatmapContainerRef}
-              className={`max-h-48 overflow-auto scrollbar-hide ${stripped ? '' : 'border border-slate-100 dark:border-zinc-800 rounded-lg'}`}
+              className={`overflow-x-hidden overflow-y-hidden ${stripped ? '' : 'border border-slate-100 dark:border-zinc-800 rounded-lg'}`}
             >
               <DemoHeatmap
                 tradingDataByDate={heatmapData}

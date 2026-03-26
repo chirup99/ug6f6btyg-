@@ -85,8 +85,8 @@ export default function TermsOfService() {
             <h2 className="text-2xl font-bold text-white">11. Contact Us</h2>
             <p className="text-gray-400 leading-relaxed">
               If you have any questions about these Terms of Service, please contact us at{" "}
-              <a href="mailto:support@perala.in" className="text-purple-400 hover:text-purple-300 transition-colors">
-                support@perala.in
+              <a href="mailto:chiranjeevi.perala8686@gmail.com" className="text-purple-400 hover:text-purple-300 transition-colors">
+                chiranjeevi.perala8686@gmail.com
               </a>.
             </p>
           </section>

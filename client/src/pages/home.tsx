@@ -531,42 +531,65 @@ function SwipeableCardStack({
     globalStopAudio();
   };
 
+  // Helper: play a blob URL immediately
+  const playBlobUrl = (url: string) => {
+    setIsPlaying(true);
+    const audio = new Audio(url);
+    currentAudioRef.current = audio;
+    audio.onended = () => { setIsPlaying(false); currentAudioRef.current = null; };
+    audio.play().catch(err => { console.error('[TTS] Audio play error:', err); setIsPlaying(false); });
+  };
+
   // Fetch real latest news for the current card sector (same source as Market News tab)
   const fetchAndPlayContent = async (cardTitle: string, sector: string) => {
     globalStopAudio();
     setCurrentContent("");
 
-    // ── Cache hit: play instantly ──────────────────────────────────────────
     const cacheKey = getCacheKey(sector);
+
+    // ── 1. Cache hit: play instantly ───────────────────────────────────────
     const cachedUrl = audioCacheRef.current.get(cacheKey);
     if (cachedUrl) {
       console.log(`[CACHE HIT] ✅ Instant play for ${sector}`);
-      setIsPlaying(true);
-      const audio = new Audio(cachedUrl);
-      currentAudioRef.current = audio;
-      audio.onended = () => { setIsPlaying(false); currentAudioRef.current = null; };
-      audio.play().catch(err => { console.error('[TTS] Audio play error:', err); setIsPlaying(false); });
+      playBlobUrl(cachedUrl);
       return;
     }
 
-    // ── Cache miss: fetch news + generate TTS ─────────────────────────────
+    // ── 2. Preload in-flight: wait for it instead of starting a duplicate ──
+    if (preloadingRef.current.has(cacheKey)) {
+      console.log(`[PRELOAD WAIT] ⏳ Preload running for ${sector}, attaching…`);
+      setIsLoading(true);
+      await new Promise<void>((resolve) => {
+        const poll = setInterval(() => {
+          if (!preloadingRef.current.has(cacheKey)) {
+            clearInterval(poll);
+            resolve();
+          }
+        }, 150);
+        // Safety timeout — 15 s max
+        setTimeout(() => { clearInterval(poll); resolve(); }, 15000);
+      });
+      setIsLoading(false);
+      const readyUrl = audioCacheRef.current.get(cacheKey);
+      if (readyUrl) {
+        console.log(`[PRELOAD WAIT] ✅ Preload finished, playing for ${sector}`);
+        playBlobUrl(readyUrl);
+        return;
+      }
+      // Preload failed — fall through to fresh generation
+    }
+
+    // ── 3. Cache miss + no preload: generate now ───────────────────────────
     try {
       setIsLoading(true);
       const content = await buildNewsText(sector);
       setCurrentContent(content);
       setIsLoading(false);
 
-      // Generate audio and cache it for future instant playback
       const url = await buildAudioUrl(content);
       if (url) {
         audioCacheRef.current.set(cacheKey, url);
-        if (currentAudioRef.current === null) {  // user hasn't stopped it
-          setIsPlaying(true);
-          const audio = new Audio(url);
-          currentAudioRef.current = audio;
-          audio.onended = () => { setIsPlaying(false); currentAudioRef.current = null; };
-          audio.play().catch(err => { console.error('[TTS] Audio play error:', err); setIsPlaying(false); });
-        }
+        if (currentAudioRef.current === null) playBlobUrl(url);
       } else {
         setIsPlaying(false);
       }

@@ -2763,6 +2763,15 @@ export default function Home() {
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
+    // Create the persistent player container outside React's render tree
+    // so it is never unmounted when the component re-renders with early returns
+    if (!document.getElementById("youtube-audio-player")) {
+      const container = document.createElement("div");
+      container.id = "youtube-audio-player";
+      container.style.cssText = "position:fixed;bottom:0;left:0;width:0;height:0;opacity:0;pointer-events:none;overflow:hidden;";
+      document.body.appendChild(container);
+    }
+
     if ((window as any).YT && (window as any).YT.Player) {
       setIsYTReady(true);
       return;
@@ -34429,8 +34438,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         </Dialog>
 
       </div>
-      {/* Persistent YouTube audio player - always in DOM so audio continues when dialog closes */}
-      <div id="youtube-audio-player" style={{ position: 'fixed', bottom: 0, left: 0, width: 0, height: 0, opacity: 0, pointerEvents: 'none', overflow: 'hidden' }}></div>
     </div>
   );
 }

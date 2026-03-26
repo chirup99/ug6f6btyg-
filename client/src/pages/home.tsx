@@ -4687,8 +4687,10 @@ ${fundamentalInsights}**📈 Essential Analysis Framework:**
 
       if (!hasP1 && !hasP2) {
         // No personal heatmap data in either slot — fall back to demo
+        // Use __demoJournalData (populated by heatmap) OR fetchedData (same /api/journal/all-dates source)
         isDemo = true;
-        useData = (window as any).__demoJournalData || {};
+        const demoWindowData = (window as any).__demoJournalData || {};
+        useData = Object.keys(demoWindowData).length > 0 ? demoWindowData : fetchedData;
         if (Object.keys(useData).length === 0) {
           setJournalReportMetrics({ noData: true, isDemo: true });
           setSearchResults("[CHART:JOURNAL_REPORT]");

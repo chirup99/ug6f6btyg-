@@ -497,6 +497,8 @@ async function annualFromScreener(symbol: string): Promise<AnnualFinancials | nu
           const cells = $(tr).find('td');
           const label = cells.first().text().trim();
           if (!label || label.toLowerCase() === 'raw pdf') return;
+          // Skip CAGR sub-rows that Screener.in appends (e.g. "10 Years:", "5 Years:", "3 Years:", "TTM:", "1 Year:", "Last Year:")
+          if (/^\s*(10 Years|5 Years|3 Years|TTM|1 Year|Last Year)\s*:/.test(label)) return;
           const values: { year: string; value: number }[] = [];
           cells.slice(1).each((i, td) => {
             const v = parseCr($(td).text().trim());

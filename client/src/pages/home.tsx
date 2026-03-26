@@ -2242,12 +2242,13 @@ export default function Home() {
 
   const [activeTab, setActiveTab] = useState("trading-home");
 
-  // Stop voice greeting when user switches to a different tab
+  // Stop all audio (voice profile + swipeable news cards) when user switches tabs
   useEffect(() => {
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
+    (window as any).stopNewsAudio?.();
   }, [activeTab]);
 
   const [showTutorOverlay, setShowTutorOverlay] = useState(false);

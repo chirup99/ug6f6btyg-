@@ -264,28 +264,26 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
                 </Button>
               </div>
 
-              <div className="scroll-container flex-1 overflow-x-auto flex flex-row gap-3 p-4 pb-4 scroll-smooth snap-x snap-mandatory hide-scrollbar">
+              <div className="scroll-container flex-1 overflow-x-auto flex flex-row items-start gap-2 px-3 py-2 scroll-smooth snap-x snap-mandatory hide-scrollbar">
                 {images.map((img, idx) => (
-                  <div key={img.id} className="group relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm transition-all hover:shadow-md flex-shrink-0 w-56 snap-start">
-                    <div className="aspect-video w-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative">
-                      <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
-                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/30 z-20">
-                        {idx + 1}
-                      </div>
-                      <button
-                        type="button"
-                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          const newImages = images.filter(i => i.id !== img.id);
-                          setImages(newImages);
-                          onImagesChange?.(newImages);
-                        }}
-                      >
-                        <X className="h-3.5 w-3.5 text-red-500" />
-                      </button>
+                  <div key={img.id} className="group relative rounded-lg overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm flex-shrink-0 snap-start" style={{ width: '96px', height: '96px' }}>
+                    <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                    <div className="absolute top-1 left-1 bg-blue-600 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full z-20 leading-none">
+                      {idx + 1}
                     </div>
+                    <button
+                      type="button"
+                      className="absolute top-1 right-1 h-5 w-5 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const newImages = images.filter(i => i.id !== img.id);
+                        setImages(newImages);
+                        onImagesChange?.(newImages);
+                      }}
+                    >
+                      <X className="h-3 w-3 text-red-500" />
+                    </button>
                   </div>
                 ))}
 
@@ -297,12 +295,11 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
                       e.stopPropagation();
                       fileInputRef.current?.click();
                     }}
-                    className="flex-shrink-0 w-32 self-stretch rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-500 transition-all bg-gray-50/50 dark:bg-gray-900/20 snap-start"
+                    className="flex-shrink-0 rounded-lg border-2 border-dashed border-gray-300 dark:border-gray-600 hover:border-blue-400 dark:hover:border-blue-500 flex flex-col items-center justify-center gap-1 text-gray-400 hover:text-blue-500 transition-all bg-gray-50/50 dark:bg-gray-900/20 snap-start"
+                    style={{ width: '96px', height: '96px' }}
                   >
-                    <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-700">
-                      <Plus className="h-4 w-4" />
-                    </div>
-                    <p className="text-[10px] font-medium text-center">Add more</p>
+                    <Plus className="h-5 w-5" />
+                    <p className="text-[9px] font-medium text-center leading-tight">Add more</p>
                   </button>
                 )}
               </div>

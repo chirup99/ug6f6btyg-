@@ -8601,47 +8601,64 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Mini sparkline data for navigation bar icon - shows performance trend
   const navSparklineData = useMemo(() => {
-    // Get data source - prefer personal, fallback to demo
+    // Helper: normalize an array of values to SVG polyline points (w=40, h=24)
+    const toPoints = (values: number[]) => {
+      if (values.length === 0) return null;
+      if (values.length === 1) values = [values[0], values[0]];
+      const minVal = Math.min(...values);
+      const maxVal = Math.max(...values);
+      const range = maxVal - minVal || 1;
+      return values.map((val, idx) => {
+        const x = (idx / (values.length - 1)) * 40;
+        const y = 20 - ((val - minVal) / range) * 16;
+        return `${x.toFixed(1)},${y.toFixed(1)}`;
+      }).join(" ");
+    };
+
+    // --- MODE 1: Selected date → intraday trade-by-trade cumulative P&L ---
+    if (selectedDate && tradeHistoryData && tradeHistoryData.length > 0) {
+      let cumPnL = 0;
+      const intradayValues: number[] = [0];
+      (tradeHistoryData as any[]).forEach(trade => {
+        const pnlStr = (trade.pnl || "").replace(/[₹,+\s]/g, "");
+        const pnlValue = parseFloat(pnlStr) || 0;
+        if (pnlValue !== 0) {
+          cumPnL += pnlValue;
+          intradayValues.push(cumPnL);
+        }
+      });
+      if (intradayValues.length > 1) {
+        const pts = toPoints(intradayValues)!;
+        const trend = intradayValues[intradayValues.length - 1] >= 0 ? "up" : "down";
+        return { points: pts, hasData: true, trend, mode: "1d" };
+      }
+    }
+
+    // --- MODE 2: Multi-day cumulative P&L trend ---
     const personalHasData = Object.keys(personalTradingDataByDate).length > 0;
     const dataSource = personalHasData ? personalTradingDataByDate : demoTradingDataByDate;
 
-    if (Object.keys(dataSource).length === 0) {
-      return { points: "0,12 20,12 40,12", hasData: false, trend: "neutral" };
+    if (Object.keys(dataSource).length > 0) {
+      const sortedDates = Object.keys(dataSource).sort();
+      const recentDates = sortedDates.slice(-10);
+      let cumulativePnL = 0;
+      const pnlValues: number[] = [];
+      recentDates.forEach(date => {
+        const dayData = dataSource[date];
+        const dailyPnL = dayData?.totalPnL || dayData?.pnl || dayData?.performanceMetrics?.netPnL || 0;
+        cumulativePnL += dailyPnL;
+        pnlValues.push(cumulativePnL);
+      });
+      if (pnlValues.length > 0) {
+        const pts = toPoints(pnlValues)!;
+        const trend = pnlValues[pnlValues.length - 1] >= pnlValues[0] ? "up" : "down";
+        return { points: pts, hasData: true, trend, mode: "multi" };
+      }
     }
 
-    // Sort dates and calculate cumulative P/L
-    const sortedDates = Object.keys(dataSource).sort();
-    const recentDates = sortedDates.slice(-7); // Last 7 data points
-
-    let cumulativePnL = 0;
-    const pnlValues: number[] = [];
-
-    recentDates.forEach(date => {
-      const dayData = dataSource[date];
-      const dailyPnL = dayData?.totalPnL || dayData?.pnl || 0;
-      cumulativePnL += dailyPnL;
-      pnlValues.push(cumulativePnL);
-    });
-
-    if (pnlValues.length === 0) {
-      return { points: "0,12 20,12 40,12", hasData: false, trend: "neutral" };
-    }
-
-    // Normalize to SVG coordinates (width: 40, height: 24)
-    const minVal = Math.min(...pnlValues);
-    const maxVal = Math.max(...pnlValues);
-    const range = maxVal - minVal || 1;
-
-    const points = pnlValues.map((val, idx) => {
-      const x = (idx / (pnlValues.length - 1 || 1)) * 40;
-      const y = 20 - ((val - minVal) / range) * 16; // 4px padding top/bottom
-      return `${x.toFixed(1)},${y.toFixed(1)}`;
-    }).join(" ");
-
-    const trend = pnlValues[pnlValues.length - 1] >= pnlValues[0] ? "up" : "down";
-
-    return { points, hasData: true, trend };
-  }, [personalTradingDataByDate, demoTradingDataByDate]);
+    // --- MODE 3: No data — show a gentle placeholder curve ---
+    return { points: "0,18 5,16 10,14 15,15 20,12 25,10 30,8 35,6 40,4", hasData: false, trend: "neutral", mode: "empty" };
+  }, [personalTradingDataByDate, demoTradingDataByDate, selectedDate, tradeHistoryData]);
 
 
   const setTradingDataByDate = heatmapMode === 0 ? setDemoTradingDataByDate

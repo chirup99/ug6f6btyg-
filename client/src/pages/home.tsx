@@ -8552,17 +8552,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
               );
             }
 
-            // Auto-select latest date AFTER all data is loaded
-            if (!selectedDate && Object.keys(personalData).length > 0) {
-              const sortedDates = Object.keys(personalData).sort(
-                (a, b) => new Date(b).getTime() - new Date(a).getTime(),
-              );
-              const latestDateStr = sortedDates[0];
-              const latestDate = new Date(latestDateStr);
-              console.log("🎯 Auto-selecting latest PERSONAL date:", latestDateStr);
-              setSelectedDate(latestDate);
-              await handleDateSelect(latestDate);
-            }
           }, 100);
         } else {
           console.log("📭 No personal data found for user:", userId);

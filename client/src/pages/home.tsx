@@ -26375,6 +26375,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             </Dialog>
                           </div>
                           <div className="flex items-center gap-1">
+                            {/* Demo label shown before toggle when demo mode is active */}
+                            {heatmapMode === 0 && (
+                              <span className="text-[9px] font-bold text-blue-500 dark:text-blue-400 uppercase tracking-wide select-none">Demo</span>
+                            )}
                             {/* 3-state heatmap mode toggle: 0=Demo, 1=Personal-1, 2=Personal-2 */}
                             <div className="flex items-center gap-0.5 bg-gray-100 dark:bg-gray-800 rounded p-0.5" data-testid="heatmap-mode-toggle">
                               {([0, 1, 2] as const).map((mode) => {

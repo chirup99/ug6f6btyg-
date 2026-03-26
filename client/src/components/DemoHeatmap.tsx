@@ -1960,10 +1960,20 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-40">
-                    <DropdownMenuItem onClick={handleMoveDateClick} data-testid="menu-item-move-date">
+                    <DropdownMenuItem
+                      onClick={canEditDemoTrades ? handleMoveDateClick : undefined}
+                      disabled={!canEditDemoTrades}
+                      className={!canEditDemoTrades ? 'opacity-40 cursor-not-allowed' : ''}
+                      data-testid="menu-item-move-date"
+                    >
                       Move date
                     </DropdownMenuItem>
-                    <DropdownMenuItem onClick={handleDeleteClick} data-testid="menu-item-delete">
+                    <DropdownMenuItem
+                      onClick={canEditDemoTrades ? handleDeleteClick : undefined}
+                      disabled={!canEditDemoTrades}
+                      className={!canEditDemoTrades ? 'opacity-40 cursor-not-allowed' : ''}
+                      data-testid="menu-item-delete"
+                    >
                       Delete
                     </DropdownMenuItem>
                   </DropdownMenuContent>

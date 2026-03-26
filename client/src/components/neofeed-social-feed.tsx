@@ -209,14 +209,19 @@ const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null, 
 // without needing a full page refresh.
 const NULL_CACHE_TTL_MS = 45_000;
 
+// ── Module-level caches ───────────────────────────────────────────────────────
+// Stored OUTSIDE the component so they survive tab switches and remounts.
+// The component may mount/unmount many times (tab switching), but these Maps
+// live for the full page lifetime — data fetched once stays available instantly.
+const _urlCache  = new Map<string, string>();
+const _nullCache = new Map<string, number>();
+const _certCache = new Map<string, CertificationInfo>();
+
 function UserAvatarProvider({ children }: { children: ReactNode }) {
-  // urlCache stores confirmed URLs (non-null). Once a valid URL is stored it stays.
-  const urlCache  = useRef<Map<string, string>>(new Map());
-  // nullCache stores timestamps of when a "not found / broken" result was cached.
-  // Entries expire after NULL_CACHE_TTL_MS so they get re-fetched automatically.
-  const nullCache = useRef<Map<string, number>>(new Map());
-  // certCache stores the certification info (certifiedRole + certificationImageUrl) per username
-  const certCache = useRef<Map<string, CertificationInfo>>(new Map());
+  // Point refs at the module-level maps so all component logic stays the same.
+  const urlCache  = useRef<Map<string, string>>(_urlCache);
+  const nullCache = useRef<Map<string, number>>(_nullCache);
+  const certCache = useRef<Map<string, CertificationInfo>>(_certCache);
   const pendingRef = useRef<Set<string>>(new Set());
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // cacheRev increments each time the cache is populated — forces context consumers to re-render

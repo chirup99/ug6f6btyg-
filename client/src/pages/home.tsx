@@ -25997,9 +25997,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               onClick={saveAllTradingData}
                               size="sm"
                               variant="outline"
-                              disabled={heatmapMode === 0 && localStorage.getItem('currentUserId') !== 'c06ce90c-20a1-7033-d457-efac5a682529'}
+                              disabled={heatmapMode === 0 && localStorage.getItem('currentUserEmail') !== 'chiranjeevi.perala99@gmail.com'}
                               className={`h-5 px-2 text-[10px] border-gray-300 dark:border-gray-700 ${
-                                (heatmapMode === 0 && localStorage.getItem('currentUserId') !== 'c06ce90c-20a1-7033-d457-efac5a682529')
+                                (heatmapMode === 0 && localStorage.getItem('currentUserEmail') !== 'chiranjeevi.perala99@gmail.com')
                                   ? 'text-gray-400 dark:text-gray-500 opacity-50 cursor-not-allowed' 
                                   : 'text-gray-600 dark:text-gray-400'
                               }`}

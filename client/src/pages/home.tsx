@@ -20761,10 +20761,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       <User className="h-4 w-4 text-gray-400" />
                                       <span className="text-sm font-semibold text-gray-200">Recent Posts</span>
                                     </div>
-                                    <span className="text-xs text-gray-500">Latest {Math.min(5, allPosts.length)}</span>
+                                    <span className="text-xs text-gray-500">Latest {Math.min(3, allPosts.length)}</span>
                                   </div>
                                   <div className="space-y-3">
-                                    {allPosts.slice(0, 5).map((post: any, idx: number) => {
+                                    {allPosts.slice(0, 3).map((post: any, idx: number) => {
                                       const sentColor = post.sentiment === 'bullish' ? 'text-green-400 border-green-700/50' : post.sentiment === 'bearish' ? 'text-red-400 border-red-700/50' : 'text-yellow-400 border-yellow-700/50';
                                       const timeAgo = (() => {
                                         const diff = Math.floor((now - new Date(post.createdAt).getTime()) / 60000);
@@ -20772,14 +20772,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         if (diff < 1440) return `${Math.floor(diff / 60)}h ago`;
                                         return `${Math.floor(diff / 1440)}d ago`;
                                       })();
+                                      const authorName = post.authorDisplayName || post.authorUsername || 'Trader';
                                       return (
                                         <div key={post.id || idx} className="border border-gray-700/40 rounded-lg p-3 bg-gray-800/30">
                                           <div className="flex items-start justify-between gap-2 mb-1.5">
                                             <div className="flex items-center gap-2">
                                               <div className="w-6 h-6 rounded-full bg-gradient-to-br from-pink-600 to-purple-700 flex items-center justify-center text-[10px] font-bold text-white">
-                                                {(post.username || post.userId || 'U').toString().charAt(0).toUpperCase()}
+                                                {authorName.charAt(0).toUpperCase()}
                                               </div>
-                                              <span className="text-xs font-medium text-gray-300">{post.username || `User ${post.userId}`}</span>
+                                              <span className="text-xs font-medium text-gray-300">{authorName}</span>
                                             </div>
                                             <div className="flex items-center gap-2 flex-shrink-0">
                                               {post.sentiment && (

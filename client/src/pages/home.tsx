@@ -115,6 +115,7 @@ import { Label } from "@/components/ui/label";
 
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogDescription,
   DialogFooter,
@@ -28472,11 +28473,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 </DialogTrigger>
                                                 <DialogContent className="w-[95vw] max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-[90dvh] overflow-y-auto">
                                                   <DialogHeader>
-                                                    <DialogTitle className="flex items-center gap-2 text-xl font-bold">
-                                                      <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-600 dark:text-indigo-400">
-                                                        <Activity className="w-5 h-5" />
+                                                    <DialogTitle className="flex items-center justify-between gap-2 text-xl font-bold">
+                                                      <div className="flex items-center gap-2">
+                                                        <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-600 dark:text-indigo-400">
+                                                          <Activity className="w-5 h-5" />
+                                                        </div>
+                                                        Charges Information
                                                       </div>
-                                                      Charges Information
+                                                      <DialogClose className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors rounded-md p-1 hover:bg-slate-100 dark:hover:bg-slate-800">
+                                                        <X className="w-4 h-4" />
+                                                      </DialogClose>
                                                     </DialogTitle>
                                                     <DialogDescription className="text-slate-500 dark:text-slate-400">
                                                       Latest F&O charges (India – NSE 2025-2026)

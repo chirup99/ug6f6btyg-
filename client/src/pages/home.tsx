@@ -25202,6 +25202,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 <Bitcoin className="h-4 w-4" />
                               </Button>
                             </div>
+                            <button
+                              onClick={() => setShowConnectDialog(false)}
+                              className="text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors rounded-md p-1 hover:bg-slate-100 dark:hover:bg-slate-800"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
                           </DialogTitle>
                         </DialogHeader>
                         <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
@@ -28305,8 +28311,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                     <Wallet className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                                   </div>
                                   <div>
-                                    <CardTitle className="text-lg font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">
-                                      Funds Analysis
+                                    <CardTitle className="text-lg font-bold flex items-center gap-2">
+                                      <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">Funds Analysis</span>
+                                      {isDemoMode && (
+                                        <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-600 dark:text-amber-400 border border-amber-400/30">
+                                          Demo Cash
+                                        </span>
+                                      )}
                                     </CardTitle>
                                     <CardDescription className="text-xs font-medium text-indigo-600/70 dark:text-indigo-400/70">
                                       Monitor and manage your trading capital

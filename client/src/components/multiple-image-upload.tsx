@@ -209,93 +209,106 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
 
     if (variant === 'neofeed') {
       return (
-        <div className="w-full h-full p-4 flex flex-col bg-transparent relative overflow-hidden group/neofeed">
-          {/* Navigation Arrows for NeoFeed - Positioned in the corners */}
-          <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none z-30 opacity-0 group-hover/neofeed:opacity-100 transition-opacity">
-            <Button
+        <div className="w-full h-full flex flex-col bg-transparent relative overflow-hidden group/neofeed">
+          {images.length === 0 ? (
+            /* Empty state: fully centered upload button */
+            <button
               type="button"
-              variant="secondary"
-              size="icon"
-              className="h-10 w-10 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-xl pointer-events-auto border border-gray-200 dark:border-gray-700"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                const container = e.currentTarget.parentElement?.nextElementSibling;
-                if (container) {
-                  container.scrollBy({ left: -300, behavior: 'smooth' });
-                }
+                fileInputRef.current?.click();
               }}
+              className="flex-1 w-full flex flex-col items-center justify-center gap-3 text-gray-400 hover:text-blue-500 transition-all hover:bg-blue-50/50 dark:hover:bg-blue-900/10"
             >
-              <ChevronLeft className="h-6 w-6 text-gray-700 dark:text-gray-200" />
-            </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              className="h-10 w-10 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-xl pointer-events-auto border border-gray-200 dark:border-gray-700"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                const container = e.currentTarget.parentElement?.nextElementSibling;
-                if (container) {
-                  container.scrollBy({ left: 300, behavior: 'smooth' });
-                }
-              }}
-            >
-              <ChevronRight className="h-6 w-6 text-gray-700 dark:text-gray-200" />
-            </Button>
-          </div>
-
-          <div className="flex-1 overflow-x-auto flex flex-row gap-3 pb-4 scroll-smooth snap-x snap-mandatory hide-scrollbar">
-            {images.map((img, idx) => (
-              <div key={img.id} className="group relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm transition-all hover:shadow-md flex-shrink-0 w-72 snap-start">
-                <div className="aspect-video w-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative">
-                  <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
-                  {/* Number Indicator - More visible */}
-                  <div className="absolute top-3 left-3 bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-full shadow-lg border border-white/30 z-20">
-                    {idx + 1}
-                  </div>
-                  <div className="absolute top-2 right-2 flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity z-20">
-                    <Button 
-                      type="button"
-                      size="icon" 
-                      variant="secondary" 
-                      className="h-8 w-8 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-sm"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        const newImages = images.filter(i => i.id !== img.id);
-                        setImages(newImages);
-                        onImagesChange?.(newImages);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 text-red-500" />
-                    </Button>
-                  </div>
-                </div>
+              <div className="w-12 h-12 rounded-full bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center border border-gray-200 dark:border-gray-700">
+                <Plus className="h-6 w-6" />
               </div>
-            ))}
-            
-            {images.length < 3 && (
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  fileInputRef.current?.click();
-                }}
-                className="flex-shrink-0 w-72 aspect-video rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-500 transition-all bg-gray-50/50 dark:bg-gray-900/20 snap-start"
-              >
-                <div className="w-10 h-10 rounded-full bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-700">
-                  <Plus className="h-5 w-5" />
-                </div>
-                <div className="text-center">
-                  <p className="text-sm font-medium">Add Image</p>
-                  <p className="text-[10px] opacity-70">Up to 3 images allowed</p>
-                </div>
-              </button>
-            )}
-          </div>
+              <div className="text-center">
+                <p className="text-sm font-medium">Add Image</p>
+                <p className="text-[10px] opacity-70">Up to 3 images allowed</p>
+              </div>
+            </button>
+          ) : (
+            /* Has images: horizontal scroll row with cards + add button */
+            <>
+              {/* Navigation Arrows */}
+              <div className="absolute inset-x-4 top-1/2 -translate-y-1/2 flex justify-between pointer-events-none z-30 opacity-0 group-hover/neofeed:opacity-100 transition-opacity">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-xl pointer-events-auto border border-gray-200 dark:border-gray-700"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const container = (e.currentTarget.parentElement?.parentElement as HTMLElement)?.querySelector('.scroll-container') as HTMLElement;
+                    if (container) container.scrollBy({ left: -300, behavior: 'smooth' });
+                  }}
+                >
+                  <ChevronLeft className="h-6 w-6 text-gray-700 dark:text-gray-200" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="icon"
+                  className="h-10 w-10 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-xl pointer-events-auto border border-gray-200 dark:border-gray-700"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    const container = (e.currentTarget.parentElement?.parentElement as HTMLElement)?.querySelector('.scroll-container') as HTMLElement;
+                    if (container) container.scrollBy({ left: 300, behavior: 'smooth' });
+                  }}
+                >
+                  <ChevronRight className="h-6 w-6 text-gray-700 dark:text-gray-200" />
+                </Button>
+              </div>
+
+              <div className="scroll-container flex-1 overflow-x-auto flex flex-row gap-3 p-4 pb-4 scroll-smooth snap-x snap-mandatory hide-scrollbar">
+                {images.map((img, idx) => (
+                  <div key={img.id} className="group relative rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm transition-all hover:shadow-md flex-shrink-0 w-56 snap-start">
+                    <div className="aspect-video w-full overflow-hidden bg-gray-100 dark:bg-gray-800 flex items-center justify-center relative">
+                      <img src={img.url} alt={img.name} className="w-full h-full object-cover" />
+                      <div className="absolute top-2 left-2 bg-blue-600 text-white text-xs font-bold px-2 py-0.5 rounded-full shadow-lg border border-white/30 z-20">
+                        {idx + 1}
+                      </div>
+                      <button
+                        type="button"
+                        className="absolute top-2 right-2 h-7 w-7 rounded-full bg-white/90 dark:bg-gray-800/90 shadow-sm flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-20"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          const newImages = images.filter(i => i.id !== img.id);
+                          setImages(newImages);
+                          onImagesChange?.(newImages);
+                        }}
+                      >
+                        <X className="h-3.5 w-3.5 text-red-500" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                {images.length < 3 && (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      fileInputRef.current?.click();
+                    }}
+                    className="flex-shrink-0 w-32 self-stretch rounded-xl border-2 border-dashed border-gray-200 dark:border-gray-700 hover:border-blue-400 dark:hover:border-blue-500 flex flex-col items-center justify-center gap-2 text-gray-400 hover:text-blue-500 transition-all bg-gray-50/50 dark:bg-gray-900/20 snap-start"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-white dark:bg-gray-800 shadow-sm flex items-center justify-center border border-gray-100 dark:border-gray-700">
+                      <Plus className="h-4 w-4" />
+                    </div>
+                    <p className="text-[10px] font-medium text-center">Add more</p>
+                  </button>
+                )}
+              </div>
+            </>
+          )}
+
           <input
             type="file"
             ref={fileInputRef}

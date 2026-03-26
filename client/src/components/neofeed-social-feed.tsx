@@ -6605,8 +6605,8 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
 
       {/* Mobile Create Post Dialog - Only shows on mobile when + button is tapped */}
       <Dialog open={showMobileCreatePost} onOpenChange={setShowMobileCreatePost}>
-        <DialogContent className="w-[95vw] max-w-lg max-h-[90dvh] overflow-y-auto p-0 rounded-xl [&>button]:z-50 [&>button]:top-3 [&>button]:right-3 [&>button]:bg-white dark:[&>button]:bg-gray-800 [&>button]:rounded-full [&>button]:p-1 [&>button]:shadow-sm">
-          <PostCreationPanel hideAudioMode={true} />
+        <DialogContent className="w-[95vw] max-w-lg max-h-[90dvh] overflow-y-auto p-0 rounded-xl [&>button]:hidden">
+          <PostCreationPanel hideAudioMode={true} onMinimize={() => setShowMobileCreatePost(false)} />
         </DialogContent>
       </Dialog>
 

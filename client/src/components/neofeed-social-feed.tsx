@@ -272,7 +272,7 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
     // Stale null or never fetched — queue for batch fetch
     pendingRef.current.add(key);
     if (timerRef.current) clearTimeout(timerRef.current);
-    timerRef.current = setTimeout(flush, 80);
+    timerRef.current = setTimeout(flush, 0);
     return null;
   }, [flush]);
 
@@ -6152,6 +6152,22 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
     refetchOnWindowFocus: false,
     refetchOnReconnect: false,
   });
+
+  // Pre-populate avatar + certification cache as soon as posts data arrives.
+  // This fires immediately (before individual PostCard renders) so avatars & cert badges
+  // appear on first paint instead of after a per-component debounce.
+  const getAvatar = useUserAvatar();
+  const getCertification = useGetCertification();
+  useEffect(() => {
+    if (!posts || posts.length === 0) return;
+    posts.forEach(p => {
+      const key = p.authorUsername || p.user?.handle;
+      if (key) {
+        getAvatar(key);          // queue for batch fetch
+        getCertification(key);   // pull from cache (or queue alongside avatar fetch)
+      }
+    });
+  }, [posts]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Infinite scroll observer
   useEffect(() => {

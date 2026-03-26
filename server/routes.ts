@@ -8294,7 +8294,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             profilePicUrl: normalizeImgUrl(r.value.profilePicUrl),
             coverPicUrl: normalizeImgUrl(r.value.coverPicUrl),
             certifiedRole: r.value.certifiedRole || null,
-            certificationImageUrl: normalizeImgUrl(r.value.certificationImageUrl),
+            // Don't apply normalizeImgUrl to cert images — they may be S3 URLs or
+            // local paths the browser can handle; onError in the dialog handles failures.
+            certificationImageUrl: r.value.certificationImageUrl || null,
           };
         } else {
           out[username] = { profilePicUrl: null, coverPicUrl: null, certifiedRole: null, certificationImageUrl: null };

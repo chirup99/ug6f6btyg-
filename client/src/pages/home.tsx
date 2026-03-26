@@ -21535,20 +21535,32 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               <button
                                 data-testid="flash-bar-mobile"
                                 onClick={() => {
+                                  const scrollToResults = () => {
+                                    setTimeout(() => {
+                                      document.querySelector('.dark-scrollbar-area')?.scrollTo({ top: 0, behavior: 'smooth' });
+                                      window.scrollTo({ top: 0, behavior: 'smooth' });
+                                    }, 50);
+                                  };
                                   if (item.tab === 'watchlist') {
-                                    setSearchResults("[CHART:WATCHLIST]");
+                                    // Watchlist is hidden on mobile — show Market News instead
+                                    setSearchResults("[CHART:MARKET_NEWS]");
                                     setIsSearchActive(true);
+                                    fetchNifty50News();
+                                    scrollToResults();
                                   } else if (item.tab === 'market-news') {
                                     setSearchResults("[CHART:MARKET_NEWS]");
                                     setIsSearchActive(true);
                                     fetchNifty50News();
+                                    scrollToResults();
                                   } else if (item.tab === 'trade-challenge') {
                                     setSearchResults("[CHART:TRADE]");
                                     setIsSearchActive(true);
+                                    scrollToResults();
                                   } else if (item.tab === 'social') {
                                     setIsSearchActive(true);
                                     setSearchResults("[CHART:SOCIAL_FEED]");
                                     fetchSocialFeedData();
+                                    scrollToResults();
                                   } else if (item.tab === 'journal') {
                                     const userId = localStorage.getItem('currentUserId');
                                     const userEmail = localStorage.getItem('currentUserEmail');
@@ -21557,6 +21569,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       return;
                                     }
                                     generateJournalAIReport();
+                                    scrollToResults();
                                   }
                                 }}
                                 className="w-full h-10 rounded-2xl bg-gray-800 border border-gray-700 hover:border-gray-500 hover:bg-gray-900 transition-all duration-200 flex items-center gap-2 px-3 text-left group"

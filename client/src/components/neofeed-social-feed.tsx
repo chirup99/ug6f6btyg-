@@ -3586,6 +3586,7 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
                 disableAutoScroll={true}
                 onSelectDateForHeatmap={() => {}}
                 hideNavigation={true}
+                hideLegend={true}
                 initialDate={m.toDate ? new Date(m.toDate + 'T12:00:00') : (heatmapData ? (() => { const dates = Object.keys(heatmapData).sort(); return dates.length > 0 ? new Date(dates[dates.length - 1] + 'T12:00:00') : new Date(); })() : new Date())}
               />
             </div>
@@ -4420,16 +4421,11 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Post</DialogTitle>
-            </DialogHeader>
-            <p className="text-gray-600 dark:text-gray-400">
-              Are you sure you want to delete this post? This action cannot be undone.
-            </p>
-            <div className="flex gap-2 justify-end">
+          <DialogContent className="max-w-xs p-5">
+            <div className="flex gap-2 justify-end pt-1">
               <Button
-                variant="outline"
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowDeleteDialog(false)}
                 data-testid="button-cancel-delete-range"
               >
@@ -4437,6 +4433,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
               </Button>
               <Button
                 variant="destructive"
+                size="sm"
                 onClick={() => deleteMutation.mutate()}
                 disabled={deleteMutation.isPending}
                 data-testid="button-confirm-delete-range"
@@ -4578,20 +4575,28 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           <div className="flex items-center gap-2">
             {/* Follow/Following button - Instagram/Twitter style toggle */}
             {!isOwnPost && currentUserUsername && (
-              <Button
-                variant={isFollowing ? "outline" : "default"}
-                size="sm"
-                onClick={handleFollowClick}
-                disabled={followMutation.isPending}
-                className={`rounded-full px-4 text-xs font-semibold min-w-[80px] ${
-                  isFollowing 
-                    ? 'border-gray-300 dark:border-gray-600 hover:border-red-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20' 
-                    : 'bg-blue-600 hover:bg-blue-700 text-white'
-                }`}
-                data-testid={`button-follow-${post.id}`}
-              >
-                {followMutation.isPending ? '...' : isFollowing ? 'Following' : 'Follow'}
-              </Button>
+              isFollowing ? (
+                <button
+                  onClick={handleFollowClick}
+                  disabled={followMutation.isPending}
+                  className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-base leading-none"
+                  title="Unfollow"
+                  data-testid={`button-follow-${post.id}`}
+                >
+                  {followMutation.isPending ? <span className="text-[10px]">…</span> : '···'}
+                </button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={handleFollowClick}
+                  disabled={followMutation.isPending}
+                  className="rounded-full px-4 text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white"
+                  data-testid={`button-follow-${post.id}`}
+                >
+                  {followMutation.isPending ? '...' : 'Follow'}
+                </Button>
+              )
             )}
             {/* Audio mode indicator */}
             {isAudioMode && (
@@ -4931,16 +4936,11 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Delete Post</DialogTitle>
-            </DialogHeader>
-            <p className="text-gray-600 dark:text-gray-400">
-              Are you sure you want to delete this post? This action cannot be undone.
-            </p>
-            <div className="flex gap-2 justify-end">
-              <Button 
-                variant="outline" 
+          <DialogContent className="max-w-xs p-5">
+            <div className="flex gap-2 justify-end pt-1">
+              <Button
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowDeleteDialog(false)}
                 data-testid="button-cancel-delete"
               >
@@ -4948,6 +4948,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
               </Button>
               <Button
                 variant="destructive"
+                size="sm"
                 onClick={() => deleteMutation.mutate()}
                 disabled={deleteMutation.isPending}
                 data-testid="button-confirm-delete"
@@ -5146,16 +5147,27 @@ function FinanceNewsBotProfile({ onBack, currentUserUsername }: { onBack: () => 
                 <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Posts</div>
               </div>
             </div>
-            <Button
-              onClick={handleFollowToggle}
-              disabled={isFollowLoading}
-              size="sm"
-              variant={isFollowing ? 'outline' : 'default'}
-              className={`h-7 px-4 text-xs font-semibold rounded-lg ${isFollowing ? 'border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300' : 'bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100'}`}
-              data-testid="button-bot-follow-toggle"
-            >
-              {isFollowLoading ? '...' : isFollowing ? 'Following' : 'Follow'}
-            </Button>
+            {isFollowing ? (
+              <button
+                onClick={handleFollowToggle}
+                disabled={isFollowLoading}
+                className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-base leading-none"
+                title="Unfollow"
+                data-testid="button-bot-follow-toggle"
+              >
+                {isFollowLoading ? <span className="text-[10px]">…</span> : '···'}
+              </button>
+            ) : (
+              <Button
+                onClick={handleFollowToggle}
+                disabled={isFollowLoading}
+                size="sm"
+                className="h-7 px-4 text-xs font-semibold rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100"
+                data-testid="button-bot-follow-toggle"
+              >
+                {isFollowLoading ? '...' : 'Follow'}
+              </Button>
+            )}
           </div>
         </div>
 
@@ -5679,22 +5691,28 @@ function ViewUserProfile({
                 Edit Profile
               </Button>
             ) : currentUserUsername ? (
-              <Button
-                variant={isFollowing ? "outline" : "default"}
-                size="sm"
-                className={`rounded-lg px-4 text-xs font-semibold min-w-[80px] ${
-                  isFollowing
-                    ? 'border-gray-300 dark:border-gray-600 hover:border-red-500 hover:text-red-500'
-                    : 'bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 text-white'
-                }`}
-                onClick={handleFollowToggle}
-                disabled={isFollowLoading}
-                data-testid="button-follow-profile"
-              >
-                {isFollowLoading ? (
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                ) : isFollowing ? 'Following' : 'Follow'}
-              </Button>
+              isFollowing ? (
+                <button
+                  onClick={handleFollowToggle}
+                  disabled={isFollowLoading}
+                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-base leading-none"
+                  title="Unfollow"
+                  data-testid="button-follow-profile"
+                >
+                  {isFollowLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : '···'}
+                </button>
+              ) : (
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="rounded-lg px-4 text-xs font-semibold bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 text-white"
+                  onClick={handleFollowToggle}
+                  disabled={isFollowLoading}
+                  data-testid="button-follow-profile"
+                >
+                  {isFollowLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Follow'}
+                </Button>
+              )
             ) : null}
           </div>
         </div>

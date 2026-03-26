@@ -34,6 +34,7 @@ interface DemoHeatmapProps {
   onSelectDateForHeatmap?: (symbol: string, date: string) => void;
   refreshTrigger?: number;
   hideNavigation?: boolean;
+  hideLegend?: boolean;
   initialDate?: Date;
   onFeedPost?: (mode: 'today' | 'selected' | 'range', data?: Record<string, any>) => void;
 }
@@ -90,7 +91,7 @@ function getPnLColor(pnl: number): string {
   }
 }
 
-export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, disableAutoScroll, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0, hideNavigation = false, initialDate, onFeedPost }: DemoHeatmapProps) {
+export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, disableAutoScroll, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0, hideNavigation = false, hideLegend = false, initialDate, onFeedPost }: DemoHeatmapProps) {
   const { currentUser } = useCurrentUser();
   // Use initialDate if provided, otherwise default to December of last year
   const [currentDate, setCurrentDate] = useState(initialDate || new Date(new Date().getFullYear() - 1, 11, 1));
@@ -1401,6 +1402,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
       </div>
 
       {/* P&L Legend */}
+      {!hideLegend && (
       <div className="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
         <div className="flex items-center gap-2">
           <span className="text-xs text-gray-600 dark:text-gray-400">Loss</span>
@@ -1419,6 +1421,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
           <span className="text-xs text-gray-600 dark:text-gray-400">Profit</span>
         </div>
       </div>
+      )}
 
       {/* Year Navigation / Edit Mode / Delete Mode Control */}
       {!hideNavigation && <div className="relative pt-2 border-t border-gray-200 dark:border-gray-700">

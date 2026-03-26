@@ -665,15 +665,15 @@ function SwipeableCardStack({
     };
   }, [globalStopAudio]);
 
-  // On mount: preload top card immediately, then queue the next card
+  // On mount: kick off preload immediately — no delay so cache is warm before user taps
   React.useEffect(() => {
-    if (cards.length > 0) {
-      // Small delay so the page renders first, then preload silently
-      const t1 = setTimeout(() => preloadForSector(cards[0].sector), 1000);
-      const t2 = setTimeout(() => { if (cards.length > 1) preloadForSector(cards[1].sector); }, 5000);
-      const t3 = setTimeout(() => { if (cards.length > 2) preloadForSector(cards[2].sector); }, 9000);
-      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
-    }
+    if (cards.length === 0) return;
+    // Card 0: start immediately so it's ready by the time user reads the card
+    preloadForSector(cards[0].sector);
+    // Cards 1 & 2: stagger so they don't compete with card 0's network calls
+    const t2 = setTimeout(() => { if (cards.length > 1) preloadForSector(cards[1].sector); }, 5000);
+    const t3 = setTimeout(() => { if (cards.length > 2) preloadForSector(cards[2].sector); }, 10000);
+    return () => { clearTimeout(t2); clearTimeout(t3); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

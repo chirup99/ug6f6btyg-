@@ -20029,6 +20029,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Server-side TTS audio cache — keyed by lang:speaker:text to avoid regenerating same audio
+  // Capped at 100 entries; oldest entry evicted when full (simple LRU-lite)
+  const ttsServerCache = new Map<string, string>();
+  const TTS_CACHE_MAX = 100;
+
   // Natural voice TTS Endpoint - High-quality human-like voices from HuggingFace
   // OpenAI-Edge-TTS compatible endpoint with full voice quality support
   app.post('/api/tts/generate', async (req, res) => {
@@ -20041,6 +20046,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const targetLanguage = language || 'en';
+
+      // ── Server-side cache check ───────────────────────────────────────────
+      const cacheKey = `${targetLanguage}:${speaker || ''}:${text}`;
+      if (ttsServerCache.has(cacheKey)) {
+        console.log(`🎯 [TTS CACHE HIT] Serving cached audio (${targetLanguage})`);
+        res.json({ audioBase64: ttsServerCache.get(cacheKey) });
+        return;
+      }
+
       // Skip translation if: English, already in native script (skipTranslation flag),
       // or text contains non-Latin characters (already translated)
       const hasNativeScript = /[^\u0000-\u007F]/.test(text);
@@ -20058,6 +20072,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (result.error) {
         res.status(500).json({ error: result.error });
         return;
+      }
+
+      // ── Store in server cache ─────────────────────────────────────────────
+      if (result.audioBase64) {
+        if (ttsServerCache.size >= TTS_CACHE_MAX) {
+          // Evict oldest entry
+          const firstKey = ttsServerCache.keys().next().value;
+          if (firstKey) ttsServerCache.delete(firstKey);
+        }
+        ttsServerCache.set(cacheKey, result.audioBase64);
+        console.log(`💾 [TTS CACHE] Stored entry (${ttsServerCache.size}/${TTS_CACHE_MAX})`);
       }
 
       res.json({ audioBase64: result.audioBase64 });

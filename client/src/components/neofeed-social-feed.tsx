@@ -5529,30 +5529,43 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   
   // Handle scroll to hide/show app bar and bottom navigation
   useEffect(() => {
+    const HIDE_THRESHOLD = 60;
+    const SHOW_THRESHOLD = 10;
+
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
-      
+
       // Stop all audio playback when scrolling
       window.speechSynthesis.cancel();
-      
+
       // Pause YouTube video when scrolling
       if (typeof (window as any).pauseBannerYouTube === 'function') {
         (window as any).pauseBannerYouTube();
       }
-      
-      // App Bar + Bottom Nav - show on scroll up, hide on scroll down
-      if (currentScrollY < lastScrollYRef.current || currentScrollY < 10) {
+
+      setIsAtTop(currentScrollY < 50);
+
+      const delta = currentScrollY - lastScrollYRef.current;
+
+      if (currentScrollY < 50) {
+        // Always show near top of page
         setShowAppBar(true);
         setShowBottomNav(true);
-      } else if (currentScrollY > lastScrollYRef.current) {
+        lastScrollYRef.current = currentScrollY;
+      } else if (delta > HIDE_THRESHOLD) {
+        // Scrolled down enough — hide
         setShowAppBar(false);
         setShowBottomNav(false);
+        lastScrollYRef.current = currentScrollY;
+      } else if (delta < -SHOW_THRESHOLD) {
+        // Scrolled up enough — show
+        setShowAppBar(true);
+        setShowBottomNav(true);
+        lastScrollYRef.current = currentScrollY;
       }
-      
-      lastScrollYRef.current = currentScrollY;
-      setIsAtTop(currentScrollY < 50);
+      // Small movements are ignored — prevents layout-shift flicker loop
     };
-    
+
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       window.removeEventListener('scroll', handleScroll);

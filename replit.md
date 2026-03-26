@@ -5,7 +5,8 @@
 - Removed `@esbuild-kit/core-utils` and `@esbuild-kit/esm-loader` npm aliases from devDependencies
 - Database schema pushed to PostgreSQL via `drizzle-kit push`
 - App runs on port 5000 (development), Vite HMR configured for Replit proxy (`wss`, port 443)
-- Deployment configured: `npm run build` → `node ./dist/index.cjs`
+- Deployment configured: `npm run build` → `node ./dist/index.js`
+- Migration to Replit environment completed successfully — app runs on port 5000
 
 # Overview
 

@@ -99,35 +99,51 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     return allCards;
   });
 
-  // Auto-play the card queued by swipeCard once the cards state has updated
+  // Auto-play the card queued by swipeCard once the cards state has updated (uses TTS API)
   useEffect(() => {
     const cardToPlay = pendingAutoPlayRef.current;
     if (!cardToPlay || cardToPlay.type !== 'post') return;
     pendingAutoPlayRef.current = null;
 
     const textToSpeak = cleanTextForSpeech(cardToPlay.content);
-    const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'ravi';
-    const voiceProfileMap: Record<string, string[]> = {
-      ravi: ["Google UK English Male", "Microsoft Ravi Online (Natural) - English (India)", "en-IN-Wavenet-B", "en-IN-Standard-B", "ravi", "moira"],
-      vaib: ["Google US English", "Microsoft Vaibhav Online (Natural) - English (India)", "en-IN-Wavenet-A", "en-IN-Standard-A", "samantha", "aria"],
-      kids: ["Google UK English Female", "Microsoft Heera Online (Natural) - English (India)", "en-IN-Wavenet-D", "en-IN-Standard-D", "ava", "samantha"],
-    };
-    const priorityKeywords = voiceProfileMap[savedVoiceProfileId as keyof typeof voiceProfileMap] || voiceProfileMap.ravi;
-    const voices = window.speechSynthesis.getVoices();
-    const selectedVoice = voices.find(v =>
-      priorityKeywords.some(keyword => v.name.toLowerCase().includes(keyword.toLowerCase()))
-    );
+    const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
+    const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
 
-    const utterance = new SpeechSynthesisUtterance(textToSpeak);
-    if (selectedVoice) utterance.voice = selectedVoice;
-    utterance.rate = 1.0;
-    utterance.pitch = 1.0;
-    utterance.volume = 1.0;
-    utterance.onend = () => setIsPlaying(false);
-    utterance.onerror = () => setIsPlaying(false);
+    let cancelled = false;
+    (async () => {
+      try {
+        const response = await fetch('/api/tts/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            text: textToSpeak,
+            language: voiceLanguage,
+            speaker: savedVoiceProfileId,
+          }),
+        });
+        if (!response.ok || cancelled) return;
+        const data = await response.json();
+        if (cancelled || !data.audioBase64) return;
 
-    window.speechSynthesis.speak(utterance);
-    setIsPlaying(true);
+        if (currentAudioRef.current) currentAudioRef.current.pause();
+        const base64String = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+        const binary = atob(base64String);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: 'audio/mpeg' });
+        const audioUrl = URL.createObjectURL(blob);
+        const audio = new Audio(audioUrl);
+        currentAudioRef.current = audio;
+        audio.onended = () => { setIsPlaying(false); URL.revokeObjectURL(audioUrl); };
+        audio.onerror = () => { setIsPlaying(false); URL.revokeObjectURL(audioUrl); };
+        audio.play();
+        setIsPlaying(true);
+      } catch {
+        if (!cancelled) setIsPlaying(false);
+      }
+    })();
+
+    return () => { cancelled = true; };
   }, [cards]);
 
   const formatTimeAgo = (date: Date) => {
@@ -305,7 +321,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
         
         try {
           // Get voice settings from localStorage
-          const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'ravi';
+          const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
           const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
           
           // Get language-aware voice name

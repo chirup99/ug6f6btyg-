@@ -188,7 +188,6 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
 
   const resetForm = () => {
     setContent('');
-    setSelectedStock('');
     setStockMentions([]);
     setSentiment('neutral');
     setUploadedImages([]);

@@ -29,6 +29,12 @@ import {
   DialogTitle,
   DialogTrigger,
 } from './ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
@@ -1090,9 +1096,36 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
                 />
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
-                <Button variant="ghost" size="sm" className="text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700">
-                  <Bell className="h-5 w-5" />
-                </Button>
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative h-10 w-10 rounded-full text-gray-700 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700"
+                      data-testid="button-notifications"
+                    >
+                      <Bell className="h-5 w-5" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    className="w-80 bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700"
+                    align="end"
+                  >
+                    <DropdownMenuLabel className="font-normal">
+                      <div className="flex items-center justify-between py-1 mb-1">
+                        <span className="text-sm font-semibold text-gray-900 dark:text-white">Notifications</span>
+                        <Bell className="h-4 w-4 text-gray-400" />
+                      </div>
+                    </DropdownMenuLabel>
+                    <div className="flex flex-col items-center justify-center py-10 px-4 text-center">
+                      <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center mb-3">
+                        <Bell className="h-5 w-5 text-gray-400 dark:text-gray-500" />
+                      </div>
+                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300">No notifications yet</p>
+                      <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">You're all caught up!</p>
+                    </div>
+                  </DropdownMenuContent>
+                </DropdownMenu>
                 <UserProfileDropdown />
               </div>
             </div>

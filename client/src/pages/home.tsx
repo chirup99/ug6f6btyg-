@@ -4690,7 +4690,7 @@ ${fundamentalInsights}**📈 Essential Analysis Framework:**
         isDemo = true;
         useData = (window as any).__demoJournalData || {};
         if (Object.keys(useData).length === 0) {
-          setJournalReportMetrics({ noData: true, isDemo: false });
+          setJournalReportMetrics({ noData: true, isDemo: true });
           setSearchResults("[CHART:JOURNAL_REPORT]");
           setIsSearchLoading(false);
           return;

@@ -194,10 +194,41 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     return `${diffInDays}d`;
   };
 
-  const swipeCard = (direction: 'left' | 'right') => {
-    // Stop any currently playing audio when swiping
+  // Unified stop: halts both TTS API audio element and browser speechSynthesis
+  const stopAudio = useCallback(() => {
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
     window.speechSynthesis.cancel();
     setIsPlaying(false);
+  }, []);
+
+  // Stop audio when the browser tab becomes hidden
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopAudio();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [stopAudio]);
+
+  // Stop audio when component unmounts (tab closed / social feed closed)
+  useEffect(() => {
+    return () => {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+      window.speechSynthesis.cancel();
+    };
+  }, []);
+
+  const swipeCard = (direction: 'left' | 'right') => {
+    // Stop any currently playing audio (TTS API + speechSynthesis) when swiping
+    stopAudio();
     setShouldAutoPlay(true); // Enable auto-play for next card
     
     setCards((prevCards) => {
@@ -314,11 +345,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     setShouldAutoPlay(false); // Disable auto-play for manual interactions
     
     if (isPlaying) {
-      if (currentAudioRef.current) {
-        currentAudioRef.current.pause();
-        currentAudioRef.current = null;
-      }
-      setIsPlaying(false);
+      stopAudio();
     } else {
       // Only read content cards (not the main announcement card)
       const currentCard = cards[0];

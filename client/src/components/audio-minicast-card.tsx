@@ -72,9 +72,9 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     setLikeCount(likes);
   }, [likes]);
 
-  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
-  const previousCardIdRef = useRef<string | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  // Holds the card that should auto-play after the next cards state update
+  const pendingAutoPlayRef = useRef<AudioCard | null>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -99,91 +99,36 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     return allCards;
   });
 
-  // Auto-play when swiping to a new card (skip first card)
+  // Auto-play the card queued by swipeCard once the cards state has updated
   useEffect(() => {
-    const currentCard = cards[0];
-    const currentIndex = cards.findIndex(c => c.id === currentCard?.id);
-    
-    if (currentCard && currentCard.id !== previousCardIdRef.current) {
-      previousCardIdRef.current = currentCard.id;
-      
-      // Only auto-play from 2nd card onwards (skip first card at index 0)
-      if (currentCard.type === 'post' && currentIndex > 0) {
-        // Stop any current playback
-        window.speechSynthesis.cancel();
-        
-        // Start playing the new card
-        const textToSpeak = cleanTextForSpeech(currentCard.content);
-        console.log('🎵 Auto-playing card (skipping first):', {
-          cardId: currentCard.id,
-          cardIndex: currentIndex,
-          textLength: textToSpeak.length,
-          textPreview: textToSpeak.substring(0, 100) + '...'
-        });
-        
-        const utterance = new SpeechSynthesisUtterance(textToSpeak);
-        const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'ravi';
-        const voiceProfileMap: Record<string, string[]> = {
-          ravi: ["Google UK English Male", "Microsoft Ravi Online (Natural) - English (India)", "en-IN-Wavenet-B", "en-IN-Standard-B", "ravi", "moira"],
-          vaib: ["Google US English", "Microsoft Vaibhav Online (Natural) - English (India)", "en-IN-Wavenet-A", "en-IN-Standard-A", "samantha", "aria"],
-          kids: ["Google UK English Female", "Microsoft Heera Online (Natural) - English (India)", "en-IN-Wavenet-D", "en-IN-Standard-D", "ava", "samantha"],
-        };
-        const priorityKeywords = voiceProfileMap[savedVoiceProfileId as keyof typeof voiceProfileMap] || voiceProfileMap.ravi;
-        const voices = window.speechSynthesis.getVoices();
-        const selectedVoice = voices.find(v => 
-          priorityKeywords.some(keyword => v.name.toLowerCase().includes(keyword.toLowerCase()))
-        );
-        if (selectedVoice) utterance.voice = selectedVoice;
-        utterance.rate = 1.0;
-        utterance.pitch = 1.0;
-        utterance.volume = 1.0;
-        
-        utterance.onend = () => {
-          setIsPlaying(false);
-        };
-        
-        utterance.onerror = () => {
-          setIsPlaying(false);
-        };
-        
-        window.speechSynthesis.speak(utterance);
-        setIsPlaying(true);
-      }
-    }
-  }, [cards]);
+    const cardToPlay = pendingAutoPlayRef.current;
+    if (!cardToPlay || cardToPlay.type !== 'post') return;
+    pendingAutoPlayRef.current = null;
 
-  // Auto-play current (top) card when it changes (Reels-like behavior)
-  useEffect(() => {
-    if (shouldAutoPlay && cards.length > 0 && cards[0].id !== previousCardIdRef.current) {
-      previousCardIdRef.current = cards[0].id;
-      // Small delay to ensure card is rendered
-      const timer = setTimeout(() => {
-        const currentCard = cards[0];
-        if (currentCard && currentCard.type === 'post') {
-          const textToSpeak = cleanTextForSpeech(currentCard.content);
-          
-          const utterance = new SpeechSynthesisUtterance(textToSpeak);
-          utterance.rate = 1.0;
-          utterance.pitch = 1.0;
-          utterance.volume = 1.0;
-          
-          utterance.onend = () => {
-            setIsPlaying(false);
-          };
-          
-          utterance.onerror = () => {
-            setIsPlaying(false);
-          };
-          
-          window.speechSynthesis.speak(utterance);
-          setIsPlaying(true);
-        }
-      }, 100);
-      return () => clearTimeout(timer);
-    } else if (cards.length > 0) {
-      previousCardIdRef.current = cards[0].id;
-    }
-  }, [cards, shouldAutoPlay]);
+    const textToSpeak = cleanTextForSpeech(cardToPlay.content);
+    const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'ravi';
+    const voiceProfileMap: Record<string, string[]> = {
+      ravi: ["Google UK English Male", "Microsoft Ravi Online (Natural) - English (India)", "en-IN-Wavenet-B", "en-IN-Standard-B", "ravi", "moira"],
+      vaib: ["Google US English", "Microsoft Vaibhav Online (Natural) - English (India)", "en-IN-Wavenet-A", "en-IN-Standard-A", "samantha", "aria"],
+      kids: ["Google UK English Female", "Microsoft Heera Online (Natural) - English (India)", "en-IN-Wavenet-D", "en-IN-Standard-D", "ava", "samantha"],
+    };
+    const priorityKeywords = voiceProfileMap[savedVoiceProfileId as keyof typeof voiceProfileMap] || voiceProfileMap.ravi;
+    const voices = window.speechSynthesis.getVoices();
+    const selectedVoice = voices.find(v =>
+      priorityKeywords.some(keyword => v.name.toLowerCase().includes(keyword.toLowerCase()))
+    );
+
+    const utterance = new SpeechSynthesisUtterance(textToSpeak);
+    if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+    utterance.onend = () => setIsPlaying(false);
+    utterance.onerror = () => setIsPlaying(false);
+
+    window.speechSynthesis.speak(utterance);
+    setIsPlaying(true);
+  }, [cards]);
 
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
@@ -229,8 +174,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   const swipeCard = (direction: 'left' | 'right') => {
     // Stop any currently playing audio (TTS API + speechSynthesis) when swiping
     stopAudio();
-    setShouldAutoPlay(true); // Enable auto-play for next card
-    
+
     setCards((prevCards) => {
       const newCards = [...prevCards];
       if (direction === 'right') {
@@ -240,6 +184,8 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
         const lastCard = newCards.pop();
         if (lastCard) newCards.unshift(lastCard);
       }
+      // Queue the new top card for auto-play once state updates
+      pendingAutoPlayRef.current = newCards[0] || null;
       return newCards;
     });
   };
@@ -342,8 +288,6 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   };
 
   const togglePlay = async () => {
-    setShouldAutoPlay(false); // Disable auto-play for manual interactions
-    
     if (isPlaying) {
       stopAudio();
     } else {

@@ -365,12 +365,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
                 <Switch
                   checked={viewMode === 'audio'}
                   onCheckedChange={(checked) => {
-                    if (!checked && viewMode === 'audio' && onMinimize) {
-                      setIsAudioMode(false);
-                      onMinimize();
-                    } else {
-                      setViewMode(checked ? 'audio' : 'post');
-                    }
+                    setViewMode(checked ? 'audio' : 'post');
                   }}
                   className="data-[state=checked]:bg-purple-600 data-[state=unchecked]:bg-gray-300 dark:data-[state=unchecked]:bg-gray-600"
                   data-testid="switch-toggle-audio"
@@ -382,30 +377,34 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => {
-                  if (viewMode === 'audio' && onMinimize) {
-                    setIsAudioMode(false);
-                    onMinimize();
-                  } else {
-                    setViewMode(viewMode === 'audio' ? 'post' : 'audio');
-                  }
-                }}
+                onClick={() => setViewMode(viewMode === 'audio' ? 'post' : 'audio')}
                 className={`md:hidden p-2 h-8 w-8 rounded-full ${
-                  viewMode === 'audio' 
-                    ? 'bg-purple-100 dark:bg-purple-900/30' 
+                  viewMode === 'audio'
+                    ? 'bg-purple-100 dark:bg-purple-900/30'
                     : 'hover:bg-gray-200 dark:hover:bg-gray-600'
                 }`}
                 data-testid="button-toggle-audio"
               >
-                {viewMode === 'audio' ? (
-                  <X className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                ) : (
-                  <Radio className={`h-4 w-4 ${
-                    (viewMode as string) === 'audio'
-                      ? 'text-purple-600 dark:text-purple-400'
-                      : 'text-gray-600 dark:text-gray-400'
-                  }`} />
-                )}
+                <Radio className={`h-4 w-4 ${
+                  viewMode === 'audio'
+                    ? 'text-purple-600 dark:text-purple-400'
+                    : 'text-gray-600 dark:text-gray-400'
+                }`} />
+              </Button>
+            )}
+            {/* X Close button — shown when dialog can be closed (mobile) */}
+            {onMinimize && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsAudioMode(false);
+                  onMinimize();
+                }}
+                className="p-2 h-8 w-8 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700"
+                data-testid="button-close-dialog"
+              >
+                <X className="h-4 w-4 text-gray-600 dark:text-gray-400" />
               </Button>
             )}
           </div>
@@ -496,16 +495,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
             )}
 
             {/* Action Buttons */}
-            <div className="flex justify-between pt-4">
-              <Button 
-                type="button" 
-                variant="outline" 
-                onClick={resetForm}
-                className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600"
-                data-testid="button-clear-audio"
-              >
-                Clear
-              </Button>
+            <div className="flex justify-end pt-4">
               <Button 
                 type="submit" 
                 disabled={(!content.trim() && selectedTextSnippets.length === 0) || createPostMutation.isPending}
@@ -644,16 +634,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
           </div>
 
           {/* Action Buttons */}
-          <div className="flex justify-between pt-4">
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={resetForm}
-              className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 border-gray-300 dark:border-gray-600"
-              data-testid="button-clear-post"
-            >
-              Clear
-            </Button>
+          <div className="flex justify-end pt-4">
             <Button 
               type="submit" 
               disabled={!content.trim() || createPostMutation.isPending}

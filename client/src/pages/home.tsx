@@ -2380,6 +2380,8 @@ export default function Home() {
   const [showJournalAI, setShowJournalAI] = useState(false);
   const [journalAIData, setJournalAIData] = useState<any>(null);
   const [statisticsTab, setStatisticsTab] = useState("overview");
+  const [journalReportActiveTab, setJournalReportActiveTab] = useState<'personal1' | 'personal2'>('personal1');
+  const [journalReportMetrics, setJournalReportMetrics] = useState<any>(null);
   // Calendar state - declared early to avoid temporal dead zone issues
   const [selectedDate, setSelectedDate] = useState(null as Date | null);
   // Shared timeframe state for chart and crossings display
@@ -4565,186 +4567,141 @@ ${fundamentalInsights}**📈 Essential Analysis Framework:**
   };
 
   // Generate Trading Journal AI Performance Report
-  const generateJournalAIReport = async () => {
+  const computeJournalMetrics = (journalData: Record<string, any>) => {
+    let totalTrades = 0, winningTrades = 0, losingTrades = 0, breakEvenTrades = 0;
+    let totalProfit = 0, totalLoss = 0, netPnL = 0, fomoTrades = 0;
+    let psychologyTags: Record<string, number> = {};
+    let dailyPnL: { date: string; pnl: number; trades: number }[] = [];
+    let tradingDays = 0, profitDays = 0, lossDays = 0;
+    let maxConsecutiveWins = 0, maxConsecutiveLosses = 0;
+    let currentWinStreak = 0, currentLossStreak = 0;
+    let instrumentCounts: Record<string, number> = {};
+    let weekdayPnL: Record<string, number> = {};
+
+    const parsePnL = (pnlVal: any): number => {
+      if (typeof pnlVal === 'number') return pnlVal;
+      if (typeof pnlVal === 'string') {
+        const s = pnlVal.replace(/[₹,+\s]/g, '');
+        return parseFloat(s) || 0;
+      }
+      return 0;
+    };
+
+    const sortedDates = Object.keys(journalData).sort();
+    sortedDates.forEach((date) => {
+      const dateData = journalData[date];
+      if (!dateData || typeof dateData !== 'object') return;
+      const trades = dateData.tradeHistory || dateData.trades || [];
+      const tags = dateData.tradingTags || dateData.selectedTags || [];
+      if (trades.length === 0 && tags.length === 0) return;
+      tradingDays++;
+
+      let dayPnL = 0;
+      trades.forEach((trade: any) => {
+        totalTrades++;
+        const pnl = parsePnL(trade.pnl);
+        dayPnL += pnl;
+        if (pnl > 0) { winningTrades++; totalProfit += pnl; }
+        else if (pnl < 0) { losingTrades++; totalLoss += Math.abs(pnl); }
+        else { breakEvenTrades++; }
+        const symbol = trade.symbol || trade.stock || '';
+        if (symbol) instrumentCounts[symbol] = (instrumentCounts[symbol] || 0) + 1;
+      });
+
+      tags.forEach((tag: string) => {
+        psychologyTags[tag] = (psychologyTags[tag] || 0) + 1;
+        if (tag.toLowerCase().includes('fomo')) fomoTrades++;
+      });
+
+      const dayOfWeek = new Date(date).toLocaleDateString('en-US', { weekday: 'short' });
+      weekdayPnL[dayOfWeek] = (weekdayPnL[dayOfWeek] || 0) + dayPnL;
+
+      if (dayPnL !== 0 || trades.length > 0) {
+        dailyPnL.push({ date, pnl: dayPnL, trades: trades.length });
+        netPnL += dayPnL;
+        if (dayPnL > 0) { profitDays++; currentWinStreak++; currentLossStreak = 0; maxConsecutiveWins = Math.max(maxConsecutiveWins, currentWinStreak); }
+        else if (dayPnL < 0) { lossDays++; currentLossStreak++; currentWinStreak = 0; maxConsecutiveLosses = Math.max(maxConsecutiveLosses, currentLossStreak); }
+        else { currentWinStreak = 0; currentLossStreak = 0; }
+      }
+    });
+
+    const winRate = totalTrades > 0 ? Math.round((winningTrades / totalTrades) * 100) : 0;
+    const avgWin = winningTrades > 0 ? totalProfit / winningTrades : 0;
+    const avgLoss = losingTrades > 0 ? totalLoss / losingTrades : 0;
+    const rrRatio = avgLoss > 0 ? avgWin / avgLoss : 0;
+    const profitFactor = totalLoss > 0 ? totalProfit / totalLoss : totalProfit > 0 ? 999 : 0;
+    const expectancy = totalTrades > 0 ? netPnL / totalTrades : 0;
+    const recentTrend = dailyPnL.slice(-14);
+    const bestDay = dailyPnL.reduce((a, b) => a.pnl > b.pnl ? a : b, { date: '', pnl: 0, trades: 0 });
+    const worstDay = dailyPnL.reduce((a, b) => a.pnl < b.pnl ? a : b, { date: '', pnl: 0, trades: 0 });
+    const topInstruments = Object.entries(instrumentCounts).sort(([, a], [, b]) => b - a).slice(0, 5);
+    const psychList = Object.entries(psychologyTags).sort(([, a], [, b]) => b - a);
+    const bestWeekday = Object.entries(weekdayPnL).sort(([, a], [, b]) => b - a)[0];
+    const worstWeekday = Object.entries(weekdayPnL).sort(([, a], [, b]) => a - b)[0];
+    const avgTradesPerDay = tradingDays > 0 ? totalTrades / tradingDays : 0;
+    const chartData = recentTrend.map((d, i) => ({ day: `D${i + 1}`, value: d.pnl, date: d.date }));
+    (window as any).performanceTrendChartData = chartData;
+
+    return {
+      totalTrades, winningTrades, losingTrades, breakEvenTrades, totalProfit, totalLoss, netPnL,
+      winRate, avgWin, avgLoss, rrRatio, profitFactor, expectancy, fomoTrades,
+      psychologyTags, psychList, dailyPnL, recentTrend, chartData, tradingDays, profitDays, lossDays,
+      maxConsecutiveWins, maxConsecutiveLosses, instrumentCounts, topInstruments, weekdayPnL,
+      bestDay, worstDay, bestWeekday, worstWeekday, avgTradesPerDay,
+    };
+  };
+
+  const generateJournalAIReport = async (tabOverride?: 'personal1' | 'personal2') => {
     setIsSearchLoading(true);
     setIsSearchActive(true);
     setSearchQuery("Trading Journal Performance Analysis");
 
     try {
-      // Fetch all journal dates and data
-      const allDatesResponse = await fetch(getFullApiUrl("/api/journal/all-dates"));
-      const allJournalData = allDatesResponse.ok
-        ? await allDatesResponse.json()
-        : {};
+      const p1Data = (window as any).__p1JournalData || {};
+      const p2Data = (window as any).__p2JournalData || {};
+      const hasP1 = Object.keys(p1Data).length > 0;
+      const hasP2 = Object.keys(p2Data).length > 0;
 
-      // AWS is the only data source - no localStorage fallback
-      const journalData = allJournalData;
+      // Fetch from API if local state empty
+      let fetchedData: Record<string, any> = {};
+      try {
+        const res = await fetch(getFullApiUrl("/api/journal/all-dates"));
+        if (res.ok) fetchedData = await res.json();
+      } catch {}
 
-      if (Object.keys(journalData).length === 0) {
-        setSearchResults(
-          "## 📝 Trading Journal Analysis\n\n❌ **No journal data found**\n\nPlease add some trading entries in the Journal tab to see your performance analysis.",
-        );
-        setIsSearchLoading(false);
-        return;
-      }
+      const effectiveP1 = hasP1 ? p1Data : fetchedData;
+      const effectiveHasP1 = Object.keys(effectiveP1).length > 0;
+      const effectiveHasP2 = hasP2;
 
-      // Analyze journal data for performance metrics
-      let totalTrades = 0;
-      let winningTrades = 0;
-      let losingTrades = 0;
-      let totalProfit = 0;
-      let totalLoss = 0;
-      let netPnL = 0;
-      let fomoTrades = 0;
-      let psychologyTags: { [key: string]: number } = {};
-      let dailyPnL: { date: string; pnl: number }[] = [];
+      // Decide which data to use
+      let useData: Record<string, any>;
+      let isDemo = false;
+      let activeTab: 'personal1' | 'personal2' = tabOverride || journalReportActiveTab;
 
-      // Process each date's journal data
-      Object.entries(journalData).forEach(([date, dateData]: [string, any]) => {
-        if (dateData && typeof dateData === "object") {
-          // Extract trades from the date data - use correct structure
-          const trades = dateData.tradeHistory || dateData.trades || [];
-          const notes = dateData.tradingNotes || dateData.notes || "";
-          const tags = dateData.tradingTags || dateData.selectedTags || [];
-
-          let dayPnL = 0;
-
-          trades.forEach((trade: any) => {
-            totalTrades++;
-
-            // Parse P&L from string format like "₹506.80", "₹-826.00"
-            let pnl = 0;
-            if (trade.pnl && typeof trade.pnl === "string") {
-              const pnlStr = trade.pnl.replace(/[₹,+\s]/g, ""); // Remove ₹, commas, + and spaces
-              pnl = parseFloat(pnlStr) || 0;
-            } else if (typeof trade.pnl === "number") {
-              pnl = trade.pnl;
-            }
-
-            dayPnL += pnl;
-
-            if (pnl > 0) {
-              winningTrades++;
-              totalProfit += pnl;
-            } else if (pnl < 0) {
-              losingTrades++;
-              totalLoss += Math.abs(pnl);
-            }
-          });
-
-          // Count psychology tags
-          tags.forEach((tag: string) => {
-            psychologyTags[tag] = (psychologyTags[tag] || 0) + 1;
-            if (tag.toLowerCase().includes("fomo")) {
-              fomoTrades++;
-            }
-          });
-
-          // Track daily P&L for trend analysis
-          if (dayPnL !== 0) {
-            dailyPnL.push({ date, pnl: dayPnL });
-          }
-
-          netPnL += dayPnL;
+      if (!effectiveHasP1 && !effectiveHasP2) {
+        // No user data — fall back to demo
+        isDemo = true;
+        useData = (window as any).__demoJournalData || {};
+        if (Object.keys(useData).length === 0) {
+          setJournalReportMetrics({ noData: true, isDemo: false });
+          setSearchResults("[CHART:JOURNAL_REPORT]");
+          setIsSearchLoading(false);
+          return;
         }
-      });
-
-      const winRate =
-        totalTrades > 0 ? Math.round((winningTrades / totalTrades) * 100) : 0;
-      const avgWin =
-        winningTrades > 0 ? Math.round(totalProfit / winningTrades) : 0;
-      const avgLoss =
-        losingTrades > 0 ? Math.round(totalLoss / losingTrades) : 0;
-
-      // Get top psychology patterns
-      const topPsychologyPatterns = Object.entries(psychologyTags)
-        .sort(([, a], [, b]) => b - a)
-        .slice(0, 3)
-        .map(([tag, count]) => `${tag} (${count}x)`)
-        .join(", ");
-
-      // Generate mini performance trend (last 10 trading days)
-      const recentTrend = dailyPnL.slice(-10);
-      const trendData = recentTrend.map((day) => day.pnl).join(",");
-
-      // Create performance trend visualization (simple ASCII-style)
-      const maxPnL = Math.max(...recentTrend.map((d) => d.pnl));
-      const minPnL = Math.min(...recentTrend.map((d) => d.pnl));
-      const range = maxPnL - minPnL;
-
-      let trendLine = "";
-      if (range > 0) {
-        recentTrend.forEach((day) => {
-          const normalized = Math.round(((day.pnl - minPnL) / range) * 10);
-          trendLine += normalized >= 5 ? "📈" : normalized >= 3 ? "📊" : "📉";
-        });
+      } else {
+        useData = (activeTab === 'personal2' && effectiveHasP2) ? p2Data : effectiveP1;
       }
 
-      // Create chart data for Performance Trend
-      const chartData = recentTrend.map((day, index) => ({
-        day: `Day ${index + 1}`,
-        value: day.pnl,
-        date: day.date,
-      }));
+      const metrics = computeJournalMetrics(useData);
+      const hasBothPersonal = effectiveHasP1 && effectiveHasP2;
 
-      const performanceReport = `## 📝 Trading Journal AI Performance Report
-
-### 📊 **Overall Performance Metrics**
-**🎯 Total Trades:** ${totalTrades}
-**✅ Winning Trades:** ${winningTrades} (${winRate}% Win Rate)
-**❌ Losing Trades:** ${losingTrades}
-**💰 Net P&L:** ₹${netPnL.toLocaleString("en-IN")} ${netPnL >= 0 ? "🟢" : "🔴"}
-
-### 💡 **Detailed Analytics**
-**📈 Total Profit:** ₹${totalProfit.toLocaleString("en-IN")}
-**📉 Total Loss:** ₹${totalLoss.toLocaleString("en-IN")}
-**⚡ Average Win:** ₹${avgWin.toLocaleString("en-IN")}
-**⚠️ Average Loss:** ₹${avgLoss.toLocaleString("en-IN")}
-
-### 🧠 **Psychology Analysis**
-**💹 FOMO Trades:** ${fomoTrades} trades
-**🎭 Top Patterns:** ${topPsychologyPatterns || "No patterns identified"}
-
-### 📈 **Performance Trend (Recent)**
-[CHART:PERFORMANCE_TREND]
-*${recentTrend.length} trading sessions tracked*
-
-### 🎯 **AI Insights & Recommendations**
-${
-  winRate >= 60
-    ? "🟢 **Strong Performance:** Your win rate shows good trading discipline!"
-    : winRate >= 40
-      ? "🟡 **Moderate Performance:** Focus on improving entry/exit timing."
-      : "🔴 **Needs Improvement:** Consider reviewing your trading strategy and risk management."
-}
-
-${
-  fomoTrades > totalTrades * 0.2
-    ? "⚠️ **FOMO Alert:** High emotional trading detected. Consider implementing cooling-off periods."
-    : "✅ **Good Discipline:** Low FOMO trading indicates strong emotional control."
-}
-
-**📚 Next Steps:**
-• Review losing trades for common patterns
-• Maintain detailed trade notes for better analysis
-• ${
-        netPnL < 0
-          ? "Focus on risk management and position sizing"
-          : "Continue current strategy with slight optimizations"
-      }
-
----
-*📱 Use Journal tab for detailed trade entries and analysis*`;
-
-      // Store chart data for rendering
-      (window as any).performanceTrendChartData = chartData;
-
-      setSearchResults(performanceReport);
+      setJournalReportActiveTab(activeTab);
+      setJournalReportMetrics({ ...metrics, isDemo, hasBothPersonal, hasP1: effectiveHasP1, hasP2: effectiveHasP2, activeTab });
+      setSearchResults("[CHART:JOURNAL_REPORT]");
     } catch (error) {
       console.error("Error generating journal report:", error);
-      setSearchResults(
-        "## 📝 Trading Journal Analysis\n\n❌ **Error loading journal data**\n\nPlease try again or check your internet connection.",
-      );
+      setJournalReportMetrics({ error: true });
+      setSearchResults("[CHART:JOURNAL_REPORT]");
     } finally {
       setIsSearchLoading(false);
     }
@@ -8547,6 +8504,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     console.log(`🔄 tradingDataByDate recomputed [Mode: ${modeLabel}, Dates: ${Object.keys(activeData).length}]`);
     return activeData;
   }, [heatmapMode, demoTradingDataByDate, personalTradingDataByDate, personal2TradingDataByDate, personalHeatmapRevision, personal2HeatmapRevision]);
+
+  // Sync heatmap data to window globals for journal report generation
+  React.useEffect(() => {
+    (window as any).__p1JournalData = personalTradingDataByDate;
+    (window as any).__p2JournalData = personal2TradingDataByDate;
+    (window as any).__demoJournalData = demoTradingDataByDate;
+  }, [personalTradingDataByDate, personal2TradingDataByDate, demoTradingDataByDate]);
 
   // Mini sparkline data for navigation bar icon - shows performance trend
   const navSparklineData = useMemo(() => {
@@ -17280,6 +17244,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         Trading Challenge
                                       </h3>
                                       </>
+                                    ) : searchResults.includes("[CHART:JOURNAL_REPORT]") ? (
+                                      <>
+                      <FileText className="h-4 w-4 text-indigo-400" />
+                      <h3 className="text-base md:text-lg font-medium text-gray-100">
+                        Journal Report
+                                      </h3>
+                                      </>
                                     ) : searchResults.includes("[CHART:SOCIAL_FEED]") ? (
                                       <>
                       <User className="h-4 w-4 text-pink-400" />
@@ -20845,48 +20816,241 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         );
                       }
 
+                      // Handle Journal Full Report
+                      if (searchResults.includes("[CHART:JOURNAL_REPORT]")) {
+                        const m = journalReportMetrics;
+                        renderedContent = (
+                          <div className="w-full rounded-xl border border-gray-800 bg-gray-900/90 overflow-hidden">
+                            {/* Header */}
+                            <div className="px-3 py-2.5 border-b border-gray-800 flex items-center justify-between gap-2 flex-wrap">
+                              <div className="flex items-center gap-2">
+                                <FileText className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
+                                <span className="text-xs font-semibold text-gray-200">Trading Journal Report</span>
+                                {m?.isDemo && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-yellow-500/20 text-yellow-400 border border-yellow-500/30 uppercase tracking-wide">Demo Mode</span>
+                                )}
+                                {!m?.isDemo && m?.activeTab === 'personal2' && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-violet-500/20 text-violet-400 border border-violet-500/30">Personal 2</span>
+                                )}
+                                {!m?.isDemo && m?.activeTab !== 'personal2' && (
+                                  <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/20 text-indigo-400 border border-indigo-500/30">Personal 1</span>
+                                )}
+                              </div>
+                              {/* P1/P2 toggle */}
+                              {m?.hasBothPersonal && (
+                                <div className="flex items-center p-0.5 rounded-full" style={{ background: '#111' }}>
+                                  {[{ key: 'personal1', label: 'P1' }, { key: 'personal2', label: 'P2' }].map(tab => (
+                                    <button
+                                      key={tab.key}
+                                      onClick={() => {
+                                        setJournalReportActiveTab(tab.key as 'personal1' | 'personal2');
+                                        generateJournalAIReport(tab.key as 'personal1' | 'personal2');
+                                      }}
+                                      className="px-3 py-1 text-xs font-medium rounded-full transition-all duration-200"
+                                      style={m?.activeTab === tab.key
+                                        ? { background: 'linear-gradient(135deg, #6366f1, #8b5cf6)', color: '#fff', boxShadow: '0 1px 4px rgba(0,0,0,0.5)' }
+                                        : { color: '#6b7280' }}
+                                    >{tab.label}</button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {m?.isDemo && (
+                              <div className="px-3 py-2 bg-yellow-900/20 border-b border-yellow-800/30 flex items-center gap-2">
+                                <span className="text-[10px] text-yellow-500">Showing demo data. Add journal entries in the Journal tab to see your real performance report.</span>
+                              </div>
+                            )}
+
+                            {(!m || m?.noData) && (
+                              <div className="px-4 py-8 text-center">
+                                <FileText className="h-8 w-8 text-gray-700 mx-auto mb-2" />
+                                <p className="text-sm text-gray-500">No trading data found.</p>
+                                <p className="text-xs text-gray-600 mt-1">Add entries in the Journal tab to get started.</p>
+                              </div>
+                            )}
+
+                            {m?.error && (
+                              <div className="px-4 py-6 text-center">
+                                <p className="text-xs text-red-400">Failed to load report. Please try again.</p>
+                              </div>
+                            )}
+
+                            {m && !m.noData && !m.error && (
+                              <div className="divide-y divide-gray-800/70">
+                                {/* Overview row */}
+                                <div className="grid grid-cols-2 sm:grid-cols-4 divide-x divide-gray-800/70">
+                                  {[
+                                    { label: 'Net P&L', value: `₹${Math.abs(m.netPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}`, sub: m.netPnL >= 0 ? 'Profit' : 'Loss', color: m.netPnL >= 0 ? 'text-green-400' : 'text-red-400' },
+                                    { label: 'Win Rate', value: `${m.winRate}%`, sub: `${m.winningTrades}W / ${m.losingTrades}L`, color: m.winRate >= 50 ? 'text-green-400' : 'text-orange-400' },
+                                    { label: 'Total Trades', value: String(m.totalTrades), sub: `${m.tradingDays} days`, color: 'text-blue-400' },
+                                    { label: 'Profit Factor', value: m.profitFactor === 999 ? '∞' : m.profitFactor.toFixed(2), sub: m.profitFactor >= 1.5 ? 'Excellent' : m.profitFactor >= 1 ? 'Good' : 'Needs work', color: m.profitFactor >= 1.5 ? 'text-green-400' : m.profitFactor >= 1 ? 'text-yellow-400' : 'text-red-400' },
+                                  ].map((stat, i) => (
+                                    <div key={i} className="px-3 py-3 flex flex-col items-center text-center">
+                                      <span className={`text-base sm:text-lg font-bold ${stat.color}`}>{stat.value}</span>
+                                      <span className="text-[10px] text-gray-500 mt-0.5">{stat.label}</span>
+                                      <span className="text-[10px] text-gray-600">{stat.sub}</span>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Detailed Analytics */}
+                                <div className="px-3 py-2 bg-gray-900/40">
+                                  <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Detailed Analytics</span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-3 gap-0 divide-y sm:divide-y-0 divide-gray-800/50">
+                                  {[
+                                    { label: 'Avg Win', value: `₹${Math.round(m.avgWin).toLocaleString('en-IN')}`, color: 'text-green-400' },
+                                    { label: 'Avg Loss', value: `₹${Math.round(m.avgLoss).toLocaleString('en-IN')}`, color: 'text-red-400' },
+                                    { label: 'Risk:Reward', value: m.rrRatio.toFixed(2), color: m.rrRatio >= 1 ? 'text-green-400' : 'text-orange-400' },
+                                    { label: 'Expectancy', value: `₹${Math.round(m.expectancy).toLocaleString('en-IN')}`, color: m.expectancy >= 0 ? 'text-blue-400' : 'text-red-400' },
+                                    { label: 'Total Profit', value: `₹${Math.round(m.totalProfit).toLocaleString('en-IN')}`, color: 'text-green-400' },
+                                    { label: 'Total Loss', value: `₹${Math.round(m.totalLoss).toLocaleString('en-IN')}`, color: 'text-red-400' },
+                                  ].map((s, i) => (
+                                    <div key={i} className="px-4 py-2.5 flex items-baseline justify-between gap-2 hover:bg-gray-800/30 transition-colors border-b border-gray-800/40 last:border-b-0">
+                                      <span className="text-[11px] text-gray-500">{s.label}</span>
+                                      <span className={`text-xs font-semibold ${s.color}`}>{s.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Performance Duration */}
+                                <div className="px-3 py-2 bg-gray-900/40">
+                                  <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Performance Duration</span>
+                                </div>
+                                <div className="grid grid-cols-2 sm:grid-cols-4 gap-0">
+                                  {[
+                                    { label: 'Profit Days', value: String(m.profitDays), color: 'text-green-400' },
+                                    { label: 'Loss Days', value: String(m.lossDays), color: 'text-red-400' },
+                                    { label: 'Max Win Streak', value: String(m.maxConsecutiveWins), color: 'text-green-400' },
+                                    { label: 'Max Loss Streak', value: String(m.maxConsecutiveLosses), color: 'text-red-400' },
+                                  ].map((s, i) => (
+                                    <div key={i} className="px-4 py-2.5 flex items-baseline justify-between gap-2 hover:bg-gray-800/30 transition-colors border-b border-r border-gray-800/40 last:border-r-0">
+                                      <span className="text-[11px] text-gray-500">{s.label}</span>
+                                      <span className={`text-xs font-semibold ${s.color}`}>{s.value}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                                {/* Best/Worst Day */}
+                                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-800/50">
+                                  <div className="px-4 py-2.5 flex items-baseline justify-between gap-2 hover:bg-gray-800/30">
+                                    <span className="text-[11px] text-gray-500">Best Day</span>
+                                    <span className="text-xs font-semibold text-green-400">{m.bestDay?.date ? `${m.bestDay.date} · ₹${Math.round(m.bestDay.pnl).toLocaleString('en-IN')}` : '—'}</span>
+                                  </div>
+                                  <div className="px-4 py-2.5 flex items-baseline justify-between gap-2 hover:bg-gray-800/30">
+                                    <span className="text-[11px] text-gray-500">Worst Day</span>
+                                    <span className="text-xs font-semibold text-red-400">{m.worstDay?.date ? `${m.worstDay.date} · ₹${Math.round(m.worstDay.pnl).toLocaleString('en-IN')}` : '—'}</span>
+                                  </div>
+                                </div>
+
+                                {/* Loss Analysis */}
+                                <div className="px-3 py-2 bg-gray-900/40">
+                                  <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Loss Analysis</span>
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 divide-y sm:divide-y-0 sm:divide-x divide-gray-800/50">
+                                  <div className="px-4 py-2.5 flex items-baseline justify-between gap-2 hover:bg-gray-800/30">
+                                    <span className="text-[11px] text-gray-500">Loss Days Ratio</span>
+                                    <span className="text-xs font-semibold text-orange-400">{m.tradingDays > 0 ? `${Math.round((m.lossDays / m.tradingDays) * 100)}%` : '—'}</span>
+                                  </div>
+                                  <div className="px-4 py-2.5 flex items-baseline justify-between gap-2 hover:bg-gray-800/30">
+                                    <span className="text-[11px] text-gray-500">Avg Trades/Day</span>
+                                    <span className="text-xs font-semibold text-blue-400">{m.avgTradesPerDay.toFixed(1)}</span>
+                                  </div>
+                                  <div className="px-4 py-2.5 flex items-baseline justify-between gap-2 hover:bg-gray-800/30">
+                                    <span className="text-[11px] text-gray-500">Worst Weekday</span>
+                                    <span className="text-xs font-semibold text-red-400">{m.worstWeekday ? `${m.worstWeekday[0]} (₹${Math.round(m.worstWeekday[1]).toLocaleString('en-IN')})` : '—'}</span>
+                                  </div>
+                                  <div className="px-4 py-2.5 flex items-baseline justify-between gap-2 hover:bg-gray-800/30">
+                                    <span className="text-[11px] text-gray-500">Best Weekday</span>
+                                    <span className="text-xs font-semibold text-green-400">{m.bestWeekday ? `${m.bestWeekday[0]} (₹${Math.round(m.bestWeekday[1]).toLocaleString('en-IN')})` : '—'}</span>
+                                  </div>
+                                </div>
+
+                                {/* Psychology */}
+                                <div className="px-3 py-2 bg-gray-900/40">
+                                  <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Psychology Analysis</span>
+                                </div>
+                                <div className="px-4 py-2.5">
+                                  {m.psychList && m.psychList.length > 0 ? (
+                                    <div className="flex flex-wrap gap-1.5">
+                                      {m.psychList.slice(0, 10).map(([tag, count]: [string, number]) => {
+                                        const isFomo = tag.toLowerCase().includes('fomo');
+                                        const isDiscipline = tag.toLowerCase().includes('discipline') || tag.toLowerCase().includes('plan');
+                                        return (
+                                          <span key={tag} className={`text-[10px] px-2 py-0.5 rounded-full border ${isFomo ? 'bg-red-900/30 text-red-400 border-red-700/40' : isDiscipline ? 'bg-green-900/30 text-green-400 border-green-700/40' : 'bg-gray-800 text-gray-400 border-gray-700/40'}`}>
+                                            {tag} <span className="opacity-60">×{count}</span>
+                                          </span>
+                                        );
+                                      })}
+                                    </div>
+                                  ) : (
+                                    <span className="text-[11px] text-gray-600">No psychology tags recorded yet</span>
+                                  )}
+                                </div>
+                                {m.fomoTrades > 0 && (
+                                  <div className="px-4 py-2 flex items-center gap-2 bg-red-900/10">
+                                    <span className="text-[10px] text-red-400 font-medium">⚠ FOMO Alert:</span>
+                                    <span className="text-[10px] text-gray-400">{m.fomoTrades} FOMO trade{m.fomoTrades > 1 ? 's' : ''} detected — consider cooling-off periods</span>
+                                  </div>
+                                )}
+
+                                {/* Top Instruments */}
+                                {m.topInstruments && m.topInstruments.length > 0 && (
+                                  <>
+                                    <div className="px-3 py-2 bg-gray-900/40">
+                                      <span className="text-[10px] font-semibold uppercase tracking-widest text-gray-500">Most Traded</span>
+                                    </div>
+                                    <div className="px-4 py-2.5 flex flex-wrap gap-1.5">
+                                      {m.topInstruments.map(([sym, cnt]: [string, number]) => (
+                                        <span key={sym} className="text-[10px] px-2 py-0.5 rounded-full border bg-blue-900/20 text-blue-300 border-blue-700/30">{sym} ×{cnt}</span>
+                                      ))}
+                                    </div>
+                                  </>
+                                )}
+
+                                {/* AI Insight */}
+                                <div className="px-4 py-3 bg-indigo-900/10 border-t border-indigo-800/20 flex items-start gap-2">
+                                  <Bot className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0 mt-0.5" />
+                                  <span className="text-[11px] text-gray-400 leading-relaxed">
+                                    {m.winRate >= 60 ? '🟢 Strong performance — win rate shows excellent discipline. Keep risk-reward above 1.5 to compound gains.' :
+                                     m.winRate >= 40 ? '🟡 Moderate performance — focus on entries and tighter stop-losses to push win rate above 50%.' :
+                                     '🔴 Needs improvement — review your losing trades for patterns and consider reducing position size until win rate improves.'}
+                                  </span>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+
                       // Handle Trading Challenge Coming Soon
                       if (searchResults.includes("[CHART:TRADE]")) {
                         renderedContent = (
-                          <div className="w-full bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-xl p-8 border border-gray-700">
-                            <div className="flex flex-col items-center justify-center mb-8">
-                              <div className="w-24 h-24 bg-gradient-to-br from-orange-400 to-orange-600 rounded-full flex items-center justify-center mb-6 shadow-lg">
-                                <Trophy className="w-12 h-12 text-white" />
-                              </div>
-                              <h2 className="text-4xl font-bold text-white mb-2">Trading Challenge</h2>
-                              <p className="text-xl text-gray-400">Coming Soon</p>
+                          <div className="w-full rounded-xl border border-gray-800 bg-gray-900/90 overflow-hidden">
+                            {/* Compact header */}
+                            <div className="px-3 py-2.5 border-b border-gray-800 flex items-center gap-2">
+                              <Trophy className="h-3.5 w-3.5 text-orange-400" />
+                              <span className="text-xs font-semibold text-gray-200">Trading Challenge</span>
+                              <span className="text-[10px] px-1.5 py-0.5 rounded-full bg-orange-500/20 text-orange-400 border border-orange-500/30 ml-auto">Coming Soon</span>
                             </div>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-                              <div className="bg-gradient-to-br from-blue-900/30 to-blue-800/20 border border-blue-700/50 rounded-lg p-6 hover:border-blue-600/70 transition-all">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="w-10 h-10 rounded-lg bg-blue-600/30 flex items-center justify-center">
-                                    <Users className="w-5 h-5 text-blue-400" />
+                            <div className="grid grid-cols-1 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-gray-800/60">
+                              {[
+                                { icon: <Users className="h-4 w-4 text-blue-400" />, title: 'Compete', desc: 'Join 7-day trading challenges against other traders', color: 'text-blue-400' },
+                                { icon: <BarChart3 className="h-4 w-4 text-green-400" />, title: 'Live P&L', desc: 'Real-time rankings based on your trade performance', color: 'text-green-400' },
+                                { icon: <Award className="h-4 w-4 text-yellow-400" />, title: 'Leaderboard', desc: 'Track your rank among all challenge participants', color: 'text-yellow-400' },
+                              ].map((item, i) => (
+                                <div key={i} className="px-4 py-3 flex items-start gap-3 hover:bg-gray-800/30 transition-colors">
+                                  <div className="flex-shrink-0 mt-0.5">{item.icon}</div>
+                                  <div>
+                                    <p className={`text-xs font-semibold ${item.color}`}>{item.title}</p>
+                                    <p className="text-[11px] text-gray-500 mt-0.5 leading-relaxed">{item.desc}</p>
                                   </div>
-                                  <h3 className="text-lg font-semibold text-white">Compete with Traders</h3>
                                 </div>
-                                <p className="text-gray-300 text-sm">Join 7-day trading challenges and test your skills against other traders</p>
-                              </div>
-                              <div className="bg-gradient-to-br from-green-900/30 to-green-800/20 border border-green-700/50 rounded-lg p-6 hover:border-green-600/70 transition-all">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="w-10 h-10 rounded-lg bg-green-600/30 flex items-center justify-center">
-                                    <BarChart3 className="w-5 h-5 text-green-400" />
-                                  </div>
-                                  <h3 className="text-lg font-semibold text-white">Live P&L Tracking</h3>
-                                </div>
-                                <p className="text-gray-300 text-sm">Real-time ranking based on your trades with live profit and loss updates</p>
-                              </div>
-                              <div className="bg-gradient-to-br from-yellow-900/30 to-yellow-800/20 border border-yellow-700/50 rounded-lg p-6 hover:border-yellow-600/70 transition-all">
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="w-10 h-10 rounded-lg bg-yellow-600/30 flex items-center justify-center">
-                                    <Award className="w-5 h-5 text-yellow-400" />
-                                  </div>
-                                  <h3 className="text-lg font-semibold text-white">Leaderboard Rankings</h3>
-                                </div>
-                                <p className="text-gray-300 text-sm">See your position among all participants and track your progress</p>
-                              </div>
+                              ))}
                             </div>
-                            <div className="mt-8 text-center">
-                              <p className="text-gray-400 text-sm">More features coming soon. Stay tuned!</p>
+                            <div className="px-4 py-2.5 border-t border-gray-800/60 flex items-center justify-between">
+                              <span className="text-[10px] text-gray-600">Notify me when launched</span>
+                              <button className="text-[10px] px-2.5 py-1 rounded-full bg-orange-600/20 text-orange-400 border border-orange-600/30 hover:bg-orange-600/30 transition-colors">Remind Me</button>
                             </div>
                           </div>
                         );
@@ -21243,7 +21407,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           >
                             <Button
                               variant="secondary"
-                              className="hidden bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
+                              className="flex bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
                               onClick={() => {
                                 const userId = localStorage.getItem('currentUserId');
                                 const userEmail = localStorage.getItem('currentUserEmail');

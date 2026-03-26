@@ -1,55 +1,26 @@
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
-import OpenAI from 'openai';
+import axios from 'axios';
 
-function getOpenAIClient(): OpenAI | null {
-  const apiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-  if (!apiKey) return null;
-  return new OpenAI({
-    apiKey,
-    baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
-  });
-}
-
-const languageNameMap: Record<string, string> = {
-  'hi': 'Hindi',
-  'bn': 'Bengali',
-  'ta': 'Tamil',
-  'te': 'Telugu',
-  'mr': 'Marathi',
-  'gu': 'Gujarati',
-  'kn': 'Kannada',
-  'ml': 'Malayalam',
-};
-
+// MyMemory free translation API — no API key required
+// Supports 500 words/day free, sufficient for post-length texts
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
-  const langName = languageNameMap[targetLanguage];
-  if (!langName) return text;
-
-  const openai = getOpenAIClient();
-  if (!openai) {
-    console.warn('[TTS] OpenAI not available, skipping translation');
-    return text;
-  }
+  const supportedLangs = ['hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml'];
+  if (!supportedLangs.includes(targetLanguage)) return text;
 
   try {
-    console.log(`🌐 [TTS] Translating to ${langName}...`);
-    const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      messages: [
-        {
-          role: 'system',
-          content: `You are a translator. Translate the user's text to ${langName}. Return ONLY the translated text with no explanation, no quotes, and no additional commentary.`
-        },
-        { role: 'user', content: text }
-      ],
-      temperature: 0.2,
-      max_tokens: 1000,
-    });
-    const translated = response.choices[0]?.message?.content?.trim() || text;
-    console.log(`✅ [TTS] Translated to ${langName}: "${translated.substring(0, 60)}..."`);
-    return translated;
-  } catch (err) {
-    console.error('[TTS] Translation error:', err);
+    console.log(`🌐 [TTS] Translating to ${targetLanguage} via MyMemory...`);
+    const encoded = encodeURIComponent(text.substring(0, 500)); // MyMemory limit
+    const url = `https://api.mymemory.translated.net/get?q=${encoded}&langpair=en|${targetLanguage}`;
+    const response = await axios.get(url, { timeout: 8000 });
+    const translated = response.data?.responseData?.translatedText;
+    if (translated && translated !== text) {
+      console.log(`✅ [TTS] Translated to ${targetLanguage}: "${translated.substring(0, 60)}..."`);
+      return translated;
+    }
+    console.warn(`⚠️ [TTS] Translation returned same text, using original`);
+    return text;
+  } catch (err: any) {
+    console.error('[TTS] MyMemory translation error:', err?.message || err);
     return text;
   }
 }

@@ -150,9 +150,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     const cancelled = { value: false };
     const postCards = cards.filter(c => c.type === 'post');
     postCards.forEach(card => {
-      if (!audioCacheRef.current.has(card.id)) {
-        fetchAndCacheTTS(card, cancelled);
-      }
+      fetchAndCacheTTS(card, cancelled);
     });
     return () => { cancelled.value = true; };
   }, [cards]);

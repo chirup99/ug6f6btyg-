@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, X, MoreVertical, Edit2, Layout, Send, BookOpen } from "lucide-react";
+import { ChevronLeft, ChevronRight, X, MoreVertical, Edit2, Send, BookOpen } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -1502,7 +1502,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
                 className={`h-8 w-8 ml-1 ${isFeedMode ? 'text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30' : ''}`}
                 data-testid="button-social-feed"
               >
-                {isFeedMode ? <X className="w-4 h-4" /> : <Layout className="w-4 h-4" />}
+                {isFeedMode ? <X className="w-4 h-4" /> : <Send className="w-4 h-4" />}
               </Button>
             )}
 

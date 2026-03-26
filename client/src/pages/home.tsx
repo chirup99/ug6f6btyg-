@@ -32334,47 +32334,50 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Trading Master Coming Soon Modal */}
         <Dialog open={showTradingMasterComingSoon} onOpenChange={setShowTradingMasterComingSoon}>
-          <DialogContent className="w-[95vw] max-w-md rounded-3xl max-h-[92dvh] overflow-y-auto border-none shadow-2xl p-0 bg-white dark:bg-slate-950 [&>button]:hidden">
+          <DialogContent className="w-[90vw] max-w-xs rounded-2xl border-none shadow-2xl p-0 bg-white dark:bg-slate-950 [&>button]:hidden">
             {/* Gradient header */}
-            <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 px-6 pt-8 pb-10 text-center overflow-hidden">
-              <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, white 2px, transparent 2px)', backgroundSize: '24px 24px'}} />
+            <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 px-4 pt-5 pb-6 text-center overflow-hidden rounded-t-2xl">
+              <button
+                onClick={() => setShowTradingMasterComingSoon(false)}
+                className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-white/20 hover:bg-white/30 flex items-center justify-center transition-colors"
+                data-testid="button-close-trading-master-x"
+              >
+                <X className="h-3.5 w-3.5 text-white" />
+              </button>
+              <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, white 2px, transparent 2px)', backgroundSize: '20px 20px'}} />
               <div className="relative">
-                <div className="mx-auto w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl mb-4 border border-white/30">
-                  <Activity className="h-9 w-9 text-white" />
+                <div className="mx-auto w-12 h-12 rounded-xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-lg mb-2.5 border border-white/30">
+                  <Activity className="h-6 w-6 text-white" />
                 </div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">Trading Master</h2>
-                <p className="text-indigo-200 text-sm font-medium mt-1">Advanced Analytics Suite</p>
-                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-3 py-1 mt-3">
+                <h2 className="text-lg font-bold text-white tracking-tight">Trading Master</h2>
+                <p className="text-indigo-200 text-xs font-medium mt-0.5">Advanced Analytics Suite</p>
+                <div className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-2.5 py-0.5 mt-2">
                   <div className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
-                  <span className="text-xs font-semibold text-white uppercase tracking-wider">Coming Soon</span>
+                  <span className="text-[10px] font-semibold text-white uppercase tracking-wider">Coming Soon</span>
                 </div>
               </div>
             </div>
             {/* Content */}
-            <div className="px-5 py-5 space-y-4">
-              <p className="text-center text-slate-500 dark:text-slate-400 text-sm">
-                We're building a powerful suite of advanced trading tools — designed to take your trading to the next level.
-              </p>
-              <div className="space-y-2.5">
+            <div className="px-4 py-4 space-y-3">
+              <div className="space-y-1.5">
                 {[
                   { icon: '📊', label: 'Advanced pattern recognition & signals' },
                   { icon: '🤖', label: 'AI-powered trade analysis & insights' },
                   { icon: '⚡', label: 'Real-time strategy backtesting' },
-                  { icon: '🎯', label: 'Smart entry & exit alerts' },
                   { icon: '📈', label: 'Multi-timeframe trend analysis' },
                 ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl px-4 py-2.5 border border-slate-100 dark:border-slate-800/50">
-                    <span className="text-base">{item.icon}</span>
-                    <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.label}</span>
+                  <div key={i} className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-lg px-3 py-2 border border-slate-100 dark:border-slate-800/50">
+                    <span className="text-sm">{item.icon}</span>
+                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{item.label}</span>
                   </div>
                 ))}
               </div>
-              <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl px-4 py-3 text-center">
-                <p className="text-indigo-700 dark:text-indigo-300 text-xs font-semibold uppercase tracking-wider">🚀 Launching Very Soon — Stay Tuned!</p>
+              <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50 rounded-xl px-3 py-2 text-center">
+                <p className="text-indigo-700 dark:text-indigo-300 text-[10px] font-semibold uppercase tracking-wider">🚀 Launching Very Soon — Stay Tuned!</p>
               </div>
               <Button
                 onClick={() => setShowTradingMasterComingSoon(false)}
-                className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]"
+                className="w-full h-9 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-md shadow-indigo-500/20 transition-all active:scale-[0.98] text-sm"
                 data-testid="button-close-trading-master-coming-soon"
               >
                 Got It, I'll Wait!

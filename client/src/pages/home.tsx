@@ -22124,49 +22124,56 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     {/* Tutor Vertical Sidebar - Slides from right */}
 {/* Coming Soon Dialog for Mini Cast */}
         <Dialog open={showComingSoonDialog} onOpenChange={setShowComingSoonDialog}>
-          <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border-none shadow-2xl rounded-2xl p-0 overflow-hidden">
-            <div className="relative p-8 text-center space-y-5">
-              {/* Icon */}
-              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                <Activity className="h-10 w-10 text-white" />
+          <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-950 border-none shadow-2xl rounded-3xl p-0 overflow-hidden max-h-[92dvh] overflow-y-auto [&>button]:hidden">
+            {/* Gradient header */}
+            <div className="relative bg-gradient-to-br from-violet-600 via-indigo-600 to-purple-700 px-6 pt-8 pb-10 text-center overflow-hidden">
+              <div className="absolute inset-0 opacity-20" style={{backgroundImage: 'radial-gradient(circle at 30% 20%, white 1px, transparent 1px), radial-gradient(circle at 70% 80%, white 1px, transparent 1px)', backgroundSize: '30px 30px'}} />
+              <div className="relative">
+                <div className="mx-auto w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl mb-4 border border-white/30">
+                  <Play className="h-9 w-9 text-white fill-white" />
+                </div>
+                <h2 className="text-2xl font-bold text-white tracking-tight">Mini Cast</h2>
+                <p className="text-violet-200 text-sm font-medium mt-1">Streaming Platform</p>
+                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-3 py-1 mt-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+                  <span className="text-xs font-semibold text-white uppercase tracking-wider">Coming Soon</span>
+                </div>
               </div>
+            </div>
 
-              {/* Title */}
-              <div className="space-y-1">
-                <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
-                  Mini Cast
-                </h2>
-                <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
-                  Streaming Platform — Coming Soon!
-                </p>
-              </div>
-
+            {/* Content */}
+            <div className="px-5 py-5 space-y-4">
               {/* Warning stat */}
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-xl px-4 py-3">
-                <p className="text-red-600 dark:text-red-400 text-sm font-bold">
-                  ⚠️ 90% of retail investors lose money
-                </p>
-                <p className="text-red-500 dark:text-red-500 text-xs mt-0.5">
-                  due to fake influencers &amp; unregistered, non-SEBI certified traders.
-                </p>
+              <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-2xl px-4 py-3 text-center">
+                <p className="text-red-600 dark:text-red-400 text-sm font-bold">⚠️ 90% of retail investors lose money</p>
+                <p className="text-red-500/80 dark:text-red-500/70 text-xs mt-0.5">due to fake influencers &amp; non-SEBI certified traders.</p>
               </div>
 
-              {/* Description */}
-              <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
-                We're building <span className="font-semibold text-indigo-600 dark:text-indigo-400">Mini Cast</span> — a curated, high-quality streaming platform collaborating only with SEBI-certified partners and verified trading educators. No noise, no scams. Just real, trustworthy financial content.
+              {/* Features */}
+              <div className="space-y-2.5">
+                {[
+                  { icon: '✅', label: 'SEBI-Certified educators only' },
+                  { icon: '🎯', label: 'Zero noise, zero scams' },
+                  { icon: '📡', label: 'Live sessions & recorded content' },
+                  { icon: '🏆', label: 'Verified trading professionals' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl px-4 py-2.5">
+                    <span className="text-base">{item.icon}</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.label}</span>
+                  </div>
+                ))}
+              </div>
+
+              <p className="text-slate-500 dark:text-slate-400 text-xs text-center leading-relaxed">
+                We're building a curated platform with only real, trustworthy financial content.
               </p>
-
-              {/* Stay tuned badge */}
-              <div className="inline-flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700/40 rounded-full px-4 py-1.5">
-                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
-                <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Stay Tuned — Launching Soon</span>
-              </div>
 
               <Button
                 onClick={() => setShowComingSoonDialog(false)}
-                className="w-full h-12 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all active:scale-95"
+                className="w-full h-11 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]"
+                data-testid="button-close-minicast-coming-soon"
               >
-                Got It
+                Got It, I'll Wait!
               </Button>
             </div>
           </DialogContent>
@@ -31058,48 +31065,54 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Trading Challenge Coming Soon Modal */}
         <Dialog open={showTradingChallengeModal} onOpenChange={setShowTradingChallengeModal}>
-          <DialogContent className="w-[95vw] max-w-sm rounded-2xl max-h-[90dvh] overflow-y-auto">
-            <DialogHeader className="text-center">
-              <div className="flex justify-center mb-4">
-                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
-                  <Trophy className="h-8 w-8 text-white" />
+          <DialogContent className="w-[95vw] max-w-sm rounded-3xl max-h-[92dvh] overflow-y-auto border-none shadow-2xl p-0 bg-white dark:bg-slate-950 [&>button]:hidden">
+            {/* Gradient header */}
+            <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 px-6 pt-8 pb-10 text-center overflow-hidden">
+              <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, white 2px, transparent 2px)', backgroundSize: '20px 20px'}} />
+              <div className="relative">
+                <div className="mx-auto w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl mb-4 border border-white/30">
+                  <Trophy className="h-9 w-9 text-white" />
                 </div>
-              </div>
-              <DialogTitle className="text-xl font-bold text-center">Trading Challenge</DialogTitle>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mt-2 text-center">
-                Coming Soon
-              </p>
-            </DialogHeader>
-            <div className="py-4 space-y-3">
-              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <Users className="h-5 w-5 text-blue-500" />
-                <div>
-                  <p className="text-sm font-medium">Compete with Traders</p>
-                  <p className="text-xs text-gray-500">Join 7-day trading challenges</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <BarChart3 className="h-5 w-5 text-green-500" />
-                <div>
-                  <p className="text-sm font-medium">Live P&L Tracking</p>
-                  <p className="text-xs text-gray-500">Real-time ranking based on your trades</p>
-                </div>
-              </div>
-              <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                <Trophy className="h-5 w-5 text-amber-500" />
-                <div>
-                  <p className="text-sm font-medium">Leaderboard Rankings</p>
-                  <p className="text-xs text-gray-500">See your position among all participants</p>
+                <h2 className="text-2xl font-bold text-white tracking-tight">Trade Challenge</h2>
+                <p className="text-orange-100 text-sm font-medium mt-1">Compete & Climb the Ranks</p>
+                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-3 py-1 mt-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
+                  <span className="text-xs font-semibold text-white uppercase tracking-wider">Coming Soon</span>
                 </div>
               </div>
             </div>
-            <Button 
-              onClick={() => setShowTradingChallengeModal(false)}
-              className="w-full"
-              data-testid="button-close-challenge-modal"
-            >
-              Got It
-            </Button>
+
+            {/* Content */}
+            <div className="px-5 py-5 space-y-4">
+              <div className="space-y-2.5">
+                {[
+                  { icon: '🏁', label: 'Compete with Traders', sub: 'Join 7-day trading challenges' },
+                  { icon: '📊', label: 'Live P&L Tracking', sub: 'Real-time ranking based on your trades' },
+                  { icon: '🏆', label: 'Leaderboard Rankings', sub: 'See your position among all participants' },
+                  { icon: '🎖️', label: 'Win Rewards', sub: 'Earn badges and recognition' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl px-4 py-2.5 border border-slate-100 dark:border-slate-800/50">
+                    <span className="text-base">{item.icon}</span>
+                    <div>
+                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.label}</p>
+                      <p className="text-xs text-slate-400 dark:text-slate-500">{item.sub}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-2xl px-4 py-3 text-center">
+                <p className="text-amber-700 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider">🔥 Launching Very Soon — Stay Ready!</p>
+              </div>
+
+              <Button
+                onClick={() => setShowTradingChallengeModal(false)}
+                className="w-full h-11 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98]"
+                data-testid="button-close-challenge-modal"
+              >
+                Got It, I'll Wait!
+              </Button>
+            </div>
           </DialogContent>
         </Dialog>
 
@@ -32394,33 +32407,51 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Trading Master Coming Soon Modal */}
         <Dialog open={showTradingMasterComingSoon} onOpenChange={setShowTradingMasterComingSoon}>
-          <DialogContent className="w-[95vw] max-w-md rounded-2xl max-h-[90dvh] overflow-y-auto">
-            <div className="space-y-6 py-6">
-              <div className="flex flex-col items-center justify-center space-y-4">
-                <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full flex items-center justify-center animate-pulse">
-                  <Activity className="h-10 w-10 text-white" />
+          <DialogContent className="w-[95vw] max-w-md rounded-3xl max-h-[92dvh] overflow-y-auto border-none shadow-2xl p-0 bg-white dark:bg-slate-950 [&>button]:hidden">
+            {/* Gradient header */}
+            <div className="relative bg-gradient-to-br from-indigo-600 via-purple-600 to-blue-700 px-6 pt-8 pb-10 text-center overflow-hidden">
+              <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, white 2px, transparent 2px)', backgroundSize: '24px 24px'}} />
+              <div className="relative">
+                <div className="mx-auto w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl mb-4 border border-white/30">
+                  <Activity className="h-9 w-9 text-white" />
                 </div>
-                <DialogHeader className="space-y-2">
-                  <DialogTitle className="text-center text-2xl bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent font-bold">
-                    Advanced Trading Master
-                  </DialogTitle>
-                </DialogHeader>
-                <div className="text-center space-y-2">
-                  <p className="text-lg font-semibold text-foreground">Coming Soon!</p>
-                  <p className="text-sm text-muted-foreground max-w-xs mx-auto">
-                    We're working on bringing you advanced trading features and analytics.
-                  </p>
+                <h2 className="text-2xl font-bold text-white tracking-tight">Trading Master</h2>
+                <p className="text-indigo-200 text-sm font-medium mt-1">Advanced Analytics Suite</p>
+                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-3 py-1 mt-3">
+                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
+                  <span className="text-xs font-semibold text-white uppercase tracking-wider">Coming Soon</span>
                 </div>
               </div>
-              <div className="flex justify-center">
-                <Button
-                  onClick={() => setShowTradingMasterComingSoon(false)}
-                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700"
-                  data-testid="button-close-trading-master-coming-soon"
-                >
-                  Got It
-                </Button>
+            </div>
+            {/* Content */}
+            <div className="px-5 py-5 space-y-4">
+              <p className="text-center text-slate-500 dark:text-slate-400 text-sm">
+                We're building a powerful suite of advanced trading tools — designed to take your trading to the next level.
+              </p>
+              <div className="space-y-2.5">
+                {[
+                  { icon: '📊', label: 'Advanced pattern recognition & signals' },
+                  { icon: '🤖', label: 'AI-powered trade analysis & insights' },
+                  { icon: '⚡', label: 'Real-time strategy backtesting' },
+                  { icon: '🎯', label: 'Smart entry & exit alerts' },
+                  { icon: '📈', label: 'Multi-timeframe trend analysis' },
+                ].map((item, i) => (
+                  <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl px-4 py-2.5 border border-slate-100 dark:border-slate-800/50">
+                    <span className="text-base">{item.icon}</span>
+                    <span className="text-sm text-slate-700 dark:text-slate-300 font-medium">{item.label}</span>
+                  </div>
+                ))}
               </div>
+              <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800/50 rounded-2xl px-4 py-3 text-center">
+                <p className="text-indigo-700 dark:text-indigo-300 text-xs font-semibold uppercase tracking-wider">🚀 Launching Very Soon — Stay Tuned!</p>
+              </div>
+              <Button
+                onClick={() => setShowTradingMasterComingSoon(false)}
+                className="w-full h-11 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-2xl shadow-lg shadow-indigo-500/20 transition-all active:scale-[0.98]"
+                data-testid="button-close-trading-master-coming-soon"
+              >
+                Got It, I'll Wait!
+              </Button>
             </div>
           </DialogContent>
         </Dialog>

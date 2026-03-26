@@ -294,6 +294,10 @@ function SwipeableCardStack({
   const [currentContent, setCurrentContent] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const currentAudioRef = React.useRef<HTMLAudioElement | null>(null);
+  // Preload cache: `${sector}-${lang}-${speaker}` → blob URL
+  const audioCacheRef = React.useRef<Map<string, string>>(new Map());
+  // Track in-progress preloads to avoid duplicate fetches
+  const preloadingRef = React.useRef<Set<string>>(new Set());
 
   const [cards, setCards] = useState([
     {
@@ -367,6 +371,78 @@ function SwipeableCardStack({
     BANKS: 'BANKNIFTY',
     AUTOMOBILE: 'TATAMOTORS',
   };
+
+  // Build cache key from current language/speaker settings
+  const getCacheKey = (sector: string) => {
+    const lang = localStorage.getItem('voiceLanguage') || 'en';
+    const speaker = localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
+    return `${sector}-${lang}-${speaker}`;
+  };
+
+  // Fetch news text for a sector
+  const buildNewsText = async (sector: string): Promise<string> => {
+    const symbol = SECTOR_NEWS_SYMBOL[sector] || 'NIFTY';
+    try {
+      const res = await fetch(`/api/stock-news/${symbol}`);
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      const items = Array.isArray(data) ? data : (data.news || []);
+      const headlines = items.slice(0, 5).map((item: any) => item.title || '').filter(Boolean);
+      return headlines.join('. ') || `${sector.toLowerCase()} market update. Trading activity continues.`;
+    } catch {
+      return `${sector.toLowerCase()} market update. Trading activity continues.`;
+    }
+  };
+
+  // Generate TTS audio blob URL from text
+  const buildAudioUrl = async (text: string): Promise<string | null> => {
+    const cleanText = text
+      .replace(/^(good morning|good afternoon|good evening|hello|hi|welcome)/gi, '')
+      .replace(/^(ladies and gentlemen|dear listeners|in today's news)/gi, '')
+      .replace(/^[.,\s]+/, '')
+      .trim();
+    if (!cleanText) return null;
+
+    const savedVoiceId = localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
+    const savedLanguage = localStorage.getItem('voiceLanguage') || 'en';
+
+    const response = await fetch('/api/tts/generate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: cleanText, language: savedLanguage, speaker: savedVoiceId, speed: 1.0, pitch: 1.0 }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (!data.audioBase64) return null;
+
+    const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+    const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+    return URL.createObjectURL(audioBlob);
+  };
+
+  // Silently preload audio for a sector in the background
+  const preloadForSector = React.useCallback(async (sector: string) => {
+    const cacheKey = getCacheKey(sector);
+    if (audioCacheRef.current.has(cacheKey)) return;
+    if (preloadingRef.current.has(cacheKey)) return;
+    preloadingRef.current.add(cacheKey);
+    console.log(`[PRELOAD] Background preloading ${sector}...`);
+    try {
+      const text = await buildNewsText(sector);
+      const url = await buildAudioUrl(text);
+      if (url) {
+        audioCacheRef.current.set(cacheKey, url);
+        console.log(`[PRELOAD] ✅ Cached ${sector}`);
+      }
+    } catch (e) {
+      console.error(`[PRELOAD] Failed for ${sector}:`, e);
+    } finally {
+      preloadingRef.current.delete(cacheKey);
+    }
+  }, []);
 
   // Global cleanup function to stop all audio
   const globalStopAudio = React.useCallback(() => {
@@ -448,39 +524,47 @@ function SwipeableCardStack({
 
   // Fetch real latest news for the current card sector (same source as Market News tab)
   const fetchAndPlayContent = async (cardTitle: string, sector: string) => {
-    // Stop any currently playing audio and clear old content immediately
     globalStopAudio();
     setCurrentContent("");
 
-    const symbol = SECTOR_NEWS_SYMBOL[sector] || 'NIFTY';
+    // ── Cache hit: play instantly ──────────────────────────────────────────
+    const cacheKey = getCacheKey(sector);
+    const cachedUrl = audioCacheRef.current.get(cacheKey);
+    if (cachedUrl) {
+      console.log(`[CACHE HIT] ✅ Instant play for ${sector}`);
+      setIsPlaying(true);
+      const audio = new Audio(cachedUrl);
+      currentAudioRef.current = audio;
+      audio.onended = () => { setIsPlaying(false); currentAudioRef.current = null; };
+      audio.play().catch(err => { console.error('[TTS] Audio play error:', err); setIsPlaying(false); });
+      return;
+    }
 
+    // ── Cache miss: fetch news + generate TTS ─────────────────────────────
     try {
       setIsLoading(true);
-
-      const res = await fetch(`/api/stock-news/${symbol}`);
-      if (!res.ok) throw new Error("Failed to fetch news");
-
-      const data = await res.json();
-      const items = Array.isArray(data) ? data : (data.news || []);
-
-      // Build content from top 5 latest headlines for richer news playback
-      const headlines = items
-        .slice(0, 5)
-        .map((item: any) => item.title || "")
-        .filter(Boolean);
-      const content =
-        headlines.join(". ") ||
-        `${sector.toLowerCase()} market update. Trading activity continues.`;
-
+      const content = await buildNewsText(sector);
       setCurrentContent(content);
       setIsLoading(false);
-      playAudio(content);
+
+      // Generate audio and cache it for future instant playback
+      const url = await buildAudioUrl(content);
+      if (url) {
+        audioCacheRef.current.set(cacheKey, url);
+        if (currentAudioRef.current === null) {  // user hasn't stopped it
+          setIsPlaying(true);
+          const audio = new Audio(url);
+          currentAudioRef.current = audio;
+          audio.onended = () => { setIsPlaying(false); currentAudioRef.current = null; };
+          audio.play().catch(err => { console.error('[TTS] Audio play error:', err); setIsPlaying(false); });
+        }
+      } else {
+        setIsPlaying(false);
+      }
     } catch (error) {
       console.error("Error fetching news:", error);
-      const fallbackContent = `${sector.toLowerCase()} market update. Trading activity continues.`;
-      setCurrentContent(fallbackContent);
       setIsLoading(false);
-      playAudio(fallbackContent);
+      setIsPlaying(false);
     }
   };
 
@@ -490,45 +574,40 @@ function SwipeableCardStack({
     setCurrentContent("");
 
     let nextCard: any = null;
+    let nextNextCard: any = null;
     let nextIndex = currentCardIndex;
 
     setCards((prev) => {
       const newCards = [...prev];
 
       if (direction === "right") {
-        // Right swipe: Move to next card (current card goes to back)
         const topCard = newCards.shift();
-        if (topCard) {
-          newCards.push(topCard);
-        }
+        if (topCard) newCards.push(topCard);
         nextIndex = (currentCardIndex + 1) % 7;
       } else {
-        // Left swipe: Move to previous card (bottom card comes to front)
         const bottomCard = newCards.pop();
-        if (bottomCard) {
-          newCards.unshift(bottomCard);
-        }
+        if (bottomCard) newCards.unshift(bottomCard);
         nextIndex = (currentCardIndex - 1 + 7) % 7;
       }
 
-      if (newCards.length > 0) {
-        nextCard = newCards[0];
-      }
+      if (newCards.length > 0) nextCard = newCards[0];
+      if (newCards.length > 1) nextNextCard = newCards[1];
 
       return newCards;
     });
 
-    // Side effects should be outside of setCards
     if (nextCard) {
-      // Notify parent of index change
-      if (onCardIndexChange) {
-        onCardIndexChange(nextIndex);
-      }
+      if (onCardIndexChange) onCardIndexChange(nextIndex);
 
-      // Auto-play content for the new front card
+      // Play the new top card (instant if cached, fetch if not)
       setTimeout(() => {
         fetchAndPlayContent(nextCard.title, nextCard.sector);
       }, 150);
+
+      // Silently preload the card after that in the background
+      if (nextNextCard) {
+        setTimeout(() => preloadForSector(nextNextCard.sector), 2000);
+      }
     }
   };
 
@@ -577,7 +656,16 @@ function SwipeableCardStack({
     };
   }, [globalStopAudio]);
 
-  // Voice functionality is now only triggered by manual clicks
+  // On mount: preload top card immediately, then queue the next card
+  React.useEffect(() => {
+    if (cards.length > 0) {
+      // Small delay so the page renders first, then preload silently
+      const t1 = setTimeout(() => preloadForSector(cards[0].sector), 1000);
+      const t2 = setTimeout(() => { if (cards.length > 1) preloadForSector(cards[1].sector); }, 5000);
+      const t3 = setTimeout(() => { if (cards.length > 2) preloadForSector(cards[2].sector); }, 9000);
+      return () => { clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="relative w-44 h-36 md:w-40 md:h-40">

@@ -3092,6 +3092,23 @@ export default function Home() {
     }
   };
 
+  // Handle Mini Cast access - only for chiranjeevi.perala99@gmail.com
+  const handleMinicastAccess = () => {
+    const userId = localStorage.getItem('currentUserId');
+    const userEmail = localStorage.getItem('currentUserEmail');
+
+    if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
+      setLocation('/login');
+      return;
+    }
+
+    if (userEmail === 'chiranjeevi.perala99@gmail.com') {
+      setTabWithAuthCheck("tutor");
+    } else {
+      setShowComingSoonDialog(true);
+    }
+  };
+
   // Create shareable trading report
   const handleCreateShareableLink = async () => {
     try {
@@ -21544,10 +21561,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                         {/* Main clickable button */}
                         <Button
-                          onClick={() => {
-                            const userId = localStorage.getItem('currentUserId');
-                            setTabWithAuthCheck("tutor");
-                          }}
+                          onClick={handleMinicastAccess}
                           className="relative w-16 h-16 rounded-full bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 shadow-2xl hover:animate-none transition-all duration-300 border-4 border-white/20 pointer-events-auto animate-bounce hover:scale-110"
                         >
                           <ChevronUp className="h-8 w-8 text-gray-400 pointer-events-none" />
@@ -21557,7 +21571,55 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     )}
 
                     {/* Tutor Vertical Sidebar - Slides from right */}
-{/* Coming Soon Dialog for AI Tutor */}        <Dialog open={showComingSoonDialog} onOpenChange={setShowComingSoonDialog}>          <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border-none shadow-2xl rounded-2xl p-0 overflow-hidden">            <div className="relative p-8 text-center space-y-6">                                          <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">                <Activity className="h-10 w-10 text-white" />              </div>                            <div className="space-y-2">                <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">                  Mini-cast                </h2>                <p className="text-xl font-medium text-indigo-600 dark:text-indigo-400">                  Coming Soon!                </p>              </div>                            <p className="text-slate-600 dark:text-slate-400 leading-relaxed">                Explore interactive trading lessons and personalized guidance with Mini-cast.              </p>                            <Button                 onClick={() => setShowComingSoonDialog(false)}                className="w-full h-12 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all active:scale-95"              >                Got It              </Button>            </div>          </DialogContent>        </Dialog>
+{/* Coming Soon Dialog for Mini Cast */}
+        <Dialog open={showComingSoonDialog} onOpenChange={setShowComingSoonDialog}>
+          <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border-none shadow-2xl rounded-2xl p-0 overflow-hidden">
+            <div className="relative p-8 text-center space-y-5">
+              {/* Icon */}
+              <div className="mx-auto w-20 h-20 rounded-full bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                <Activity className="h-10 w-10 text-white" />
+              </div>
+
+              {/* Title */}
+              <div className="space-y-1">
+                <h2 className="text-2xl font-bold text-slate-900 dark:text-white tracking-tight">
+                  Mini Cast
+                </h2>
+                <p className="text-lg font-semibold text-indigo-600 dark:text-indigo-400">
+                  Streaming Platform — Coming Soon!
+                </p>
+              </div>
+
+              {/* Warning stat */}
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800/40 rounded-xl px-4 py-3">
+                <p className="text-red-600 dark:text-red-400 text-sm font-bold">
+                  ⚠️ 90% of retail investors lose money
+                </p>
+                <p className="text-red-500 dark:text-red-500 text-xs mt-0.5">
+                  due to fake influencers &amp; unregistered, non-SEBI certified traders.
+                </p>
+              </div>
+
+              {/* Description */}
+              <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
+                We're building <span className="font-semibold text-indigo-600 dark:text-indigo-400">Mini Cast</span> — a curated, high-quality streaming platform collaborating only with SEBI-certified partners and verified trading educators. No noise, no scams. Just real, trustworthy financial content.
+              </p>
+
+              {/* Stay tuned badge */}
+              <div className="inline-flex items-center gap-2 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700/40 rounded-full px-4 py-1.5">
+                <div className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider">Stay Tuned — Launching Soon</span>
+              </div>
+
+              <Button
+                onClick={() => setShowComingSoonDialog(false)}
+                className="w-full h-12 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-lg shadow-indigo-500/25 transition-all active:scale-95"
+              >
+                Got It
+              </Button>
+            </div>
+          </DialogContent>
+        </Dialog>
                 {/* Admin Dashboard Dialog */}
         <Dialog open={showAdminDashboardDialog} onOpenChange={setShowAdminDashboardDialog}>
           <DialogContent className="w-[95vw] sm:max-w-2xl bg-white dark:bg-slate-900 border border-slate-200/60 dark:border-slate-800 shadow-xl rounded-3xl p-0 overflow-hidden">

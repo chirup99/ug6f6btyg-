@@ -20033,7 +20033,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // OpenAI-Edge-TTS compatible endpoint with full voice quality support
   app.post('/api/tts/generate', async (req, res) => {
     try {
-      const { text, language, speaker, speed } = req.body;
+      const { text, language, speaker, speed, skipTranslation } = req.body;
       
       if (!text) {
         res.status(400).json({ error: 'Text is required' });
@@ -20041,9 +20041,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const targetLanguage = language || 'en';
-      const textToSpeak = targetLanguage !== 'en'
-        ? await translateText(text, targetLanguage)
-        : text;
+      // Skip translation if: English, already in native script (skipTranslation flag),
+      // or text contains non-Latin characters (already translated)
+      const hasNativeScript = /[^\u0000-\u007F]/.test(text);
+      const textToSpeak = (targetLanguage === 'en' || skipTranslation || hasNativeScript)
+        ? text
+        : await translateText(text, targetLanguage);
 
       const result = await sarvamTTSService.generateSpeech({
         text: textToSpeak,

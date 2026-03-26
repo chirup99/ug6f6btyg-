@@ -75,6 +75,8 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   // Holds the card that should auto-play after the next cards state update
   const pendingAutoPlayRef = useRef<AudioCard | null>(null);
+  // Cache of pre-generated audio URLs keyed by card id
+  const audioCacheRef = useRef<Map<string, string>>(new Map());
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -99,51 +101,85 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     return allCards;
   });
 
+  // Clean text for speech: remove emojis, links, and special characters
+  const cleanTextForSpeech = (text: string): string => {
+    let cleaned = text.replace(/https?:\/\/[^\s]+/gi, '').replace(/www\.[^\s]+/gi, '');
+    cleaned = cleaned.replace(/[^\x20-\x7E\s]/g, '');
+    return cleaned.replace(/\s+/g, ' ').trim();
+  };
+
+  // Helper: fetch TTS and return an object URL (or null on failure)
+  const fetchAndCacheTTS = async (card: AudioCard, cancelled: { value: boolean }): Promise<string | null> => {
+    const cached = audioCacheRef.current.get(card.id);
+    if (cached) return cached;
+
+    const textToSpeak = cleanTextForSpeech(card.content);
+    if (!textToSpeak) return null;
+
+    const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
+    const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
+
+    try {
+      const response = await fetch('/api/tts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: textToSpeak, language: voiceLanguage, speaker: savedVoiceProfileId }),
+      });
+      if (!response.ok || cancelled.value) return null;
+      const data = await response.json();
+      if (cancelled.value || !data.audioBase64) return null;
+
+      const base64String = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+      const binary = atob(base64String);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+      audioCacheRef.current.set(card.id, url);
+      return url;
+    } catch {
+      return null;
+    }
+  };
+
+  // Pre-generate audio for all post cards in the background so playback is instant
+  useEffect(() => {
+    if (cards.length === 0) return;
+    const cancelled = { value: false };
+    const postCards = cards.filter(c => c.type === 'post');
+    postCards.forEach(card => {
+      if (!audioCacheRef.current.has(card.id)) {
+        fetchAndCacheTTS(card, cancelled);
+      }
+    });
+    return () => { cancelled.value = true; };
+  }, [cards]);
+
   // Auto-play the card queued by swipeCard once the cards state has updated (uses TTS API)
   useEffect(() => {
     const cardToPlay = pendingAutoPlayRef.current;
     if (!cardToPlay || cardToPlay.type !== 'post') return;
     pendingAutoPlayRef.current = null;
 
-    const textToSpeak = cleanTextForSpeech(cardToPlay.content);
-    const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
-    const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
-
-    let cancelled = false;
+    const cancelled = { value: false };
     (async () => {
       try {
-        const response = await fetch('/api/tts/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            text: textToSpeak,
-            language: voiceLanguage,
-            speaker: savedVoiceProfileId,
-          }),
-        });
-        if (!response.ok || cancelled) return;
-        const data = await response.json();
-        if (cancelled || !data.audioBase64) return;
+        const audioUrl = await fetchAndCacheTTS(cardToPlay, cancelled);
+        if (cancelled.value || !audioUrl) return;
 
         if (currentAudioRef.current) currentAudioRef.current.pause();
-        const base64String = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-        const binary = atob(base64String);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        const blob = new Blob([bytes], { type: 'audio/mpeg' });
-        const audioUrl = URL.createObjectURL(blob);
         const audio = new Audio(audioUrl);
         currentAudioRef.current = audio;
-        audio.onended = () => { setIsPlaying(false); URL.revokeObjectURL(audioUrl); };
-        audio.onerror = () => { setIsPlaying(false); URL.revokeObjectURL(audioUrl); };
+        audio.onended = () => { setIsPlaying(false); };
+        audio.onerror = () => { setIsPlaying(false); };
         audio.play();
         setIsPlaying(true);
       } catch {
-        if (!cancelled) setIsPlaying(false);
+        if (!cancelled.value) setIsPlaying(false);
       }
     })();
 
-    return () => { cancelled = true; };
+    return () => { cancelled.value = true; };
   }, [cards]);
 
   const formatTimeAgo = (date: Date) => {
@@ -176,7 +212,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, [stopAudio]);
 
-  // Stop audio when component unmounts (tab closed / social feed closed)
+  // Stop audio and revoke all cached URLs when component unmounts
   useEffect(() => {
     return () => {
       if (currentAudioRef.current) {
@@ -184,6 +220,8 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
         currentAudioRef.current = null;
       }
       window.speechSynthesis.cancel();
+      audioCacheRef.current.forEach(url => URL.revokeObjectURL(url));
+      audioCacheRef.current.clear();
     };
   }, []);
 
@@ -218,18 +256,6 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     ];
     return gradients[idx % gradients.length];
   };
-
-  // Clean text for speech: remove emojis, links, and special characters
-  const cleanTextForSpeech = (text: string): string => {
-    // Remove URLs
-    let cleaned = text.replace(/https?:\/\/[^\s]+/gi, '').replace(/www\.[^\s]+/gi, '');
-    
-    // Remove emojis by removing characters outside basic ASCII range
-    cleaned = cleaned.replace(/[^\x20-\x7E\s]/g, '');
-    
-    // Remove extra whitespace and return
-    return cleaned.replace(/\s+/g, ' ').trim();
-  }
 
   // Helper: Map language + voice profile to proper language-specific voice
   const getLanguageAwareVoiceName = (voiceProfileId: string, language: string): string => {
@@ -307,94 +333,22 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     if (isPlaying) {
       stopAudio();
     } else {
-      // Only read content cards (not the main announcement card)
       const currentCard = cards[0];
       if (currentCard && currentCard.type === 'post') {
-        const textToSpeak = cleanTextForSpeech(currentCard.content);
-        
-        console.log('🔊 Playing audio with voice profile:', {
-          currentCardId: currentCard.id,
-          currentCardType: currentCard.type,
-          textLength: textToSpeak.length,
-          textPreview: textToSpeak.substring(0, 100) + '...'
-        });
-        
         try {
-          // Get voice settings from localStorage
-          const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
-          const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
-          
-          // Get language-aware voice name
-          const languageAwareVoice = getLanguageAwareVoiceName(savedVoiceProfileId, voiceLanguage);
-          
-          console.log('🎤 TTS Settings:', { savedVoiceProfileId, voiceLanguage, languageAwareVoice });
-          
-          // Call TTS API with voice profile settings
-          const response = await fetch('/api/tts/generate', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              text: textToSpeak,
-              language: voiceLanguage,
-              speaker: languageAwareVoice,
-            }),
-          });
+          const cancelled = { value: false };
+          const audioUrl = await fetchAndCacheTTS(currentCard, cancelled);
+          if (!audioUrl) return;
 
-          if (!response.ok) {
-            throw new Error(`TTS API error: ${response.statusText}`);
-          }
-
-          const data = await response.json();
-          
-          console.log('📦 TTS API Response:', {
-            hasAudioBase64: !!data.audioBase64,
-            audioLength: data.audioBase64?.length || 0,
-            error: data.error || null
-          });
-          
-          if (data.error) {
-            console.error('❌ TTS Error:', data.error);
-            throw new Error(data.error);
-          }
-
-          if (data.audioBase64) {
-            // Stop previous audio if playing
-            if (currentAudioRef.current) {
-              currentAudioRef.current.pause();
-            }
-
-            // Convert base64 to Blob and create audio element
-            // Strip data URI prefix if present
-            const base64String = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-            const binaryString = atob(base64String);
-            const bytes = new Uint8Array(binaryString.length);
-            for (let i = 0; i < binaryString.length; i++) {
-              bytes[i] = binaryString.charCodeAt(i);
-            }
-            const blob = new Blob([bytes], { type: 'audio/mpeg' });
-            const audioUrl = URL.createObjectURL(blob);
-            
-            const audio = new Audio(audioUrl);
-            currentAudioRef.current = audio;
-            
-            audio.onended = () => {
-              setIsPlaying(false);
-              URL.revokeObjectURL(audioUrl);
-            };
-            
-            audio.onerror = () => {
-              setIsPlaying(false);
-              URL.revokeObjectURL(audioUrl);
-            };
-            
-            audio.play();
-            setIsPlaying(true);
-          }
+          if (currentAudioRef.current) currentAudioRef.current.pause();
+          const audio = new Audio(audioUrl);
+          currentAudioRef.current = audio;
+          audio.onended = () => { setIsPlaying(false); };
+          audio.onerror = () => { setIsPlaying(false); };
+          audio.play();
+          setIsPlaying(true);
         } catch (error) {
-          const errorMsg = error instanceof Error ? error.message : String(error);
-          console.error('🎤 [AudioMinicast] TTS Generation Failed:', errorMsg);
+          console.error('🎤 [AudioMinicast] TTS playback failed:', error);
           setIsPlaying(false);
         }
       }

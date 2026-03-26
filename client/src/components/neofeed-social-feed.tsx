@@ -200,9 +200,10 @@ interface UserAvatarCtx {
   markAvatarFailed: (username: string, url: string) => void;
   getCertification: (username: string | undefined | null) => CertificationInfo | null;
   setCertification: (username: string, info: CertificationInfo) => void;
+  seedMany: (entries: Array<{ username: string; avatarUrl?: string | null; certifiedRole?: string | null; certificationImageUrl?: string | null }>) => void;
 }
 
-const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null, setAvatar: () => {}, markAvatarFailed: () => {}, getCertification: () => null, setCertification: () => {} });
+const UserAvatarContext = createContext<UserAvatarCtx>({ getAvatar: () => null, setAvatar: () => {}, markAvatarFailed: () => {}, getCertification: () => null, setCertification: () => {}, seedMany: () => {} });
 
 // TTL for null (not-found / broken-image) cache entries — retry after 45 seconds.
 // This ensures that when a user uploads a new profile picture, other users see it
@@ -216,6 +217,26 @@ const NULL_CACHE_TTL_MS = 45_000;
 const _urlCache  = new Map<string, string>();
 const _nullCache = new Map<string, number>();
 const _certCache = new Map<string, CertificationInfo>();
+
+// Seed avatar + cert caches directly from posts data (before any PostCard renders).
+// Posts now come back from the server with authorAvatar, authorCertifiedRole, and
+// authorCertificationImageUrl already embedded, so we can populate the caches
+// immediately — no secondary batch-fetch needed for these users.
+function seedPostCaches(posts: any[]) {
+  for (const post of posts) {
+    const key = (post.authorUsername || post.user?.handle || '').toLowerCase();
+    if (!key) continue;
+    if (post.authorAvatar && !_urlCache.has(key)) {
+      _urlCache.set(key, post.authorAvatar);
+    }
+    if ((post.authorCertifiedRole !== undefined || post.authorCertificationImageUrl !== undefined) && !_certCache.has(key)) {
+      _certCache.set(key, {
+        certifiedRole: post.authorCertifiedRole || null,
+        certificationImageUrl: post.authorCertificationImageUrl || null,
+      });
+    }
+  }
+}
 
 function UserAvatarProvider({ children }: { children: ReactNode }) {
   // Point refs at the module-level maps so all component logic stays the same.
@@ -352,9 +373,33 @@ function UserAvatarProvider({ children }: { children: ReactNode }) {
     setCacheRev(v => v + 1);
   }, []);
 
+  // Batch-seed avatar + cert caches from a list of post entries in one pass.
+  // Only writes entries that are not already cached (preserves fresher data).
+  // Triggers a single cacheRev increment so all consumers re-render once.
+  const seedMany = useCallback((entries: Array<{ username: string; avatarUrl?: string | null; certifiedRole?: string | null; certificationImageUrl?: string | null }>) => {
+    let changed = false;
+    for (const entry of entries) {
+      const key = (entry.username || '').toLowerCase();
+      if (!key) continue;
+      if (entry.avatarUrl && !urlCache.current.has(key)) {
+        urlCache.current.set(key, entry.avatarUrl);
+        nullCache.current.delete(key);
+        changed = true;
+      }
+      if (!certCache.current.has(key) && (entry.certifiedRole !== undefined || entry.certificationImageUrl !== undefined)) {
+        certCache.current.set(key, {
+          certifiedRole: entry.certifiedRole || null,
+          certificationImageUrl: entry.certificationImageUrl || null,
+        });
+        changed = true;
+      }
+    }
+    if (changed) setCacheRev(v => v + 1);
+  }, []);
+
   // cacheRev in the dep array ensures a new value object is created after each fetch,
   // which causes all context consumers to re-render and pick up fresh avatar URLs.
-  const value = useMemo(() => ({ getAvatar, setAvatar, markAvatarFailed, getCertification, setCertification }), [getAvatar, setAvatar, markAvatarFailed, getCertification, setCertification, cacheRev]); // eslint-disable-line react-hooks/exhaustive-deps
+  const value = useMemo(() => ({ getAvatar, setAvatar, markAvatarFailed, getCertification, setCertification, seedMany }), [getAvatar, setAvatar, markAvatarFailed, getCertification, setCertification, seedMany, cacheRev]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return <UserAvatarContext.Provider value={value}>{children}</UserAvatarContext.Provider>;
 }
@@ -364,6 +409,7 @@ const useSetAvatar        = () => useContext(UserAvatarContext).setAvatar;
 const useMarkAvatarFailed = () => useContext(UserAvatarContext).markAvatarFailed;
 const useGetCertification = () => useContext(UserAvatarContext).getCertification;
 const useSetCertification = () => useContext(UserAvatarContext).setCertification;
+const useSeedMany         = () => useContext(UserAvatarContext).seedMany;
 
 // ─── CertifiedBadge: tiny inline badge shown beside display name in posts ─────
 function CertifiedBadge({ certId, onClick, certImageUrl }: { certId: string; onClick: () => void; certImageUrl?: string | null }) {

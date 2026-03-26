@@ -113,6 +113,8 @@ async function enrichPostWithRealCounts(post: any): Promise<any> {
 
   let authorAvatar = post.authorAvatar || null;
   let authorDisplayName = post.authorDisplayName || post.authorUsername || null;
+  let authorCertifiedRole = post.authorCertifiedRole || null;
+  let authorCertificationImageUrl = post.authorCertificationImageUrl || null;
 
   if (post.authorUsername) {
     try {
@@ -120,13 +122,15 @@ async function enrichPostWithRealCounts(post: any): Promise<any> {
       if (profile) {
         if (profile.profilePicUrl) authorAvatar = profile.profilePicUrl;
         if (profile.displayName) authorDisplayName = profile.displayName;
+        if (profile.certifiedRole) authorCertifiedRole = profile.certifiedRole;
+        if (profile.certificationImageUrl) authorCertificationImageUrl = profile.certificationImageUrl;
       }
     } catch (err) {
       console.log(`🪞 [MIRROR] Profile fetch failed for ${post.authorUsername}:`, err);
     }
   }
 
-  return { ...post, likes, reposts, comments, authorAvatar, authorDisplayName };
+  return { ...post, likes, reposts, comments, authorAvatar, authorDisplayName, authorCertifiedRole, authorCertificationImageUrl };
 }
 
 // Mirror logic for comments — always use the latest profile displayName and avatar

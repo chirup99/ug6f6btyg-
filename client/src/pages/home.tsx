@@ -33769,7 +33769,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             if (!open) { setReportPostDescription(''); setReportPostMode(null); setReportPostSelectedDate(''); setRangePostTagHighlight(null); setRangePostOverrideData(null); }
           }}
         >
-          <DialogContent className={reportPostMode === 'range' ? "w-[calc(100vw-16px)] sm:w-full sm:max-w-sm max-h-[88dvh] overflow-hidden flex flex-col gap-0 p-0 rounded-xl" : "w-full sm:max-w-sm p-0 overflow-hidden flex flex-col max-h-[90dvh] bg-white dark:bg-zinc-950"}>
+          <DialogContent className={reportPostMode === 'range' ? "w-[calc(100vw-16px)] sm:w-full sm:max-w-sm max-h-[88dvh] overflow-hidden flex flex-col gap-0 p-0 rounded-2xl" : "w-[calc(100vw-16px)] sm:w-full sm:max-w-sm p-0 overflow-hidden flex flex-col max-h-[88dvh] bg-white dark:bg-zinc-950 rounded-2xl"}>
             {reportPostMode === 'range' && (
             <DialogHeader className="flex-shrink-0 px-3 pt-3 pb-2.5 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center gap-2 min-w-0">

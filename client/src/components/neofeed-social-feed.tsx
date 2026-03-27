@@ -413,7 +413,10 @@ const useSeedMany         = () => useContext(UserAvatarContext).seedMany;
 
 // ─── CertifiedBadge: tiny inline badge shown beside display name in posts ─────
 function CertifiedBadge({ certId, onClick, certImageUrl }: { certId: string; onClick: () => void; certImageUrl?: string | null }) {
-  const shortName = certShortName(certId);
+  const fullLabel = NISM_CERTIFICATES.find(c => c.id === certId)?.label || certId;
+  // Badge shows only the compact series ID (e.g. "NISM-VIII").
+  // Tap opens the dialog which shows the full label.
+  const badgeText = certId.length > 12 ? certId.substring(0, 11) + '…' : certId;
   useEffect(() => {
     if (certImageUrl) {
       const img = new Image();
@@ -424,14 +427,14 @@ function CertifiedBadge({ certId, onClick, certImageUrl }: { certId: string; onC
     <button
       onClick={(e) => { e.stopPropagation(); onClick(); }}
       className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] font-semibold leading-none bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors flex-shrink-0"
-      title={NISM_CERTIFICATES.find(c => c.id === certId)?.label || certId}
+      title={fullLabel}
       data-testid="button-cert-badge"
     >
       <svg className="w-2.5 h-2.5 flex-shrink-0" viewBox="0 0 12 12" fill="none">
         <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
         <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
       </svg>
-      {shortName}
+      {badgeText}
     </button>
   );
 }
@@ -6354,18 +6357,26 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   });
 
   // Pre-populate avatar + certification cache as soon as posts data arrives.
-  // This fires immediately (before individual PostCard renders) so avatars & cert badges
-  // appear on first paint instead of after a per-component debounce.
+  // seedMany seeds cert+avatar data directly from the embedded post payload
+  // (no extra API round-trip) and increments cacheRev so PostCards re-render
+  // immediately on first paint instead of waiting for a batch fetch response.
   const getAvatar = useUserAvatar();
-  const getCertification = useGetCertification();
+  const seedMany = useSeedMany();
   useEffect(() => {
     if (!posts || posts.length === 0) return;
-    posts.forEach(p => {
+    // 1) Seed cert+avatar caches from data already embedded in the post objects.
+    //    This avoids a network round-trip for users whose certs are known.
+    const entries = (posts as any[]).map((p: any) => ({
+      username: p.authorUsername || p.user?.handle || '',
+      avatarUrl: p.authorAvatar || p.user?.avatar || null,
+      certifiedRole: p.authorCertifiedRole ?? undefined,
+      certificationImageUrl: p.authorCertificationImageUrl ?? undefined,
+    })).filter((e: any) => e.username);
+    seedMany(entries);
+    // 2) Queue a batch avatar fetch for any usernames still missing a URL.
+    posts.forEach((p: any) => {
       const key = p.authorUsername || p.user?.handle;
-      if (key) {
-        getAvatar(key);          // queue for batch fetch
-        getCertification(key);   // pull from cache (or queue alongside avatar fetch)
-      }
+      if (key) getAvatar(key);
     });
   }, [posts]); // eslint-disable-line react-hooks/exhaustive-deps
 

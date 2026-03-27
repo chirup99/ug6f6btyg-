@@ -218,6 +218,20 @@ const _urlCache  = new Map<string, string>();
 const _nullCache = new Map<string, number>();
 const _certCache = new Map<string, CertificationInfo>();
 
+// Track URLs already kicked off as browser preloads so we never fire twice.
+const _preloadedUrls = new Set<string>();
+
+// Kick off a hidden Image download so the browser fetches the file before any
+// <img> / <AvatarImage> element even exists in the DOM.  Called synchronously
+// inside the TanStack Query `select` function — runs before React renders
+// PostCards, so the download is in-flight (or complete) by paint time.
+function preloadImage(url: string | undefined | null) {
+  if (!url || _preloadedUrls.has(url)) return;
+  _preloadedUrls.add(url);
+  const img = new Image();
+  img.src = url;
+}
+
 // Seed avatar + cert caches directly from posts data (before any PostCard renders).
 // Posts now come back from the server with authorAvatar, authorCertifiedRole, and
 // authorCertificationImageUrl already embedded, so we can populate the caches
@@ -228,12 +242,14 @@ function seedPostCaches(posts: any[]) {
     if (!key) continue;
     if (post.authorAvatar && !_urlCache.has(key)) {
       _urlCache.set(key, post.authorAvatar);
+      preloadImage(post.authorAvatar);
     }
     if ((post.authorCertifiedRole !== undefined || post.authorCertificationImageUrl !== undefined) && !_certCache.has(key)) {
       _certCache.set(key, {
         certifiedRole: post.authorCertifiedRole || null,
         certificationImageUrl: post.authorCertificationImageUrl || null,
       });
+      preloadImage(post.authorCertificationImageUrl);
     }
   }
 }

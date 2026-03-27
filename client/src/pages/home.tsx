@@ -283,6 +283,7 @@ interface SwipeableCardStackProps {
   selectedSector: string;
   onCardIndexChange?: (index: number) => void;
   currentCardIndex?: number;
+  voiceLanguage?: string;
 }
 
 function SwipeableCardStack({
@@ -290,6 +291,7 @@ function SwipeableCardStack({
   selectedSector,
   onCardIndexChange,
   currentCardIndex = 0,
+  voiceLanguage = 'en',
 }: SwipeableCardStackProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentContent, setCurrentContent] = useState<string>("");
@@ -375,7 +377,7 @@ function SwipeableCardStack({
 
   // Build cache key from current language/speaker settings
   const getCacheKey = (sector: string) => {
-    const lang = localStorage.getItem('voiceLanguage') || 'en';
+    const lang = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
     const speaker = localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
     return `${sector}-${lang}-${speaker}`;
   };
@@ -414,7 +416,7 @@ function SwipeableCardStack({
     if (!cleanText) return null;
 
     const savedVoiceId = localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
-    const savedLanguage = localStorage.getItem('voiceLanguage') || 'en';
+    const savedLanguage = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
 
     const response = await fetch('/api/tts/generate', {
       method: 'POST',
@@ -482,7 +484,7 @@ function SwipeableCardStack({
     setIsPlaying(true);
     try {
       const savedVoiceId = localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
-      const savedLanguage = localStorage.getItem('voiceLanguage') || 'en';
+      const savedLanguage = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
 
       const response = await fetch('/api/tts/generate', {
         method: 'POST',
@@ -690,9 +692,8 @@ function SwipeableCardStack({
 
   // On mount: preload ALL card sectors in the background — staggered so they don't
   // hammer the network simultaneously.  Card 0 starts immediately so the top card
-  // is warm by the time the user reads it.  Remaining cards stagger at 6 s intervals
-  // to stay under server TTS rate limits while still loading well before the user
-  // swipes through to them.
+  // is warm by the time the user reads it.  Remaining cards stagger at 2 s intervals
+  // so all 6 cards are warm within ~10 seconds.
   React.useEffect(() => {
     if (cards.length === 0) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -700,11 +701,44 @@ function SwipeableCardStack({
       if (i === 0) {
         preloadForSector(card.sector);
       } else {
-        timers.push(setTimeout(() => preloadForSector(card.sector), i * 6000));
+        timers.push(setTimeout(() => preloadForSector(card.sector), i * 2000));
       }
     });
     return () => timers.forEach(clearTimeout);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // When voiceLanguage changes: clear the entire audio cache (it was built for
+  // the previous language) and re-preload all cards in the new language so the
+  // user gets instant play in the correct language on next tap.
+  const prevLanguageRef = React.useRef(voiceLanguage);
+  React.useEffect(() => {
+    if (voiceLanguage === prevLanguageRef.current) return;
+    prevLanguageRef.current = voiceLanguage;
+
+    // Stop any audio that might be playing in the old language
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
+    }
+    setIsPlaying(false);
+
+    // Wipe the cache — all old-language blob URLs are now stale
+    audioCacheRef.current.clear();
+    preloadingRef.current.clear();
+
+    console.log(`[LANG CHANGE] Language changed to ${voiceLanguage} — re-preloading all sectors`);
+
+    // Re-preload every card sector in the new language, staggered at 2 s each
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    cards.forEach((card, i) => {
+      if (i === 0) {
+        preloadForSector(card.sector);
+      } else {
+        timers.push(setTimeout(() => preloadForSector(card.sector), i * 2000));
+      }
+    });
+    return () => timers.forEach(clearTimeout);
+  }, [voiceLanguage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="relative w-44 h-36 md:w-40 md:h-40">
@@ -21963,6 +21997,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               selectedSector={selectedSector}
                               onCardIndexChange={setCurrentCardIndex}
                               currentCardIndex={currentCardIndex}
+                              voiceLanguage={voiceLanguage}
                             />
                           </div>
                         </div>
@@ -22031,6 +22066,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               selectedSector={selectedSector}
                               onCardIndexChange={setCurrentCardIndex}
                               currentCardIndex={currentCardIndex}
+                              voiceLanguage={voiceLanguage}
                             />
                           </div>
                         </div>

@@ -1802,7 +1802,9 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                   {displayName || username}
                 </h2>
                 {profileData?.verified && (
-                  <CheckCircle className="w-3.5 h-3.5 text-blue-500 fill-current flex-shrink-0" />
+                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 bg-blue-500 rounded-full flex-shrink-0">
+                    <Check className="w-2 h-2 text-white" strokeWidth={3} />
+                  </span>
                 )}
               </div>
               <p className="text-[11px] text-gray-400 dark:text-gray-500">@{username}</p>
@@ -4486,13 +4488,17 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                   {(post.user?.verified || post.authorVerified) && (
                     (post.user?.handle || post.authorUsername) === 'finance_news' ? (
                       <>
-                        <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
+                        <span className="inline-flex items-center justify-center w-3.5 h-3.5 bg-blue-500 rounded-full flex-shrink-0">
+                          <Check className="w-2 h-2 text-white" strokeWidth={3} />
+                        </span>
                         <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5 flex-shrink-0">
                           <Bot className="w-2.5 h-2.5" /> Bot
                         </span>
                       </>
                     ) : (
-                      <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
+                      <span className="inline-flex items-center justify-center w-3.5 h-3.5 bg-blue-500 rounded-full flex-shrink-0">
+                        <Check className="w-2 h-2 text-white" strokeWidth={3} />
+                      </span>
                     )
                   )}
                   {(() => {
@@ -4672,13 +4678,17 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 {(post.user?.verified || post.authorVerified) && (
                   (post.user?.handle || post.authorUsername) === 'finance_news' ? (
                     <>
-                      <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
+                      <span className="inline-flex items-center justify-center w-4 h-4 bg-blue-500 rounded-full flex-shrink-0">
+                        <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                      </span>
                       <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5 flex-shrink-0">
                         <Bot className="w-2.5 h-2.5" /> Bot
                       </span>
                     </>
                   ) : (
-                    <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 fill-current" />
+                    <span className="inline-flex items-center justify-center w-4 h-4 bg-blue-500 rounded-full flex-shrink-0">
+                      <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
+                    </span>
                   )
                 )}
                 {/* Certified role badge */}
@@ -5823,7 +5833,9 @@ function ViewUserProfile({
                 {displayName}
               </h2>
               {profileData?.verified && (
-                <CheckCircle className="w-3.5 h-3.5 text-blue-500 fill-current flex-shrink-0" />
+                <span className="inline-flex items-center justify-center w-3.5 h-3.5 bg-blue-500 rounded-full flex-shrink-0">
+                  <Check className="w-2 h-2 text-white" strokeWidth={3} />
+                </span>
               )}
             </div>
             <p className="text-[11px] text-gray-400 dark:text-gray-500">

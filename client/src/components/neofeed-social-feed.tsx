@@ -2036,56 +2036,88 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                 <div className="flex gap-2.5 overflow-x-auto scrollbar-hide -mx-5 px-5">
 
                   {/* 1 · Journal Streak */}
+                  {(() => {
+                    const streakDays = totalTrades > 0 ? Math.max(currentStreak, 1) : currentStreak;
+                    const streakBars = totalTrades > 0 ? Math.min(streakDays, 7) : 0;
+                    return (
+                      <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Flame className="w-3 h-3 text-orange-500" />
+                          <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Streak</p>
+                        </div>
+                        <p className="text-base font-bold leading-none text-orange-500 mb-1.5">
+                          {totalTrades > 0 ? `${streakDays} day${streakDays !== 1 ? 's' : ''}` : '—'}
+                        </p>
+                        <div className="flex gap-0.5">
+                          {Array.from({ length: 7 }).map((_, i) => (
+                            <div key={i} className={`flex-1 h-4 rounded-sm transition-colors ${i < streakBars ? 'bg-orange-400' : 'bg-gray-100 dark:bg-gray-700'}`} />
+                          ))}
+                        </div>
+                        <p className="text-[8px] text-gray-400 mt-1">{totalTrades > 0 ? `${totalTrades} entries logged` : 'No entries yet'}</p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 2 · Win Rate */}
+                  {(() => {
+                    const wr = winRate ?? 0;
+                    const wrCirc = 2 * Math.PI * 16;
+                    const wrDash = (wr / 100) * wrCirc;
+                    const wrColor = wr >= 60 ? '#10b981' : wr >= 45 ? '#f59e0b' : '#ef4444';
+                    return (
+                      <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                        <div className="flex items-center gap-1 mb-1">
+                          <TrendingUp className="w-3 h-3 text-emerald-500" />
+                          <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Win %</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <svg width="38" height="38" viewBox="0 0 42 42">
+                            <circle cx="21" cy="21" r="16" fill="none" stroke="#e5e7eb" strokeWidth="4" />
+                            <circle cx="21" cy="21" r="16" fill="none" stroke={wrColor} strokeWidth="4"
+                              strokeLinecap="round"
+                              strokeDasharray={`${wrDash} ${wrCirc}`}
+                              strokeDashoffset={wrCirc * 0.25}
+                              style={{ transition: 'stroke-dasharray 0.6s ease' }}
+                            />
+                            <text x="21" y="25" textAnchor="middle" fontSize="8" fontWeight="700" fill={wrColor}>{wr}%</text>
+                          </svg>
+                          <div>
+                            <p className="text-xs font-bold leading-none" style={{ color: wrColor }}>{wr}%</p>
+                            <p className="text-[9px] text-gray-400 mt-0.5">{totalTrades} trades</p>
+                          </div>
+                        </div>
+                        <p className="text-[8px] text-gray-400 mt-1">{wr >= 60 ? 'Strong edge' : wr >= 45 ? 'Developing' : 'Needs work'}</p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 3 · P&L Trend */}
                   <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
                     <div className="flex items-center gap-1 mb-1">
-                      <Flame className="w-3 h-3 text-orange-500" />
-                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Streak</p>
+                      <Activity className="w-3 h-3 text-blue-500" />
+                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Trend</p>
                     </div>
-                    <p className="text-base font-bold leading-none text-orange-500 mb-1.5">{currentStreak} days</p>
-                    <div className="flex gap-0.5">
-                      {Array.from({ length: 7 }).map((_, i) => (
-                        <div key={i} className={`flex-1 h-4 rounded-sm transition-colors ${i < Math.min(currentStreak, 7) ? 'bg-orange-400' : 'bg-gray-100 dark:bg-gray-700'}`} />
-                      ))}
-                    </div>
-                    <p className="text-[8px] text-gray-400 mt-1">Journal streak</p>
-                  </div>
-
-                  {/* 2 · Journal Entries */}
-                  <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    <div className="flex items-center gap-1 mb-1">
-                      <BookOpen className="w-3 h-3 text-teal-500" />
-                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Journal</p>
-                    </div>
-                    <p className="text-base font-bold leading-none text-teal-600 dark:text-teal-400 mb-2">{totalTrades} entries</p>
-                    <div className="flex gap-0.5 items-end h-6">
-                      {last6Months.map((m, i) => {
-                        const maxPnl = Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1);
-                        const h = Math.max(20, (Math.abs(m.pnl) / maxPnl) * 100);
-                        return <div key={i} className="flex-1 rounded-sm bg-teal-400/70 dark:bg-teal-600/70" style={{ height: `${h}%` }} title={m.label} />;
-                      })}
-                    </div>
-                    <p className="text-[8px] text-gray-400 mt-1">Logged trades</p>
-                  </div>
-
-                  {/* 3 · Monthly Yield */}
-                  <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold mb-1">Yield</p>
-                    <p className={`text-base font-bold leading-none mb-2 ${isYieldPos ? 'text-emerald-500' : 'text-red-500'}`}>
+                    <p className={`text-base font-bold leading-none mb-1.5 ${isYieldPos ? 'text-emerald-500' : 'text-red-500'}`}>
                       {isYieldPos ? '+' : ''}{monthlyYield.toFixed(1)}%
                     </p>
-                    {yieldPath ? (
+                    {trendPath ? (
+                      <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
+                        <defs>
+                          <linearGradient id="trend-grad" x1="0" y1="0" x2="1" y2="0">
+                            <stop offset="0%" stopColor={isTrendPos ? '#3b82f6' : '#ef4444'} />
+                            <stop offset="100%" stopColor={isTrendPos ? '#06b6d4' : '#f97316'} />
+                          </linearGradient>
+                        </defs>
+                        <path d={trendPath} fill="none" stroke="url(#trend-grad)" strokeWidth="1.8" strokeLinecap="round" />
+                      </svg>
+                    ) : yieldPath ? (
                       <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
                         <path d={yieldPath} fill="none" stroke={isYieldPos ? '#10b981' : '#ef4444'} strokeWidth="1.8" strokeLinecap="round" />
                       </svg>
                     ) : (
-                      <div className="flex gap-0.5 items-end h-6">
-                        {last6Months.map((m, i) => (
-                          <div key={i} className={`flex-1 rounded-sm ${m.pnl >= 0 ? 'bg-emerald-400' : 'bg-red-400'}`}
-                            style={{ height: `${Math.max(20, Math.abs(m.pnl) / Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1) * 100)}%` }} />
-                        ))}
-                      </div>
+                      <div className="h-6 flex items-center"><div className="h-px w-full bg-blue-200 dark:bg-blue-800" /></div>
                     )}
-                    <p className="text-[8px] text-gray-400 mt-1">{totalTrades} trades</p>
+                    <p className="text-[8px] text-gray-400 mt-1">6-month P&L</p>
                   </div>
 
                   {/* 4 · Monthly Target */}
@@ -2115,28 +2147,61 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                     </div>
                   </div>
 
-                  {/* 5 · Discipline */}
-                  <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
-                    <div className="flex items-center gap-1 mb-1">
-                      <Award className="w-3 h-3 text-violet-500" />
-                      <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Discipline</p>
-                    </div>
-                    <p className="text-base font-bold leading-none mb-2 text-violet-600 dark:text-violet-400">{currentStreak} wins</p>
-                    {disciplinePath ? (
-                      <svg width="100%" height="24" viewBox="0 0 80 24" preserveAspectRatio="none">
-                        <defs>
-                          <linearGradient id="disc-grad2" x1="0" y1="0" x2="1" y2="0">
-                            <stop offset="0%" stopColor="#8b5cf6" />
-                            <stop offset="100%" stopColor="#6366f1" />
-                          </linearGradient>
-                        </defs>
-                        <path d={disciplinePath} fill="none" stroke="url(#disc-grad2)" strokeWidth="1.8" strokeLinecap="round" />
-                      </svg>
-                    ) : (
-                      <div className="h-6 flex items-center"><div className="h-px w-full bg-violet-200 dark:bg-violet-800" /></div>
-                    )}
-                    <p className="text-[8px] text-gray-400 mt-1">Win streak trend</p>
-                  </div>
+                  {/* 5 · Best Month */}
+                  {(() => {
+                    const bestMonth = last6Months.length > 0
+                      ? last6Months.reduce((a, b) => a.pnl > b.pnl ? a : b)
+                      : null;
+                    const isPositive = (bestMonth?.pnl ?? 0) >= 0;
+                    return (
+                      <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3">
+                        <div className="flex items-center gap-1 mb-1">
+                          <Award className="w-3 h-3 text-amber-500" />
+                          <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Best Month</p>
+                        </div>
+                        <p className={`text-base font-bold leading-none mb-1 ${isPositive ? 'text-emerald-500' : 'text-red-500'}`}>
+                          {bestMonth ? `${isPositive ? '+' : ''}₹${Math.abs(bestMonth.pnl).toLocaleString('en-IN', { maximumFractionDigits: 0 })}` : '—'}
+                        </p>
+                        <div className="flex gap-0.5 items-end h-5 mt-1">
+                          {last6Months.map((m, i) => {
+                            const maxAbs = Math.max(...last6Months.map(x => Math.abs(x.pnl)), 1);
+                            const h = Math.max(15, (Math.abs(m.pnl) / maxAbs) * 100);
+                            const isBest = bestMonth ? m.label === bestMonth.label : false;
+                            return <div key={i} className={`flex-1 rounded-sm ${isBest ? 'bg-amber-400' : m.pnl >= 0 ? 'bg-emerald-300/60' : 'bg-red-300/60'}`} style={{ height: `${h}%` }} title={m.label} />;
+                          })}
+                        </div>
+                        <p className="text-[8px] text-gray-400 mt-1">{bestMonth?.label ?? 'No data'}</p>
+                      </div>
+                    );
+                  })()}
+
+                  {/* 6 · Pro Tip for Traders */}
+                  {(() => {
+                    const PRO_TIPS = [
+                      { icon: TargetIcon, tip: "Track RR ratio per trade. 2:1 RR = profitable at 40% win rate.", color: 'text-blue-500', ring: 'bg-blue-50 dark:bg-blue-900/20' },
+                      { icon: Flame, tip: "Cut losers fast. Never widen your stop to avoid a loss.", color: 'text-orange-500', ring: 'bg-orange-50 dark:bg-orange-900/20' },
+                      { icon: BookOpen, tip: "Journal every trade. Patterns only reveal themselves in your own data.", color: 'text-teal-500', ring: 'bg-teal-50 dark:bg-teal-900/20' },
+                      { icon: Award, tip: "3 losses in a row? Step away. Revenge trading destroys accounts.", color: 'text-violet-500', ring: 'bg-violet-50 dark:bg-violet-900/20' },
+                      { icon: Zap, tip: "Set a hard daily loss limit. Discipline in losses builds consistency.", color: 'text-yellow-500', ring: 'bg-yellow-50 dark:bg-yellow-900/20' },
+                      { icon: Eye, tip: "Trade the chart, not the news. Price action tells the real story.", color: 'text-indigo-500', ring: 'bg-indigo-50 dark:bg-indigo-900/20' },
+                    ];
+                    const tipIdx = (new Date().getDate() + Math.floor(totalTrades / 3)) % PRO_TIPS.length;
+                    const tip = PRO_TIPS[tipIdx];
+                    const TipIcon = tip.icon;
+                    return (
+                      <div className="relative flex-shrink-0 w-[130px] rounded-2xl bg-white dark:bg-gray-800 border border-gray-100 dark:border-gray-700/60 shadow-sm p-3 flex flex-col">
+                        <div className="flex items-center gap-1 mb-1.5">
+                          <Zap className="w-3 h-3 text-yellow-500" />
+                          <p className="text-[8px] uppercase tracking-widest text-gray-400 dark:text-gray-500 font-bold">Pro Tip</p>
+                        </div>
+                        <div className={`w-6 h-6 rounded-full ${tip.ring} flex items-center justify-center mb-1.5`}>
+                          <TipIcon className={`w-3 h-3 ${tip.color}`} />
+                        </div>
+                        <p className="text-[9px] text-gray-700 dark:text-gray-300 leading-snug flex-1">{tip.tip}</p>
+                        <p className="text-[7px] text-gray-300 dark:text-gray-600 mt-1.5 uppercase tracking-widest">Daily tip</p>
+                      </div>
+                    );
+                  })()}
 
                 </div>
                 </div>

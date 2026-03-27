@@ -4485,9 +4485,12 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                   )}
                   {(post.user?.verified || post.authorVerified) && (
                     (post.user?.handle || post.authorUsername) === 'finance_news' ? (
-                      <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5 flex-shrink-0">
-                        <Bot className="w-2.5 h-2.5" /> Bot
-                      </span>
+                      <>
+                        <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
+                        <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5 flex-shrink-0">
+                          <Bot className="w-2.5 h-2.5" /> Bot
+                        </span>
+                      </>
                     ) : (
                       <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
                     )
@@ -4601,11 +4604,18 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           <div className="flex items-center gap-2 xl:gap-3">
             <div className="relative">
               {(() => {
+                const authorKey = post.authorUsername || post.user?.handle;
+                if (authorKey === 'finance_news') {
+                  return (
+                    <div className="w-7 h-7 xl:w-9 xl:h-9 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center border border-blue-200 dark:border-blue-800 flex-shrink-0">
+                      <Newspaper className="w-3.5 h-3.5 xl:w-4.5 xl:h-4.5 text-white" />
+                    </div>
+                  );
+                }
                 const storedUrl = post.authorAvatar || post.user?.avatar;
                 const liveUrl = getAvatar(post.authorUsername || post.user?.handle);
                 const avatarUrl = storedUrl || liveUrl;
                 const isValidAvatar = avatarUrl && !avatarUrl.includes('ui-avatars.com') && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'));
-                const authorKey = post.authorUsername || post.user?.handle;
                 return (
                   <Avatar className="w-7 h-7 xl:w-9 xl:h-9 border border-border">
                     {isValidAvatar ? (
@@ -4661,9 +4671,12 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 )}
                 {(post.user?.verified || post.authorVerified) && (
                   (post.user?.handle || post.authorUsername) === 'finance_news' ? (
-                    <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5 flex-shrink-0">
-                      <Bot className="w-2.5 h-2.5" /> Bot
-                    </span>
+                    <>
+                      <CheckCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
+                      <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5 flex-shrink-0">
+                        <Bot className="w-2.5 h-2.5" /> Bot
+                      </span>
+                    </>
                   ) : (
                     <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 fill-current" />
                   )

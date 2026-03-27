@@ -4484,7 +4484,13 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                     </span>
                   )}
                   {(post.user?.verified || post.authorVerified) && (
-                    <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
+                    (post.user?.handle || post.authorUsername) === 'finance_news' ? (
+                      <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5 flex-shrink-0">
+                        <Bot className="w-2.5 h-2.5" /> Bot
+                      </span>
+                    ) : (
+                      <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
+                    )
                   )}
                   {(() => {
                     const certRole = post.authorCertifiedRole || getCertification(postAuthorKey || '')?.certifiedRole;
@@ -4654,7 +4660,13 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                   </span>
                 )}
                 {(post.user?.verified || post.authorVerified) && (
-                  <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 fill-current" />
+                  (post.user?.handle || post.authorUsername) === 'finance_news' ? (
+                    <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5 flex-shrink-0">
+                      <Bot className="w-2.5 h-2.5" /> Bot
+                    </span>
+                  ) : (
+                    <CheckCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 fill-current" />
+                  )
                 )}
                 {/* Certified role badge */}
                 {(() => {
@@ -5260,75 +5272,77 @@ function FinanceNewsBotProfile({ onBack, currentUserUsername }: { onBack: () => 
       </div>
 
       {/* Profile Header */}
-      <div className="bg-white dark:bg-gray-900 px-4 pt-4 pb-0 border-b border-gray-100 dark:border-gray-800">
-        <div className="flex items-start gap-3 mb-3">
-          {/* Bot Avatar */}
+      <div className="bg-white dark:bg-gray-900 px-5 pt-4 pb-0 border-b border-gray-100 dark:border-gray-800">
+        {/* Row 1: Avatar + name / handle / bio */}
+        <div className="flex items-start gap-3 mb-2.5">
           <div className="w-14 h-14 flex-shrink-0 rounded-full bg-gradient-to-br from-blue-600 to-indigo-700 flex items-center justify-center border-2 border-blue-200 dark:border-blue-800 shadow-sm" data-testid="img-bot-avatar">
             <Newspaper className="w-7 h-7 text-white" />
           </div>
 
-          {/* Name / handle / bio */}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-gray-900 dark:text-white font-bold text-base leading-tight flex items-center gap-1 flex-wrap">
-              Finance News
-              <span className="inline-flex items-center justify-center w-4 h-4 bg-blue-500 rounded-full flex-shrink-0">
-                <Check className="w-2.5 h-2.5 text-white" strokeWidth={3} />
-              </span>
-              <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5">
+          <div className="flex-1 min-w-0 pt-0.5">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <h2 className="font-bold text-[15px] text-gray-900 dark:text-white leading-tight">
+                Finance News
+              </h2>
+              <span className="text-[9px] font-semibold bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300 px-1.5 py-0.5 rounded-full uppercase tracking-wide flex items-center gap-0.5 flex-shrink-0">
                 <Bot className="w-2.5 h-2.5" /> Bot
               </span>
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-xs">@finance_news</p>
-            <p className="text-gray-700 dark:text-gray-300 text-xs mt-0.5 leading-snug">
+            </div>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">@finance_news</p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug line-clamp-2">
               AI-powered market intelligence — curated finance news, earnings reports, and economic insights delivered in real time.
             </p>
           </div>
+        </div>
 
-          {/* Stats + Follow button on the right */}
-          <div className="flex-shrink-0 flex flex-col items-end gap-2">
-            <div className="flex items-center gap-3 text-center">
-              <div>
-                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">0</div>
-                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Following</div>
-              </div>
-              <button
-                className="hover:opacity-80 transition-opacity"
-                onClick={() => setShowFollowersDialog(true)}
-                data-testid="button-bot-view-followers"
-              >
-                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{countsData?.followers || 0}</div>
-                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Followers</div>
-              </button>
-              <div>
-                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{botPosts.length}</div>
-                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Posts</div>
-              </div>
+        {/* Row 2: Stats + Follow button */}
+        <div className="flex items-center gap-2 mb-3">
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <div className="text-center flex-shrink-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">0</p>
+              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Following</p>
             </div>
+            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+            <button
+              className="text-center flex-shrink-0 hover:opacity-80 transition-opacity"
+              onClick={() => setShowFollowersDialog(true)}
+              data-testid="button-bot-view-followers"
+            >
+              <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{countsData?.followers || 0}</p>
+              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Followers</p>
+            </button>
+            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+            <div className="text-center flex-shrink-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{botPosts.length}</p>
+              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Posts</p>
+            </div>
+          </div>
+
+          <div className="flex-shrink-0">
             {isFollowing ? (
               <button
                 onClick={handleFollowToggle}
                 disabled={isFollowLoading}
-                className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-base leading-none"
+                className="h-7 px-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-[11px] font-semibold hover:border-red-400 hover:text-red-500 transition-colors"
                 title="Unfollow"
                 data-testid="button-bot-follow-toggle"
               >
-                {isFollowLoading ? <span className="text-[10px]">…</span> : '···'}
+                {isFollowLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Following'}
               </button>
             ) : (
               <Button
                 onClick={handleFollowToggle}
                 disabled={isFollowLoading}
-                size="sm"
-                className="h-7 px-4 text-xs font-semibold rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100"
+                className="h-7 px-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[11px] font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors whitespace-nowrap"
                 data-testid="button-bot-follow-toggle"
               >
-                {isFollowLoading ? '...' : 'Follow'}
+                {isFollowLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Follow'}
               </Button>
             )}
           </div>
         </div>
 
-        {/* Joined Date */}
+        {/* Calendar row */}
         <div className="flex items-center gap-1 text-gray-400 dark:text-gray-500 text-xs mb-3">
           <Calendar className="w-3 h-3" />
           <span>Automated financial news aggregator</span>

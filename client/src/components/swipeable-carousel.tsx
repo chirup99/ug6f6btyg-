@@ -267,11 +267,13 @@ export function SwipeableCarousel({ images }: SwipeableCarouselProps) {
           >
             {/* Header bar */}
             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
-              <span className="text-xs text-gray-400 font-medium">
-                {images.length > 1 ? `${(dialogIndex ?? 0) + 1} of ${images.length}` : 'Image'}
-              </span>
+              {images.length > 1 && (
+                <span className="text-xs text-gray-400 font-medium">
+                  {`${(dialogIndex ?? 0) + 1} of ${images.length}`}
+                </span>
+              )}
               <button
-                className="w-7 h-7 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 flex items-center justify-center transition-colors"
+                className="ml-auto w-7 h-7 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 flex items-center justify-center transition-colors"
                 onClick={() => setDialogIndex(null)}
                 data-testid="button-close-image-dialog"
                 aria-label="Close"

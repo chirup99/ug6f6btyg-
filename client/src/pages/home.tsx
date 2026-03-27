@@ -231,6 +231,8 @@ import {
   Globe,
   Cpu,
   Building2,
+  Car,
+  Layers,
   Headphones,
   UserPlus,
   Hash,
@@ -670,9 +672,15 @@ function SwipeableCardStack({
     if (nextCard) {
       if (onCardIndexChange) onCardIndexChange(nextIndex);
 
-      // Silently ensure the new top card's audio is warm (no auto-play — user must
-      // tap "Read Now" explicitly.  This prevents unwanted audio on every swipe.)
+      // Ensure the new top card's audio is warm, then auto-play it
       setTimeout(() => preloadForSector(nextCard.sector), 200);
+
+      // Auto-play the new top card after the swipe animation settles
+      const userId = localStorage.getItem('currentUserId');
+      const userEmail = localStorage.getItem('currentUserEmail');
+      if (userId && userEmail) {
+        setTimeout(() => fetchAndPlayContent(nextCard.title, nextCard.sector), 450);
+      }
 
       // Also warm the card after that in the background
       if (nextNextCard) {
@@ -1058,8 +1066,19 @@ function SwipeableCardStack({
               </div>
 
               {/* Icon */}
-              <div className="absolute top-2 right-2 md:top-1.5 md:right-1.5 text-xl md:text-lg filter drop-shadow-lg">
-                {card.icon}
+              <div className="absolute top-2 right-2 md:top-1.5 md:right-1.5 text-white/80">
+                {(() => {
+                  const icons: Record<string, React.ComponentType<{className?: string}>> = {
+                    IT: Cpu,
+                    FINANCE: TrendingUp,
+                    COMMODITY: Layers,
+                    GLOBAL: Globe,
+                    BANKS: Building2,
+                    AUTOMOBILE: Car,
+                  };
+                  const Icon = icons[card.sector] || Cpu;
+                  return <Icon className="w-5 h-5 md:w-4 md:h-4 drop-shadow" />;
+                })()}
               </div>
 
               {/* Stack indicator for non-top cards */}

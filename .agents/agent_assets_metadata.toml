@@ -30,3 +30,9 @@ id = "6rqjJHsac-NGcNw-Fpydu"
 uri = "file://aws_latest_v2.zip"
 type = "unspecified"
 title = "aws_latest_v2.zip — Fixed AWS Elastic Beanstalk Package"
+
+[[outputs]]
+id = "GD8czZ5WpgdehXcp3V0oV"
+uri = "file://perala-aws-deploy.zip"
+type = "unspecified"
+title = "perala-aws-deploy.zip — AWS Elastic Beanstalk Package"

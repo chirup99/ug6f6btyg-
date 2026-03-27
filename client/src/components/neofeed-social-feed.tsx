@@ -6338,7 +6338,12 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
     return () => observer.disconnect();
   }, []);
 
-  // Fetch posts with stable caching to prevent flickering
+  // Fetch posts with stable caching to prevent flickering.
+  // `select` runs synchronously when data arrives — we use it to seed the
+  // module-level _urlCache/_certCache BEFORE any PostCard renders, so
+  // getAvatar() returns the URL on the very first render pass and
+  // never has to fall back to the /api/users/avatars-batch round-trip
+  // for users whose avatar is already embedded in the post payload.
   const { data: posts = [], isLoading, error, isFetching } = useQuery({
     queryKey: ['/api/social-posts'],
     queryFn: async (): Promise<SocialPost[]> => {
@@ -6347,6 +6352,13 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
         throw new Error('Failed to fetch posts');
       }
       return await response.json();
+    },
+    select: (data: SocialPost[]) => {
+      // Populate the module-level maps synchronously so the ref-based
+      // urlCache is hot before PostCards mount — zero-latency avatar rendering
+      // for every post author whose avatar is embedded in the post object.
+      seedPostCaches(data);
+      return data;
     },
     staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,

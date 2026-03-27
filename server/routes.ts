@@ -5500,22 +5500,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ success: false, message: 'No authentication token provided' });
       }
 
-      // Verify Cognito token
-      const { verifyCognitoToken } = await import('./cognito-auth');
-      const idToken = authHeader.split('Bearer ')[1];
+      // Use authenticateRequest so the canonical userId is resolved (Google sub → email sub).
       console.log('🔐 Verifying Cognito token...');
-      
-      const cognitoUser = await verifyCognitoToken(idToken);
+      const cognitoUser = await authenticateRequest(authHeader);
       
       if (!cognitoUser) {
         console.log('❌ Cognito token verification failed');
         return res.status(401).json({ success: false, message: 'Invalid authentication token' });
       }
 
-      const userId = cognitoUser.sub;
+      const userId = cognitoUser.sub; // canonical userId
       const email = cognitoUser.email;
 
-      console.log('✅ Token verified for Cognito user:', userId);
+      console.log('✅ Token verified for Cognito user (canonical):', userId);
 
       // Use AWS DynamoDB for profile storage
       const { DynamoDBClient } = await import('@aws-sdk/client-dynamodb');
@@ -6716,9 +6713,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Unauthorized: Missing authentication token' });
       }
 
-      const idToken = authHeader.split('Bearer ')[1];
-      const { verifyCognitoToken } = await import('./cognito-auth');
-      const cognitoUser = await verifyCognitoToken(idToken);
+      // Use authenticateRequest so the canonical userId is resolved (Google sub → email sub).
+      // verifyCognitoToken would return the raw Google sub which doesn't match the canonical
+      // userId stored in localStorage, causing a spurious 403 for all Google-linked users.
+      const cognitoUser = await authenticateRequest(authHeader);
 
       if (!cognitoUser) {
         return res.status(401).json({ error: 'Invalid or expired authentication token' });
@@ -6726,7 +6724,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Verify the authenticated user matches the requested userId
       if (cognitoUser.sub !== userId) {
-        console.warn(`⚠️ Paper Trading Auth mismatch: token sub=${cognitoUser.sub} vs requested userId=${userId}`);
+        console.warn(`⚠️ Paper Trading Auth mismatch: canonical sub=${cognitoUser.sub} vs requested userId=${userId}`);
         return res.status(403).json({ error: 'Forbidden: Cannot access another user\'s paper trading data' });
       }
 
@@ -6769,17 +6767,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Unauthorized: Missing authentication token' });
       }
 
-      const idToken = authHeader.split('Bearer ')[1];
-      const { verifyCognitoToken } = await import('./cognito-auth');
-      const cognitoUser = await verifyCognitoToken(idToken);
+      const cognitoUser = await authenticateRequest(authHeader);
 
       if (!cognitoUser) {
         return res.status(401).json({ error: 'Invalid or expired authentication token' });
       }
 
-      // Verify the authenticated user matches the requested userId
+      // Verify the authenticated user matches the requested userId (canonical ID on both sides)
       if (cognitoUser.sub !== userId) {
-        console.warn(`⚠️ Paper Trading Auth mismatch: token sub=${cognitoUser.sub} vs requested userId=${userId}`);
+        console.warn(`⚠️ Paper Trading Auth mismatch: canonical sub=${cognitoUser.sub} vs requested userId=${userId}`);
         return res.status(403).json({ error: 'Forbidden: Cannot save to another user\'s paper trading data' });
       }
 
@@ -6815,17 +6811,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Unauthorized: Missing authentication token' });
       }
 
-      const idToken = authHeader.split('Bearer ')[1];
-      const { verifyCognitoToken } = await import('./cognito-auth');
-      const cognitoUser = await verifyCognitoToken(idToken);
+      const cognitoUser = await authenticateRequest(authHeader);
 
       if (!cognitoUser) {
         return res.status(401).json({ error: 'Invalid or expired authentication token' });
       }
 
-      // Verify the authenticated user matches the requested userId
+      // Verify the authenticated user matches the requested userId (canonical ID on both sides)
       if (cognitoUser.sub !== userId) {
-        console.warn(`⚠️ Paper Trading Auth mismatch: token sub=${cognitoUser.sub} vs requested userId=${userId}`);
+        console.warn(`⚠️ Paper Trading Auth mismatch: canonical sub=${cognitoUser.sub} vs requested userId=${userId}`);
         return res.status(403).json({ error: 'Forbidden: Cannot reset another user\'s paper trading data' });
       }
 
@@ -7139,17 +7133,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Unauthorized: Missing authentication token' });
       }
 
-      const idToken = authHeader.split('Bearer ')[1];
-      const { verifyCognitoToken } = await import('./cognito-auth');
-      const cognitoUser = await verifyCognitoToken(idToken);
+      const cognitoUser = await authenticateRequest(authHeader);
 
       if (!cognitoUser) {
         return res.status(401).json({ error: 'Invalid or expired authentication token' });
       }
 
-      // Verify the authenticated user matches the requested userId
+      // Use canonical sub (resolves Google sub → email sub via IDENTITY_MAPPING)
       if (cognitoUser.sub !== userId) {
-        console.warn(`⚠️ Auth mismatch: token sub=${cognitoUser.sub} vs requested userId=${userId}`);
+        console.warn(`⚠️ Auth mismatch: canonical sub=${cognitoUser.sub} vs requested userId=${userId}`);
         return res.status(403).json({ error: 'Forbidden: Cannot access another user\'s data' });
       }
 
@@ -7176,17 +7168,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Unauthorized: Missing authentication token' });
       }
 
-      const idToken = authHeader.split('Bearer ')[1];
-      const { verifyCognitoToken } = await import('./cognito-auth');
-      const cognitoUser = await verifyCognitoToken(idToken);
+      const cognitoUser = await authenticateRequest(authHeader);
 
       if (!cognitoUser) {
         return res.status(401).json({ error: 'Invalid or expired authentication token' });
       }
 
-      // Verify the authenticated user matches the requested userId
+      // Use canonical sub (resolves Google sub → email sub via IDENTITY_MAPPING)
       if (cognitoUser.sub !== userId) {
-        console.warn(`⚠️ Auth mismatch: token sub=${cognitoUser.sub} vs requested userId=${userId}`);
+        console.warn(`⚠️ Auth mismatch: canonical sub=${cognitoUser.sub} vs requested userId=${userId}`);
         return res.status(403).json({ error: 'Forbidden: Cannot save to another user\'s data' });
       }
 
@@ -8131,17 +8121,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ error: 'Authentication required' });
       }
 
-      // Verify Cognito token
-      const { verifyCognitoToken } = await import('./cognito-auth');
-      const idToken = authHeader.split('Bearer ')[1];
-      const cognitoUser = await verifyCognitoToken(idToken);
+      // Use authenticateRequest so the canonical userId is resolved (Google sub → email sub).
+      // Without this, the S3 folder and any DynamoDB writes would use the raw Google sub,
+      // which differs from the canonical ID the profile is stored under.
+      const cognitoUser = await authenticateRequest(authHeader);
       
       if (!cognitoUser) {
         console.log('❌ Cognito token verification failed for image upload');
         return res.status(401).json({ error: 'Invalid authentication token' });
       }
 
-      const userId = cognitoUser.sub;
+      const userId = cognitoUser.sub; // canonical userId
       const imageType = req.body?.type || 'profile';
       
       console.log(`📸 Processing ${imageType} image upload for user:`, userId);

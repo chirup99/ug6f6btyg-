@@ -3405,6 +3405,8 @@ export default function Home() {
       let metadata: any = {};
       const content = reportPostDescription.trim() || 'Shared my trading report';
 
+      let postTotalPnL = 0;
+
       if (reportPostMode === 'today' || reportPostMode === 'selected') {
         const dateKey = reportPostMode === 'today'
           ? new Date().toISOString().split('T')[0]
@@ -3423,6 +3425,7 @@ export default function Home() {
         });
 
         const totalPnL = metrics?.netPnL ?? dayData?.profitLossAmount ?? 0;
+        postTotalPnL = totalPnL;
         const totalTrades = metrics?.totalTrades ?? dayData?.totalTrades ?? tradeHistory.length;
         const winRate = totalTrades > 0 ? ((metrics?.winningTrades || 0) / totalTrades * 100) : 0;
 
@@ -3471,6 +3474,7 @@ export default function Home() {
           }
         });
 
+        postTotalPnL = totalPnL;
         const winRate = totalTrades > 0 ? (winningTrades / totalTrades * 100) : 0;
 
         metadata = {
@@ -3500,7 +3504,7 @@ export default function Home() {
           authorUsername: username,
           authorDisplayName: displayName,
           stockMentions: [],
-          sentiment: 'neutral',
+          sentiment: postTotalPnL > 0 ? 'bullish' : postTotalPnL < 0 ? 'bearish' : 'neutral',
           tags: ['trading-report'],
           hasImage: false,
           metadata,

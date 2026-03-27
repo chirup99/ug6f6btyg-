@@ -18,3 +18,9 @@ id = "pn3r8a8GfXEpgqbuPueWI"
 uri = "file://perala-business-model-valuation.xlsx"
 type = "table"
 title = "Perala Platform — Business Model Validation & Valuation"
+
+[[outputs]]
+id = "-3-LxKwgJSmbFliaTOJ8m"
+uri = "file://aws_latest_v1.zip"
+type = "unspecified"
+title = "aws_latest_v1.zip — AWS Elastic Beanstalk Deployment Package"

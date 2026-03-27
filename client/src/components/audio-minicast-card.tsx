@@ -77,6 +77,8 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   const pendingAutoPlayRef = useRef<AudioCard | null>(null);
   // Cache of pre-generated audio URLs keyed by card id
   const audioCacheRef = useRef<Map<string, string>>(new Map());
+  // Root element ref — used by IntersectionObserver to pause when scrolled away
+  const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -210,6 +212,24 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     };
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [stopAudio]);
+
+  // Pause audio when the card scrolls out of view (user swipes past it in the feed).
+  // Fires as soon as less than 30% of the card is visible — same pattern used for
+  // video auto-pause in Twitter/Instagram-style feeds.
+  useEffect(() => {
+    const el = cardRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (!entry.isIntersecting || entry.intersectionRatio < 0.3) {
+          stopAudio();
+        }
+      },
+      { threshold: [0, 0.3] }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
   }, [stopAudio]);
 
   // Stop audio and revoke all cached URLs when component unmounts
@@ -429,7 +449,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   };
 
   return (
-    <Card className="border-0 border-b border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
+    <Card ref={cardRef} className="border-0 border-b border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
       <CardContent className="p-0">
         {/* Author Header */}
         <div className="p-4 flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50">

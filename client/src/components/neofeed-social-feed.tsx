@@ -3721,11 +3721,12 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
     if (!fomoHighlight) return;
     const container = heatmapContainerRef.current;
     if (!container) return;
+    const innerScrollable = (container.querySelector('.overflow-x-auto') || container) as HTMLElement;
     const handleScroll = () => setScrollTrigger(prev => prev + 1);
-    container.addEventListener('scroll', handleScroll, { passive: true });
+    innerScrollable.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll, { passive: true });
     return () => {
-      container.removeEventListener('scroll', handleScroll);
+      innerScrollable.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
   }, [fomoHighlight]);
@@ -3734,11 +3735,12 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
     if (!overtradeHighlight) return;
     const container = heatmapContainerRef.current;
     if (!container) return;
+    const innerScrollable = (container.querySelector('.overflow-x-auto') || container) as HTMLElement;
     const handleScroll = () => setScrollTrigger(prev => prev + 1);
-    container.addEventListener('scroll', handleScroll, { passive: true });
+    innerScrollable.addEventListener('scroll', handleScroll, { passive: true });
     window.addEventListener('resize', handleScroll, { passive: true });
     return () => {
-      container.removeEventListener('scroll', handleScroll);
+      innerScrollable.removeEventListener('scroll', handleScroll);
       window.removeEventListener('resize', handleScroll);
     };
   }, [overtradeHighlight]);
@@ -3790,22 +3792,21 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
             {fomoHighlight && stats.fomoDates && stats.fomoDates.length > 0 && (() => {
               void scrollTrigger;
               if (!fomoButtonRef.current || !heatmapContainerRef.current) return null;
-              const scrollableEl = heatmapContainerRef.current;
-              const scrollLeft = scrollableEl.scrollLeft || 0;
-              const scrollTop = scrollableEl.scrollTop || 0;
-              const scrollWidth = scrollableEl.scrollWidth || 0;
-              const scrollHeight = scrollableEl.scrollHeight || 0;
-              const containerRect = scrollableEl.getBoundingClientRect();
+              const outerEl = heatmapContainerRef.current;
+              const innerScrollable = (outerEl.querySelector('.overflow-x-auto') || outerEl) as HTMLElement;
+              const scrollWidth = innerScrollable.scrollWidth || 0;
+              const scrollHeight = innerScrollable.scrollHeight || 0;
+              const containerRect = outerEl.getBoundingClientRect();
               const buttonRect = fomoButtonRef.current.getBoundingClientRect();
-              const buttonCenterX = buttonRect.left - containerRect.left + scrollLeft + buttonRect.width / 2;
-              const buttonCenterY = buttonRect.top - containerRect.top + scrollTop + buttonRect.height / 2;
+              const buttonCenterX = buttonRect.left - containerRect.left + buttonRect.width / 2;
+              const buttonCenterY = buttonRect.top - containerRect.top + buttonRect.height / 2;
               const paths: JSX.Element[] = [];
               (stats.fomoDates as string[]).forEach((date: string, index: number) => {
-                const cellEl = scrollableEl.querySelector(`[data-date="${date}"]`);
+                const cellEl = outerEl.querySelector(`[data-date="${date}"]`);
                 if (cellEl) {
                   const cellRect = cellEl.getBoundingClientRect();
-                  const cellCenterX = cellRect.left - containerRect.left + scrollLeft + cellRect.width / 2;
-                  const cellCenterY = cellRect.top - containerRect.top + scrollTop + cellRect.height / 2;
+                  const cellCenterX = cellRect.left - containerRect.left + cellRect.width / 2;
+                  const cellCenterY = cellRect.top - containerRect.top + cellRect.height / 2;
                   const controlX = (buttonCenterX + cellCenterX) / 2;
                   const controlY = Math.min(buttonCenterY, cellCenterY) - 40;
                   paths.push(
@@ -3833,22 +3834,21 @@ function RangeReportCard({ metadata: m, postId, postCreatedAt, stripped }: { met
             {overtradeHighlight && stats.overtradeDates && stats.overtradeDates.length > 0 && (() => {
               void scrollTrigger;
               if (!overtradingButtonRef.current || !heatmapContainerRef.current) return null;
-              const scrollableEl = heatmapContainerRef.current;
-              const scrollLeft = scrollableEl.scrollLeft || 0;
-              const scrollTop = scrollableEl.scrollTop || 0;
-              const scrollWidth = scrollableEl.scrollWidth || 0;
-              const scrollHeight = scrollableEl.scrollHeight || 0;
-              const containerRect = scrollableEl.getBoundingClientRect();
+              const outerEl = heatmapContainerRef.current;
+              const innerScrollable = (outerEl.querySelector('.overflow-x-auto') || outerEl) as HTMLElement;
+              const scrollWidth = innerScrollable.scrollWidth || 0;
+              const scrollHeight = innerScrollable.scrollHeight || 0;
+              const containerRect = outerEl.getBoundingClientRect();
               const buttonRect = overtradingButtonRef.current.getBoundingClientRect();
-              const buttonCenterX = buttonRect.left - containerRect.left + scrollLeft + buttonRect.width / 2;
-              const buttonCenterY = buttonRect.top - containerRect.top + scrollTop + buttonRect.height / 2;
+              const buttonCenterX = buttonRect.left - containerRect.left + buttonRect.width / 2;
+              const buttonCenterY = buttonRect.top - containerRect.top + buttonRect.height / 2;
               const paths: JSX.Element[] = [];
               (stats.overtradeDates as string[]).forEach((date: string, index: number) => {
-                const cellEl = scrollableEl.querySelector(`[data-date="${date}"]`);
+                const cellEl = outerEl.querySelector(`[data-date="${date}"]`);
                 if (cellEl) {
                   const cellRect = cellEl.getBoundingClientRect();
-                  const cellCenterX = cellRect.left - containerRect.left + scrollLeft + cellRect.width / 2;
-                  const cellCenterY = cellRect.top - containerRect.top + scrollTop + cellRect.height / 2;
+                  const cellCenterX = cellRect.left - containerRect.left + cellRect.width / 2;
+                  const cellCenterY = cellRect.top - containerRect.top + cellRect.height / 2;
                   const controlX = (buttonCenterX + cellCenterX) / 2;
                   const controlY = Math.min(buttonCenterY, cellCenterY) - 40;
                   paths.push(

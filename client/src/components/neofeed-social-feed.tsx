@@ -232,6 +232,12 @@ function preloadImage(url: string | undefined | null) {
   img.src = url;
 }
 
+// Eagerly preload all static rule-card images so they are already in the
+// browser's memory cache by the time the first card renders — same pattern
+// used for avatars, eliminating the late-load flicker on Bruce Lee cards.
+preloadImage('/bruce-lee-card.png');
+preloadImage('/bruce-lee-enemy-within.png');
+
 // Seed avatar + cert caches directly from posts data (before any PostCard renders).
 // Posts now come back from the server with authorAvatar, authorCertifiedRole, and
 // authorCertificationImageUrl already embedded, so we can populate the caches
@@ -1916,6 +1922,9 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                         <img
                           src={card.image}
                           alt=""
+                          loading="eager"
+                          decoding="async"
+                          fetchPriority="high"
                           className="absolute inset-0 w-full h-full object-contain object-bottom"
                           style={{ animation: 'blPulse 3s ease-in-out infinite' }}
                         />
@@ -6044,7 +6053,7 @@ function ViewUserProfile({
                     <>
                       <div className="absolute right-0 top-0 bottom-0 w-[90px] bg-gradient-to-l from-yellow-500/25 via-yellow-400/10 to-transparent pointer-events-none" />
                       <div className="absolute right-0 top-0 bottom-0 w-[80px] overflow-hidden pointer-events-none">
-                        <img src={card.image} alt="" className="absolute inset-0 w-full h-full object-contain object-bottom" style={{ animation: 'blPulseV 3s ease-in-out infinite' }} />
+                        <img src={card.image} alt="" loading="eager" decoding="async" fetchPriority="high" className="absolute inset-0 w-full h-full object-contain object-bottom" style={{ animation: 'blPulseV 3s ease-in-out infinite' }} />
                       </div>
                     </>
                   )}

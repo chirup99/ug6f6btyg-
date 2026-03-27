@@ -8206,24 +8206,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const normalizeImgUrl = (url: string | null | undefined): string | null => {
         if (!url) return null;
-        // Handle full URLs that contain /uploads/ in their path (old Replit domain stored URLs)
-        let localPath: string | null = null;
-        if (url.startsWith('/uploads/')) {
-          localPath = url;
-        } else {
-          try {
-            const p = new URL(url);
-            if (p.pathname.startsWith('/uploads/')) localPath = p.pathname;
-          } catch {}
-        }
-        if (localPath) {
-          const absPath = path.resolve(process.cwd(), localPath.replace(/^\//, ''));
-          if (!fs.existsSync(absPath)) {
-            console.warn(`⚠️ [avatars-batch] Local profile image not found on disk: ${localPath}`);
-            return null;
-          }
-          return localPath;
-        }
+        // If stored as a full URL with an old domain but /uploads/ path, extract just the pathname
+        // so the current server can serve it via the /uploads static route.
+        try {
+          const p = new URL(url);
+          if (p.pathname.startsWith('/uploads/')) return p.pathname;
+        } catch {}
+        // Return the URL as-is — either a relative /uploads/ path or an S3/external URL.
         return url;
       };
 

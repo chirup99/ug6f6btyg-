@@ -1271,24 +1271,25 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
   const getAvatar = useUserAvatar();
   const setAvatar = useSetAvatar();
 
-  // Build placeholder from localStorage so the profile header renders instantly on mount,
-  // with no skeleton flash, before the network fetch completes.
-  // NOTE: profilePicUrl and coverPicUrl are intentionally NOT read from localStorage —
-  // they are always fetched fresh from AWS/DynamoDB (same pattern for both).
+  // Build placeholder from localStorage so the profile header renders instantly on mount
+  // with zero network delay — avatar, cert badge, name all appear immediately.
   const localStoragePlaceholder = (() => {
     const username = localStorage.getItem('currentUsername');
     if (!username) return null;
     return {
       username,
       displayName: localStorage.getItem('currentDisplayName') || localStorage.getItem('currentUserName') || username,
-      profilePicUrl: null,
-      bio: null,
+      profilePicUrl: localStorage.getItem('cachedProfilePicUrl') || null,
+      coverPicUrl: localStorage.getItem('cachedCoverPicUrl') || null,
+      certifiedRole: localStorage.getItem('cachedCertifiedRole') || null,
+      certificationImageUrl: localStorage.getItem('cachedCertificationImageUrl') || null,
+      bio: localStorage.getItem('cachedBio') || null,
       location: null,
-      coverPicUrl: null,
+      verified: localStorage.getItem('cachedVerified') === 'true',
     };
   })();
 
-  // Profile fetch — with placeholderData so isLoading is always false on mount
+  // Profile fetch — placeholderData renders instantly; network refreshes in background
   const { data: profileData } = useQuery({
     queryKey: ['my-profile'],
     queryFn: async () => {
@@ -1299,16 +1300,45 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
       });
       if (!response.ok) return null;
       const data = await response.json();
-      return data.profile || null;
+      const profile = data.profile || null;
+      if (profile) {
+        if (profile.profilePicUrl) localStorage.setItem('cachedProfilePicUrl', profile.profilePicUrl);
+        else localStorage.removeItem('cachedProfilePicUrl');
+        if (profile.coverPicUrl) localStorage.setItem('cachedCoverPicUrl', profile.coverPicUrl);
+        else localStorage.removeItem('cachedCoverPicUrl');
+        if (profile.certifiedRole) localStorage.setItem('cachedCertifiedRole', profile.certifiedRole);
+        else localStorage.removeItem('cachedCertifiedRole');
+        if (profile.certificationImageUrl) localStorage.setItem('cachedCertificationImageUrl', profile.certificationImageUrl);
+        else localStorage.removeItem('cachedCertificationImageUrl');
+        if (profile.bio) localStorage.setItem('cachedBio', profile.bio);
+        else localStorage.removeItem('cachedBio');
+        localStorage.setItem('cachedVerified', profile.verified ? 'true' : 'false');
+        if (profile.displayName) localStorage.setItem('currentDisplayName', profile.displayName);
+      }
+      return profile;
     },
     placeholderData: localStoragePlaceholder,
-    staleTime: 0,
+    staleTime: 30 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnMount: true,
     refetchOnWindowFocus: false,
   });
 
   const username = profileData?.username || '';
+
+  // Seed avatar + cert caches immediately when profile data arrives (placeholder or real).
+  // This ensures the avatar appears in all post cards and the profile header on first render.
+  const seedMany = useContext(UserAvatarContext).seedMany;
+  useEffect(() => {
+    if (username && profileData?.profilePicUrl) {
+      seedMany([{
+        username,
+        avatarUrl: profileData.profilePicUrl,
+        certifiedRole: profileData.certifiedRole || null,
+        certificationImageUrl: profileData.certificationImageUrl || null,
+      }]);
+    }
+  }, [username, profileData?.profilePicUrl, profileData?.certifiedRole, profileData?.certificationImageUrl, seedMany]);
 
   // Simple stats fetch - cached with longer interval, don't refetch on mount
   const { data: stats = { followers: 0, following: 0 } } = useQuery({

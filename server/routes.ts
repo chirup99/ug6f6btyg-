@@ -59,7 +59,12 @@ import { simpleLiveTicker } from './simple-live-ticker';
 import { angelOneRealTicker } from './angel-one-real-ticker';
 import { brokerFormatsLibrary, type UniversalFormatData } from './broker-formats-library';
 import { registerNeoFeedAwsRoutes } from './neofeed-routes-replacement';
-import { initializeNeoFeedTables } from './neofeed-dynamodb-migration';
+import { initializeNeoFeedTables, getUserProfileByUsername, docClient as neoDocClient } from './neofeed-dynamodb-migration';
+import { DynamoDBClient, GetItemCommand as DynamoGetItemCommand } from '@aws-sdk/client-dynamodb';
+import { DynamoDBDocumentClient, GetCommand as DynamoGetCommand } from '@aws-sdk/lib-dynamodb';
+import fs from 'fs';
+import path from 'path';
+
 import { initializeCognitoVerifier, authenticateRequest, adminResetPassword } from './cognito-auth';
 import { screenerScraper } from './screener-scraper';
 import { getDemoHeatmapData, seedDemoDataToAWS } from './demo-heatmap-data';
@@ -71,6 +76,15 @@ import { angelOneOAuthManager } from './angel-one-oauth';
 import { dhanOAuthManager } from './dhan-oauth';
 import { fyersOAuthManager } from './fyers-oauth';
 import { sarvamTTSService, translateText } from './tts-service';
+
+const _profileDynamoClient = new DynamoDBClient({
+  region: process.env.AWS_REGION || 'ap-south-1',
+  credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY ? {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  } : undefined,
+});
+const _profileDocClient = DynamoDBDocumentClient.from(_profileDynamoClient);
 
 const ANGEL_ONE_STOCK_TOKENS: { [key: string]: { token: string; exchange: string; tradingSymbol: string } } = {
   'NIFTY50': { token: '99926000', exchange: 'NSE', tradingSymbol: 'Nifty 50' },
@@ -5218,99 +5232,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(401).json({ message: 'Invalid or expired authentication token' });
       }
 
-      // 1. Check for identity mapping FIRST
-      const { DynamoDBClient, GetItemCommand } = await import('@aws-sdk/client-dynamodb');
-      const dynamoClientForMapping = new DynamoDBClient({
-        region: process.env.AWS_REGION || 'ap-south-2',
-        credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY ? {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-        } : undefined,
-      });
-
-      let canonicalUserId = claims.sub;
-      console.log(`🔍 [PROFILE] Resolving identity for: ${claims.sub} (${claims.email})`);
-
-      try {
-        const mappingCheck = await dynamoClientForMapping.send(new GetItemCommand({
-          TableName: 'neofeed-user-profiles',
-          Key: {
-            pk: { S: `USER#${claims.sub}` },
-            sk: { S: 'IDENTITY_MAPPING' }
-          }
-        }));
-
-        if (mappingCheck.Item && mappingCheck.Item.canonicalUserId?.S) {
-          canonicalUserId = mappingCheck.Item.canonicalUserId.S;
-          console.log(`🔗 [PROFILE] Found mapping: ${claims.sub} -> ${canonicalUserId}`);
-        }
-      } catch (err) {
-        console.warn('⚠️ Identity mapping check failed:', err);
-      }
-
-      const userId = canonicalUserId;
       const email = claims.email;
 
-      console.log('🔍 [PROFILE] Final resolved user ID for lookup:', userId);
+      // Run identity mapping check AND profile fetch for original sub IN PARALLEL
+      const [mappingResult, directProfileResult] = await Promise.all([
+        _profileDynamoClient.send(new DynamoGetItemCommand({
+          TableName: 'neofeed-user-profiles',
+          Key: { pk: { S: `USER#${claims.sub}` }, sk: { S: 'IDENTITY_MAPPING' } }
+        })).catch(() => null),
+        _profileDocClient.send(new DynamoGetCommand({
+          TableName: 'neofeed-user-profiles',
+          Key: { pk: `USER#${claims.sub}`, sk: 'PROFILE' }
+        })).catch(() => null),
+      ]);
 
-      // 2. Fetch profile from neofeed-user-profiles using Canonical userId
-      const { DynamoDBDocumentClient, GetCommand } = await import('@aws-sdk/lib-dynamodb');
-      const profileDocClient = DynamoDBDocumentClient.from(dynamoClientForMapping);
+      const canonicalUserId = mappingResult?.Item?.canonicalUserId?.S || claims.sub;
+      const userId = canonicalUserId;
 
-      // Fetch profile from neofeed-user-profiles table
-      const getCommand = new GetCommand({
-        TableName: 'neofeed-user-profiles',
-        Key: {
-          pk: `USER#${userId}`,
-          sk: 'PROFILE'
-        }
-      });
+      // If mapping points to a different canonical ID, fetch that profile too (only if direct fetch missed)
+      let result = directProfileResult;
+      if (!result?.Item && canonicalUserId !== claims.sub) {
+        result = await _profileDocClient.send(new DynamoGetCommand({
+          TableName: 'neofeed-user-profiles',
+          Key: { pk: `USER#${canonicalUserId}`, sk: 'PROFILE' }
+        })).catch(() => null);
+      }
 
-      const result = await profileDocClient.send(getCommand);
-      
-      if (!result.Item) {
-        console.log('❌ No profile found in DynamoDB for user:', userId);
-        
-        // If we didn't find it with the canonical ID, try the original sub just in case
-        if (userId !== claims.sub) {
-           console.log(`🔍 [PROFILE] Retrying with original sub: ${claims.sub}`);
-           const retryResult = await profileDocClient.send(new GetCommand({
-             TableName: 'neofeed-user-profiles',
-             Key: { pk: `USER#${claims.sub}`, sk: 'PROFILE' }
-           }));
-           if (retryResult.Item) {
-             console.log('✅ Found profile using original sub');
-             const userData = retryResult.Item;
-             return res.json({
-               success: true,
-               profile: {
-                 username: userData.username,
-                 displayName: userData.displayName,
-                 dob: userData.dob,
-                 bio: userData.bio,
-                 email: userData.email,
-                 profilePicUrl: userData.profilePicUrl,
-                 coverPicUrl: userData.coverPicUrl,
-                 certifiedRole: userData.certifiedRole || null,
-                 certificationImageUrl: userData.certificationImageUrl || null,
-                 verified: userData.verified || false,
-                 location: userData.location || null,
-                 performancePublic: userData.performancePublic !== undefined ? userData.performancePublic : true,
-                 createdAt: userData.createdAt || null,
-                 userId: claims.sub
-               },
-               userId: claims.sub,
-               email: email
-             });
-           }
-        }
-
-        return res.json({ 
-          success: true,
-          profile: null,
-          userId: userId,
-          email: email
-        });
+      if (!result?.Item) {
+        return res.json({ success: true, profile: null, userId, email });
       }
 
       const userData = result.Item;
@@ -8253,15 +8202,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Cap to 50 usernames per request
       const limited = usernames.slice(0, 50).map((u: string) => u.toLowerCase());
 
-      const { getUserProfileByUsername } = await import('./neofeed-dynamodb-migration');
       const results = await Promise.allSettled(limited.map(u => getUserProfileByUsername(u)));
 
-      // Normalize a stored image URL to a relative path so it survives Replit domain changes.
-      // For local /uploads/ paths, also verify the file actually exists on disk —
-      // local files can be lost if a new container instance is started. Returns null
-      // if the local file is missing so the frontend shows the correct fallback.
-      const fsSync = await import('fs');
-      const pathMod = await import('path');
       const normalizeImgUrl = (url: string | null | undefined): string | null => {
         if (!url) return null;
         // Handle full URLs that contain /uploads/ in their path (old Replit domain stored URLs)
@@ -8275,9 +8217,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } catch {}
         }
         if (localPath) {
-          // Verify the file actually exists on this server instance
-          const absPath = pathMod.default.resolve(process.cwd(), localPath.replace(/^\//, ''));
-          if (!fsSync.default.existsSync(absPath)) {
+          const absPath = path.resolve(process.cwd(), localPath.replace(/^\//, ''));
+          if (!fs.existsSync(absPath)) {
             console.warn(`⚠️ [avatars-batch] Local profile image not found on disk: ${localPath}`);
             return null;
           }

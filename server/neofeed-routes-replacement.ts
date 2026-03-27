@@ -1432,7 +1432,18 @@ export function registerNeoFeedAwsRoutes(app: any) {
       }
 
       const { email, name: displayName, displayName: userDisplayName } = req.body;
-      const searchEmail = (email || cognitoUser.email || '').toLowerCase();
+      const rawEmail = (email || cognitoUser.email || '').toLowerCase();
+
+      // BUG FIX: Normalize Gmail addresses consistently (remove dots from local part).
+      // The auth middleware (cognito-auth.ts) already does this normalization, so the
+      // IDENTITY_LINK key must be stored with the same normalized form. Previously this
+      // endpoint stored the raw email while the middleware looked up the normalized form,
+      // causing a key mismatch for any user whose Gmail has dots (e.g. a.b@gmail.com).
+      let searchEmail = rawEmail;
+      if (searchEmail.endsWith('@gmail.com')) {
+        const [local, domain] = searchEmail.split('@');
+        searchEmail = local.replace(/\./g, '') + '@' + domain;
+      }
       
       console.log(`👤 [Auth Sync] Cognito sub: ${cognitoUser.sub}, Email: ${searchEmail}`);
       
@@ -1442,18 +1453,15 @@ export function registerNeoFeedAwsRoutes(app: any) {
 
       if (searchEmail) {
         try {
-          // Exactly match the email as provided (no Gmail normalization per user request)
-          const normalizedSearchEmail = searchEmail;
-
           const { GetCommand, PutCommand } = await import('@aws-sdk/lib-dynamodb');
           const { docClient } = await import('./neofeed-dynamodb-migration');
 
-          // Check for existing link in USER_PROFILES using Email as key
-          // This allows multiple login methods (Password, Google) to map to same profile
+          // Check for existing link in USER_PROFILES using Email as key.
+          // This allows multiple login methods (Password, Google) to map to same profile.
           const emailLinkResult = await docClient.send(new GetCommand({
             TableName: TABLES.USER_PROFILES,
             Key: {
-              pk: `USER_EMAIL#${normalizedSearchEmail}`,
+              pk: `USER_EMAIL#${searchEmail}`,
               sk: 'IDENTITY_LINK'
             }
           }));
@@ -1463,8 +1471,8 @@ export function registerNeoFeedAwsRoutes(app: any) {
             accountLinked = true;
             console.log(`🔗 [Auth Sync] Account linked via email! ${cognitoUser.sub} -> ${finalUserId}`);
             
-            // Create a mapping from this specific Cognito sub to the canonical userId
-            // This speeds up future identity resolution in middleware
+            // Create a mapping from this specific Cognito sub to the canonical userId.
+            // This speeds up future identity resolution in middleware.
             await docClient.send(new PutCommand({
               TableName: TABLES.USER_PROFILES,
               Item: {
@@ -1475,17 +1483,49 @@ export function registerNeoFeedAwsRoutes(app: any) {
               }
             }));
           } else {
-            // No link exists, create one for this email
-            await docClient.send(new PutCommand({
-              TableName: TABLES.USER_PROFILES,
-              Item: {
-                pk: `USER_EMAIL#${normalizedSearchEmail}`,
-                sk: 'IDENTITY_LINK',
-                userId: finalUserId,
-                createdAt: new Date().toISOString()
+            // No link found — create one. Use a conditional write so we never
+            // silently overwrite a link that was written between our read and write
+            // (race condition) or that DynamoDB returned as empty due to a transient error.
+            // BUG FIX: Previously a plain PutCommand was used which would overwrite an
+            // existing IDENTITY_LINK, losing the original account mapping.
+            try {
+              await docClient.send(new PutCommand({
+                TableName: TABLES.USER_PROFILES,
+                Item: {
+                  pk: `USER_EMAIL#${searchEmail}`,
+                  sk: 'IDENTITY_LINK',
+                  userId: finalUserId,
+                  createdAt: new Date().toISOString()
+                },
+                ConditionExpression: 'attribute_not_exists(pk)',
+              }));
+              console.log(`📝 [Auth Sync] Created new identity link for email: ${searchEmail}`);
+            } catch (condErr: any) {
+              if (condErr.name === 'ConditionalCheckFailedException') {
+                // Another process created the link between our read and write — re-read it.
+                console.warn(`⚠️ [Auth Sync] Race: IDENTITY_LINK appeared for ${searchEmail}, re-reading...`);
+                const retryResult = await docClient.send(new GetCommand({
+                  TableName: TABLES.USER_PROFILES,
+                  Key: { pk: `USER_EMAIL#${searchEmail}`, sk: 'IDENTITY_LINK' }
+                }));
+                if (retryResult.Item && retryResult.Item.userId) {
+                  finalUserId = retryResult.Item.userId;
+                  accountLinked = true;
+                  console.log(`🔗 [Auth Sync] Race resolved — linked to existing userId: ${finalUserId}`);
+                  await docClient.send(new PutCommand({
+                    TableName: TABLES.USER_PROFILES,
+                    Item: {
+                      pk: `USER#${cognitoUser.sub}`,
+                      sk: 'IDENTITY_MAPPING',
+                      canonicalUserId: finalUserId,
+                      linkedAt: new Date().toISOString()
+                    }
+                  }));
+                }
+              } else {
+                throw condErr;
               }
-            }));
-            console.log(`📝 [Auth Sync] Created new identity link for email: ${normalizedSearchEmail}`);
+            }
           }
         } catch (linkError) {
           console.warn('⚠️ [Auth Sync] Identity resolution failed:', linkError);
@@ -1497,14 +1537,14 @@ export function registerNeoFeedAwsRoutes(app: any) {
       
       if (!existingProfile) {
         // Use provided display name or fall back to username from email
-        const username = searchEmail.split('@')[0];
+        const username = rawEmail.split('@')[0];
         const finalDisplayName = displayName || userDisplayName || username;
         
         console.log(`✨ [Auth Sync] Creating initial profile for ${finalUserId} (username: ${username}, displayName: ${finalDisplayName})`);
         await createOrUpdateUserProfile(finalUserId, {
           username: '', // Leave empty per user request to avoid non-unique placeholders
           displayName: finalDisplayName,
-          email: searchEmail,
+          email: rawEmail, // Store the original email for display; searchEmail is only the DynamoDB key
           createdAt: new Date().toISOString()
         });
       } else if (displayName && !existingProfile.displayName) {

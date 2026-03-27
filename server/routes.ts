@@ -5048,10 +5048,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       console.log('🔐 Confirming Cognito signup for:', email);
 
-      const { CognitoIdentityProviderClient, ConfirmSignUpCommand } = await import('@aws-sdk/client-cognito-identity-provider');
+      const { CognitoIdentityProviderClient, ConfirmSignUpCommand, AdminGetUserCommand } = await import('@aws-sdk/client-cognito-identity-provider');
+      const region = process.env.AWS_REGION || 'ap-south-1';
       
       const cognitoClient = new CognitoIdentityProviderClient({
-        region: process.env.AWS_REGION || 'ap-south-2',
+        region,
         credentials: process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY ? {
           accessKeyId: process.env.AWS_ACCESS_KEY_ID,
           secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -5066,6 +5067,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       await cognitoClient.send(confirmCommand);
       console.log('✅ User confirmed successfully:', email);
+
+      // BUG FIX: Eagerly create IDENTITY_LINK right after confirmation so Google login
+      // always finds an existing link and never creates a duplicate account.
+      // Previously this was only done in POST /api/auth/cognito (after auto-login), which
+      // could be missed if the frontend crashed or the network dropped after confirmation.
+      try {
+        const userPoolId = process.env.AWS_COGNITO_USER_POOL_ID;
+        if (userPoolId) {
+          const getUserResult = await cognitoClient.send(new AdminGetUserCommand({
+            UserPoolId: userPoolId,
+            Username: email,
+          }));
+
+          const subAttr = getUserResult.UserAttributes?.find(a => a.Name === 'sub');
+          const cognitoSub = subAttr?.Value;
+
+          if (cognitoSub) {
+            const { docClient, TABLES } = await import('./neofeed-dynamodb-migration');
+            const { GetCommand, PutCommand } = await import('@aws-sdk/lib-dynamodb');
+
+            // Normalize email for consistent lookup (match middleware behaviour)
+            let normalizedEmail = email.toLowerCase();
+            if (normalizedEmail.endsWith('@gmail.com')) {
+              const [local, domain] = normalizedEmail.split('@');
+              normalizedEmail = local.replace(/\./g, '') + '@' + domain;
+            }
+
+            // Only create the IDENTITY_LINK if one does not already exist.
+            // Using a conditional write prevents accidentally overwriting a link
+            // that was created by a previous signup or Google login for the same email.
+            const existing = await docClient.send(new GetCommand({
+              TableName: TABLES.USER_PROFILES,
+              Key: { pk: `USER_EMAIL#${normalizedEmail}`, sk: 'IDENTITY_LINK' },
+            }));
+
+            if (!existing.Item) {
+              await docClient.send(new PutCommand({
+                TableName: TABLES.USER_PROFILES,
+                Item: {
+                  pk: `USER_EMAIL#${normalizedEmail}`,
+                  sk: 'IDENTITY_LINK',
+                  userId: cognitoSub,
+                  createdAt: new Date().toISOString(),
+                },
+                ConditionExpression: 'attribute_not_exists(pk)',
+              }));
+              console.log(`🔗 [Confirm-Signup] IDENTITY_LINK created: ${normalizedEmail} -> ${cognitoSub}`);
+            } else {
+              console.log(`ℹ️ [Confirm-Signup] IDENTITY_LINK already exists for ${normalizedEmail}, skipping`);
+            }
+
+            // Also seed IDENTITY_MAPPING for fast middleware resolution
+            await docClient.send(new PutCommand({
+              TableName: TABLES.USER_PROFILES,
+              Item: {
+                pk: `USER#${cognitoSub}`,
+                sk: 'IDENTITY_MAPPING',
+                canonicalUserId: existing.Item?.userId || cognitoSub,
+                linkedAt: new Date().toISOString(),
+              },
+            }));
+          }
+        }
+      } catch (linkErr: any) {
+        // Non-fatal: the POST /api/auth/cognito call during auto-login will create the
+        // link if this fails. Log and continue so the HTTP response still succeeds.
+        console.warn('⚠️ [Confirm-Signup] Could not eagerly create IDENTITY_LINK:', linkErr.message);
+      }
 
       res.json({ 
         success: true, 

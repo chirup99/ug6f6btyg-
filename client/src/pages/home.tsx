@@ -632,14 +632,13 @@ function SwipeableCardStack({
     if (nextCard) {
       if (onCardIndexChange) onCardIndexChange(nextIndex);
 
-      // Play the new top card (instant if cached, fetch if not)
-      setTimeout(() => {
-        fetchAndPlayContent(nextCard.title, nextCard.sector);
-      }, 150);
+      // Silently ensure the new top card's audio is warm (no auto-play — user must
+      // tap "Read Now" explicitly.  This prevents unwanted audio on every swipe.)
+      setTimeout(() => preloadForSector(nextCard.sector), 200);
 
-      // Silently preload the card after that in the background
+      // Also warm the card after that in the background
       if (nextNextCard) {
-        setTimeout(() => preloadForSector(nextNextCard.sector), 2000);
+        setTimeout(() => preloadForSector(nextNextCard.sector), 3000);
       }
     }
   };
@@ -689,15 +688,22 @@ function SwipeableCardStack({
     };
   }, [globalStopAudio]);
 
-  // On mount: kick off preload immediately — no delay so cache is warm before user taps
+  // On mount: preload ALL card sectors in the background — staggered so they don't
+  // hammer the network simultaneously.  Card 0 starts immediately so the top card
+  // is warm by the time the user reads it.  Remaining cards stagger at 6 s intervals
+  // to stay under server TTS rate limits while still loading well before the user
+  // swipes through to them.
   React.useEffect(() => {
     if (cards.length === 0) return;
-    // Card 0: start immediately so it's ready by the time user reads the card
-    preloadForSector(cards[0].sector);
-    // Cards 1 & 2: stagger so they don't compete with card 0's network calls
-    const t2 = setTimeout(() => { if (cards.length > 1) preloadForSector(cards[1].sector); }, 5000);
-    const t3 = setTimeout(() => { if (cards.length > 2) preloadForSector(cards[2].sector); }, 10000);
-    return () => { clearTimeout(t2); clearTimeout(t3); };
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    cards.forEach((card, i) => {
+      if (i === 0) {
+        preloadForSector(card.sector);
+      } else {
+        timers.push(setTimeout(() => preloadForSector(card.sector), i * 6000));
+      }
+    });
+    return () => timers.forEach(clearTimeout);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

@@ -4523,25 +4523,36 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent className="max-w-xs p-5">
-            <div className="flex gap-2 justify-end pt-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowDeleteDialog(false)}
-                data-testid="button-cancel-delete-range"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => deleteMutation.mutate()}
-                disabled={deleteMutation.isPending}
-                data-testid="button-confirm-delete-range"
-              >
-                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-              </Button>
+          <DialogContent className="max-w-[280px] w-[calc(100vw-2rem)] rounded-2xl p-0 overflow-hidden border border-border shadow-xl">
+            <div className="flex flex-col items-center px-5 pt-5 pb-4 gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-500 dark:text-red-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-foreground">Delete post?</p>
+                <p className="text-xs text-muted-foreground mt-0.5">This action cannot be undone.</p>
+              </div>
+              <div className="flex gap-2 w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 rounded-xl"
+                  onClick={() => setShowDeleteDialog(false)}
+                  data-testid="button-cancel-delete-range"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="flex-1 rounded-xl"
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                  data-testid="button-confirm-delete-range"
+                >
+                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>
@@ -5038,25 +5049,36 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-          <DialogContent className="max-w-xs p-5">
-            <div className="flex gap-2 justify-end pt-1">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowDeleteDialog(false)}
-                data-testid="button-cancel-delete"
-              >
-                Cancel
-              </Button>
-              <Button
-                variant="destructive"
-                size="sm"
-                onClick={() => deleteMutation.mutate()}
-                disabled={deleteMutation.isPending}
-                data-testid="button-confirm-delete"
-              >
-                {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
-              </Button>
+          <DialogContent className="max-w-[280px] w-[calc(100vw-2rem)] rounded-2xl p-0 overflow-hidden border border-border shadow-xl">
+            <div className="flex flex-col items-center px-5 pt-5 pb-4 gap-3">
+              <div className="w-10 h-10 rounded-full bg-red-50 dark:bg-red-900/20 flex items-center justify-center flex-shrink-0">
+                <Trash2 className="w-5 h-5 text-red-500 dark:text-red-400" />
+              </div>
+              <div className="text-center">
+                <p className="text-sm font-semibold text-foreground">Delete post?</p>
+                <p className="text-xs text-muted-foreground mt-0.5">This action cannot be undone.</p>
+              </div>
+              <div className="flex gap-2 w-full">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="flex-1 rounded-xl"
+                  onClick={() => setShowDeleteDialog(false)}
+                  data-testid="button-cancel-delete"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  className="flex-1 rounded-xl"
+                  onClick={() => deleteMutation.mutate()}
+                  disabled={deleteMutation.isPending}
+                  data-testid="button-confirm-delete"
+                >
+                  {deleteMutation.isPending ? 'Deleting...' : 'Delete'}
+                </Button>
+              </div>
             </div>
           </DialogContent>
         </Dialog>

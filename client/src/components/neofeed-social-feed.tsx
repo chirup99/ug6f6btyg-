@@ -2227,7 +2227,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                     {(() => {
                       const avatarUrl = follower.avatar || getAvatar(follower.username);
                       return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
-                        <AvatarImage src={avatarUrl} />
+                        <img src={avatarUrl} alt="" className="aspect-square h-full w-full object-cover rounded-full" loading="eager" decoding="async" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       ) : (
                         <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
                           {(follower.displayName || follower.username || 'U').charAt(0).toUpperCase()}
@@ -2272,7 +2272,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                     {(() => {
                       const avatarUrl = user.avatar || getAvatar(user.username);
                       return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
-                        <AvatarImage src={avatarUrl} />
+                        <img src={avatarUrl} alt="" className="aspect-square h-full w-full object-cover rounded-full" loading="eager" decoding="async" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       ) : (
                         <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
                           {(user.displayName || user.username || 'U').charAt(0).toUpperCase()}
@@ -4449,16 +4449,22 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             <div className="flex items-center gap-2">
               <Avatar className="w-7 h-7 border border-border flex-shrink-0">
                 {isValidAvatar ? (
-                  <AvatarImage
+                  <img
                     src={avatarUrl}
                     alt={post.authorDisplayName || post.authorUsername}
-                    className="object-cover"
-                    onError={() => { if (postAuthorKey && avatarUrl) markAvatarFailed(postAuthorKey, avatarUrl); }}
+                    className="aspect-square h-full w-full object-cover"
+                    loading="eager"
+                    decoding="async"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).style.display = 'none';
+                      if (postAuthorKey && avatarUrl) markAvatarFailed(postAuthorKey, avatarUrl);
+                    }}
                   />
-                ) : null}
-                <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs">
-                  {post.user?.initial || post.authorDisplayName?.charAt(0) || post.authorUsername?.charAt(0) || 'U'}
-                </AvatarFallback>
+                ) : (
+                  <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs">
+                    {post.user?.initial || post.authorDisplayName?.charAt(0) || post.authorUsername?.charAt(0) || 'U'}
+                  </AvatarFallback>
+                )}
               </Avatar>
               <div>
                 <div className="flex items-center gap-1">
@@ -4597,19 +4603,25 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 return (
                   <Avatar className="w-7 h-7 xl:w-9 xl:h-9 border border-border">
                     {isValidAvatar ? (
-                      <AvatarImage
+                      <img
                         src={avatarUrl}
                         alt={post.authorDisplayName || post.authorUsername}
-                        className="object-cover"
-                        onError={() => { if (authorKey && avatarUrl) markAvatarFailed(authorKey, avatarUrl); }}
+                        className="aspect-square h-full w-full object-cover"
+                        loading="eager"
+                        decoding="async"
+                        onError={(e) => {
+                          (e.target as HTMLImageElement).style.display = 'none';
+                          if (authorKey && avatarUrl) markAvatarFailed(authorKey, avatarUrl);
+                        }}
                       />
-                    ) : null}
-                    <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs xl:text-sm">
-                      {post.user?.initial || 
-                       post.authorDisplayName?.charAt(0) || 
-                       post.authorUsername?.charAt(0) || 
-                       'U'}
-                    </AvatarFallback>
+                    ) : (
+                      <AvatarFallback className="bg-muted text-muted-foreground font-semibold text-xs xl:text-sm">
+                        {post.user?.initial || 
+                         post.authorDisplayName?.charAt(0) || 
+                         post.authorUsername?.charAt(0) || 
+                         'U'}
+                      </AvatarFallback>
+                    )}
                   </Avatar>
                 );
               })()}
@@ -6196,7 +6208,7 @@ function ViewUserProfile({
                     {(() => {
                       const avatarUrl = follower.avatar || getAvatar(follower.username);
                       return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
-                        <AvatarImage src={avatarUrl} />
+                        <img src={avatarUrl} alt="" className="aspect-square h-full w-full object-cover rounded-full" loading="eager" decoding="async" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       ) : (
                         <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
                           {(follower.displayName || follower.username || 'U').charAt(0).toUpperCase()}
@@ -6240,7 +6252,7 @@ function ViewUserProfile({
                     {(() => {
                       const avatarUrl = user.avatar || getAvatar(user.username);
                       return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
-                        <AvatarImage src={avatarUrl} />
+                        <img src={avatarUrl} alt="" className="aspect-square h-full w-full object-cover rounded-full" loading="eager" decoding="async" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
                       ) : (
                         <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
                           {(user.displayName || user.username || 'U').charAt(0).toUpperCase()}

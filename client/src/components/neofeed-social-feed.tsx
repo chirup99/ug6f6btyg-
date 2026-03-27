@@ -235,8 +235,8 @@ function preloadImage(url: string | undefined | null) {
 // Eagerly preload all static rule-card images so they are already in the
 // browser's memory cache by the time the first card renders — same pattern
 // used for avatars, eliminating the late-load flicker on Bruce Lee cards.
-preloadImage('/bruce-lee-card.png');
-preloadImage('/bruce-lee-enemy-within.png');
+preloadImage('/bruce-lee-card.webp');
+preloadImage('/bruce-lee-enemy-within.webp');
 
 // Seed avatar + cert caches directly from posts data (before any PostCard renders).
 // Posts now come back from the server with authorAvatar, authorCertifiedRole, and
@@ -1471,7 +1471,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
       label: "Trader's Mindset",
       quote: "Be like water — adapt to what the market gives you. Never force a trade.",
       showBruceLee: true,
-      image: '/bruce-lee-card.png',
+      image: '/bruce-lee-card.webp',
       bg: 'from-gray-950 via-[#1a1200] to-gray-900',
       dark: true,
     },
@@ -1480,7 +1480,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
       label: 'Your Greatest Enemy Is Within',
       quote: "Fear, greed, and ego destroy more traders than any bad setup ever will.",
       showBruceLee: true,
-      image: '/bruce-lee-enemy-within.png',
+      image: '/bruce-lee-enemy-within.webp',
       bg: 'from-[#0d0500] via-[#2a1400] to-[#0d0800]',
       dark: true,
     },
@@ -5790,8 +5790,8 @@ function ViewUserProfile({
   const showPerformance = isOwnProfile || performanceIsPublic;
 
   const VIEW_MINDSET_CARDS = [
-    { label: "Trader's Mindset", quote: "Be like water — adapt to what the market gives you. Never force a trade.", bg: 'from-gray-950 via-[#1a1200] to-gray-900', showImage: true, image: '/bruce-lee-card.png' },
-    { label: 'Your Greatest Enemy Is Within', quote: "Fear, greed, and ego destroy more traders than any bad setup ever will.", bg: 'from-[#0d0500] via-[#2a1400] to-[#0d0800]', showImage: true, image: '/bruce-lee-enemy-within.png' },
+    { label: "Trader's Mindset", quote: "Be like water — adapt to what the market gives you. Never force a trade.", bg: 'from-gray-950 via-[#1a1200] to-gray-900', showImage: true, image: '/bruce-lee-card.webp' },
+    { label: 'Your Greatest Enemy Is Within', quote: "Fear, greed, and ego destroy more traders than any bad setup ever will.", bg: 'from-[#0d0500] via-[#2a1400] to-[#0d0800]', showImage: true, image: '/bruce-lee-enemy-within.webp' },
     { label: 'Loss Psychology', quote: "A loss is tuition — pay it and move on. Revenge trading is the real enemy.", bg: 'from-rose-600 to-red-700', showImage: false, image: '' },
     { label: 'Ignore the Noise', quote: "Consuming too much information creates paralysis. Block the noise — trust your system.", bg: 'from-slate-600 to-slate-800', showImage: false, image: '' },
     { label: 'Follow the Rules', quote: "Your rules exist because your past self was rational. Don't let emotions override them.", bg: 'from-violet-600 to-indigo-700', showImage: false, image: '' },

@@ -482,6 +482,8 @@ function CertificationDialog({ username, certId, certImageUrl, isOpen, onClose }
                 src={certImageUrl}
                 alt="Certificate"
                 className="w-full object-contain max-h-48"
+                loading="eager"
+                decoding="async"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
               <p className="text-[10px] text-muted-foreground text-center py-1.5">Official Certificate</p>
@@ -4463,15 +4465,16 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                     <CheckCircle className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 fill-current flex-shrink-0" />
                   )}
                   {(() => {
-                    const cert = getCertification(postAuthorKey || '');
-                    if (!cert?.certifiedRole) return null;
+                    const certRole = post.authorCertifiedRole || getCertification(postAuthorKey || '')?.certifiedRole;
+                    const certImg = post.authorCertificationImageUrl || getCertification(postAuthorKey || '')?.certificationImageUrl;
+                    if (!certRole) return null;
                     return (
                       <>
-                        <CertifiedBadge certId={cert.certifiedRole} onClick={() => setShowCertDialog(true)} certImageUrl={cert.certificationImageUrl || null} />
+                        <CertifiedBadge certId={certRole} onClick={() => setShowCertDialog(true)} certImageUrl={certImg || null} />
                         <CertificationDialog
                           username={postAuthorKey || ''}
-                          certId={cert.certifiedRole}
-                          certImageUrl={cert.certificationImageUrl || null}
+                          certId={certRole}
+                          certImageUrl={certImg || null}
                           isOpen={showCertDialog}
                           onClose={() => setShowCertDialog(false)}
                         />
@@ -4628,15 +4631,16 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 {/* Certified role badge */}
                 {(() => {
                   const postAuthorKey = post.user?.handle || post.authorUsername || '';
-                  const cert = getCertification(postAuthorKey);
-                  if (!cert?.certifiedRole) return null;
+                  const certRole = post.authorCertifiedRole || getCertification(postAuthorKey)?.certifiedRole;
+                  const certImg = post.authorCertificationImageUrl || getCertification(postAuthorKey)?.certificationImageUrl;
+                  if (!certRole) return null;
                   return (
                     <>
-                      <CertifiedBadge certId={cert.certifiedRole} onClick={() => setShowCertDialog(true)} certImageUrl={cert.certificationImageUrl || null} />
+                      <CertifiedBadge certId={certRole} onClick={() => setShowCertDialog(true)} certImageUrl={certImg || null} />
                       <CertificationDialog
                         username={postAuthorKey}
-                        certId={cert.certifiedRole}
-                        certImageUrl={cert.certificationImageUrl || null}
+                        certId={certRole}
+                        certImageUrl={certImg || null}
                         isOpen={showCertDialog}
                         onClose={() => setShowCertDialog(false)}
                       />

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SwipeableCarouselProps {
   images: string[];
@@ -265,23 +265,6 @@ export function SwipeableCarousel({ images }: SwipeableCarouselProps) {
             className="relative z-10 w-[92vw] max-w-sm mx-auto bg-gray-900 border border-gray-700/60 rounded-2xl overflow-hidden shadow-2xl"
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header bar */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700/50">
-              {images.length > 1 && (
-                <span className="text-xs text-gray-400 font-medium">
-                  {`${(dialogIndex ?? 0) + 1} of ${images.length}`}
-                </span>
-              )}
-              <button
-                className="ml-auto w-7 h-7 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-400 hover:text-gray-200 flex items-center justify-center transition-colors"
-                onClick={() => setDialogIndex(null)}
-                data-testid="button-close-image-dialog"
-                aria-label="Close"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-
             {/* Image carousel strip */}
             <div className="relative overflow-hidden bg-black">
               <div
@@ -301,6 +284,13 @@ export function SwipeableCarousel({ images }: SwipeableCarouselProps) {
                   </div>
                 ))}
               </div>
+
+              {/* Image counter — top-right overlay */}
+              {images.length > 1 && (
+                <div className="absolute top-2.5 right-3 bg-black/55 text-white text-[11px] font-medium px-2 py-0.5 rounded-full pointer-events-none select-none">
+                  {(dialogIndex ?? 0) + 1}/{images.length}
+                </div>
+              )}
 
               {/* Prev / Next arrows */}
               {images.length > 1 && (

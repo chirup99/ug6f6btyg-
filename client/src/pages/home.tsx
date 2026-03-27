@@ -375,11 +375,25 @@ function SwipeableCardStack({
     AUTOMOBILE: 'TATAMOTORS',
   };
 
-  // Build cache key from current language/speaker settings
-  const getCacheKey = (sector: string) => {
-    const lang = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
-    const speaker = localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
-    return `${sector}-${lang}-${speaker}`;
+  // All supported languages with their default Microsoft Neural voices
+  // (matches the language map in server/tts-service.ts)
+  const ALL_LANGUAGES: Record<string, string> = {
+    'en': 'en-IN-NeerjaNeural',
+    'hi': 'hi-IN-MadhurNeural',
+    'bn': 'bn-IN-BashkarNeural',
+    'ta': 'ta-IN-ValluvarNeural',
+    'te': 'te-IN-MohanNeural',
+    'mr': 'mr-IN-ManoharNeural',
+    'gu': 'gu-IN-DhwaniNeural',
+    'kn': 'kn-IN-GaganNeural',
+    'ml': 'ml-IN-MidhunNeural',
+  };
+
+  // Build cache key — always keyed to a specific lang so every language has its own slot
+  const getCacheKey = (sector: string, lang?: string, speaker?: string) => {
+    const l = lang || voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+    const s = speaker || localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
+    return `${sector}-${l}-${s}`;
   };
 
   // Fetch news text for a sector — kept short and clean for accurate translation
@@ -406,8 +420,8 @@ function SwipeableCardStack({
     }
   };
 
-  // Generate TTS audio blob URL from text
-  const buildAudioUrl = async (text: string): Promise<string | null> => {
+  // Generate TTS audio blob URL — accepts explicit lang/speaker for cross-language preloading
+  const buildAudioUrl = async (text: string, lang?: string, speaker?: string): Promise<string | null> => {
     const cleanText = text
       .replace(/^(good morning|good afternoon|good evening|hello|hi|welcome)/gi, '')
       .replace(/^(ladies and gentlemen|dear listeners|in today's news)/gi, '')
@@ -415,13 +429,13 @@ function SwipeableCardStack({
       .trim();
     if (!cleanText) return null;
 
-    const savedVoiceId = localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
-    const savedLanguage = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+    const useLang = lang || voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+    const useSpeaker = speaker || localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
 
     const response = await fetch('/api/tts/generate', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: cleanText, language: savedLanguage, speaker: savedVoiceId, speed: 1.0, pitch: 1.0 }),
+      body: JSON.stringify({ text: cleanText, language: useLang, speaker: useSpeaker, speed: 1.0, pitch: 1.0 }),
     });
     if (!response.ok) return null;
     const data = await response.json();
@@ -435,19 +449,41 @@ function SwipeableCardStack({
     return URL.createObjectURL(audioBlob);
   };
 
-  // Silently preload audio for a sector in the background
-  const preloadForSector = React.useCallback(async (sector: string) => {
-    const cacheKey = getCacheKey(sector);
+  // Silently preload audio for a sector in a specific language
+  const preloadForSectorAndLang = React.useCallback(async (sector: string, lang: string, speaker: string) => {
+    const cacheKey = getCacheKey(sector, lang, speaker);
     if (audioCacheRef.current.has(cacheKey)) return;
     if (preloadingRef.current.has(cacheKey)) return;
     preloadingRef.current.add(cacheKey);
-    console.log(`[PRELOAD] Background preloading ${sector}...`);
     try {
       const text = await buildNewsText(sector);
-      const url = await buildAudioUrl(text);
+      const url = await buildAudioUrl(text, lang, speaker);
       if (url) {
         audioCacheRef.current.set(cacheKey, url);
-        console.log(`[PRELOAD] ✅ Cached ${sector}`);
+        console.log(`[PRELOAD] ✅ Cached ${sector} [${lang}]`);
+      }
+    } catch (e) {
+      console.error(`[PRELOAD] Failed for ${sector} [${lang}]:`, e);
+    } finally {
+      preloadingRef.current.delete(cacheKey);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Preload audio for the current language (uses active voice profile)
+  const preloadForSector = React.useCallback(async (sector: string) => {
+    const lang = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+    const speaker = localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[lang] || 'en-IN-NeerjaNeural';
+    const cacheKey = getCacheKey(sector, lang, speaker);
+    if (audioCacheRef.current.has(cacheKey)) return;
+    if (preloadingRef.current.has(cacheKey)) return;
+    preloadingRef.current.add(cacheKey);
+    console.log(`[PRELOAD] Background preloading ${sector} [${lang}]...`);
+    try {
+      const text = await buildNewsText(sector);
+      const url = await buildAudioUrl(text, lang, speaker);
+      if (url) {
+        audioCacheRef.current.set(cacheKey, url);
+        console.log(`[PRELOAD] ✅ Cached ${sector} [${lang}]`);
       }
     } catch (e) {
       console.error(`[PRELOAD] Failed for ${sector}:`, e);
@@ -690,54 +726,50 @@ function SwipeableCardStack({
     };
   }, [globalStopAudio]);
 
-  // On mount: preload ALL card sectors in the background — staggered so they don't
-  // hammer the network simultaneously.  Card 0 starts immediately so the top card
-  // is warm by the time the user reads it.  Remaining cards stagger at 2 s intervals
-  // so all 6 cards are warm within ~10 seconds.
+  // On mount: Phase 1 — preload ALL sectors in the CURRENT language fast (2 s stagger).
+  // Phase 2 — preload ALL remaining languages in the background (3 s stagger, starting
+  // at 15 s) so that any language switch is an instant cache hit with no generation delay.
+  // Total: 6 sectors × 9 languages = 54 audio blobs, all warm before the user can even
+  // tap through all the cards.
   React.useEffect(() => {
     if (cards.length === 0) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
+    const activeLang = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+    const activeSpeaker = localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[activeLang] || 'en-IN-NeerjaNeural';
+
+    // ── Phase 1: current language, fast stagger ────────────────────────────
     cards.forEach((card, i) => {
       if (i === 0) {
-        preloadForSector(card.sector);
+        preloadForSectorAndLang(card.sector, activeLang, activeSpeaker);
       } else {
-        timers.push(setTimeout(() => preloadForSector(card.sector), i * 2000));
+        timers.push(setTimeout(() => preloadForSectorAndLang(card.sector, activeLang, activeSpeaker), i * 2000));
       }
     });
+
+    // ── Phase 2: all other languages, slow stagger (starts at 15 s) ────────
+    const otherLangs = Object.entries(ALL_LANGUAGES).filter(([lang]) => lang !== activeLang);
+    let jobIndex = 0;
+    otherLangs.forEach(([lang, defaultSpeaker]) => {
+      cards.forEach((card) => {
+        const delay = 15000 + jobIndex * 3000;
+        timers.push(setTimeout(() => preloadForSectorAndLang(card.sector, lang, defaultSpeaker), delay));
+        jobIndex++;
+      });
+    });
+
     return () => timers.forEach(clearTimeout);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When voiceLanguage changes: clear the entire audio cache (it was built for
-  // the previous language) and re-preload all cards in the new language so the
-  // user gets instant play in the correct language on next tap.
-  const prevLanguageRef = React.useRef(voiceLanguage);
+  // When voiceLanguage changes: stop any playing audio.
+  // No cache wipe needed — all languages are pre-cached in the background.
+  // fetchAndPlayContent will find the correct cache key and play instantly.
   React.useEffect(() => {
-    if (voiceLanguage === prevLanguageRef.current) return;
-    prevLanguageRef.current = voiceLanguage;
-
-    // Stop any audio that might be playing in the old language
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
     setIsPlaying(false);
-
-    // Wipe the cache — all old-language blob URLs are now stale
-    audioCacheRef.current.clear();
-    preloadingRef.current.clear();
-
-    console.log(`[LANG CHANGE] Language changed to ${voiceLanguage} — re-preloading all sectors`);
-
-    // Re-preload every card sector in the new language, staggered at 2 s each
-    const timers: ReturnType<typeof setTimeout>[] = [];
-    cards.forEach((card, i) => {
-      if (i === 0) {
-        preloadForSector(card.sector);
-      } else {
-        timers.push(setTimeout(() => preloadForSector(card.sector), i * 2000));
-      }
-    });
-    return () => timers.forEach(clearTimeout);
+    console.log(`[LANG CHANGE] Switched to ${voiceLanguage} — audio cache ready for instant play`);
   }, [voiceLanguage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

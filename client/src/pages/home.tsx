@@ -33264,61 +33264,63 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   </div>
                 </div>
 
-                {/* Share actions */}
-                {!isSharedReportMode && (
-                  <div className="flex items-center gap-1.5 flex-shrink-0">
-
-                    {!shareableUrl ? (
-                      <Button
-                        size="icon"
-                        onClick={handleCreateShareableLink}
-                        disabled={isCreatingShareableLink}
-                        className="bg-green-600 hover:bg-green-700 h-7 w-7"
-                        data-testid="button-create-shareable-link"
-                      >
-                        {isCreatingShareableLink ? (
-                          <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Link2 className="w-3 h-3" />
-                        )}
-                      </Button>
-                    ) : (
-                      <>
+                {/* Right side: share actions + close button side by side */}
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  {/* Share actions */}
+                  {!isSharedReportMode && (
+                    <>
+                      {!shareableUrl ? (
                         <Button
                           size="icon"
-                          variant="outline"
-                          className="bg-green-600 hover:bg-green-700 text-white border-green-600 h-7 w-7"
-                          onClick={() => {
-                            navigator.clipboard.writeText(shareableUrl);
-                            toast({ title: "Link copied!", description: "Shareable URL copied to clipboard" });
-                          }}
-                          data-testid="button-copy-shareable-url"
+                          onClick={handleCreateShareableLink}
+                          disabled={isCreatingShareableLink}
+                          className="bg-green-600 hover:bg-green-700 h-7 w-7"
+                          data-testid="button-create-shareable-link"
                         >
-                          <Copy className="w-3 h-3" />
+                          {isCreatingShareableLink ? (
+                            <div className="w-3 h-3 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                          ) : (
+                            <Link2 className="w-3 h-3" />
+                          )}
                         </Button>
-                        <Button
-                          size="icon"
-                          variant="ghost"
-                          className="h-7 w-7"
-                          onClick={() => window.open(shareableUrl, '_blank')}
-                          data-testid="button-open-shareable-url"
-                        >
-                          <ExternalLink className="w-3 h-3" />
-                        </Button>
-                      </>
-                    )}
-                  </div>
-                )}
+                      ) : (
+                        <>
+                          <Button
+                            size="icon"
+                            variant="outline"
+                            className="bg-green-600 hover:bg-green-700 text-white border-green-600 h-7 w-7"
+                            onClick={() => {
+                              navigator.clipboard.writeText(shareableUrl);
+                              toast({ title: "Link copied!", description: "Shareable URL copied to clipboard" });
+                            }}
+                            data-testid="button-copy-shareable-url"
+                          >
+                            <Copy className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            className="h-7 w-7"
+                            onClick={() => window.open(shareableUrl, '_blank')}
+                            data-testid="button-open-shareable-url"
+                          >
+                            <ExternalLink className="w-3 h-3" />
+                          </Button>
+                        </>
+                      )}
+                    </>
+                  )}
 
-                {/* Close button - always visible */}
-                <DialogClose asChild>
-                  <button
-                    className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                    data-testid="button-close-report-dialog"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </DialogClose>
+                  {/* Close button */}
+                  <DialogClose asChild>
+                    <button
+                      className="flex items-center justify-center w-7 h-7 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                      data-testid="button-close-report-dialog"
+                    >
+                      <X className="w-4 h-4" />
+                    </button>
+                  </DialogClose>
+                </div>
               </div>
             </DialogHeader>
 

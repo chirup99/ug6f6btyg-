@@ -44,11 +44,17 @@ async function getAuthenticatedUser(req: any): Promise<{ userId: string; usernam
     return null;
   }
   
-  const token = authHeader.split(' ')[1];
-  const cognitoUser = await verifyCognitoToken(token);
+  // Use authenticateRequest (not verifyCognitoToken) so that identity resolution runs.
+  // authenticateRequest checks USER#<sub> → IDENTITY_MAPPING and USER_EMAIL#<email> → IDENTITY_LINK
+  // and replaces claims.sub with the canonical userId. Without this, a Google user's sub would
+  // differ from their email/password sub, causing profile writes to land on the wrong DynamoDB key
+  // and silently creating a ghost second profile — breaking the single-door guarantee.
+  const { authenticateRequest } = await import('./cognito-auth');
+  const cognitoUser = await authenticateRequest(authHeader);
   
   if (!cognitoUser) return null;
   
+  // cognitoUser.sub is now the CANONICAL userId (same for both Google and email/password logins)
   const profile = await getUserProfile(cognitoUser.sub);
   
   // If no profile exists yet, use Cognito data (email username part)

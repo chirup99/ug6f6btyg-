@@ -1434,16 +1434,10 @@ export function registerNeoFeedAwsRoutes(app: any) {
       const { email, name: displayName, displayName: userDisplayName } = req.body;
       const rawEmail = (email || cognitoUser.email || '').toLowerCase();
 
-      // BUG FIX: Normalize Gmail addresses consistently (remove dots from local part).
-      // The auth middleware (cognito-auth.ts) already does this normalization, so the
-      // IDENTITY_LINK key must be stored with the same normalized form. Previously this
-      // endpoint stored the raw email while the middleware looked up the normalized form,
-      // causing a key mismatch for any user whose Gmail has dots (e.g. a.b@gmail.com).
-      let searchEmail = rawEmail;
-      if (searchEmail.endsWith('@gmail.com')) {
-        const [local, domain] = searchEmail.split('@');
-        searchEmail = local.replace(/\./g, '') + '@' + domain;
-      }
+      // Email matching is EXACT — abcd@gmail.com only links to abcd@gmail.com.
+      // Dot-variants like a.bcd@gmail.com or ab.cd@gmail.com are treated as
+      // completely different addresses and will NOT be linked to each other.
+      const searchEmail = rawEmail;
       
       console.log(`👤 [Auth Sync] Cognito sub: ${cognitoUser.sub}, Email: ${searchEmail}`);
       

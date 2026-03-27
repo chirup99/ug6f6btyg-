@@ -5087,12 +5087,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             const { docClient, TABLES } = await import('./neofeed-dynamodb-migration');
             const { GetCommand, PutCommand } = await import('@aws-sdk/lib-dynamodb');
 
-            // Normalize email for consistent lookup (match middleware behaviour)
-            let normalizedEmail = email.toLowerCase();
-            if (normalizedEmail.endsWith('@gmail.com')) {
-              const [local, domain] = normalizedEmail.split('@');
-              normalizedEmail = local.replace(/\./g, '') + '@' + domain;
-            }
+            // Email matching is EXACT — abcd@gmail.com only matches abcd@gmail.com.
+            // Dot-variants (a.bcd@gmail.com, ab.cd@gmail.com) are different addresses.
+            const normalizedEmail = email.toLowerCase();
 
             // Only create the IDENTITY_LINK if one does not already exist.
             // Using a conditional write prevents accidentally overwriting a link

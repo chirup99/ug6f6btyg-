@@ -117,13 +117,9 @@ export async function authenticateRequest(authHeader: string | undefined): Promi
   // Identity Resolution: Check if this user is linked to another account
   try {
     const ddb = getDynamoAuthClient();
-    let searchEmail = (claims.email || '').toLowerCase();
-
-    // Normalize Gmail addresses for identity resolution
-    if (searchEmail.endsWith('@gmail.com')) {
-      const [local, domain] = searchEmail.split('@');
-      searchEmail = local.replace(/\./g, '') + '@' + domain;
-    }
+    // Email matching is EXACT — only the identical address string links accounts.
+    // Dot-variants of Gmail (a.b@gmail.com vs ab@gmail.com) are NOT merged.
+    const searchEmail = (claims.email || '').toLowerCase();
 
     // 1. Try direct PK lookup for the Google sub mapping
     const command = new GetItemCommand({

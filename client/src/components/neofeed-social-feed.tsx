@@ -630,7 +630,7 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
                 <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center overflow-hidden mt-0.5">
                   {(() => {
                     const liveUrl = getAvatar(c.authorUsername);
-                    const commentAvatarUrl = liveUrl || c.authorAvatar;
+                    const commentAvatarUrl = c.authorAvatar || liveUrl;
                     return commentAvatarUrl && !commentAvatarUrl.includes('ui-avatars.com') ? (
                       <img src={commentAvatarUrl} alt="" className="w-full h-full object-cover" />
                     ) : (
@@ -2207,8 +2207,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                 >
                   <Avatar className="w-10 h-10">
                     {(() => {
-                      const liveUrl = getAvatar(follower.username);
-                      const avatarUrl = liveUrl || follower.avatar;
+                      const avatarUrl = follower.avatar || getAvatar(follower.username);
                       return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
                         <AvatarImage src={avatarUrl} />
                       ) : (
@@ -2253,8 +2252,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
                 >
                   <Avatar className="w-10 h-10">
                     {(() => {
-                      const liveUrl = getAvatar(user.username);
-                      const avatarUrl = liveUrl || user.avatar;
+                      const avatarUrl = user.avatar || getAvatar(user.username);
                       return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
                         <AvatarImage src={avatarUrl} />
                       ) : (
@@ -4396,7 +4394,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
     
     // Use the mirror cache for the audio card avatar the same way as regular PostCards
     const audioPostUsername = post.user?.handle || post.authorUsername || '';
-    const liveAudioAvatar = getAvatar(audioPostUsername) || post.authorAvatar || post.user?.avatar || undefined;
+    const liveAudioAvatar = post.authorAvatar || post.user?.avatar || getAvatar(audioPostUsername) || undefined;
 
     return (
       <AudioMinicastCard
@@ -4420,9 +4418,9 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
 
   // ── Range Report Post: flat card with no action bar ──
   if (post.metadata?.type === 'range_report') {
-    const liveUrl = getAvatar(post.authorUsername || post.user?.handle);
     const storedUrl = post.authorAvatar || post.user?.avatar;
-    const avatarUrl = liveUrl || storedUrl;
+    const liveUrl = getAvatar(post.authorUsername || post.user?.handle);
+    const avatarUrl = storedUrl || liveUrl;
     const isValidAvatar = avatarUrl && !avatarUrl.includes('ui-avatars.com') && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'));
     const postAuthorKey = post.authorUsername || post.user?.handle;
     return (
@@ -4572,9 +4570,9 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           <div className="flex items-center gap-2 xl:gap-3">
             <div className="relative">
               {(() => {
-                const liveUrl = getAvatar(post.authorUsername || post.user?.handle);
                 const storedUrl = post.authorAvatar || post.user?.avatar;
-                const avatarUrl = liveUrl || storedUrl;
+                const liveUrl = getAvatar(post.authorUsername || post.user?.handle);
+                const avatarUrl = storedUrl || liveUrl;
                 const isValidAvatar = avatarUrl && !avatarUrl.includes('ui-avatars.com') && (avatarUrl.startsWith('http') || avatarUrl.startsWith('/'));
                 const authorKey = post.authorUsername || post.user?.handle;
                 return (
@@ -6176,8 +6174,7 @@ function ViewUserProfile({
                 >
                   <Avatar className="w-10 h-10">
                     {(() => {
-                      const liveUrl = getAvatar(follower.username);
-                      const avatarUrl = liveUrl || follower.avatar;
+                      const avatarUrl = follower.avatar || getAvatar(follower.username);
                       return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
                         <AvatarImage src={avatarUrl} />
                       ) : (
@@ -6221,8 +6218,7 @@ function ViewUserProfile({
                 >
                   <Avatar className="w-10 h-10">
                     {(() => {
-                      const liveUrl = getAvatar(user.username);
-                      const avatarUrl = liveUrl || user.avatar;
+                      const avatarUrl = user.avatar || getAvatar(user.username);
                       return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
                         <AvatarImage src={avatarUrl} />
                       ) : (

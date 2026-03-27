@@ -147,8 +147,12 @@ app.use(fileUpload({
 
 app.use(cookieParser());
 
-// Serve locally uploaded profile/cover images
-app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads')));
+// Serve locally uploaded profile/cover images with browser caching
+app.use('/uploads', express.static(path.resolve(process.cwd(), 'uploads'), {
+  maxAge: '7d',
+  etag: true,
+  lastModified: true,
+}));
 
 app.use((req, res, next) => {
   const start = Date.now();

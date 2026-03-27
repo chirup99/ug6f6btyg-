@@ -33245,7 +33245,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             }
           }}
         >
-          <DialogContent className="w-full sm:max-w-xl max-h-[95dvh] sm:max-h-[88vh] overflow-hidden flex flex-col gap-0 p-0" data-testid="dialog-share-tradebook">
+          <DialogContent className="w-full sm:max-w-xl max-h-[95dvh] sm:max-h-[88vh] overflow-hidden flex flex-col gap-0 p-0 rounded-lg" data-testid="dialog-share-tradebook">
             {/* Compact header */}
             <DialogHeader className="flex-shrink-0 px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between gap-3">
@@ -33309,6 +33309,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     )}
                   </div>
                 )}
+
+                {/* Close button - always visible */}
+                <DialogClose asChild>
+                  <button
+                    className="flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                    data-testid="button-close-report-dialog"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </DialogClose>
               </div>
             </DialogHeader>
 

@@ -5746,72 +5746,78 @@ function ViewUserProfile({
         </Button>
       </div>
 
-      {/* Profile Header — no cover photo */}
-      <div className="bg-white dark:bg-gray-900 px-4 pt-4 pb-0 border-b border-gray-100 dark:border-gray-800">
-        {/* Top row: avatar + info + stats + action button */}
-        <div className="flex items-start gap-3 mb-3">
-          {/* Avatar */}
-          <Avatar className="w-14 h-14 flex-shrink-0 border-2 border-gray-200 dark:border-gray-700 shadow-sm">
+      {/* Profile Header */}
+      <div className="bg-white dark:bg-gray-900 px-5 pt-4 pb-0 border-b border-gray-100 dark:border-gray-800">
+        {/* Row 1: Avatar + name / handle / bio */}
+        <div className="flex items-start gap-3 mb-2.5">
+          <Avatar className="w-14 h-14 flex-shrink-0 border-2 border-gray-100 dark:border-gray-700 shadow-sm">
             {profilePicUrl ? (
               <AvatarImage src={profilePicUrl} className="object-cover" />
             ) : (
-              <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-2xl font-bold">
+              <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-xl font-bold">
                 {initials}
               </AvatarFallback>
             )}
           </Avatar>
 
-          {/* Name / handle / bio */}
-          <div className="flex-1 min-w-0">
-            <h1 className="text-gray-900 dark:text-white font-bold text-base leading-tight flex items-center gap-1 flex-wrap">
-              {displayName}
+          <div className="flex-1 min-w-0 pt-0.5">
+            <div className="flex items-center gap-1.5">
+              <h2 className="font-bold text-[15px] text-gray-900 dark:text-white leading-tight break-words">
+                {displayName}
+              </h2>
               {profileData?.verified && (
-                <CheckCircle className="w-4 h-4 text-blue-500 fill-current flex-shrink-0" />
+                <CheckCircle className="w-3.5 h-3.5 text-blue-500 fill-current flex-shrink-0" />
               )}
-              {profileData?.certifiedRole && (
-                <CertifiedBadge certId={profileData.certifiedRole} onClick={() => setShowCertDialog(true)} certImageUrl={profileData.certificationImageUrl || null} />
-              )}
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400 text-xs">
-              @{username}
-              {profileData?.location ? ` · ${profileData.location}` : ''}
+            </div>
+            <p className="text-[11px] text-gray-400 dark:text-gray-500">
+              @{username}{profileData?.location ? ` · ${profileData.location}` : ''}
             </p>
             {bio && (
-              <p className="text-gray-700 dark:text-gray-300 text-xs mt-0.5 leading-snug">{bio}</p>
+              <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-0.5 leading-snug line-clamp-2">{bio}</p>
             )}
           </div>
+        </div>
 
-          {/* Stats + action button on the right */}
-          <div className="flex-shrink-0 flex flex-col items-end gap-2">
-            {/* Stats row */}
-            <div className="flex items-center gap-3 text-center">
-              <button
-                className="hover:opacity-80 transition-opacity"
-                onClick={() => setShowFollowingDialog(true)}
-                data-testid="button-view-following"
-              >
-                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{countsData?.following || 0}</div>
-                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Following</div>
-              </button>
-              <button
-                className="hover:opacity-80 transition-opacity"
-                onClick={() => setShowFollowersDialog(true)}
-                data-testid="button-view-followers"
-              >
-                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{countsData?.followers || 0}</div>
-                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Followers</div>
-              </button>
-              <div>
-                <div className="font-bold text-gray-900 dark:text-white text-sm leading-none">{userPosts.length}</div>
-                <div className="text-gray-400 dark:text-gray-500 text-[10px] uppercase tracking-wide mt-0.5">Posts</div>
-              </div>
+        {/* Row 2: Stats + cert badge + action button */}
+        <div className="flex items-center gap-2 mb-3">
+          {/* Stats with dividers */}
+          <div className="flex items-center gap-2.5 flex-1 min-w-0">
+            <button className="text-center flex-shrink-0" onClick={() => setShowFollowingDialog(true)} data-testid="button-view-following">
+              <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{countsData?.following || 0}</p>
+              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Following</p>
+            </button>
+            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+            <button className="text-center flex-shrink-0" onClick={() => setShowFollowersDialog(true)} data-testid="button-view-followers">
+              <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{countsData?.followers || 0}</p>
+              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Followers</p>
+            </button>
+            <div className="w-px h-6 bg-gray-200 dark:bg-gray-700 flex-shrink-0" />
+            <div className="text-center flex-shrink-0">
+              <p className="text-sm font-bold text-gray-900 dark:text-white leading-none">{userPosts.length}</p>
+              <p className="text-[9px] text-gray-400 uppercase tracking-wide">Posts</p>
             </div>
-            {/* Action Button */}
+          </div>
+
+          {/* Cert badge + action button */}
+          <div className="flex items-center gap-1.5 flex-shrink-0">
+            {profileData?.certifiedRole && (
+              <button
+                onClick={() => setShowCertDialog(true)}
+                className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700/50 hover:bg-amber-100 dark:hover:bg-amber-900/50 transition-colors"
+                data-testid="button-cert-badge-view-profile"
+              >
+                <svg className="w-3 h-3 flex-shrink-0" viewBox="0 0 12 12" fill="none">
+                  <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
+                  <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+                <span className="text-[10px] font-semibold text-amber-700 dark:text-amber-300 leading-none hidden sm:inline">
+                  {profileData.certifiedRole}
+                </span>
+              </button>
+            )}
             {isOwnProfile ? (
               <Button
-                variant="default"
-                size="sm"
-                className="rounded-lg px-4 text-xs font-semibold bg-gray-900 dark:bg-white dark:text-gray-900 text-white"
+                className="h-7 px-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[11px] font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors whitespace-nowrap"
                 onClick={() => setShowEditProfile(true)}
                 data-testid="button-edit-profile"
               >
@@ -5822,17 +5828,15 @@ function ViewUserProfile({
                 <button
                   onClick={handleFollowToggle}
                   disabled={isFollowLoading}
-                  className="w-8 h-8 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-base leading-none"
+                  className="h-7 px-3 rounded-lg border border-gray-300 dark:border-gray-600 text-gray-600 dark:text-gray-300 text-[11px] font-semibold hover:border-red-400 hover:text-red-500 transition-colors"
                   title="Unfollow"
                   data-testid="button-follow-profile"
                 >
-                  {isFollowLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : '···'}
+                  {isFollowLoading ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Following'}
                 </button>
               ) : (
                 <Button
-                  variant="default"
-                  size="sm"
-                  className="rounded-lg px-4 text-xs font-semibold bg-gray-900 dark:bg-white dark:text-gray-900 hover:bg-gray-800 text-white"
+                  className="h-7 px-3 rounded-lg bg-gray-900 dark:bg-white text-white dark:text-gray-900 text-[11px] font-semibold hover:bg-gray-700 dark:hover:bg-gray-200 transition-colors whitespace-nowrap"
                   onClick={handleFollowToggle}
                   disabled={isFollowLoading}
                   data-testid="button-follow-profile"

@@ -24,3 +24,9 @@ id = "-3-LxKwgJSmbFliaTOJ8m"
 uri = "file://aws_latest_v1.zip"
 type = "unspecified"
 title = "aws_latest_v1.zip — AWS Elastic Beanstalk Deployment Package"
+
+[[outputs]]
+id = "6rqjJHsac-NGcNw-Fpydu"
+uri = "file://aws_latest_v2.zip"
+type = "unspecified"
+title = "aws_latest_v2.zip — Fixed AWS Elastic Beanstalk Package"

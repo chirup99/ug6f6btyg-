@@ -103,11 +103,20 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     return allCards;
   });
 
-  // Clean text for speech: remove emojis, links, and special characters
+  // Clean text for speech: remove emojis, links, and control chars
+  // IMPORTANT: preserve all Unicode language scripts (Hindi, Tamil, Telugu, etc.)
+  // We only strip emoji/pictographic symbols — NOT the entire non-ASCII range
   const cleanTextForSpeech = (text: string): string => {
-    let cleaned = text.replace(/https?:\/\/[^\s]+/gi, '').replace(/www\.[^\s]+/gi, '');
-    cleaned = cleaned.replace(/[^\x20-\x7E\s]/g, '');
-    return cleaned.replace(/\s+/g, ' ').trim();
+    return text
+      .replace(/https?:\/\/[^\s]+/gi, '')
+      .replace(/www\.[^\s]+/gi, '')
+      // Use Unicode property escapes to remove only emoji/pictographic symbols
+      // This preserves Devanagari, Tamil, Telugu, Bengali, Gujarati, Kannada, Malayalam etc.
+      .replace(/\p{Extended_Pictographic}/gu, '')
+      // Remove ASCII control characters only
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   };
 
   // Helper: fetch TTS and return an object URL (or null on failure)
@@ -115,7 +124,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
     const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
 
-    // Cache key includes voice + language so switching voice/language invalidates cache
+    // Cache key includes voice + language so switching voice/language automatically gets new audio
     const cacheKey = `${card.id}::${voiceLanguage}::${savedVoiceProfileId}`;
     const cached = audioCacheRef.current.get(cacheKey);
     if (cached) return cached;
@@ -124,11 +133,17 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     if (!textToSpeak) return null;
 
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
+
       const response = await fetch('/api/tts/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text: textToSpeak, language: voiceLanguage, speaker: savedVoiceProfileId }),
+        signal: controller.signal,
       });
+      clearTimeout(timeoutId);
+
       if (!response.ok || cancelled.value) return null;
       const data = await response.json();
       if (cancelled.value || !data.audioBase64) return null;
@@ -141,10 +156,14 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
       const url = URL.createObjectURL(blob);
       audioCacheRef.current.set(cacheKey, url);
       return url;
-    } catch {
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') console.error('[AudioMinicast] TTS fetch error:', err?.message);
       return null;
     }
   };
+
+  // Track the last known voiceLanguage so we can detect changes
+  const lastVoiceLanguageRef = useRef(localStorage.getItem('voiceLanguage') || 'en');
 
   // Pre-generate audio for all post cards in the background so playback is instant
   useEffect(() => {
@@ -155,6 +174,45 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
       fetchAndCacheTTS(card, cancelled);
     });
     return () => { cancelled.value = true; };
+  }, [cards]);
+
+  // When the user changes voice language (stored in localStorage), revoke stale blob
+  // URLs and pre-generate fresh audio in the new language for all current cards.
+  // Uses a custom 'perala-voice-lang-change' event dispatched by the home page when the
+  // language selector changes — more reliable than 'storage' events (same-tab changes
+  // do NOT fire 'storage' in the same window in all browsers).
+  useEffect(() => {
+    const handleLangChange = () => {
+      const newLang = localStorage.getItem('voiceLanguage') || 'en';
+      if (newLang === lastVoiceLanguageRef.current) return;
+      lastVoiceLanguageRef.current = newLang;
+
+      // Stop any playing audio first
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+      setIsPlaying(false);
+
+      // Revoke all existing blob URLs to free memory (old language entries)
+      audioCacheRef.current.forEach(url => URL.revokeObjectURL(url));
+      audioCacheRef.current.clear();
+
+      // Pre-generate audio for all cards in new language
+      const cancelled = { value: false };
+      cards.filter(c => c.type === 'post').forEach(card => {
+        fetchAndCacheTTS(card, cancelled);
+      });
+    };
+
+    window.addEventListener('perala-voice-lang-change', handleLangChange);
+    // Also handle cross-tab changes
+    window.addEventListener('storage', (e) => {
+      if (e.key === 'voiceLanguage') handleLangChange();
+    });
+    return () => {
+      window.removeEventListener('perala-voice-lang-change', handleLangChange);
+    };
   }, [cards]);
 
   // Auto-play the card queued by swipeCard once the cards state has updated (uses TTS API)

@@ -113,14 +113,21 @@ export const sarvamTTSService = {
         // Collect audio chunks into a buffer
         const chunks: Buffer[] = [];
 
-        await new Promise<void>((resolve, reject) => {
-          audioStream.on('data', (chunk: Buffer | Uint8Array) => {
-            chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
-          });
-          audioStream.on('end', resolve);
-          audioStream.on('error', reject);
-          audioStream.on('close', resolve);
-        });
+        // Wrap in a race with a 25-second timeout to prevent WebSocket hangs
+        // under high load or network issues (critical for 1M users in production)
+        await Promise.race([
+          new Promise<void>((resolve, reject) => {
+            audioStream.on('data', (chunk: Buffer | Uint8Array) => {
+              chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+            });
+            audioStream.on('end', resolve);
+            audioStream.on('error', reject);
+            audioStream.on('close', resolve);
+          }),
+          new Promise<void>((_, reject) =>
+            setTimeout(() => reject(new Error('TTS WebSocket timeout after 25s')), 25000)
+          ),
+        ]);
 
         if (chunks.length === 0) {
           console.warn(`⚠️ [TTS] Empty audio buffer for: "${request.text.substring(0, 50)}..."`);

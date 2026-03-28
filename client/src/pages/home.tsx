@@ -462,6 +462,9 @@ function SwipeableCardStack({
       const text = await buildNewsText(sector);
       const url = await buildAudioUrl(text, lang, speaker);
       if (url) {
+        // Revoke any old URL for this key before replacing (prevents memory leak)
+        const old = audioCacheRef.current.get(cacheKey);
+        if (old) URL.revokeObjectURL(old);
         audioCacheRef.current.set(cacheKey, url);
         console.log(`[PRELOAD] ✅ Cached ${sector} [${lang}]`);
       }
@@ -485,6 +488,9 @@ function SwipeableCardStack({
       const text = await buildNewsText(sector);
       const url = await buildAudioUrl(text, lang, speaker);
       if (url) {
+        // Revoke any old URL for this key before replacing (prevents memory leak)
+        const old = audioCacheRef.current.get(cacheKey);
+        if (old) URL.revokeObjectURL(old);
         audioCacheRef.current.set(cacheKey, url);
         console.log(`[PRELOAD] ✅ Cached ${sector} [${lang}]`);
       }
@@ -737,7 +743,7 @@ function SwipeableCardStack({
     };
   }, [globalStopAudio]);
 
-  // Cleanup on component unmount
+  // Cleanup on component unmount: stop audio and revoke all cached blob URLs
   React.useEffect(() => {
     return () => {
       if (currentAudioRef.current) {
@@ -745,6 +751,9 @@ function SwipeableCardStack({
         currentAudioRef.current = null;
       }
       globalStopAudio();
+      // Revoke all blob URLs to prevent memory leaks
+      audioCacheRef.current.forEach(url => URL.revokeObjectURL(url));
+      audioCacheRef.current.clear();
     };
   }, [globalStopAudio]);
 
@@ -2379,7 +2388,12 @@ export default function Home() {
   const isTortoiseFacingRightRef = useRef(true);
 
   useEffect(() => { localStorage.setItem('activeVoiceProfileId', activeVoiceProfileId); }, [activeVoiceProfileId]);
-  useEffect(() => { localStorage.setItem('voiceLanguage', voiceLanguage); }, [voiceLanguage]);
+  useEffect(() => {
+    localStorage.setItem('voiceLanguage', voiceLanguage);
+    // Notify all AudioMinicastCard instances so they can invalidate their caches
+    // and re-generate audio in the new language (same-tab 'storage' events don't fire)
+    window.dispatchEvent(new CustomEvent('perala-voice-lang-change', { detail: { lang: voiceLanguage } }));
+  }, [voiceLanguage]);
   useEffect(() => { 
     const saved = localStorage.getItem('voiceLanguage'); 
     if (saved && saved !== voiceLanguage) setVoiceLanguage(saved); 

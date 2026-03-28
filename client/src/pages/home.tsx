@@ -2370,6 +2370,71 @@ export default function Home() {
     const saved = localStorage.getItem('voiceLanguage'); 
     if (saved && saved !== voiceLanguage) setVoiceLanguage(saved); 
   }, []);
+
+  const prefetchVoiceAudio = async (lang: string) => {
+    const voicesByLanguage: { [key: string]: {id: string, name: string, gender: string}[] } = {
+      en: [{ id: 'en-IN-PrabhatNeural', name: 'Prabhat', gender: 'Male' }, { id: 'en-IN-NeerjaNeural', name: 'Neerja', gender: 'Female' }],
+      hi: [{ id: 'hi-IN-MadhurNeural', name: 'Madhur', gender: 'Male' }, { id: 'hi-IN-SwaraNeural', name: 'Swara', gender: 'Female' }],
+      bn: [{ id: 'bn-IN-BashkarNeural', name: 'Bashkar', gender: 'Male' }, { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa', gender: 'Female' }],
+      ta: [{ id: 'ta-IN-ValluvarNeural', name: 'Valluvar', gender: 'Male' }, { id: 'ta-IN-PallaviNeural', name: 'Pallavi', gender: 'Female' }],
+      te: [{ id: 'te-IN-MohanNeural', name: 'Mohan', gender: 'Male' }, { id: 'te-IN-ShrutiNeural', name: 'Shruti', gender: 'Female' }],
+      mr: [{ id: 'mr-IN-ManoharNeural', name: 'Manohar', gender: 'Male' }, { id: 'mr-IN-AarohiNeural', name: 'Aarohi', gender: 'Female' }],
+      gu: [{ id: 'gu-IN-NiranjanNeural', name: 'Niranjan', gender: 'Male' }, { id: 'gu-IN-DhwaniNeural', name: 'Dhwani', gender: 'Female' }],
+      kn: [{ id: 'kn-IN-GaganNeural', name: 'Gagan', gender: 'Male' }, { id: 'kn-IN-SapnaNeural', name: 'Sapna', gender: 'Female' }],
+      ml: [{ id: 'ml-IN-MidhunNeural', name: 'Midhun', gender: 'Male' }, { id: 'ml-IN-SobhanaNeural', name: 'Sobhana', gender: 'Female' }],
+    };
+    const greetings: { [key: string]: (p: string) => string } = {
+      en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
+      hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
+      bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
+      ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
+      te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
+      mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
+      gu: (p) => `નમસ્તે! હું ${p} છું. પેરલામાં તમારું સ્વાગત છે!`,
+      kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+      ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
+    };
+    const voices = voicesByLanguage[lang] || voicesByLanguage['en'];
+    setVoiceLangLoading(true);
+    setVoiceLangProgress(0);
+    const startTime = Date.now();
+    const DURATION = 4000;
+    const tick = () => {
+      const elapsed = Date.now() - startTime;
+      const pct = Math.min((elapsed / DURATION) * 100, 99);
+      setVoiceLangProgress(pct);
+      if (elapsed < DURATION) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+    const fetchAudio = async (profile: {id: string, name: string, gender: string}) => {
+      const cacheKey = `${profile.id}_${lang}`;
+      const text = greetings[lang] ? greetings[lang](profile.name) : `Hello! I am ${profile.name}. Welcome to Perala!`;
+      try {
+        const res = await fetch('/api/tts/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, language: lang, speaker: profile.id, speed: 1.0, pitch: 1.0 })
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.audioBase64) {
+            const b64 = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+            const bin = atob(b64);
+            const bytes = new Uint8Array(bin.length);
+            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+            const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+            setVoiceAudioCache(prev => ({ ...prev, [cacheKey]: url }));
+          }
+        }
+      } catch { /* silently skip */ }
+    };
+    await Promise.all([
+      Promise.all(voices.map(fetchAudio)),
+      new Promise(r => setTimeout(r, DURATION))
+    ]);
+    setVoiceLangProgress(100);
+    setVoiceLangLoading(false);
+  };
   const [location, setLocation] = useLocation();
   const [showGuestDialog, setShowGuestDialog] = useState(false);
 
@@ -2537,6 +2602,9 @@ export default function Home() {
   const [voiceNounDuration, setVoiceNounDuration] = useState(1.15);
   const [voiceFunctionDuration, setVoiceFunctionDuration] = useState(0.92);
   const [voiceMicroJitter, setVoiceMicroJitter] = useState(3);
+  const [voiceAudioCache, setVoiceAudioCache] = useState<{[key: string]: string}>({});
+  const [voiceLangLoading, setVoiceLangLoading] = useState(false);
+  const [voiceLangProgress, setVoiceLangProgress] = useState(0);
   const [showAdminDashboardDialog, setShowAdminDashboardDialog] = useState(false);
   const [adminTab, setAdminTab] = useState("bugs-list");
   const [showMagicBugBar, setShowMagicBugBar] = useState(false);
@@ -16552,10 +16620,17 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             className="flex flex-col items-center gap-1.5 group cursor-pointer" 
                                             onClick={async () => {
                                               setActiveVoiceProfileId(profile.id);
-                                              // Stop any currently playing audio
                                               if (currentAudioRef.current) {
                                                 currentAudioRef.current.pause();
                                                 currentAudioRef.current = null;
+                                              }
+                                              // Use cached audio for instant playback
+                                              const cacheKey = `${profile.id}_${voiceLanguage}`;
+                                              if (voiceAudioCache[cacheKey]) {
+                                                const audio = new Audio(voiceAudioCache[cacheKey]);
+                                                currentAudioRef.current = audio;
+                                                audio.play().catch(err => console.error('🎤 [TTS] Cache play error:', err));
+                                                return;
                                               }
                                               const name = currentUser?.displayName || currentUser?.username || "Trader";
                                               // Multilingual greetings with Microsoft Edge TTS voices
@@ -16565,8 +16640,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                     bn: (n, p) => `নমস্কার ${n}, আমি ${p}। আপনার দিন কেমন যাচ্ছে? পেরলায় আপনাকে স্বাগত!`,
                                                     ta: (n, p) => `வணக்கம் ${n}, நான் ${p}. உங்கள் நாள் எப்படி இருக்கிறது? பெரலாவில் உங்களை வரவேற்கிறோம்!`,
                                                     te: (n, p) => `నమస్కారం ${n}, నేను ${p}. మీ రోజు ఎలా ఉంది? పెరలాలో మీకు స్వాగతం!`,
-                                                    mr: (n, p) => `नमस्कार ${n}, मी ${p} आहे. तुमचा दिवस कसा आहे? पेरलामध्ये तुमचे स्वागत आहे!`,
-                                                    gu: (n, p) => `નમસ્તે ${n}, હું ${p} છું. તમારો દિવસ કેવો છે? પેરલામાં તમારું સ્વાગત છે!`,
+                                                    mr: (n, p) => `नमस्कार ${n}, मी ${p} आहे. तुमचा दिवस कसा आहे? पेरलामध्ये तुमचे स्వागत आहे!`,
+                                                    gu: (n, p) => `નમસ્તે ${n}, હું ${p} છું. તમારો દિવસ કેવો છે? પેરલામાં તમારું સ્વાગत છે!`,
                                                     kn: (n, p) => `ನಮಸ್ಕಾರ ${n}, ನಾನು ${p}. ನಿಮ್ಮ ದಿನ ಹೇಗಿದೆ? ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
                                                     ml: (n, p) => `നമസ്കാരം ${n}, ഞാൻ ${p} ആണ്. നിങ്ങളുടെ ദിവസം എങ്ങനെയുണ്ട്? പെരലയിലേക്ക് സ്വാഗതം!`,
                                               };
@@ -16623,13 +16698,21 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         });
                                       })()}
                                     </div>
+                                    {voiceLangLoading && (
+                                      <div className="w-full px-1 animate-in fade-in duration-200">
+                                        <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
+                                          <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-100" style={{ width: `${voiceLangProgress}%` }} />
+                                        </div>
+                                        <p className="text-[10px] text-blue-400 text-center mt-1 animate-pulse">Setting up {voiceLanguage !== 'en' ? 'new language' : 'English'} voices…</p>
+                                      </div>
+                                    )}
                                     <div className="w-full h-px bg-gray-700/50 my-1" />
                                     <div className="flex items-center gap-3">
                                       <div className="flex-1">
                                         <p className="text-[11px] text-gray-500 italic mb-2">Language & Voice</p>
                                         <select 
                                           value={voiceLanguage}
-                                          onChange={(e) => setVoiceLanguage(e.target.value)}
+                                          onChange={(e) => { const l = e.target.value; setVoiceLanguage(l); prefetchVoiceAudio(l); }}
                                           className="w-full px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-gray-200 focus:border-blue-400 focus:outline-none"
                                         >
                                           <option value="en">English (Indian)</option>
@@ -16640,7 +16723,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                           <option value="mr">मराठी (Marathi)</option>
                                           <option value="gu">ગુજરાતી (Gujarati)</option>
                                           <option value="kn">ಕನ್ನಡ (Kannada)</option>
-                                          <option value="ml">മലയാളം (Malayalam)</option>
+                                          <option value="ml">മലയాളം (Malayalam)</option>
                                         </select>
                                       </div>
                                     </div>
@@ -17181,6 +17264,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             currentAudioRef.current.pause();
                                             currentAudioRef.current = null;
                                           }
+                                          // Use cached audio for instant playback
+                                          const cacheKey = `${profile.id}_${voiceLanguage}`;
+                                          if (voiceAudioCache[cacheKey]) {
+                                            const audio = new Audio(voiceAudioCache[cacheKey]);
+                                            currentAudioRef.current = audio;
+                                            audio.play().catch(err => console.error('🎤 [TTS] Cache play error:', err));
+                                            return;
+                                          }
                                           const voiceGreetings: { [key: string]: (p: string) => string } = {
                                             en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
                                             hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
@@ -17229,12 +17320,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   });
                                 })()}
                               </div>
+                              {voiceLangLoading && (
+                                <div className="w-full px-1 animate-in fade-in duration-200">
+                                  <div className="w-full h-1 bg-gray-700 rounded-full overflow-hidden">
+                                    <div className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500 rounded-full transition-all duration-100" style={{ width: `${voiceLangProgress}%` }} />
+                                  </div>
+                                  <p className="text-[10px] text-blue-400 text-center mt-1 animate-pulse">Setting up new language voices…</p>
+                                </div>
+                              )}
                               <div className="w-full h-px bg-gray-700/50 my-1" />
                               <div className="w-full">
                                 <p className="text-[11px] text-gray-500 italic mb-2 text-center">Language & Voice</p>
                                 <select
                                   value={voiceLanguage}
-                                  onChange={(e) => setVoiceLanguage(e.target.value)}
+                                  onChange={(e) => { const l = e.target.value; setVoiceLanguage(l); prefetchVoiceAudio(l); }}
                                   className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-lg text-gray-200 focus:border-blue-400 focus:outline-none"
                                 >
                                   <option value="en">English (Indian)</option>

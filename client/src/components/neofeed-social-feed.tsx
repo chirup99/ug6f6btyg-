@@ -12,7 +12,7 @@ import {
   TrendingUp, TrendingDown, Activity, Plus, Home, PenTool,
   Copy, ExternalLink, X, Send, Bot, Trash2, User, MapPin, Calendar,
   ChevronDown, ChevronUp, ArrowLeft, Check, Layers, Mic, Newspaper,
-  Users, UserPlus, ThumbsUp, Loader2, Camera, ZoomIn, ZoomOut, Move,
+  Users, UserPlus, UserMinus, ThumbsUp, Loader2, Camera, ZoomIn, ZoomOut, Move,
   Link as LinkIcon, Facebook, MessageCircle as WhatsApp, Send as Telegram, Linkedin,
   Info, Pencil, Award, Flame, Lock, Unlock, BookOpen, Target as TargetIcon, Zap, Eye
 } from 'lucide-react';
@@ -4919,11 +4919,17 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
                 <button
                   onClick={handleFollowClick}
                   disabled={followMutation.isPending}
-                  className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 dark:text-gray-500 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors text-base leading-none"
-                  title="Unfollow"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-red-300 hover:text-red-500 dark:hover:border-red-700 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors disabled:opacity-40"
                   data-testid={`button-follow-${post.id}`}
                 >
-                  {followMutation.isPending ? <span className="text-[10px]">…</span> : '···'}
+                  {followMutation.isPending ? (
+                    <span className="text-[10px]">…</span>
+                  ) : (
+                    <>
+                      <UserMinus className="w-3 h-3" />
+                      <span>Unfollow</span>
+                    </>
+                  )}
                 </button>
               ) : (
                 <Button

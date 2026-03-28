@@ -1264,8 +1264,8 @@ function SearchOverlay({
   const showRecent = !q && recentSearches.length > 0;
 
   return (
-    <div className="fixed inset-0 z-[200] bg-background flex flex-col" data-testid="search-overlay">
-      {/* Category scroll */}
+    <div className="flex-1 flex flex-col overflow-hidden bg-background" data-testid="search-overlay">
+      {/* Category scroll — pinned below search bar */}
       <div className="flex-shrink-0 border-b border-border bg-background">
         <div className="flex gap-1 px-3 py-2 overflow-x-auto no-scrollbar">
           {CATS.map(c => (
@@ -1537,13 +1537,21 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
 
   return (
     <>
-      {/* Full-screen search overlay */}
+      {/* Full-screen search — Twitter style: back arrow + search bar + sticky category chips + scrollable results */}
       {isSearchOpen && posts && (
         <div className="fixed inset-0 z-[200] bg-background flex flex-col">
-          {/* Search bar row */}
-          <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border bg-background">
+          {/* Top bar: back arrow + active search input */}
+          <div className="flex-shrink-0 flex items-center gap-2 px-2 py-2 bg-background border-b border-border safe-area-top">
+            <button
+              onClick={handleSearchCancel}
+              className="flex-shrink-0 h-9 w-9 flex items-center justify-center rounded-full text-foreground hover:bg-muted transition-colors"
+              data-testid="button-search-back"
+              aria-label="Back"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4 pointer-events-none" />
               <Input
                 ref={searchInputRef}
                 autoFocus
@@ -1551,18 +1559,21 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
                 value={searchQuery}
                 onChange={handleInputChange}
                 onKeyDown={(e) => { if (e.key === 'Escape') handleSearchCancel(); }}
-                className="pl-9 pr-4 h-10 bg-muted border-transparent focus:border-blue-500 focus:ring-blue-500 rounded-full text-sm"
+                className="pl-9 pr-9 h-10 bg-muted/70 border-transparent focus-visible:ring-1 focus-visible:ring-blue-500 focus-visible:border-blue-500 rounded-full text-sm"
                 data-testid="input-search-overlay"
               />
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                  data-testid="button-search-clear"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
             </div>
-            <button
-              onClick={handleSearchCancel}
-              className="flex-shrink-0 text-sm font-medium text-blue-500 hover:text-blue-600 px-1"
-              data-testid="button-search-cancel"
-            >
-              Cancel
-            </button>
           </div>
+          {/* Category chips + results — fills remaining space */}
           <SearchOverlay
             query={searchQuery}
             posts={posts}

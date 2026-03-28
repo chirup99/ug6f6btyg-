@@ -1028,15 +1028,6 @@ function SwipeableCardStack({
                   className={`bg-white ${card.buttonColor} hover:bg-gray-100 px-2.5 py-1 md:px-2.5 md:py-0.5 rounded-full text-[11px] md:text-[10px] font-semibold shadow-lg w-fit`}
                   onClick={() => {
                     if (isTop) {
-                      const userId = localStorage.getItem('currentUserId');
-                      const userEmail = localStorage.getItem('currentUserEmail');
-
-                      if (!userId || !userEmail) {
-                        console.log('🔒 User not authenticated, redirecting to login');
-                        window.location.href = '/login';
-                        return;
-                      }
-
                       if (isPlaying) {
                         stopAudio();
                       } else {
@@ -3366,21 +3357,14 @@ export default function Home() {
   const handleTradingMasterAccess = () => {
     const userId = localStorage.getItem('currentUserId');
     const userEmail = localStorage.getItem('currentUserEmail');
+    const isAuthenticated = userId && userEmail && userId !== 'null' && userEmail !== 'null';
 
-    // Robust check for Cloud Run compatibility
-    if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
-      console.log('[AUTH] Authentication required for Trading Master - redirecting to login');
-      setLocation('/login');
-      return;
-    }
-
-    console.log('[AUTH] User authenticated for Trading Master check - email:', userEmail);
     // Check if user is authorized for Trading Master
-    if (userEmail === 'chiranjeevi.perala99@gmail.com') {
+    if (isAuthenticated && userEmail === 'chiranjeevi.perala99@gmail.com') {
       // Authorized user - navigate to trading-master tab
       setActiveTab('trading-master');
     } else {
-      // Unauthorized user - show coming soon modal
+      // All other users (guests + non-authorized) - show coming soon modal
       setShowTradingMasterComingSoon(true);
     }
   };
@@ -3389,15 +3373,12 @@ export default function Home() {
   const handleMinicastAccess = () => {
     const userId = localStorage.getItem('currentUserId');
     const userEmail = localStorage.getItem('currentUserEmail');
+    const isAuthenticated = userId && userEmail && userId !== 'null' && userEmail !== 'null';
 
-    if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
-      setLocation('/login');
-      return;
-    }
-
-    if (userEmail === 'chiranjeevi.perala99@gmail.com') {
+    if (isAuthenticated && userEmail === 'chiranjeevi.perala99@gmail.com') {
       setTabWithAuthCheck("tutor");
     } else {
+      // All other users (guests + non-authorized) - show coming soon dialog
       setShowComingSoonDialog(true);
     }
   };
@@ -17012,6 +16993,19 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         </div>
                                     )}
                                   </div>
+                                  {/* Login button - shown below voice profiles for guests */}
+                                  {!localStorage.getItem('currentUserId') || localStorage.getItem('currentUserId') === 'null' ? (
+                                    <div className="pt-2 pb-1">
+                                      <button
+                                        onClick={() => { setLocation('/landing'); setIsNavOpen(false); }}
+                                        className="w-full px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white text-sm font-semibold flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98]"
+                                        data-testid="button-sidebar-login"
+                                      >
+                                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" /></svg>
+                                        Login
+                                      </button>
+                                    </div>
+                                  ) : null}
                                 </div>
                               )}
                               {!isVoiceActive && (

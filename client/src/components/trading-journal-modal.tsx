@@ -25,7 +25,6 @@ export function TradingJournalModal({ open, onOpenChange, isAutoPopup = false }:
       if (lastDismissed !== today) {
         setInternalOpen(true);
       } else {
-        // Auto popup already dismissed today, close the parent state
         onOpenChange(false);
       }
     } else {
@@ -47,86 +46,79 @@ export function TradingJournalModal({ open, onOpenChange, isAutoPopup = false }:
       if (!val) handleDismiss();
       else onOpenChange(val);
     }}>
-      <DialogContent className="max-w-sm w-[90vw] pl-[5px] pr-[5px] pt-[12px] pb-[12px] rounded-lg">
-        <DialogHeader className="text-center">
-          <div className="flex justify-center mb-2">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-              <Info className="h-6 w-6 text-white" />
+      <DialogContent className="max-w-xs w-[88vw] p-3 rounded-xl gap-0">
+        {/* Header */}
+        <DialogHeader className="pb-2">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center shrink-0">
+              <Info className="h-4 w-4 text-white" />
+            </div>
+            <div>
+              <DialogTitle className="text-sm font-bold leading-tight">Trading Journal</DialogTitle>
+              <p className="text-[10px] text-gray-500 dark:text-gray-400 leading-tight">Track Your Trading Progress</p>
             </div>
           </div>
-          <DialogTitle className="text-xl font-bold text-center">Trading Journal</DialogTitle>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
-            Track Your Trading Progress
-          </p>
         </DialogHeader>
-        <div className="py-4 space-y-3">
-          <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-            <Calendar className="h-5 w-5 text-blue-500" />
-            <div>
-              <p className="text-sm font-medium">Daily Trade Tracking</p>
-              <p className="text-xs text-gray-500">Record and monitor all your trades</p>
+
+        <div className="space-y-2">
+          {/* Daily Trade Tracking + AI Performance side by side */}
+          <div className="grid grid-cols-2 gap-1.5">
+            <div className="flex flex-col gap-1 p-2 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-100 dark:border-blue-800/30">
+              <Calendar className="h-4 w-4 text-blue-500" />
+              <p className="text-[10px] font-semibold text-blue-800 dark:text-blue-300 leading-tight">Daily Trade Tracking</p>
+              <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Record &amp; monitor all trades</p>
+            </div>
+            <div className="flex flex-col gap-1 p-2 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-100 dark:border-green-800/30">
+              <BarChart3 className="h-4 w-4 text-green-500" />
+              <p className="text-[10px] font-semibold text-green-800 dark:text-green-300 leading-tight">AI Performance Analysis</p>
+              <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">P&amp;L &amp; trade statistics</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-            <BarChart3 className="h-5 w-5 text-green-500" />
+
+          {/* Improve Your Trading */}
+          <div className="flex items-center gap-2 p-2 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-100 dark:border-amber-800/30">
+            <TrendingUp className="h-4 w-4 text-amber-500 shrink-0" />
             <div>
-              <p className="text-sm font-medium">AI Performance Analysis</p>
-              <p className="text-xs text-gray-500">View detailed P&L and trading statistics</p>
+              <p className="text-[10px] font-semibold text-amber-800 dark:text-amber-300 leading-tight">Improve Your Trading</p>
+              <p className="text-[9px] text-gray-500 dark:text-gray-400 leading-tight">Learn from mistakes &amp; patterns</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
-            <TrendingUp className="h-5 w-5 text-amber-500" />
-            <div>
-              <p className="text-sm font-medium">Improve Your Trading</p>
-              <p className="text-xs text-gray-500">Learn from your trading mistakes and patterns</p>
-            </div>
-          </div>
-          <div 
-            className="mt-1 p-2 bg-red-50/30 dark:bg-red-900/5 rounded-md border border-red-100/30 dark:border-red-900/10 cursor-pointer hover:bg-red-50/50 dark:hover:bg-red-900/10 transition-colors"
+
+          {/* SEBI loss data */}
+          <div
+            className="p-2 bg-red-50/50 dark:bg-red-900/10 rounded-lg border border-red-100/50 dark:border-red-900/20 cursor-pointer hover:bg-red-50 dark:hover:bg-red-900/15 transition-colors"
             onClick={() => window.open('https://www.sebi.gov.in/reports-and-statistics/research/jan-2023/study-analysis-of-profit-and-loss-of-individual-traders-dealing-in-equity-fando-segment_67525.html', '_blank')}
             data-testid="button-sebi-report"
           >
-            <p className="text-[10px] leading-tight text-red-700/80 dark:text-red-400/80 font-medium text-center flex items-center justify-center gap-1">
-              Aggregate Losses Exceed ₹1.8 Lakh Crores Over Three Years 
-              <div className="inline-flex items-center gap-1 ml-0.5 bg-white/20 rounded px-1 py-0.5">
-                <TrendingDown className="h-3 w-3"/>
-                <BarChart3 className="h-3 w-3"/>
-              </div>
-              <FileText className="h-3 w-3 text-red-600 dark:text-red-400 ml-0.5"/>
+            <p className="text-[9px] leading-tight text-red-700/80 dark:text-red-400/80 font-medium flex items-center gap-1">
+              <FileText className="h-3 w-3 shrink-0" />
+              Aggregate Losses Exceed ₹1.8 Lakh Crores Over 3 Years
             </p>
-            <div className="mt-0.5 text-center"><p className="text-[8px] text-gray-600 dark:text-gray-400 font-medium uppercase tracking-tighter">Top 3 Loss Traders States:</p></div>
-            <div className="mt-0.5 flex items-center justify-center gap-2 py-1 px-2 bg-slate-50/70 dark:bg-slate-800/40 rounded-md border border-slate-100 dark:border-slate-700/60">
-              <div className="flex flex-col items-center">
-                <span className="text-[9px] text-gray-600 dark:text-gray-200 uppercase tracking-tighter">Telangana</span>
-                <div className="h-1 w-6 bg-red-600 dark:bg-red-500 rounded-full mt-0.5" />
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-[9px] text-gray-600 dark:text-gray-200 uppercase tracking-tighter">AP</span>
-                <div className="h-1 w-4 bg-red-500 dark:bg-red-500 rounded-full mt-0.5" />
-              </div>
-              <div className="flex flex-col items-center">
-                <span className="text-[9px] text-gray-600 dark:text-gray-200 uppercase tracking-tighter">Tamil Nadu</span>
-                <div className="h-1 w-3 bg-red-400 dark:bg-red-500 rounded-full mt-0.5" />
+            <div className="mt-1 flex items-center justify-between">
+              <span className="text-[8px] text-gray-500 dark:text-gray-400 uppercase tracking-tight">Top Loss States:</span>
+              <div className="flex items-center gap-2">
+                {[{ name: "Telangana", w: "w-6" }, { name: "AP", w: "w-4" }, { name: "TN", w: "w-3" }].map((s) => (
+                  <div key={s.name} className="flex items-center gap-0.5">
+                    <div className={`h-1 ${s.w} bg-red-500 rounded-full`} />
+                    <span className="text-[7px] text-gray-500 dark:text-gray-400">{s.name}</span>
+                  </div>
+                ))}
               </div>
             </div>
           </div>
-          <div className="mt-1.5 p-2 bg-red-50 dark:bg-red-900/10 border border-red-100/50 dark:border-red-900/20 rounded-lg space-y-1">
-            <div className="flex items-start gap-2">
-              <AlertCircle className="h-3 w-3 text-red-500 shrink-0 mt-0.5" />
-              <div className="space-y-0.5">
-                <p className="text-[9px] leading-snug text-gray-700 dark:text-gray-300">
-                  93% of over 1 crore individual F&O traders incurred average losses of around ₹2 lakh per trader (inclusive of transaction costs) during the three years from FY22 to FY24.
-                </p>
-                <p className="text-[9px] leading-snug text-gray-700 dark:text-gray-300">
-                  Only 1% of individual traders managed to earn profits exceeding ₹1 lakh, after adjusting for transaction costs.
-                </p>
-              </div>
-            </div>
+
+          {/* SEBI stats */}
+          <div className="flex items-start gap-1.5 p-2 bg-red-50 dark:bg-red-900/10 border border-red-100/50 dark:border-red-900/20 rounded-lg">
+            <AlertCircle className="h-3 w-3 text-red-500 shrink-0 mt-0.5" />
+            <p className="text-[8.5px] leading-snug text-gray-700 dark:text-gray-300">
+              93% of 1Cr+ F&amp;O traders lost avg ₹2L each (FY22–FY24). Only 1% earned &gt;₹1L profit.
+            </p>
           </div>
         </div>
-        <Button 
+
+        <Button
           onClick={handleDismiss}
-          className="w-full"
+          className="w-full h-8 mt-2 text-xs"
           data-testid="button-close-journal-modal"
         >
           Got It

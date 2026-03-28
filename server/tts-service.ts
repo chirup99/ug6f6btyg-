@@ -1,28 +1,77 @@
 import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import axios from 'axios';
 
-// Translate a single chunk (≤450 chars) via MyMemory
-async function translateChunk(chunk: string, targetLanguage: string): Promise<string> {
+// ─────────────────────────────────────────────────────────────────────────────
+// Google Translate (unofficial free API) — fast, reliable, no key required
+// Handles all 8 Indian languages perfectly, much higher limits than MyMemory
+// ─────────────────────────────────────────────────────────────────────────────
+
+// Language code mapping: our internal codes → Google Translate codes
+const GOOGLE_LANG_MAP: Record<string, string> = {
+  hi: 'hi',   // Hindi
+  bn: 'bn',   // Bengali
+  ta: 'ta',   // Tamil
+  te: 'te',   // Telugu
+  mr: 'mr',   // Marathi
+  gu: 'gu',   // Gujarati
+  kn: 'kn',   // Kannada
+  ml: 'ml',   // Malayalam
+};
+
+// Translate a single chunk via Google Translate free API (fast, no key needed)
+async function translateChunkGoogle(chunk: string, targetLang: string): Promise<string> {
+  const googleLang = GOOGLE_LANG_MAP[targetLang] || targetLang;
+  
+  try {
+    // Use the @vitalets/google-translate-api package
+    const { translate } = await import('@vitalets/google-translate-api');
+    const result = await translate(chunk.trim(), { from: 'en', to: googleLang });
+    const translated = result?.text;
+    if (translated && translated.trim().length > 0 && translated !== chunk) {
+      return translated;
+    }
+    return chunk;
+  } catch (googleErr: any) {
+    // If Google Translate fails, try MyMemory as fallback
+    console.warn(`⚠️ [TTS] Google Translate failed for chunk, trying MyMemory: ${googleErr?.message}`);
+    try {
+      return await translateChunkMyMemory(chunk, targetLang);
+    } catch {
+      return chunk; // Final fallback: return original
+    }
+  }
+}
+
+// MyMemory fallback (kept as secondary option)
+async function translateChunkMyMemory(chunk: string, targetLanguage: string): Promise<string> {
   const encoded = encodeURIComponent(chunk.trim());
   const url = `https://api.mymemory.translated.net/get?q=${encoded}&langpair=en|${targetLanguage}`;
-  const response = await axios.get(url, { timeout: 10000 });
+  const response = await axios.get(url, { timeout: 8000 });
   const translated = response.data?.responseData?.translatedText;
-  if (translated && translated !== chunk && !translated.toLowerCase().includes('mymemory')) {
+  if (
+    translated &&
+    translated !== chunk &&
+    !translated.toLowerCase().includes('mymemory') &&
+    !translated.toLowerCase().includes('quota') &&
+    !translated.toLowerCase().includes('select two distinct')
+  ) {
     return translated;
   }
   return chunk;
 }
 
-// MyMemory free translation API — no API key required
-// Splits long texts into sentence-level chunks so nothing gets truncated
+// ─────────────────────────────────────────────────────────────────────────────
+// Main translateText — splits into chunks and translates ALL in PARALLEL
+// (previously sequential, which was slow and caused more failures)
+// ─────────────────────────────────────────────────────────────────────────────
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
   const supportedLangs = ['hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml'];
   if (!supportedLangs.includes(targetLanguage)) return text;
 
   try {
-    console.log(`🌐 [TTS] Translating to ${targetLanguage} (${text.length} chars)...`);
+    console.log(`🌐 [TTS] Translating to ${targetLanguage} (${text.length} chars) via Google Translate...`);
 
-    // Split into individual sentences so each chunk stays well under 450 chars
+    // Split into sentence-level chunks (≤420 chars each)
     const sentences = text.split(/(?<=[.!?।])\s+/).filter(s => s.trim().length > 0);
     const chunks: string[] = [];
     let current = '';
@@ -53,25 +102,24 @@ export async function translateText(text: string, targetLanguage: string): Promi
     }
     if (current) chunks.push(current);
 
-    console.log(`🌐 [TTS] Translating ${chunks.length} chunks to ${targetLanguage}...`);
-
-    // Translate each chunk sequentially (avoid rate-limit issues)
-    const translatedChunks: string[] = [];
-    for (const chunk of chunks) {
-      try {
-        const t = await translateChunk(chunk, targetLanguage);
-        translatedChunks.push(t);
-      } catch {
-        translatedChunks.push(chunk); // fallback to original on error
-      }
+    // If no chunks (text was too short to split), treat whole text as one chunk
+    if (chunks.length === 0 && text.trim().length > 0) {
+      chunks.push(text.trim());
     }
 
+    console.log(`🌐 [TTS] Translating ${chunks.length} chunk(s) to ${targetLanguage} in parallel...`);
+
+    // ── PARALLEL translation — all chunks fire at once ────────────────────
+    const translatedChunks = await Promise.all(
+      chunks.map(chunk => translateChunkGoogle(chunk, targetLanguage).catch(() => chunk))
+    );
+
     const result = translatedChunks.join(' ');
-    console.log(`✅ [TTS] Translated to ${targetLanguage}: "${result.substring(0, 80)}..."`);
+    console.log(`✅ [TTS] Translated to ${targetLanguage}: "${result.substring(0, 100)}..."`);
     return result;
   } catch (err: any) {
     console.error('[TTS] Translation error:', err?.message || err);
-    return text;
+    return text; // Return original text as final fallback
   }
 }
 

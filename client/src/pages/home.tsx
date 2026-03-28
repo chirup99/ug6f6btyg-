@@ -2478,23 +2478,24 @@ export default function Home() {
     if (saved && saved !== voiceLanguage) setVoiceLanguage(saved); 
   }, []);
 
-  const prefetchVoiceAudio = async (lang: string) => {
-    setVoiceLangLoading(true);
-    setVoiceLangProgress(0);
-    const startTime = Date.now();
+  const prefetchVoiceAudio = async (lang: string, silent = false) => {
     const DURATION = 600;
 
-    // Animate the progress bar quickly (600ms)
-    const tick = () => {
-      const elapsed = Date.now() - startTime;
-      const pct = Math.min((elapsed / DURATION) * 100, 99);
-      setVoiceLangProgress(pct);
-      if (elapsed < DURATION) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
+    // Show progress bar only when user explicitly changes language (not on silent mount preload)
+    if (!silent) {
+      setVoiceLangLoading(true);
+      setVoiceLangProgress(0);
+      const startTime = Date.now();
+      const tick = () => {
+        const elapsed = Date.now() - startTime;
+        const pct = Math.min((elapsed / DURATION) * 100, 99);
+        setVoiceLangProgress(pct);
+        if (elapsed < DURATION) requestAnimationFrame(tick);
+      };
+      requestAnimationFrame(tick);
+    }
 
     // Trigger swipe card audio preloading in the selected language in background
-    // (fire-and-forget — no blocking wait)
     if ((window as any)._preloadSwipeCardsForLang) {
       (window as any)._preloadSwipeCardsForLang(lang);
     }
@@ -2547,11 +2548,19 @@ export default function Home() {
       });
     });
 
-    // Short wait just for the UI animation to look smooth
-    await new Promise(r => setTimeout(r, DURATION));
-    setVoiceLangProgress(100);
-    setVoiceLangLoading(false);
+    if (!silent) {
+      await new Promise(r => setTimeout(r, DURATION));
+      setVoiceLangProgress(100);
+      setVoiceLangLoading(false);
+    }
   };
+
+  // Silently pre-warm voices for the saved/default language on mount
+  React.useEffect(() => {
+    const savedLang = localStorage.getItem('voiceLanguage') || 'en';
+    prefetchVoiceAudio(savedLang, true);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const [location, setLocation] = useLocation();
   const [showGuestDialog, setShowGuestDialog] = useState(false);
 
@@ -2719,7 +2728,8 @@ export default function Home() {
   const [voiceNounDuration, setVoiceNounDuration] = useState(1.15);
   const [voiceFunctionDuration, setVoiceFunctionDuration] = useState(0.92);
   const [voiceMicroJitter, setVoiceMicroJitter] = useState(3);
-  const [voiceAudioCache, setVoiceAudioCache] = useState<{[key: string]: string}>({});
+  // Use a ref (not state) so cache writes never trigger re-renders
+  const voiceAudioCacheRef = useRef<{[key: string]: string}>({});
   const [voiceLangLoading, setVoiceLangLoading] = useState(false);
   const [voiceLangProgress, setVoiceLangProgress] = useState(0);
   const [showAdminDashboardDialog, setShowAdminDashboardDialog] = useState(false);
@@ -16743,8 +16753,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               }
                                               // Use cached audio for instant playback
                                               const cacheKey = `${profile.id}_${voiceLanguage}`;
-                                              if (voiceAudioCache[cacheKey]) {
-                                                const audio = new Audio(voiceAudioCache[cacheKey]);
+                                              if (voiceAudioCacheRef.current[cacheKey]) {
+                                                const audio = new Audio(voiceAudioCacheRef.current[cacheKey]);
                                                 currentAudioRef.current = audio;
                                                 audio.play().catch(err => console.error('🎤 [TTS] Cache play error:', err));
                                                 return;
@@ -16791,7 +16801,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                     const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
                                                     const audioUrl = URL.createObjectURL(audioBlob);
                                                     // Cache for instant playback on repeat taps
-                                                    setVoiceAudioCache(prev => ({ ...prev, [cacheKey]: audioUrl }));
+                                                    voiceAudioCacheRef.current[cacheKey] = audioUrl;
                                                     const audio = new Audio(audioUrl);
                                                     currentAudioRef.current = audio;
                                                     audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));
@@ -17385,8 +17395,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                           }
                                           // Use cached audio for instant playback
                                           const cacheKey = `${profile.id}_${voiceLanguage}`;
-                                          if (voiceAudioCache[cacheKey]) {
-                                            const audio = new Audio(voiceAudioCache[cacheKey]);
+                                          if (voiceAudioCacheRef.current[cacheKey]) {
+                                            const audio = new Audio(voiceAudioCacheRef.current[cacheKey]);
                                             currentAudioRef.current = audio;
                                             audio.play().catch(err => console.error('🎤 [TTS] Cache play error:', err));
                                             return;
@@ -17419,7 +17429,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
                                                 const audioUrl = URL.createObjectURL(audioBlob);
                                                 // Cache for instant playback on repeat taps
-                                                setVoiceAudioCache(prev => ({ ...prev, [cacheKey]: audioUrl }));
+                                                voiceAudioCacheRef.current[cacheKey] = audioUrl;
                                                 const audio = new Audio(audioUrl);
                                                 currentAudioRef.current = audio;
                                                 audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));

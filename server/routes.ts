@@ -20015,8 +20015,74 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Server-side TTS audio cache — keyed by lang:speaker:text to avoid regenerating same audio
-  // Capped at 100 entries; oldest entry evicted when full (simple LRU-lite)
+  // ── Permanent greeting cache — NEVER evicted ────────────────────────────
+  // Greeting audio is keyed by lang:speaker:text. This cache is populated at
+  // startup and never cleared, so voice-profile greetings always play instantly
+  // regardless of how full the regular rolling cache gets.
+  const ttsGreetingCache = new Map<string, string>();
+
+  // All greeting templates and voice profiles — must match client/src/pages/home.tsx
+  const GREETING_TEMPLATES: Record<string, (p: string) => string> = {
+    en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
+    hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
+    bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
+    ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
+    te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
+    mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
+    gu: (p) => `નમસ્તે! હું ${p} છું. પేరలામาં తమారూ స్వాగత ছে!`,
+    kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+    ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
+  };
+  const GREETING_PROFILES: Record<string, Array<{ id: string; name: string }>> = {
+    en: [{ id: 'en-IN-PrabhatNeural', name: 'Prabhat' }, { id: 'en-IN-NeerjaNeural', name: 'Neerja' }],
+    hi: [{ id: 'hi-IN-MadhurNeural', name: 'Madhur' }, { id: 'hi-IN-SwaraNeural', name: 'Swara' }],
+    bn: [{ id: 'bn-IN-BashkarNeural', name: 'Bashkar' }, { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa' }],
+    ta: [{ id: 'ta-IN-ValluvarNeural', name: 'Valluvar' }, { id: 'ta-IN-PallaviNeural', name: 'Pallavi' }],
+    te: [{ id: 'te-IN-MohanNeural', name: 'Mohan' }, { id: 'te-IN-ShrutiNeural', name: 'Shruti' }],
+    mr: [{ id: 'mr-IN-ManoharNeural', name: 'Manohar' }, { id: 'mr-IN-AarohiNeural', name: 'Aarohi' }],
+    gu: [{ id: 'gu-IN-NiranjanNeural', name: 'Niranjan' }, { id: 'gu-IN-DhwaniNeural', name: 'Dhwani' }],
+    kn: [{ id: 'kn-IN-GaganNeural', name: 'Gagan' }, { id: 'kn-IN-SapnaNeural', name: 'Sapna' }],
+    ml: [{ id: 'ml-IN-MidhunNeural', name: 'Midhun' }, { id: 'ml-IN-SobhanaNeural', name: 'Sobhana' }],
+  };
+
+  // Pre-warm all greetings at startup (fire-and-forget, staggered to avoid burst)
+  const prewarmGreetingCache = async () => {
+    console.log('🎙️ [TTS GREETING] Starting startup pre-warm for all languages...');
+    const entries: Array<{ lang: string; profile: { id: string; name: string }; text: string }> = [];
+    for (const [lang, profiles] of Object.entries(GREETING_PROFILES)) {
+      const tmpl = GREETING_TEMPLATES[lang] || GREETING_TEMPLATES['en'];
+      for (const profile of profiles) {
+        entries.push({ lang, profile, text: tmpl(profile.name) });
+      }
+    }
+    // Stagger requests 300 ms apart so we don't hammer the TTS service at boot
+    for (const { lang, profile, text } of entries) {
+      const key = `${lang}:${profile.id}:${text}`;
+      if (ttsGreetingCache.has(key)) continue;
+      try {
+        const result = await sarvamTTSService.generateSpeech({
+          text,
+          language: lang,
+          speaker: profile.id,
+          speed: 1.0,
+        });
+        if (result.audioBase64 && !result.error) {
+          ttsGreetingCache.set(key, result.audioBase64);
+          console.log(`✅ [TTS GREETING] Cached ${lang}/${profile.name}`);
+        }
+      } catch (err: any) {
+        console.warn(`⚠️ [TTS GREETING] Failed to pre-warm ${lang}/${profile.name}: ${err.message}`);
+      }
+      await new Promise(r => setTimeout(r, 300));
+    }
+    console.log(`🎙️ [TTS GREETING] Pre-warm complete — ${ttsGreetingCache.size} entries cached permanently`);
+  };
+  // Kick off in background after a short delay so server starts fast
+  setTimeout(prewarmGreetingCache, 5000);
+
+  // ── Rolling TTS audio cache — keyed by lang:speaker:text ────────────────
+  // Capped at 100 entries; oldest entry evicted when full (simple LRU-lite).
+  // This cache holds non-greeting audio and may be evicted freely.
   const ttsServerCache = new Map<string, string>();
   const TTS_CACHE_MAX = 100;
 
@@ -20032,9 +20098,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const targetLanguage = language || 'en';
-
-      // ── Server-side cache check ───────────────────────────────────────────
       const cacheKey = `${targetLanguage}:${speaker || ''}:${text}`;
+
+      // ── Check permanent greeting cache first (never evicted) ──────────────
+      if (ttsGreetingCache.has(cacheKey)) {
+        console.log(`🎯 [TTS GREETING HIT] Serving permanent greeting cache (${targetLanguage})`);
+        res.json({ audioBase64: ttsGreetingCache.get(cacheKey) });
+        return;
+      }
+
+      // ── Check rolling server cache ────────────────────────────────────────
       if (ttsServerCache.has(cacheKey)) {
         console.log(`🎯 [TTS CACHE HIT] Serving cached audio (${targetLanguage})`);
         res.json({ audioBase64: ttsServerCache.get(cacheKey) });
@@ -20060,15 +20133,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // ── Store in server cache ─────────────────────────────────────────────
+      // ── Store in rolling cache (greeting-shaped entries go to permanent cache) ──
       if (result.audioBase64) {
-        if (ttsServerCache.size >= TTS_CACHE_MAX) {
-          // Evict oldest entry
-          const firstKey = ttsServerCache.keys().next().value;
-          if (firstKey) ttsServerCache.delete(firstKey);
+        // If this request matches a known greeting template, store it permanently
+        const langProfiles = GREETING_PROFILES[targetLanguage];
+        const langTmpl = GREETING_TEMPLATES[targetLanguage];
+        const isGreeting = langProfiles && langTmpl &&
+          langProfiles.some(p => p.id === (speaker || '') && langTmpl(p.name) === text);
+
+        if (isGreeting) {
+          ttsGreetingCache.set(cacheKey, result.audioBase64);
+          console.log(`💾 [TTS GREETING] Permanently cached greeting (${targetLanguage})`);
+        } else {
+          if (ttsServerCache.size >= TTS_CACHE_MAX) {
+            const firstKey = ttsServerCache.keys().next().value;
+            if (firstKey) ttsServerCache.delete(firstKey);
+          }
+          ttsServerCache.set(cacheKey, result.audioBase64);
+          console.log(`💾 [TTS CACHE] Stored entry (${ttsServerCache.size}/${TTS_CACHE_MAX})`);
         }
-        ttsServerCache.set(cacheKey, result.audioBase64);
-        console.log(`💾 [TTS CACHE] Stored entry (${ttsServerCache.size}/${TTS_CACHE_MAX})`);
       }
 
       res.json({ audioBase64: result.audioBase64 });

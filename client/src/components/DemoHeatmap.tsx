@@ -91,13 +91,22 @@ function getPnLColor(pnl: number): string {
   }
 }
 
+// Module-level cache — survives remounts, cleared only on explicit refresh
+let _demoHeatmapCache: Record<string, any> | null = null;
+let _demoHeatmapCacheTime = 0;
+const DEMO_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, disableAutoScroll, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0, hideNavigation = false, hideLegend = false, initialDate, onFeedPost }: DemoHeatmapProps) {
   const { currentUser } = useCurrentUser();
   // Use initialDate if provided, otherwise default to December of last year
   const [currentDate, setCurrentDate] = useState(initialDate || new Date(new Date().getFullYear() - 1, 11, 1));
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
-  const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
-  const [isLoading, setIsLoading] = useState(true);
+  const [heatmapData, setHeatmapData] = useState<Record<string, any>>(
+    () => _demoHeatmapCache && !isPublicView ? _demoHeatmapCache : {}
+  );
+  const [isLoading, setIsLoading] = useState(
+    () => !_demoHeatmapCache || isPublicView
+  );
   const [isUsingExternalData, setIsUsingExternalData] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isRangeSelectMode, setIsRangeSelectMode] = useState(false);
@@ -120,14 +129,18 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
     console.log("🔒 Can edit demo trades:", canEditDemoTrades);
   }, [currentUser.email, canEditDemoTrades]);
 
-  // ✅ AUTO-FETCH: Trigger immediate data fetch on component mount
+  // ✅ AUTO-FETCH: Only trigger on mount if cache is missing or stale
   useEffect(() => {
-    console.log("🚀 DemoHeatmap mounted - triggering immediate auto-fetch on mount");
-    if (!tradingDataByDate) {
-      // Increment refreshKey to trigger the main fetch useEffect below
+    if (isPublicView || tradingDataByDate) return;
+    const cacheAge = Date.now() - _demoHeatmapCacheTime;
+    const cacheValid = _demoHeatmapCache !== null && cacheAge < DEMO_CACHE_TTL_MS;
+    if (!cacheValid) {
+      console.log("🚀 DemoHeatmap mounted - no valid cache, fetching...");
       setRefreshKey(prev => prev + 1);
+    } else {
+      console.log("⚡ DemoHeatmap mounted - using cached data instantly");
     }
-  }, []); // Empty deps - runs ONCE on mount to ensure immediate fetch
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
   
   const rangeBadge1Ref = useRef<HTMLDivElement>(null);
   const rangeBadge2Ref = useRef<HTMLDivElement>(null);
@@ -220,13 +233,23 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
     if (onDataUpdate) onDataUpdate(tradingDataByDate);
   }, [isPublicView, tradingDataByDate]); // Only re-run when public mode data changes
 
-  // Effect for DEMO mode: fetch from API (never re-runs due to parent tradingDataByDate changes)
+  // Effect for DEMO mode: fetch from API, use module cache to avoid re-fetching on remount
   useEffect(() => {
     if (isPublicView) return;
     setIsUsingExternalData(false);
 
+    // Check if module-level cache is valid and this isn't a forced refresh
+    const cacheAge = Date.now() - _demoHeatmapCacheTime;
+    const cacheValid = _demoHeatmapCache !== null && cacheAge < DEMO_CACHE_TTL_MS && refreshKey === 0 && refreshTrigger === 0;
+    if (cacheValid && _demoHeatmapCache) {
+      console.log(`⚡ DemoHeatmap: Using cached data (${Object.keys(_demoHeatmapCache).length} dates)`);
+      setHeatmapData(_demoHeatmapCache);
+      setIsLoading(false);
+      if (onDataUpdate) onDataUpdate(_demoHeatmapCache);
+      return;
+    }
+
     console.log(`🔥 DemoHeatmap: Fetching demo data from API... (refreshKey: ${refreshKey})`);
-    setHeatmapData({});
     setIsLoading(true);
 
     fetch('/api/journal/all-dates')
@@ -244,6 +267,11 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
         });
 
         console.log("✅ DemoHeatmap: Processed", Object.keys(processedData).length, "dates");
+
+        // Store in module-level cache
+        _demoHeatmapCache = processedData;
+        _demoHeatmapCacheTime = Date.now();
+
         setHeatmapData(processedData);
         setIsLoading(false);
 

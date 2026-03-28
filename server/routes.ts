@@ -6360,23 +6360,58 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Journal Database API endpoints with AWS DynamoDB as PRIMARY storage
   // Migration complete: AWS DynamoDB is now the source of truth
 
-  // ✅ JOURNAL ALL-DATES: AWS DynamoDB ONLY (no demo data fallback)
-  app.get('/api/journal/all-dates', async (req, res) => {
+  // ✅ JOURNAL ALL-DATES: AWS DynamoDB ONLY with in-memory cache for instant loads
+  let journalAllDatesCache: Record<string, any> | null = null;
+  let journalAllDatesCacheTime = 0;
+  const JOURNAL_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
+  const refreshJournalCache = async () => {
     try {
-      console.log('📊 Fetching journal data: AWS DynamoDB ONLY...');
-
       const allData = await awsDynamoDBService.getAllJournalData();
-
       if (allData && Object.keys(allData).length > 0) {
+        journalAllDatesCache = allData;
+        journalAllDatesCacheTime = Date.now();
+        console.log(`✅ Journal cache refreshed: ${Object.keys(allData).length} entries`);
+      }
+    } catch (err) {
+      console.error('❌ Journal cache refresh failed:', err);
+    }
+  };
+
+  // Pre-warm cache on startup (non-blocking)
+  setTimeout(refreshJournalCache, 500);
+
+  app.get('/api/journal/all-dates', async (req, res) => {
+    const now = Date.now();
+    const cacheAge = now - journalAllDatesCacheTime;
+
+    // Serve from cache immediately if fresh (< 10 min)
+    if (journalAllDatesCache !== null && cacheAge < JOURNAL_CACHE_TTL_MS) {
+      console.log(`⚡ Journal cache HIT (age: ${Math.round(cacheAge / 1000)}s) - ${Object.keys(journalAllDatesCache).length} entries`);
+      return res.json(journalAllDatesCache);
+    }
+
+    // Serve stale cache instantly while refreshing in background
+    if (journalAllDatesCache !== null) {
+      console.log(`⚡ Journal cache STALE - serving instantly, refreshing in background`);
+      refreshJournalCache(); // fire and forget
+      return res.json(journalAllDatesCache);
+    }
+
+    // No cache yet - fetch and cache
+    try {
+      console.log('📊 Fetching journal data: AWS DynamoDB ONLY (cold start)...');
+      const allData = await awsDynamoDBService.getAllJournalData();
+      if (allData && Object.keys(allData).length > 0) {
+        journalAllDatesCache = allData;
+        journalAllDatesCacheTime = Date.now();
         console.log(`✅ AWS DynamoDB: Loaded ${Object.keys(allData).length} journal entries`);
         return res.json(allData);
       }
-
       console.log('ℹ️ AWS DynamoDB: No data found, returning empty object');
       res.json({});
     } catch (error) {
       console.error('❌ AWS DynamoDB error:', error);
-      console.log('ℹ️ Returning empty object (no fallback demo data)');
       res.json({});
     }
   });

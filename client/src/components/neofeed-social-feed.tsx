@@ -1332,10 +1332,10 @@ function FollowDialogUserRow({
 
   return (
     <div
-      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+      className="flex items-center gap-3 px-4 py-2.5 hover:bg-gray-50 dark:hover:bg-gray-800/60 transition-colors"
       data-testid={testId}
     >
-      <Avatar className="w-10 h-10 shrink-0">
+      <Avatar className="w-9 h-9 shrink-0 border border-gray-100 dark:border-gray-700">
         {avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
           <img
             src={avatarUrl}
@@ -1346,13 +1346,13 @@ function FollowDialogUserRow({
             onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
           />
         ) : (
-          <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold text-sm">
+          <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white font-semibold text-xs">
             {(user.displayName || user.username || 'U').charAt(0).toUpperCase()}
           </AvatarFallback>
         )}
       </Avatar>
       <div className="flex-1 min-w-0">
-        <p className="font-semibold text-gray-900 dark:text-white text-sm truncate leading-tight">
+        <p className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate leading-snug">
           {user.displayName || user.username}
         </p>
         <p className="text-xs text-gray-400 dark:text-gray-500 truncate">@{user.username}</p>
@@ -1363,18 +1363,18 @@ function FollowDialogUserRow({
             onClick={handleToggle}
             disabled={pending}
             data-testid={`button-unfollow-${user.username}`}
-            className="shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-white/20 text-gray-700 dark:text-gray-300 hover:border-red-400 hover:text-red-500 dark:hover:border-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors disabled:opacity-50"
+            className="shrink-0 px-3 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-red-300 hover:text-red-500 dark:hover:border-red-700 dark:hover:text-red-400 transition-colors disabled:opacity-40"
           >
-            {pending ? '...' : 'Unfollow'}
+            {pending ? '…' : 'Following'}
           </button>
         ) : (
           <button
             onClick={handleToggle}
             disabled={pending}
             data-testid={`button-follow-${user.username}`}
-            className="shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50"
+            className="shrink-0 px-3 py-1 rounded-full text-xs font-semibold bg-gray-900 dark:bg-white text-white dark:text-gray-900 hover:bg-gray-700 dark:hover:bg-gray-100 transition-colors disabled:opacity-40"
           >
-            {pending ? '...' : 'Follow'}
+            {pending ? '…' : 'Follow'}
           </button>
         )
       )}
@@ -2379,20 +2379,19 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
       {/* Followers Dialog */}
       <Dialog open={showFollowersDialog} onOpenChange={setShowFollowersDialog}>
-        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[80vh] overflow-y-auto rounded-2xl p-0 bg-white dark:bg-[#14142a] border border-gray-200 dark:border-white/10 shadow-2xl">
-          <div className="sticky top-0 z-10 bg-white dark:bg-[#14142a] border-b border-gray-100 dark:border-white/10 px-5 py-4 rounded-t-2xl">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-sm rounded-2xl p-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-xl [&>button]:top-3 [&>button]:right-3">
+          <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-white text-base font-bold">
-                <Users className="w-5 h-5 text-blue-500" />
+              <DialogTitle className="text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
                 Followers
               </DialogTitle>
             </DialogHeader>
           </div>
-          <div className="space-y-1 p-3">
+          <div className="overflow-y-auto max-h-[392px] py-1">
             {followersList.followers.length === 0 ? (
               <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-                <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">No followers yet</p>
+                <Users className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-xs">No followers yet</p>
               </div>
             ) : (
               followersList.followers.map((follower: any) => {
@@ -2419,20 +2418,19 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
       {/* Following Dialog */}
       <Dialog open={showFollowingDialog} onOpenChange={setShowFollowingDialog}>
-        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[80vh] overflow-y-auto rounded-2xl p-0 bg-white dark:bg-[#14142a] border border-gray-200 dark:border-white/10 shadow-2xl">
-          <div className="sticky top-0 z-10 bg-white dark:bg-[#14142a] border-b border-gray-100 dark:border-white/10 px-5 py-4 rounded-t-2xl">
+        <DialogContent className="w-[calc(100vw-2rem)] sm:max-w-sm rounded-2xl p-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 shadow-xl [&>button]:top-3 [&>button]:right-3">
+          <div className="px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800">
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-white text-base font-bold">
-                <UserPlus className="w-5 h-5 text-blue-500" />
+              <DialogTitle className="text-sm font-semibold text-gray-900 dark:text-gray-100 tracking-tight">
                 Following
               </DialogTitle>
             </DialogHeader>
           </div>
-          <div className="space-y-1 p-3">
+          <div className="overflow-y-auto max-h-[392px] py-1">
             {followingList.following.length === 0 ? (
               <div className="text-center py-10 text-gray-400 dark:text-gray-500">
-                <UserPlus className="w-12 h-12 mx-auto mb-3 opacity-40" />
-                <p className="text-sm">Not following anyone yet</p>
+                <UserPlus className="w-8 h-8 mx-auto mb-2 opacity-30" />
+                <p className="text-xs">Not following anyone yet</p>
               </div>
             ) : (
               followingList.following.map((user: any) => {

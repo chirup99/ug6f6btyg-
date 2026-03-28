@@ -2527,25 +2527,22 @@ export default function Home() {
     const profiles = profilesByLang[lang] || profilesByLang['en'];
     profiles.forEach((profile) => {
       const cacheKey = `${profile.id}_${lang}`;
-      setVoiceAudioCache(prev => {
-        if (prev[cacheKey]) return prev; // already cached
-        const text = getGreeting(profile.name);
-        fetch('/api/tts/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, language: lang, speaker: profile.id, speed: 1.0, pitch: 1.0 }),
-        }).then(r => r.ok ? r.json() : null).then(data => {
-          if (data?.audioBase64) {
-            const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-            const binary = atob(base64Data);
-            const bytes = new Uint8Array(binary.length);
-            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-            const audioUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
-            setVoiceAudioCache(prev2 => ({ ...prev2, [cacheKey]: audioUrl }));
-          }
-        }).catch(() => {});
-        return prev;
-      });
+      if (voiceAudioCacheRef.current[cacheKey]) return; // already cached
+      const text = getGreeting(profile.name);
+      fetch('/api/tts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, language: lang, speaker: profile.id, speed: 1.0, pitch: 1.0 }),
+      }).then(r => r.ok ? r.json() : null).then(data => {
+        if (data?.audioBase64) {
+          const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+          const binary = atob(base64Data);
+          const bytes = new Uint8Array(binary.length);
+          for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+          const audioUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+          voiceAudioCacheRef.current[cacheKey] = audioUrl;
+        }
+      }).catch(() => {});
     });
 
     if (!silent) {
@@ -2702,7 +2699,11 @@ export default function Home() {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
-  }, [isVoiceActive]);
+    // Prefetch greeting audio for all voices instantly when panel opens
+    if (isVoiceActive) {
+      prefetchVoiceAudio(voiceLanguage, true);
+    }
+  }, [isVoiceActive]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (!isNavOpen && currentAudioRef.current) {
@@ -16759,20 +16760,19 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 audio.play().catch(err => console.error('🎤 [TTS] Cache play error:', err));
                                                 return;
                                               }
-                                              const name = currentUser?.displayName || currentUser?.username || "Trader";
-                                              // Multilingual greetings with Microsoft Edge TTS voices
-                                              const voiceGreetings: { [key: string]: (name: string, profile: string) => string } = {
-                                                    en: (n, p) => `Hello ${n}, I am ${p}. How is your day? Welcome to Perala!`,
-                                                    hi: (n, p) => `नमस्ते ${n}, मैं ${p} हूँ। आपका दिन कैसा है? पेरला में आपका स्वागत है!`,
-                                                    bn: (n, p) => `নমস্কার ${n}, আমি ${p}। আপনার দিন কেমন যাচ্ছে? পেরলায় আপনাকে স্বাগত!`,
-                                                    ta: (n, p) => `வணக்கம் ${n}, நான் ${p}. உங்கள் நாள் எப்படி இருக்கிறது? பெரலாவில் உங்களை வரவேற்கிறோம்!`,
-                                                    te: (n, p) => `నమస్కారం ${n}, నేను ${p}. మీ రోజు ఎలా ఉంది? పెరలాలో మీకు స్వాగతం!`,
-                                                    mr: (n, p) => `नमस्कार ${n}, मी ${p} आहे. तुमचा दिवस कसा आहे? पेरलामध्ये तुमचे स्వागत आहे!`,
-                                                    gu: (n, p) => `નમસ્તે ${n}, હું ${p} છું. તમારો દિવસ કેવો છે? પેરલામાં તમારું સ્વાગत છે!`,
-                                                    kn: (n, p) => `ನಮಸ್ಕಾರ ${n}, ನಾನು ${p}. ನಿಮ್ಮ ದಿನ ಹೇಗಿದೆ? ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
-                                                    ml: (n, p) => `നമസ്കാരം ${n}, ഞാൻ ${p} ആണ്. നിങ്ങളുടെ ദിവസം എങ്ങനെയുണ്ട്? പെരലയിലേക്ക് സ്വാഗതം!`,
+                                              // Greetings match prefetch format exactly so server cache is warm on first click
+                                              const voiceGreetings: { [key: string]: (p: string) => string } = {
+                                                    en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
+                                                    hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
+                                                    bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
+                                                    ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
+                                                    te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
+                                                    mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
+                                                    gu: (p) => `નમસ્તે! હું ${p} છું. પేరలామాં తమారూ స్వాగత ছে!`,
+                                                    kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+                                                    ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
                                               };
-                                              const baseText = voiceGreetings[voiceLanguage] ? voiceGreetings[voiceLanguage](name, profile.name) : `Hello ${name}, I am ${profile.name}. How is your day? Welcome to perala!`;
+                                              const baseText = voiceGreetings[voiceLanguage] ? voiceGreetings[voiceLanguage](profile.name) : `Hello! I am ${profile.name}. Welcome to Perala!`;
                                               
                                               // Use Microsoft Edge TTS (backend only)
                                               try {

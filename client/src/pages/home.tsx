@@ -2380,6 +2380,7 @@ export default function Home() {
     if (saved && saved !== voiceLanguage) setVoiceLanguage(saved); 
   }, []);
   const [location, setLocation] = useLocation();
+  const [showGuestDialog, setShowGuestDialog] = useState(false);
 
   // 🔶 Detect Angel One OAuth callback from redirect
   React.useEffect(() => {
@@ -2461,6 +2462,18 @@ export default function Home() {
       currentAudioRef.current = null;
     }
     (window as any).stopNewsAudio?.();
+  }, [activeTab]);
+
+  // Show guest login dialog when unauthenticated user visits social feed or journal tab
+  useEffect(() => {
+    const userId = localStorage.getItem('currentUserId');
+    const userEmail = localStorage.getItem('currentUserEmail');
+    const isAuthenticated = userId && userEmail && userId !== 'null' && userEmail !== 'null';
+    if (!isAuthenticated && (activeTab === 'voice' || activeTab === 'journal')) {
+      setShowGuestDialog(true);
+    } else if (activeTab !== 'voice' && activeTab !== 'journal') {
+      setShowGuestDialog(false);
+    }
   }, [activeTab]);
 
   const [showTutorOverlay, setShowTutorOverlay] = useState(false);
@@ -3337,14 +3350,9 @@ export default function Home() {
     const userId = localStorage.getItem('currentUserId');
     const userEmail = localStorage.getItem('currentUserEmail');
 
-    // Robust check for Cloud Run compatibility
-    if (!userId || !userEmail || userId === 'null' || userEmail === 'null') {
-      console.log('[AUTH] Authentication required for tab:', tabName, '- redirecting to login');
-      setLocation('/login');
-      return false;
-    }
+    const isAuthenticated = userId && userEmail && userId !== 'null' && userEmail !== 'null';
 
-    console.log('[AUTH] User authenticated, setting tab:', tabName);
+    console.log('[AUTH] Navigating to tab:', tabName, '| authenticated:', !!isAuthenticated);
     setActiveTab(tabName);
     return true;
   };
@@ -15135,6 +15143,31 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         <main className="h-screen w-full">
           <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
         </main>
+        {/* Guest login prompt for unauthenticated users */}
+        {showGuestDialog && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
+            <div className="bg-slate-800/95 backdrop-blur-sm border border-slate-600/50 rounded-2xl shadow-2xl p-4 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-white">Sign in to interact</p>
+                <p className="text-xs text-slate-400 mt-0.5">Log in to post, like, and join the conversation.</p>
+              </div>
+              <button
+                onClick={() => setLocation('/landing')}
+                className="shrink-0 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                data-testid="guest-dialog-login-voice"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => setShowGuestDialog(false)}
+                className="shrink-0 text-slate-400 hover:text-white transition-colors p-1"
+                data-testid="guest-dialog-close-voice"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
@@ -34545,6 +34578,32 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Guest login prompt for unauthenticated users on Journal tab */}
+        {showGuestDialog && activeTab === 'journal' && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
+            <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border border-slate-200 dark:border-slate-600/50 rounded-2xl shadow-2xl p-4 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">Sign in to track trades</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Log in to save your journal and P&L data.</p>
+              </div>
+              <button
+                onClick={() => setLocation('/landing')}
+                className="shrink-0 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                data-testid="guest-dialog-login-journal"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => setShowGuestDialog(false)}
+                className="shrink-0 text-slate-400 hover:text-white transition-colors p-1"
+                data-testid="guest-dialog-close-journal"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </div>

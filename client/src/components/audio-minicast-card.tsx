@@ -449,7 +449,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   };
 
   return (
-    <Card ref={cardRef} className="border-0 border-b border-gray-200 dark:border-gray-700 rounded-none overflow-hidden">
+    <Card ref={cardRef} className="border-0 border-b border-gray-200 dark:border-gray-700 rounded-none overflow-hidden bg-white dark:bg-gray-900">
       <CardContent className="p-0">
         {/* Author Header */}
         <div className="p-4 flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50">
@@ -471,7 +471,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
               <span className="font-semibold text-gray-900 dark:text-white">{author.displayName}</span>
               <Radio className="h-3 w-3 text-purple-500" />
             </div>
-            <div className="flex items-center gap-2 text-sm text-gray-500">
+            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
               <span>@{author.username}</span>
               <span>·</span>
               <span>{formatTimeAgo(timestamp)}</span>

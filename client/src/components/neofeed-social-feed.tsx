@@ -2289,7 +2289,7 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
         data-testid="input-profile-image-hidden"
       />
 
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 mb-6">
+      <div className="bg-white dark:bg-background border-b border-gray-200 dark:border-gray-800 mb-6">
         <div className="px-5 pt-4 pb-0">
 
           {/* ── Row 1: Avatar + Name / handle / bio ── */}

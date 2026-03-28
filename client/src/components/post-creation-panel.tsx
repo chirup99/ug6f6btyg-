@@ -336,7 +336,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
   const [activeProfileId, setActiveProfileId] = useState<number>(1);
 
   return (
-    <Card className="w-full bg-background border border-border shadow-none rounded-xl transition-none">
+    <Card className="w-full bg-white dark:bg-gray-900 border border-border shadow-none rounded-xl transition-none">
       <CardHeader className="border-b border-border pb-3 pt-4 px-4 transition-none">
         <CardTitle className="flex items-center justify-between text-foreground">
           <div className="flex items-center gap-2">
@@ -432,7 +432,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
                   }}
                   placeholder="Your thoughts will be converted to audio... (Press Enter to add card, Shift+Enter for new line)"
                   maxLength={500}
-                  className="min-h-[100px] resize-none bg-muted/40 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary pr-12"
+                  className="min-h-[100px] resize-none bg-gray-50 dark:bg-gray-800 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary pr-12"
                   data-testid="textarea-audio-content"
                 />
                 {/* + Button in bottom right corner */}
@@ -528,7 +528,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
               onChange={handleContentChange}
               placeholder="Share your trading insights..."
               maxLength={500}
-              className="min-h-[100px] resize-none bg-muted/40 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
+              className="min-h-[100px] resize-none bg-gray-50 dark:bg-gray-800 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
               data-testid="textarea-post-content"
             />
             <div className="text-xs text-gray-600 dark:text-gray-400 text-right">
@@ -548,7 +548,7 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
                   onChange={(e) => { setStockSearchQuery(e.target.value); setShowStockDropdown(true); }}
                   onFocus={() => setShowStockDropdown(true)}
                   placeholder="Search stocks..."
-                  className="pl-10 bg-muted/40 border-border text-foreground focus:border-primary"
+                  className="pl-10 bg-gray-50 dark:bg-gray-800 border-border text-foreground focus:border-primary"
                   data-testid="input-stock-search"
                 />
               </div>

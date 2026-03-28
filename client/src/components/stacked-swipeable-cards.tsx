@@ -18,19 +18,18 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
   const [isAnimatingIn, setIsAnimatingIn] = useState(false);
   const [playingCardId, setPlayingCardId] = useState<string | null>(null);
   const [loadingCardId, setLoadingCardId] = useState<string | null>(null);
-  const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
-  const prevTopCardIdRef = useRef<string | null>(null);
+  const [isPreloading, setIsPreloading] = useState(false);
+  const [swipeOffset, setSwipeOffset] = useState(0);
+  const pendingAutoPlayRef = useRef<CardWithColor | null>(null);
   const currentAudioRef = useRef<HTMLAudioElement | null>(null);
   const audioCacheRef = useRef<Map<string, string>>(new Map());
   const { toast } = useToast();
 
-  // Update cards when snippets change - new cards added to TOP with different colors
   useEffect(() => {
     const currentIds = cards.map(c => c.id);
     const newSnippetIds = snippets.map(s => s.id);
-    
     const addedSnippets = snippets.filter(s => !currentIds.includes(s.id));
-    
+
     if (addedSnippets.length > 0) {
       setIsAnimatingIn(true);
       const newCards: CardWithColor[] = addedSnippets.map((snippet, idx) => ({
@@ -45,94 +44,126 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
     }
   }, [snippets]);
 
-  const removeEmojis = (text: string): string => {
-    return text.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F018}-\u{1F270}]|[\u{238C}-\u{2454}]|[\u{20D0}-\u{20FF}]/gu, '');
+  const cleanTextForSpeech = (text: string): string => {
+    return text
+      .replace(/https?:\/\/[^\s]+/gi, '')
+      .replace(/www\.[^\s]+/gi, '')
+      .replace(/\p{Extended_Pictographic}/gu, '')
+      .replace(/[\x00-\x1F\x7F]/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
   };
 
-  const stopCurrentAudio = () => {
+  const stopCurrentAudio = useCallback(() => {
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
     setPlayingCardId(null);
     setLoadingCardId(null);
-  };
+  }, []);
 
-  const playCardWithTTS = useCallback(async (card: CardWithColor) => {
-    if (!card.text || card.text.trim().length === 0) return;
+  const fetchAndCacheTTS = useCallback(async (
+    card: CardWithColor,
+    cancelled: { value: boolean }
+  ): Promise<string | null> => {
+    const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
+    const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
+    const cacheKey = `${card.id}::${voiceLanguage}::${savedVoiceProfileId}`;
 
-    stopCurrentAudio();
-    setLoadingCardId(card.id);
+    const cached = audioCacheRef.current.get(cacheKey);
+    if (cached) return cached;
+
+    const textToSpeak = cleanTextForSpeech(card.text || '');
+    if (!textToSpeak) return null;
 
     try {
-      const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
-      const speaker = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
-      const cacheKey = `${card.id}::${voiceLanguage}::${speaker}`;
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-      let audioUrl = audioCacheRef.current.get(cacheKey);
+      const response = await fetch('/api/tts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: textToSpeak, language: voiceLanguage, speaker: savedVoiceProfileId }),
+        signal: controller.signal,
+      });
+      clearTimeout(timeoutId);
 
-      if (!audioUrl) {
-        const cleanText = removeEmojis(card.text)
-          .replace(/https?:\/\/[^\s]+/gi, '')
-          .replace(/\p{Extended_Pictographic}/gu, '')
-          .replace(/[\x00-\x1F\x7F]/g, '')
-          .replace(/\s+/g, ' ')
-          .trim();
+      if (!response.ok || cancelled.value) return null;
+      const data = await response.json();
+      if (cancelled.value || !data.audioBase64) return null;
 
-        if (!cleanText) { setLoadingCardId(null); return; }
-
-        const response = await fetch('/api/tts/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text: cleanText, language: voiceLanguage, speaker }),
-        });
-
-        if (!response.ok) throw new Error('TTS request failed');
-
-        const data = await response.json();
-        const binary = atob(data.audio);
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        const blob = new Blob([bytes], { type: 'audio/mpeg' });
-        audioUrl = URL.createObjectURL(blob);
-        audioCacheRef.current.set(cacheKey, audioUrl);
-      }
-
-      setLoadingCardId(null);
-      const audio = new Audio(audioUrl);
-      currentAudioRef.current = audio;
-      audio.onended = () => setPlayingCardId(null);
-      audio.onerror = () => setPlayingCardId(null);
-      try {
-        await audio.play();
-        setPlayingCardId(card.id);
-      } catch {
-        setPlayingCardId(null);
-      }
-    } catch (error) {
-      console.error('TTS error:', error);
-      setLoadingCardId(null);
-      setPlayingCardId(null);
+      const base64String = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+      const binary = atob(base64String);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: 'audio/mpeg' });
+      const url = URL.createObjectURL(blob);
+      audioCacheRef.current.set(cacheKey, url);
+      return url;
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') console.error('[MiniCast] TTS fetch error:', err?.message);
+      return null;
     }
   }, []);
 
-  // Auto-play top card when it changes (after swipe)
+  // Preload top card audio and auto-play after swipe
   useEffect(() => {
-    if (shouldAutoPlay && cards.length > 0 && cards[0].id !== prevTopCardIdRef.current) {
-      prevTopCardIdRef.current = cards[0].id;
-      const timer = setTimeout(() => {
-        playCardWithTTS(cards[0]);
-      }, 100);
-      return () => clearTimeout(timer);
-    } else if (cards.length > 0) {
-      prevTopCardIdRef.current = cards[0].id;
-    }
-  }, [cards, shouldAutoPlay, playCardWithTTS]);
+    if (cards.length === 0) return;
+    const cancelled = { value: false };
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    const topCard = cards[0];
+    const pendingCard = pendingAutoPlayRef.current;
+    const shouldAutoPlay = pendingCard !== null && pendingCard.id === topCard.id;
+    if (shouldAutoPlay) pendingAutoPlayRef.current = null;
+
+    const cacheKey = `${topCard.id}::${localStorage.getItem('voiceLanguage') || 'en'}::${localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural'}`;
+    const alreadyCached = audioCacheRef.current.has(cacheKey);
+    if (!alreadyCached) setIsPreloading(true);
+
+    (async () => {
+      const audioUrl = await fetchAndCacheTTS(topCard, cancelled);
+      if (cancelled.value) return;
+      setIsPreloading(false);
+
+      if (shouldAutoPlay && audioUrl) {
+        if (currentAudioRef.current) currentAudioRef.current.pause();
+        const audio = new Audio(audioUrl);
+        currentAudioRef.current = audio;
+        audio.onended = () => setPlayingCardId(null);
+        audio.onerror = () => setPlayingCardId(null);
+        try { await audio.play(); setPlayingCardId(topCard.id); } catch { setPlayingCardId(null); }
+      }
+    })();
+
+    // Stagger preload remaining cards
+    cards.slice(1).forEach((card, i) => {
+      timers.push(setTimeout(() => {
+        if (!cancelled.value) fetchAndCacheTTS(card, cancelled);
+      }, (i + 1) * 1500));
+    });
+
+    return () => {
+      cancelled.value = true;
+      timers.forEach(clearTimeout);
+      setIsPreloading(false);
+    };
+  }, [cards, fetchAndCacheTTS]);
+
+  // Revoke URLs on unmount
+  useEffect(() => {
+    return () => {
+      if (currentAudioRef.current) {
+        currentAudioRef.current.pause();
+        currentAudioRef.current = null;
+      }
+      audioCacheRef.current.forEach(url => URL.revokeObjectURL(url));
+      audioCacheRef.current.clear();
+    };
+  }, []);
 
   const swipeCard = (direction: 'left' | 'right') => {
     stopCurrentAudio();
-    setShouldAutoPlay(true);
-    
     setCards((prevCards) => {
       const newCards = [...prevCards];
       if (direction === 'right') {
@@ -142,43 +173,55 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
         const lastCard = newCards.pop();
         if (lastCard) newCards.unshift(lastCard);
       }
+      pendingAutoPlayRef.current = newCards[0] || null;
       return newCards;
     });
   };
 
-  const [swipeOffset, setSwipeOffset] = useState(0);
-
-  const truncateText = (text: string, maxLength: number = 80) => {
-    if (text.length <= maxLength) return text;
-    return text.substring(0, maxLength) + '...';
-  };
-
-  const getGradient = (idx: number) => {
-    const gradients = [
-      { from: 'from-blue-500', to: 'to-blue-600', label: 'TECH NEWS', icon: '\ud83d\udcbb' },
-      { from: 'from-purple-500', to: 'to-purple-600', label: 'MARKET UPDATE', icon: '\ud83d\udcca' },
-      { from: 'from-pink-500', to: 'to-pink-600', label: 'TRADING ALERT', icon: '\ud83d\udcc8' },
-      { from: 'from-indigo-500', to: 'to-indigo-600', label: 'FINANCE NEWS', icon: '\ud83d\udca1' },
-      { from: 'from-cyan-500', to: 'to-cyan-600', label: 'INSIGHT', icon: '\ud83c\udfaf' },
-    ];
-    return gradients[idx % gradients.length];
-  };
-
-  const handleReadNow = (card: CardWithColor, e: React.MouseEvent) => {
+  const handlePlayPause = async (card: CardWithColor, e: React.MouseEvent) => {
     e.stopPropagation();
-    setShouldAutoPlay(false);
-    
-    if (playingCardId === card.id || loadingCardId === card.id) {
+
+    if (playingCardId === card.id) {
       stopCurrentAudio();
       return;
     }
 
+    if (loadingCardId === card.id) return;
+
     if (!card.text || card.text.trim().length === 0) {
-      toast({ description: "No content to read", variant: "destructive" });
+      toast({ description: 'No content to play', variant: 'destructive' });
       return;
     }
 
-    playCardWithTTS(card);
+    stopCurrentAudio();
+    setLoadingCardId(card.id);
+
+    const cancelled = { value: false };
+    const audioUrl = await fetchAndCacheTTS(card, cancelled);
+    setLoadingCardId(null);
+    if (!audioUrl) return;
+
+    const audio = new Audio(audioUrl);
+    currentAudioRef.current = audio;
+    audio.onended = () => setPlayingCardId(null);
+    audio.onerror = () => setPlayingCardId(null);
+    try {
+      await audio.play();
+      setPlayingCardId(card.id);
+    } catch {
+      setPlayingCardId(null);
+    }
+  };
+
+  const getGradient = (idx: number) => {
+    const gradients = [
+      { from: 'from-blue-500', to: 'to-blue-600' },
+      { from: 'from-purple-500', to: 'to-purple-600' },
+      { from: 'from-pink-500', to: 'to-pink-600' },
+      { from: 'from-indigo-500', to: 'to-indigo-600' },
+      { from: 'from-cyan-500', to: 'to-cyan-600' },
+    ];
+    return gradients[idx % gradients.length];
   };
 
   if (cards.length === 0) return null;
@@ -192,27 +235,22 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
         const isFourth = index === 3;
         const isFifth = index === 4;
         const gradient = getGradient(card.colorIndex);
-        const authorName = card.authorDisplayName || card.authorUsername || 'Trading';
-        
-        // Enhanced stacking effect - more visible depth like the image
+
         let stackTransform = '';
         let stackOpacity = 1;
         let stackZ = 40;
-        
+
         if (!isTop) {
-          // Calculate rotation and offset for stacked cards
-          const rotationDeg = index * 3; // Slight rotation for each card
-          const yOffset = index * 8; // Vertical offset
-          const scale = 1 - (index * 0.03); // Slight scale reduction
-          const xOffset = index * -2; // Slight horizontal shift for depth
-          
+          const rotationDeg = index * 3;
+          const yOffset = index * 8;
+          const scale = 1 - (index * 0.03);
+          const xOffset = index * -2;
           stackTransform = `translateY(${yOffset}px) translateX(${xOffset}px) rotate(${rotationDeg}deg) scale(${scale})`;
           stackOpacity = isSecond ? 0.95 : (isThird ? 0.85 : (isFourth ? 0.75 : (isFifth ? 0.65 : 0.5)));
           stackZ = isSecond ? 30 : (isThird ? 20 : (isFourth ? 15 : (isFifth ? 10 : 5)));
         }
-        
-        // Initial animation for new cards
-        const initialTransform = isAnimatingIn && isTop 
+
+        const initialTransform = isAnimatingIn && isTop
           ? 'translateY(-100px) scale(0.8) rotate(-10deg)'
           : stackTransform;
 
@@ -222,7 +260,7 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
             data-card-index={index}
             style={{
               transform: initialTransform,
-              transition: isAnimatingIn && isTop 
+              transition: isAnimatingIn && isTop
                 ? 'transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.5s ease-out'
                 : 'transform 0.3s ease-out, opacity 0.3s ease-out',
               opacity: isAnimatingIn && isTop ? 0.3 : stackOpacity,
@@ -231,7 +269,6 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
             className={`absolute inset-0 ${isTop ? 'cursor-grab active:cursor-grabbing' : ''}`}
             onMouseDown={(e: React.MouseEvent<HTMLDivElement>) => {
               if (!isTop) return;
-
               const startX = e.clientX;
               const startY = e.clientY;
               const cardElement = e.currentTarget as HTMLElement;
@@ -240,22 +277,11 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
               const handleMouseMove = (e: MouseEvent) => {
                 const deltaX = e.clientX - startX;
                 const deltaY = e.clientY - startY;
-
-                if (
-                  !isDragging &&
-                  (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)
-                ) {
-                  isDragging = true;
-                }
-
+                if (!isDragging && (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)) isDragging = true;
                 if (isDragging) {
                   const rotation = deltaX * 0.1;
                   cardElement.style.transform = `translate(${deltaX}px, ${deltaY}px) rotate(${rotation}deg)`;
-                  cardElement.style.opacity = String(
-                    Math.max(0.3, 1 - Math.abs(deltaX) / 300)
-                  );
-                  
-                  // Show preview of next card by updating swipe offset
+                  cardElement.style.opacity = String(Math.max(0.3, 1 - Math.abs(deltaX) / 300));
                   setSwipeOffset(deltaX);
                 }
               };
@@ -263,68 +289,45 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
               const handleMouseUp = (e: MouseEvent) => {
                 if (isDragging) {
                   const deltaX = e.clientX - startX;
-                  setSwipeOffset(0); // Reset preview
-                  
+                  setSwipeOffset(0);
                   if (Math.abs(deltaX) > 40) {
-                    const swipeDirection = deltaX > 0 ? "right" : "left";
-
-                    if (swipeDirection === "right") {
-                      const direction = "150%";
-                      const rotation = "30deg";
-                      cardElement.style.transform = `translate(${direction}, ${
-                        deltaX * 0.5
-                      }px) rotate(${rotation})`;
-                      cardElement.style.opacity = "0";
-
-                      setTimeout(() => {
-                        cardElement.style.transform = "";
-                        cardElement.style.opacity = "";
-                        swipeCard(swipeDirection);
-                      }, 300);
+                    const dir = deltaX > 0 ? 'right' : 'left';
+                    if (dir === 'right') {
+                      cardElement.style.transform = `translate(150%, ${deltaX * 0.5}px) rotate(30deg)`;
+                      cardElement.style.opacity = '0';
+                      setTimeout(() => { cardElement.style.transform = ''; cardElement.style.opacity = ''; swipeCard(dir); }, 300);
                     } else {
-                      cardElement.style.transform = "";
-                      cardElement.style.opacity = "";
-                      swipeCard(swipeDirection);
-
+                      cardElement.style.transform = '';
+                      cardElement.style.opacity = '';
+                      swipeCard(dir);
                       setTimeout(() => {
-                        const newTopCard =
-                          cardElement.parentElement?.querySelector(
-                            '[data-card-index="0"]'
-                          ) as HTMLElement;
-                        if (newTopCard) {
-                          newTopCard.style.transform =
-                            "translate(150%, 0) rotate(30deg)";
-                          newTopCard.style.opacity = "0";
-
+                        const newTop = cardElement.parentElement?.querySelector('[data-card-index="0"]') as HTMLElement;
+                        if (newTop) {
+                          newTop.style.transform = 'translate(150%, 0) rotate(30deg)';
+                          newTop.style.opacity = '0';
                           setTimeout(() => {
-                            newTopCard.style.transform = "";
-                            newTopCard.style.opacity = "";
-                            newTopCard.style.transition =
-                              "transform 300ms ease-out, opacity 300ms ease-out";
-
-                            setTimeout(() => {
-                              newTopCard.style.transition = "";
-                            }, 300);
+                            newTop.style.transform = '';
+                            newTop.style.opacity = '';
+                            newTop.style.transition = 'transform 300ms ease-out, opacity 300ms ease-out';
+                            setTimeout(() => { newTop.style.transition = ''; }, 300);
                           }, 10);
                         }
                       }, 10);
                     }
                   } else {
-                    cardElement.style.transform = "";
-                    cardElement.style.opacity = "";
+                    cardElement.style.transform = '';
+                    cardElement.style.opacity = '';
                   }
                 }
-
-                document.removeEventListener("mousemove", handleMouseMove);
-                document.removeEventListener("mouseup", handleMouseUp);
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
               };
 
-              document.addEventListener("mousemove", handleMouseMove);
-              document.addEventListener("mouseup", handleMouseUp);
+              document.addEventListener('mousemove', handleMouseMove);
+              document.addEventListener('mouseup', handleMouseUp);
             }}
             onTouchStart={(e: React.TouchEvent<HTMLDivElement>) => {
               if (!isTop) return;
-
               const startX = e.touches[0].clientX;
               const startY = e.touches[0].clientY;
               const cardElement = e.currentTarget as HTMLElement;
@@ -333,23 +336,12 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
               const handleTouchMove = (e: TouchEvent) => {
                 const deltaX = e.touches[0].clientX - startX;
                 const deltaY = e.touches[0].clientY - startY;
-
-                if (
-                  !isDragging &&
-                  (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)
-                ) {
-                  isDragging = true;
-                }
-
+                if (!isDragging && (Math.abs(deltaX) > 5 || Math.abs(deltaY) > 5)) isDragging = true;
                 if (isDragging) {
                   e.preventDefault();
                   const rotation = deltaX * 0.1;
                   cardElement.style.transform = `translate(${deltaX}px, ${deltaY}px) rotate(${rotation}deg)`;
-                  cardElement.style.opacity = String(
-                    Math.max(0.3, 1 - Math.abs(deltaX) / 300)
-                  );
-                  
-                  // Show preview of next card
+                  cardElement.style.opacity = String(Math.max(0.3, 1 - Math.abs(deltaX) / 300));
                   setSwipeOffset(deltaX);
                 }
               };
@@ -357,71 +349,49 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
               const handleTouchEnd = (e: TouchEvent) => {
                 if (isDragging) {
                   const deltaX = e.changedTouches[0].clientX - startX;
-                  setSwipeOffset(0); // Reset preview
-                  
+                  setSwipeOffset(0);
                   if (Math.abs(deltaX) > 40) {
-                    const swipeDirection = deltaX > 0 ? "right" : "left";
-
-                    if (swipeDirection === "right") {
-                      const direction = "150%";
-                      const rotation = "30deg";
-                      cardElement.style.transform = `translate(${direction}, ${
-                        deltaX * 0.5
-                      }px) rotate(${rotation})`;
-                      cardElement.style.opacity = "0";
-
-                      setTimeout(() => {
-                        cardElement.style.transform = "";
-                        cardElement.style.opacity = "";
-                        swipeCard(swipeDirection);
-                      }, 300);
+                    const dir = deltaX > 0 ? 'right' : 'left';
+                    if (dir === 'right') {
+                      cardElement.style.transform = `translate(150%, ${deltaX * 0.5}px) rotate(30deg)`;
+                      cardElement.style.opacity = '0';
+                      setTimeout(() => { cardElement.style.transform = ''; cardElement.style.opacity = ''; swipeCard(dir); }, 300);
                     } else {
-                      cardElement.style.transform = "";
-                      cardElement.style.opacity = "";
-                      swipeCard(swipeDirection);
-
+                      cardElement.style.transform = '';
+                      cardElement.style.opacity = '';
+                      swipeCard(dir);
                       setTimeout(() => {
-                        const newTopCard =
-                          cardElement.parentElement?.querySelector(
-                            '[data-card-index="0"]'
-                          ) as HTMLElement;
-                        if (newTopCard) {
-                          newTopCard.style.transform =
-                            "translate(150%, 0) rotate(30deg)";
-                          newTopCard.style.opacity = "0";
-
+                        const newTop = cardElement.parentElement?.querySelector('[data-card-index="0"]') as HTMLElement;
+                        if (newTop) {
+                          newTop.style.transform = 'translate(150%, 0) rotate(30deg)';
+                          newTop.style.opacity = '0';
                           setTimeout(() => {
-                            newTopCard.style.transform = "";
-                            newTopCard.style.opacity = "";
-                            newTopCard.style.transition =
-                              "transform 300ms ease-out, opacity 300ms ease-out";
-
-                            setTimeout(() => {
-                              newTopCard.style.transition = "";
-                            }, 300);
+                            newTop.style.transform = '';
+                            newTop.style.opacity = '';
+                            newTop.style.transition = 'transform 300ms ease-out, opacity 300ms ease-out';
+                            setTimeout(() => { newTop.style.transition = ''; }, 300);
                           }, 10);
                         }
                       }, 10);
                     }
                   } else {
-                    cardElement.style.transform = "";
-                    cardElement.style.opacity = "";
+                    cardElement.style.transform = '';
+                    cardElement.style.opacity = '';
                   }
                 }
-
-                document.removeEventListener("touchmove", handleTouchMove);
-                document.removeEventListener("touchend", handleTouchEnd);
+                document.removeEventListener('touchmove', handleTouchMove);
+                document.removeEventListener('touchend', handleTouchEnd);
               };
 
-              document.addEventListener("touchmove", handleTouchMove, { passive: false });
-              document.addEventListener("touchend", handleTouchEnd);
+              document.addEventListener('touchmove', handleTouchMove, { passive: false });
+              document.addEventListener('touchend', handleTouchEnd);
             }}
           >
             <div
               className={`bg-gradient-to-br ${gradient.from} ${gradient.to} rounded-xl p-3 h-full relative overflow-hidden border-2 border-white/10`}
               style={{
-                boxShadow: isTop 
-                  ? '0 20px 40px rgba(0,0,0,0.4), 0 10px 20px rgba(0,0,0,0.3)' 
+                boxShadow: isTop
+                  ? '0 20px 40px rgba(0,0,0,0.4), 0 10px 20px rgba(0,0,0,0.3)'
                   : `0 ${8 + index * 4}px ${16 + index * 8}px rgba(0,0,0,${0.3 + index * 0.1})`
               }}
             >
@@ -431,62 +401,50 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
               </div>
 
               {/* Card content */}
-              <div className="relative z-10">
-                <div className="text-[8px] text-white/80 mb-1 uppercase tracking-wide font-medium">
-                  {gradient.label}
+              <div className="relative z-10 h-full flex flex-col items-center justify-between py-2">
+                {/* Top label */}
+                <div className="text-[7px] text-white/60 uppercase tracking-widest font-medium">
+                  minicast
                 </div>
-                <h3 className="text-xs font-bold text-white mb-2 leading-tight">
-                  Latest in
-                  <br />
-                  {authorName.toLowerCase()}
-                </h3>
+
+                <div />
+
+                {/* Bottom play button */}
                 <button
                   type="button"
-                  className={`bg-white px-2 py-1 rounded-full text-[10px] font-medium shadow-lg transition-colors ${
-                    playingCardId === card.id
-                      ? 'text-blue-600 hover:bg-gray-100'
-                      : loadingCardId === card.id
-                      ? 'text-gray-400'
-                      : 'text-gray-800 hover:bg-gray-100'
-                  }`}
-                  onClick={(e) => handleReadNow(card, e)}
-                  disabled={loadingCardId !== null && loadingCardId !== card.id}
-                  data-testid={`button-read-now-card-${card.id}`}
+                  className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-2.5 py-1 rounded-full text-[8px] font-medium transition-all disabled:opacity-60"
+                  onClick={(e) => { if (isTop) handlePlayPause(card, e); }}
+                  disabled={isTop && loadingCardId === card.id}
+                  data-testid={`button-play-minicast-${card.id}`}
                 >
-                  <div className="flex items-center gap-1">
-                    {loadingCardId === card.id ? (
-                      <>
-                        <Loader2 className="w-2 h-2 animate-spin" />
-                        <span>Loading...</span>
-                      </>
-                    ) : playingCardId === card.id ? (
-                      <>
-                        <Pause className="w-2 h-2 fill-current" />
-                        <span>Stop</span>
-                      </>
+                  <div className="flex items-center gap-0.5">
+                    {isTop && loadingCardId === card.id ? (
+                      <Loader2 className="w-1.5 h-1.5 animate-spin" />
+                    ) : isTop && playingCardId === card.id ? (
+                      <Pause className="w-1.5 h-1.5 fill-white" />
+                    ) : isTop && isPreloading ? (
+                      <Loader2 className="w-1.5 h-1.5 animate-spin opacity-70" />
                     ) : (
-                      <>
-                        <Play className="w-2 h-2" />
-                        <span>Read Now</span>
-                      </>
+                      <Play className="w-1.5 h-1.5 fill-white" />
                     )}
+                    <span>
+                      {isTop && loadingCardId === card.id
+                        ? 'Loading...'
+                        : isTop && playingCardId === card.id
+                        ? 'Pause'
+                        : isTop && isPreloading
+                        ? 'Preparing...'
+                        : 'Play Now'}
+                    </span>
                   </div>
                 </button>
               </div>
 
-              {/* Icon */}
-              <div className="absolute top-2 right-2 text-sm filter drop-shadow-lg">
-                {gradient.icon}
-              </div>
-
-              {/* Remove button - only show on top card */}
+              {/* Remove button - top card only */}
               {isTop && (
                 <button
                   type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(card.id);
-                  }}
+                  onClick={(e) => { e.stopPropagation(); onRemove(card.id); }}
                   className="absolute top-1 left-1 w-4 h-4 rounded-full bg-white/20 hover:bg-white/40 flex items-center justify-center transition-all hover:scale-110 z-30"
                   data-testid={`button-remove-snippet-${card.id}`}
                 >
@@ -494,7 +452,7 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
                 </button>
               )}
 
-              {/* Stack indicator for non-top cards */}
+              {/* Dim non-top cards */}
               {!isTop && (
                 <div className="absolute inset-0 bg-black/10 rounded-2xl"></div>
               )}

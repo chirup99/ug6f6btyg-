@@ -705,18 +705,59 @@ function SwipeableCardStack({
     };
   }, [globalStopAudio]);
 
-  // Expose preload function so parent can trigger card preloading when language changes
+  // Expose preload functions so parent can trigger card preloading when language or voice changes
   React.useEffect(() => {
+    // Called when language changes — preloads all sectors in the new language
     (window as any)._preloadSwipeCardsForLang = (lang: string) => {
       const speaker = localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[lang] || 'en-IN-NeerjaNeural';
       cards.forEach((card) => {
         preloadForSectorAndLang(card.sector, lang, speaker);
       });
     };
+
+    // Called when voice profile changes — preloads all sectors for current lang + new speaker,
+    // then all other languages in the background so any future language switch is instant too
+    (window as any)._preloadSwipeCardsForVoice = (speaker: string, lang?: string) => {
+      const activeLang = lang || localStorage.getItem('voiceLanguage') || 'en';
+      // Phase 1: current language immediately (fast stagger)
+      cards.forEach((card, i) => {
+        if (i === 0) {
+          preloadForSectorAndLang(card.sector, activeLang, speaker);
+        } else {
+          setTimeout(() => preloadForSectorAndLang(card.sector, activeLang, speaker), i * 1200);
+        }
+      });
+      // Phase 2: all other languages with new speaker in background
+      const otherLangs = Object.entries(ALL_LANGUAGES).filter(([l]) => l !== activeLang);
+      let jobIndex = 0;
+      otherLangs.forEach(([l]) => {
+        cards.forEach((card) => {
+          const delay = 8000 + jobIndex * 2000;
+          setTimeout(() => preloadForSectorAndLang(card.sector, l, speaker), delay);
+          jobIndex++;
+        });
+      });
+      console.log(`[VOICE CHANGE] Preloading ${cards.length} sectors for speaker=${speaker} lang=${activeLang}`);
+    };
+
     return () => {
       delete (window as any)._preloadSwipeCardsForLang;
+      delete (window as any)._preloadSwipeCardsForVoice;
     };
   }, [cards, preloadForSectorAndLang]);
+
+  // Listen for voice profile changes and immediately re-preload all sectors
+  React.useEffect(() => {
+    const handleVoiceProfileChange = (e: Event) => {
+      const speaker = (e as CustomEvent).detail?.speaker;
+      if (!speaker) return;
+      if ((window as any)._preloadSwipeCardsForVoice) {
+        (window as any)._preloadSwipeCardsForVoice(speaker);
+      }
+    };
+    window.addEventListener('perala-voice-profile-change', handleVoiceProfileChange);
+    return () => window.removeEventListener('perala-voice-profile-change', handleVoiceProfileChange);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Add window focus/blur detection to stop voice when clicking away
   React.useEffect(() => {
@@ -2402,7 +2443,11 @@ export default function Home() {
   const prevProgressRef = useRef(0);
   const isTortoiseFacingRightRef = useRef(true);
 
-  useEffect(() => { localStorage.setItem('activeVoiceProfileId', activeVoiceProfileId); }, [activeVoiceProfileId]);
+  useEffect(() => {
+    localStorage.setItem('activeVoiceProfileId', activeVoiceProfileId);
+    // Notify SwipeableCardStack to re-preload all sectors with the new voice profile
+    window.dispatchEvent(new CustomEvent('perala-voice-profile-change', { detail: { speaker: activeVoiceProfileId } }));
+  }, [activeVoiceProfileId]);
   useEffect(() => {
     localStorage.setItem('voiceLanguage', voiceLanguage);
     // Notify all AudioMinicastCard instances so they can invalidate their caches

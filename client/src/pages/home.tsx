@@ -707,11 +707,7 @@ function SwipeableCardStack({
       preloadForSector(nextCard.sector);
 
       // Auto-play the new top card — minimal delay just to let the DOM settle
-      const userId = localStorage.getItem('currentUserId');
-      const userEmail = localStorage.getItem('currentUserEmail');
-      if (userId && userEmail) {
-        setTimeout(() => fetchAndPlayContent(nextCard.title, nextCard.sector), 100);
-      }
+      setTimeout(() => fetchAndPlayContent(nextCard.title, nextCard.sector), 100);
 
       // Warm the card after that in the background
       if (nextNextCard) {
@@ -22602,28 +22598,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             </div>
 
             {/* Content */}
-            <div className="px-4 py-4 space-y-3">
-              {/* Warning stat */}
-              <div className="bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800/50 rounded-xl px-3 py-2 text-center">
-                <p className="text-red-600 dark:text-red-400 text-xs font-bold">⚠️ 90% of retail investors lose money</p>
-                <p className="text-red-500/80 dark:text-red-500/70 text-[10px] mt-0.5">due to fake influencers &amp; non-SEBI certified traders.</p>
-              </div>
-
-              {/* Features */}
-              <div className="space-y-1.5">
-                {[
-                  { icon: '✅', label: 'SEBI-Certified educators only' },
-                  { icon: '🎯', label: 'Zero noise, zero scams' },
-                  { icon: '📡', label: 'Live sessions & recorded content' },
-                  { icon: '🏆', label: 'Verified trading professionals' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-2.5 bg-slate-50 dark:bg-slate-900/60 rounded-lg px-3 py-2">
-                    <span className="text-sm">{item.icon}</span>
-                    <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{item.label}</span>
-                  </div>
-                ))}
-              </div>
-
+            <div className="px-4 pb-4 pt-2">
               <Button
                 onClick={() => setShowComingSoonDialog(false)}
                 className="w-full h-9 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-700 hover:to-indigo-700 text-white font-semibold rounded-xl shadow-md shadow-indigo-500/20 transition-all active:scale-[0.98] text-sm"

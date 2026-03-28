@@ -2463,7 +2463,7 @@ export default function Home() {
     if (!isAuthenticated && (activeTab === 'voice' || activeTab === 'journal')) {
       const timer = setTimeout(() => {
         setShowGuestDialog(true);
-      }, 7000);
+      }, 14000);
       return () => clearTimeout(timer);
     } else if (activeTab !== 'voice' && activeTab !== 'journal') {
       setShowGuestDialog(false);

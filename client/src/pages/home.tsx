@@ -2461,7 +2461,10 @@ export default function Home() {
     const userEmail = localStorage.getItem('currentUserEmail');
     const isAuthenticated = userId && userEmail && userId !== 'null' && userEmail !== 'null';
     if (!isAuthenticated && (activeTab === 'voice' || activeTab === 'journal')) {
-      setShowGuestDialog(true);
+      const timer = setTimeout(() => {
+        setShowGuestDialog(true);
+      }, 7000);
+      return () => clearTimeout(timer);
     } else if (activeTab !== 'voice' && activeTab !== 'journal') {
       setShowGuestDialog(false);
     }

@@ -303,6 +303,10 @@ function SwipeableCardStack({
   const audioCacheRef = React.useRef<Map<string, string>>(new Map());
   // Track in-progress preloads to avoid duplicate fetches
   const preloadingRef = React.useRef<Set<string>>(new Set());
+  // Cache news text by sector — avoids repeated /api/stock-news fetches for same sector
+  const newsTextCacheRef = React.useRef<Map<string, string>>(new Map());
+  // Track in-progress news fetches to avoid duplicate requests
+  const newsFetchingRef = React.useRef<Map<string, Promise<string>>>(new Map());
 
   const [cards, setCards] = useState([
     {
@@ -399,28 +403,48 @@ function SwipeableCardStack({
     return `${sector}-${l}-${s}`;
   };
 
-  // Fetch news text for a sector — kept short and clean for accurate translation
+  // Fetch news text for a sector — cached so repeated calls for the same sector
+  // (e.g. when preloading multiple languages) only hit the network once.
   const buildNewsText = async (sector: string): Promise<string> => {
+    // 1. Memory cache hit — instant
+    const cached = newsTextCacheRef.current.get(sector);
+    if (cached) return cached;
+
+    // 2. In-flight dedup — attach to the running promise instead of starting a new fetch
+    const inflight = newsFetchingRef.current.get(sector);
+    if (inflight) return inflight;
+
+    // 3. Fresh fetch
     const symbol = SECTOR_NEWS_SYMBOL[sector] || 'NIFTY';
-    try {
-      const res = await fetch(`/api/stock-news/${symbol}`);
-      if (!res.ok) throw new Error('Failed');
-      const data = await res.json();
-      const items = Array.isArray(data) ? data : (data.news || []);
-      // Use only 3 headlines, each trimmed to 120 chars so the total stays under 400 chars
-      // This ensures MyMemory can translate the full text without truncation
-      const headlines = items
-        .slice(0, 3)
-        .map((item: any) => {
-          const title = (item.title || '').trim();
-          return title.length > 120 ? title.substring(0, 117) + '...' : title;
-        })
-        .filter(Boolean);
-      if (headlines.length === 0) return `${sector} market update. Trading activity is ongoing.`;
-      return headlines.join('. ') + '.';
-    } catch {
-      return `${sector} market update. Trading activity is ongoing.`;
-    }
+    const fetchPromise = (async (): Promise<string> => {
+      try {
+        const res = await fetch(`/api/stock-news/${symbol}`);
+        if (!res.ok) throw new Error('Failed');
+        const data = await res.json();
+        const items = Array.isArray(data) ? data : (data.news || []);
+        const headlines = items
+          .slice(0, 3)
+          .map((item: any) => {
+            const title = (item.title || '').trim();
+            return title.length > 120 ? title.substring(0, 117) + '...' : title;
+          })
+          .filter(Boolean);
+        const text = headlines.length === 0
+          ? `${sector} market update. Trading activity is ongoing.`
+          : headlines.join('. ') + '.';
+        newsTextCacheRef.current.set(sector, text);
+        return text;
+      } catch {
+        const fallback = `${sector} market update. Trading activity is ongoing.`;
+        newsTextCacheRef.current.set(sector, fallback);
+        return fallback;
+      } finally {
+        newsFetchingRef.current.delete(sector);
+      }
+    })();
+
+    newsFetchingRef.current.set(sector, fetchPromise);
+    return fetchPromise;
   };
 
   // Generate TTS audio blob URL — accepts explicit lang/speaker for cross-language preloading
@@ -679,19 +703,19 @@ function SwipeableCardStack({
     if (nextCard) {
       if (onCardIndexChange) onCardIndexChange(nextIndex);
 
-      // Ensure the new top card's audio is warm, then auto-play it
-      setTimeout(() => preloadForSector(nextCard.sector), 200);
+      // Kick off preload immediately (no-op if already cached or in-flight)
+      preloadForSector(nextCard.sector);
 
-      // Auto-play the new top card after the swipe animation settles
+      // Auto-play the new top card — minimal delay just to let the DOM settle
       const userId = localStorage.getItem('currentUserId');
       const userEmail = localStorage.getItem('currentUserEmail');
       if (userId && userEmail) {
-        setTimeout(() => fetchAndPlayContent(nextCard.title, nextCard.sector), 450);
+        setTimeout(() => fetchAndPlayContent(nextCard.title, nextCard.sector), 100);
       }
 
-      // Also warm the card after that in the background
+      // Warm the card after that in the background
       if (nextNextCard) {
-        setTimeout(() => preloadForSector(nextNextCard.sector), 3000);
+        setTimeout(() => preloadForSector(nextNextCard.sector), 800);
       }
     }
   };
@@ -719,12 +743,12 @@ function SwipeableCardStack({
     // then all other languages in the background so any future language switch is instant too
     (window as any)._preloadSwipeCardsForVoice = (speaker: string, lang?: string) => {
       const activeLang = lang || localStorage.getItem('voiceLanguage') || 'en';
-      // Phase 1: current language immediately (fast stagger)
+      // Phase 1: current language immediately (tight stagger)
       cards.forEach((card, i) => {
         if (i === 0) {
           preloadForSectorAndLang(card.sector, activeLang, speaker);
         } else {
-          setTimeout(() => preloadForSectorAndLang(card.sector, activeLang, speaker), i * 1200);
+          setTimeout(() => preloadForSectorAndLang(card.sector, activeLang, speaker), i * 400);
         }
       });
       // Phase 2: all other languages with new speaker in background
@@ -732,7 +756,7 @@ function SwipeableCardStack({
       let jobIndex = 0;
       otherLangs.forEach(([l]) => {
         cards.forEach((card) => {
-          const delay = 10000 + jobIndex * 4000;
+          const delay = 8000 + jobIndex * 2000;
           setTimeout(() => preloadForSectorAndLang(card.sector, l, speaker), delay);
           jobIndex++;
         });
@@ -798,11 +822,9 @@ function SwipeableCardStack({
     };
   }, [globalStopAudio]);
 
-  // On mount: Phase 1 — preload ALL sectors in the CURRENT language fast (2 s stagger).
-  // Phase 2 — preload ALL remaining languages in the background (3 s stagger, starting
-  // at 15 s) so that any language switch is an instant cache hit with no generation delay.
-  // Total: 6 sectors × 9 languages = 54 audio blobs, all warm before the user can even
-  // tap through all the cards.
+  // On mount: Phase 1 — preload ALL sectors in the CURRENT language fast (500 ms stagger).
+  // Phase 2 — preload ALL remaining languages in the background (2 s stagger, starting
+  // at 8 s) so that any language switch is an instant cache hit with no generation delay.
   React.useEffect(() => {
     if (cards.length === 0) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
@@ -810,24 +832,21 @@ function SwipeableCardStack({
     const activeLang = localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
     const activeSpeaker = localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[activeLang] || 'en-IN-NeerjaNeural';
 
-    // ── Phase 1: current language, fast stagger ────────────────────────────
+    // ── Phase 1: current language, tight stagger ───────────────────────────
     cards.forEach((card, i) => {
       if (i === 0) {
         preloadForSectorAndLang(card.sector, activeLang, activeSpeaker);
       } else {
-        timers.push(setTimeout(() => preloadForSectorAndLang(card.sector, activeLang, activeSpeaker), i * 2000));
+        timers.push(setTimeout(() => preloadForSectorAndLang(card.sector, activeLang, activeSpeaker), i * 500));
       }
     });
 
-    // ── Phase 2: all other languages, slow stagger (starts at 15 s) ────────
-    // Use activeSpeaker (user's profile ID) for ALL languages so cache keys match
-    // what fetchAndPlayContent generates when user switches language. The backend
-    // resolves unknown profile IDs to the language-default voice anyway.
+    // ── Phase 2: all other languages, background stagger (starts at 8 s) ──
     const otherLangs = Object.entries(ALL_LANGUAGES).filter(([lang]) => lang !== activeLang);
     let jobIndex = 0;
     otherLangs.forEach(([lang]) => {
       cards.forEach((card) => {
-        const delay = 20000 + jobIndex * 5000;
+        const delay = 8000 + jobIndex * 2000;
         timers.push(setTimeout(() => preloadForSectorAndLang(card.sector, lang, activeSpeaker), delay));
         jobIndex++;
       });
@@ -853,7 +872,7 @@ function SwipeableCardStack({
       if (i === 0) {
         preloadForSectorAndLang(card.sector, lang, speaker);
       } else {
-        setTimeout(() => preloadForSectorAndLang(card.sector, lang, speaker), i * 1500);
+        setTimeout(() => preloadForSectorAndLang(card.sector, lang, speaker), i * 400);
       }
     });
     console.log(`[LANG CHANGE] Switched to ${lang} — preloading ${cards.length} sectors with speaker: ${speaker}`);

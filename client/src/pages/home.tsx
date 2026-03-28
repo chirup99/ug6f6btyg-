@@ -392,8 +392,9 @@ function SwipeableCardStack({
   };
 
   // Build cache key — always keyed to a specific lang so every language has its own slot
+  // IMPORTANT: always prioritize localStorage over the closed-over prop to avoid stale closures
   const getCacheKey = (sector: string, lang?: string, speaker?: string) => {
-    const l = lang || voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+    const l = lang || localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
     const s = speaker || localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
     return `${sector}-${l}-${s}`;
   };
@@ -431,7 +432,7 @@ function SwipeableCardStack({
       .trim();
     if (!cleanText) return null;
 
-    const useLang = lang || voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+    const useLang = lang || localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
     const useSpeaker = speaker || localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
 
     const response = await fetch('/api/tts/generate', {
@@ -473,7 +474,7 @@ function SwipeableCardStack({
 
   // Preload audio for the current language (uses active voice profile)
   const preloadForSector = React.useCallback(async (sector: string) => {
-    const lang = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+    const lang = localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
     const speaker = localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[lang] || 'en-IN-NeerjaNeural';
     const cacheKey = getCacheKey(sector, lang, speaker);
     if (audioCacheRef.current.has(cacheKey)) return;
@@ -522,7 +523,7 @@ function SwipeableCardStack({
     setIsPlaying(true);
     try {
       const savedVoiceId = localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
-      const savedLanguage = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+      const savedLanguage = localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
 
       const response = await fetch('/api/tts/generate', {
         method: 'POST',
@@ -697,6 +698,19 @@ function SwipeableCardStack({
       delete window.stopNewsAudio;
     };
   }, [globalStopAudio]);
+
+  // Expose preload function so parent can trigger card preloading when language changes
+  React.useEffect(() => {
+    (window as any)._preloadSwipeCardsForLang = (lang: string) => {
+      const speaker = localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[lang] || 'en-IN-NeerjaNeural';
+      cards.forEach((card) => {
+        preloadForSectorAndLang(card.sector, lang, speaker);
+      });
+    };
+    return () => {
+      delete (window as any)._preloadSwipeCardsForLang;
+    };
+  }, [cards, preloadForSectorAndLang]);
 
   // Add window focus/blur detection to stop voice when clicking away
   React.useEffect(() => {
@@ -2372,33 +2386,12 @@ export default function Home() {
   }, []);
 
   const prefetchVoiceAudio = async (lang: string) => {
-    const voicesByLanguage: { [key: string]: {id: string, name: string, gender: string}[] } = {
-      en: [{ id: 'en-IN-PrabhatNeural', name: 'Prabhat', gender: 'Male' }, { id: 'en-IN-NeerjaNeural', name: 'Neerja', gender: 'Female' }],
-      hi: [{ id: 'hi-IN-MadhurNeural', name: 'Madhur', gender: 'Male' }, { id: 'hi-IN-SwaraNeural', name: 'Swara', gender: 'Female' }],
-      bn: [{ id: 'bn-IN-BashkarNeural', name: 'Bashkar', gender: 'Male' }, { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa', gender: 'Female' }],
-      ta: [{ id: 'ta-IN-ValluvarNeural', name: 'Valluvar', gender: 'Male' }, { id: 'ta-IN-PallaviNeural', name: 'Pallavi', gender: 'Female' }],
-      te: [{ id: 'te-IN-MohanNeural', name: 'Mohan', gender: 'Male' }, { id: 'te-IN-ShrutiNeural', name: 'Shruti', gender: 'Female' }],
-      mr: [{ id: 'mr-IN-ManoharNeural', name: 'Manohar', gender: 'Male' }, { id: 'mr-IN-AarohiNeural', name: 'Aarohi', gender: 'Female' }],
-      gu: [{ id: 'gu-IN-NiranjanNeural', name: 'Niranjan', gender: 'Male' }, { id: 'gu-IN-DhwaniNeural', name: 'Dhwani', gender: 'Female' }],
-      kn: [{ id: 'kn-IN-GaganNeural', name: 'Gagan', gender: 'Male' }, { id: 'kn-IN-SapnaNeural', name: 'Sapna', gender: 'Female' }],
-      ml: [{ id: 'ml-IN-MidhunNeural', name: 'Midhun', gender: 'Male' }, { id: 'ml-IN-SobhanaNeural', name: 'Sobhana', gender: 'Female' }],
-    };
-    const greetings: { [key: string]: (p: string) => string } = {
-      en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
-      hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
-      bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
-      ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
-      te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
-      mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
-      gu: (p) => `નમસ્તે! હું ${p} છું. પેરલામાં તમારું સ્વાગત છે!`,
-      kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
-      ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
-    };
-    const voices = voicesByLanguage[lang] || voicesByLanguage['en'];
     setVoiceLangLoading(true);
     setVoiceLangProgress(0);
     const startTime = Date.now();
     const DURATION = 4000;
+
+    // Animate the progress bar over 4 seconds
     const tick = () => {
       const elapsed = Date.now() - startTime;
       const pct = Math.min((elapsed / DURATION) * 100, 99);
@@ -2406,32 +2399,15 @@ export default function Home() {
       if (elapsed < DURATION) requestAnimationFrame(tick);
     };
     requestAnimationFrame(tick);
-    const fetchAudio = async (profile: {id: string, name: string, gender: string}) => {
-      const cacheKey = `${profile.id}_${lang}`;
-      const text = greetings[lang] ? greetings[lang](profile.name) : `Hello! I am ${profile.name}. Welcome to Perala!`;
-      try {
-        const res = await fetch('/api/tts/generate', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ text, language: lang, speaker: profile.id, speed: 1.0, pitch: 1.0 })
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.audioBase64) {
-            const b64 = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-            const bin = atob(b64);
-            const bytes = new Uint8Array(bin.length);
-            for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
-            const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
-            setVoiceAudioCache(prev => ({ ...prev, [cacheKey]: url }));
-          }
-        }
-      } catch { /* silently skip */ }
-    };
-    await Promise.all([
-      Promise.all(voices.map(fetchAudio)),
-      new Promise(r => setTimeout(r, DURATION))
-    ]);
+
+    // Trigger swipe card audio preloading in the selected language in background
+    // (fire-and-forget — preloading runs in parallel with the 4-second animation)
+    if ((window as any)._preloadSwipeCardsForLang) {
+      (window as any)._preloadSwipeCardsForLang(lang);
+    }
+
+    // Wait the full 4 seconds so the UI animation completes smoothly
+    await new Promise(r => setTimeout(r, DURATION));
     setVoiceLangProgress(100);
     setVoiceLangLoading(false);
   };
@@ -16673,6 +16649,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                     }
                                                     const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
                                                     const audioUrl = URL.createObjectURL(audioBlob);
+                                                    // Cache for instant playback on repeat taps
+                                                    setVoiceAudioCache(prev => ({ ...prev, [cacheKey]: audioUrl }));
                                                     const audio = new Audio(audioUrl);
                                                     currentAudioRef.current = audio;
                                                     audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));
@@ -17299,6 +17277,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
                                                 const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
                                                 const audioUrl = URL.createObjectURL(audioBlob);
+                                                // Cache for instant playback on repeat taps
+                                                setVoiceAudioCache(prev => ({ ...prev, [cacheKey]: audioUrl }));
                                                 const audio = new Audio(audioUrl);
                                                 currentAudioRef.current = audio;
                                                 audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));

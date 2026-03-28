@@ -17119,10 +17119,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         </button>
 
                         {isVoiceActive && (
-                          <div className="px-4 py-6 bg-gray-800/50 border border-gray-700 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200 no-scrollbar max-h-[400px] overflow-y-auto pl-[0px] pr-[0px] pt-[10px] pb-[10px] mt-[2px] mb-[2px]" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                            <div className="flex flex-col items-center gap-4">
+                          <div className="w-full bg-gray-800/50 border border-gray-700 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200 pt-[16px] pb-[16px] mt-[2px] mb-[2px]">
+                            <div className="flex flex-col items-center gap-4 px-4">
                               <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">voice profiles</span>
-                              <div className="flex items-center justify-start gap-4 py-2 overflow-x-auto no-scrollbar scroll-smooth pl-[10px] pr-[10px]" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                              <div className="flex items-center justify-center gap-6 py-2 w-full">
                                 {(() => {
                                   const voicesByLanguage: { [key: string]: any[] } = {
                                     'en': [
@@ -17230,29 +17230,25 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 })()}
                               </div>
                               <div className="w-full h-px bg-gray-700/50 my-1" />
-                              <div className="flex items-center gap-3">
-                                <div className="flex-1">
-                                  <p className="text-[11px] text-gray-500 italic mb-2">Language & Voice</p>
-                                  <select
-                                    value={voiceLanguage}
-                                    onChange={(e) => setVoiceLanguage(e.target.value)}
-                                    className="w-full px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-gray-200 focus:border-blue-400 focus:outline-none"
-                                  >
-                                    <option value="en">English (Indian)</option>
-                                    <option value="hi">हिंदी (Hindi)</option>
-                                    <option value="bn">বাংলা (Bengali)</option>
-                                    <option value="ta">தமிழ் (Tamil)</option>
-                                    <option value="te">తెలుగు (Telugu)</option>
-                                    <option value="mr">मराठी (Marathi)</option>
-                                    <option value="gu">ગુજરાતી (Gujarati)</option>
-                                    <option value="kn">ಕನ್ನಡ (Kannada)</option>
-                                    <option value="ml">മലയാളം (Malayalam)</option>
-                                  </select>
-                                </div>
+                              <div className="w-full">
+                                <p className="text-[11px] text-gray-500 italic mb-2 text-center">Language & Voice</p>
+                                <select
+                                  value={voiceLanguage}
+                                  onChange={(e) => setVoiceLanguage(e.target.value)}
+                                  className="w-full px-3 py-2 text-sm bg-gray-700 border border-gray-600 rounded-lg text-gray-200 focus:border-blue-400 focus:outline-none"
+                                >
+                                  <option value="en">English (Indian)</option>
+                                  <option value="hi">हिंदी (Hindi)</option>
+                                  <option value="bn">বাংলা (Bengali)</option>
+                                  <option value="ta">தமிழ் (Tamil)</option>
+                                  <option value="te">తెలుగు (Telugu)</option>
+                                  <option value="mr">मराठी (Marathi)</option>
+                                  <option value="gu">ગુજરાતી (Gujarati)</option>
+                                  <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                                  <option value="ml">മലയാളം (Malayalam)</option>
+                                </select>
                               </div>
-                              <div className="flex items-center justify-between mt-3">
-                                <p className="text-[11px] text-gray-500 italic">Select a voice for your audio post</p>
-                              </div>
+                              <p className="text-[11px] text-gray-500 italic text-center pb-1">Select a voice for your audio post</p>
                             </div>
                           </div>
                         )}

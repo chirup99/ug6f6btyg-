@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { X, Play, Pause } from 'lucide-react';
+import { X, Play, Pause, Loader2 } from 'lucide-react';
 import type { SelectedTextSnippet } from '@/contexts/AudioModeContext';
 import { useToast } from '@/hooks/use-toast';
 
@@ -17,8 +17,11 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
   const [nextColorIndex, setNextColorIndex] = useState(0);
   const [isAnimatingIn, setIsAnimatingIn] = useState(false);
   const [playingCardId, setPlayingCardId] = useState<string | null>(null);
+  const [loadingCardId, setLoadingCardId] = useState<string | null>(null);
   const [shouldAutoPlay, setShouldAutoPlay] = useState(false);
   const prevTopCardIdRef = useRef<string | null>(null);
+  const currentAudioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCacheRef = useRef<Map<string, string>>(new Map());
   const { toast } = useToast();
 
   // Update cards when snippets change - new cards added to TOP with different colors
@@ -26,104 +29,116 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
     const currentIds = cards.map(c => c.id);
     const newSnippetIds = snippets.map(s => s.id);
     
-    // Find newly added snippets
     const addedSnippets = snippets.filter(s => !currentIds.includes(s.id));
     
     if (addedSnippets.length > 0) {
-      // Trigger animation when new card is added
       setIsAnimatingIn(true);
-      
-      // Add new cards to the TOP of the stack with rotating colors
       const newCards: CardWithColor[] = addedSnippets.map((snippet, idx) => ({
         ...snippet,
         colorIndex: (nextColorIndex + idx) % 5
       }));
-      
       setCards(prev => [...newCards, ...prev.filter(c => newSnippetIds.includes(c.id))]);
       setNextColorIndex((nextColorIndex + addedSnippets.length) % 5);
-      
-      // Reset animation after it completes
       setTimeout(() => setIsAnimatingIn(false), 600);
     } else if (currentIds.length !== newSnippetIds.length) {
-      // Cards were removed
       setCards(prev => prev.filter(c => newSnippetIds.includes(c.id)));
     }
   }, [snippets]);
 
-  const playCard = useCallback((card: CardWithColor) => {
-    if (!card.text || card.text.trim().length === 0) {
-      return;
+  const removeEmojis = (text: string): string => {
+    return text.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F018}-\u{1F270}]|[\u{238C}-\u{2454}]|[\u{20D0}-\u{20FF}]/gu, '');
+  };
+
+  const stopCurrentAudio = () => {
+    if (currentAudioRef.current) {
+      currentAudioRef.current.pause();
+      currentAudioRef.current = null;
     }
+    setPlayingCardId(null);
+    setLoadingCardId(null);
+  };
+
+  const playCardWithTTS = useCallback(async (card: CardWithColor) => {
+    if (!card.text || card.text.trim().length === 0) return;
+
+    stopCurrentAudio();
+    setLoadingCardId(card.id);
 
     try {
-      window.speechSynthesis.cancel();
-      
-      const cleanText = removeEmojis(card.text);
-      const utterance = new SpeechSynthesisUtterance(cleanText);
-      const savedVoiceProfileId = localStorage.getItem('activeVoiceProfileId') || 'ravi';
-      const voiceProfileMap: Record<string, string[]> = {
-        ravi: ["Google UK English Male", "Microsoft Ravi Online (Natural) - English (India)", "en-IN-Wavenet-B", "en-IN-Standard-B", "ravi", "moira"],
-        vaib: ["Google US English", "Microsoft Vaibhav Online (Natural) - English (India)", "en-IN-Wavenet-A", "en-IN-Standard-A", "samantha", "aria"],
-        kids: ["Google UK English Female", "Microsoft Heera Online (Natural) - English (India)", "en-IN-Wavenet-D", "en-IN-Standard-D", "ava", "samantha"],
-      };
-      const priorityKeywords = voiceProfileMap[savedVoiceProfileId as keyof typeof voiceProfileMap] || voiceProfileMap.ravi;
-      const voices = window.speechSynthesis.getVoices();
-      const selectedVoice = voices.find(v => 
-        priorityKeywords.some(keyword => v.name.toLowerCase().includes(keyword.toLowerCase()))
-      );
-      if (selectedVoice) utterance.voice = selectedVoice;
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-      
-      utterance.onstart = () => {
+      const voiceLanguage = localStorage.getItem('voiceLanguage') || 'en';
+      const speaker = localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural';
+      const cacheKey = `${card.id}::${voiceLanguage}::${speaker}`;
+
+      let audioUrl = audioCacheRef.current.get(cacheKey);
+
+      if (!audioUrl) {
+        const cleanText = removeEmojis(card.text)
+          .replace(/https?:\/\/[^\s]+/gi, '')
+          .replace(/\p{Extended_Pictographic}/gu, '')
+          .replace(/[\x00-\x1F\x7F]/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        if (!cleanText) { setLoadingCardId(null); return; }
+
+        const response = await fetch('/api/tts/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: cleanText, language: voiceLanguage, speaker }),
+        });
+
+        if (!response.ok) throw new Error('TTS request failed');
+
+        const data = await response.json();
+        const binary = atob(data.audio);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: 'audio/mpeg' });
+        audioUrl = URL.createObjectURL(blob);
+        audioCacheRef.current.set(cacheKey, audioUrl);
+      }
+
+      setLoadingCardId(null);
+      const audio = new Audio(audioUrl);
+      currentAudioRef.current = audio;
+      audio.onended = () => setPlayingCardId(null);
+      audio.onerror = () => setPlayingCardId(null);
+      try {
+        await audio.play();
         setPlayingCardId(card.id);
-      };
-      
-      utterance.onend = () => {
+      } catch {
         setPlayingCardId(null);
-      };
-      
-      utterance.onerror = (event) => {
-        console.error('Speech synthesis error:', event);
-        setPlayingCardId(null);
-      };
-      
-      window.speechSynthesis.speak(utterance);
+      }
     } catch (error) {
-      console.error('Error playing audio:', error);
+      console.error('TTS error:', error);
+      setLoadingCardId(null);
       setPlayingCardId(null);
     }
   }, []);
 
-  // Auto-play current (top) card when it changes
+  // Auto-play top card when it changes (after swipe)
   useEffect(() => {
     if (shouldAutoPlay && cards.length > 0 && cards[0].id !== prevTopCardIdRef.current) {
       prevTopCardIdRef.current = cards[0].id;
-      // Small delay to ensure card is rendered
       const timer = setTimeout(() => {
-        playCard(cards[0]);
+        playCardWithTTS(cards[0]);
       }, 100);
       return () => clearTimeout(timer);
     } else if (cards.length > 0) {
       prevTopCardIdRef.current = cards[0].id;
     }
-  }, [cards, shouldAutoPlay, playCard]);
+  }, [cards, shouldAutoPlay, playCardWithTTS]);
 
   const swipeCard = (direction: 'left' | 'right') => {
-    // Stop any currently playing audio when swiping
-    window.speechSynthesis.cancel();
-    setPlayingCardId(null);
-    setShouldAutoPlay(true); // Enable auto-play for next card
+    stopCurrentAudio();
+    setShouldAutoPlay(true);
     
     setCards((prevCards) => {
       const newCards = [...prevCards];
       if (direction === 'right') {
-        // Move first card to end (swipe right = next card)
         const firstCard = newCards.shift();
         if (firstCard) newCards.push(firstCard);
       } else {
-        // Move last card to front (swipe left = previous card)
         const lastCard = newCards.pop();
         if (lastCard) newCards.unshift(lastCard);
       }
@@ -140,47 +155,30 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
 
   const getGradient = (idx: number) => {
     const gradients = [
-      { from: 'from-blue-500', to: 'to-blue-600', label: 'TECH NEWS', icon: '💻' },
-      { from: 'from-purple-500', to: 'to-purple-600', label: 'MARKET UPDATE', icon: '📊' },
-      { from: 'from-pink-500', to: 'to-pink-600', label: 'TRADING ALERT', icon: '📈' },
-      { from: 'from-indigo-500', to: 'to-indigo-600', label: 'FINANCE NEWS', icon: '💡' },
-      { from: 'from-cyan-500', to: 'to-cyan-600', label: 'INSIGHT', icon: '🎯' },
+      { from: 'from-blue-500', to: 'to-blue-600', label: 'TECH NEWS', icon: '\ud83d\udcbb' },
+      { from: 'from-purple-500', to: 'to-purple-600', label: 'MARKET UPDATE', icon: '\ud83d\udcca' },
+      { from: 'from-pink-500', to: 'to-pink-600', label: 'TRADING ALERT', icon: '\ud83d\udcc8' },
+      { from: 'from-indigo-500', to: 'to-indigo-600', label: 'FINANCE NEWS', icon: '\ud83d\udca1' },
+      { from: 'from-cyan-500', to: 'to-cyan-600', label: 'INSIGHT', icon: '\ud83c\udfaf' },
     ];
     return gradients[idx % gradients.length];
   };
 
-  const removeEmojis = (text: string): string => {
-    return text.replace(/[\u{1F600}-\u{1F64F}]|[\u{1F300}-\u{1F5FF}]|[\u{1F680}-\u{1F6FF}]|[\u{1F1E0}-\u{1F1FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]|[\u{1F900}-\u{1F9FF}]|[\u{1F018}-\u{1F270}]|[\u{238C}-\u{2454}]|[\u{20D0}-\u{20FF}]/gu, '');
-  };
-
   const handleReadNow = (card: CardWithColor, e: React.MouseEvent) => {
     e.stopPropagation();
-    setShouldAutoPlay(false); // Disable auto-play for manual interactions
+    setShouldAutoPlay(false);
     
-    if (playingCardId === card.id) {
-      window.speechSynthesis.cancel();
-      setPlayingCardId(null);
+    if (playingCardId === card.id || loadingCardId === card.id) {
+      stopCurrentAudio();
       return;
     }
 
     if (!card.text || card.text.trim().length === 0) {
-      toast({
-        description: "No content to read",
-        variant: "destructive"
-      });
+      toast({ description: "No content to read", variant: "destructive" });
       return;
     }
 
-    try {
-      playCard(card);
-    } catch (error) {
-      console.error('Error playing audio:', error);
-      setPlayingCardId(null);
-      toast({
-        description: "Audio playback not supported in this browser",
-        variant: "destructive"
-      });
-    }
+    playCardWithTTS(card);
   };
 
   if (cards.length === 0) return null;
@@ -447,13 +445,21 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
                   className={`bg-white px-2 py-1 rounded-full text-[10px] font-medium shadow-lg transition-colors ${
                     playingCardId === card.id
                       ? 'text-blue-600 hover:bg-gray-100'
+                      : loadingCardId === card.id
+                      ? 'text-gray-400'
                       : 'text-gray-800 hover:bg-gray-100'
                   }`}
                   onClick={(e) => handleReadNow(card, e)}
+                  disabled={loadingCardId !== null && loadingCardId !== card.id}
                   data-testid={`button-read-now-card-${card.id}`}
                 >
                   <div className="flex items-center gap-1">
-                    {playingCardId === card.id ? (
+                    {loadingCardId === card.id ? (
+                      <>
+                        <Loader2 className="w-2 h-2 animate-spin" />
+                        <span>Loading...</span>
+                      </>
+                    ) : playingCardId === card.id ? (
                       <>
                         <Pause className="w-2 h-2 fill-current" />
                         <span>Stop</span>

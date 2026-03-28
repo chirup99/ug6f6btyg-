@@ -167,10 +167,10 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   // Track the last known voiceLanguage so we can detect changes
   const lastVoiceLanguageRef = useRef(localStorage.getItem('voiceLanguage') || 'en');
 
-  // Pre-generate audio for post cards — top card is immediate, rest are staggered
-  // so the first card is always ready to play without waiting for others.
-  // isPreloading is set while the top card's audio is being prepared so the
-  // play button can show a "Preparing…" hint instead of a blank "Play Now".
+  // Unified effect: preload top card audio, show "Preparing..." while fetching,
+  // and auto-play the new top card after a swipe (pendingAutoPlayRef is set in swipeCard).
+  // Remaining cards are staggered so the server is not overloaded.
+  // Single [cards] effect avoids duplicate TTS fetches that raced each other.
   useEffect(() => {
     if (cards.length === 0) return;
     const cancelled = { value: false };
@@ -179,14 +179,28 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
 
     if (postCards.length > 0) {
       const topCard = postCards[0];
+      const pendingCard = pendingAutoPlayRef.current;
+      const shouldAutoPlay = pendingCard !== null && pendingCard.id === topCard.id;
+      if (shouldAutoPlay) pendingAutoPlayRef.current = null;
+
       const cacheKey = `${topCard.id}::${localStorage.getItem('voiceLanguage') || 'en'}::${localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural'}`;
       const alreadyCached = audioCacheRef.current.has(cacheKey);
-      if (!alreadyCached) {
-        setIsPreloading(true);
-        fetchAndCacheTTS(topCard, cancelled).then(() => {
-          if (!cancelled.value) setIsPreloading(false);
-        });
-      }
+      if (!alreadyCached) setIsPreloading(true);
+
+      (async () => {
+        const audioUrl = await fetchAndCacheTTS(topCard, cancelled);
+        if (cancelled.value) return;
+        setIsPreloading(false);
+
+        if (shouldAutoPlay && audioUrl) {
+          if (currentAudioRef.current) currentAudioRef.current.pause();
+          const audio = new Audio(audioUrl);
+          currentAudioRef.current = audio;
+          audio.onended = () => setIsPlaying(false);
+          audio.onerror = () => setIsPlaying(false);
+          try { await audio.play(); setIsPlaying(true); } catch { setIsPlaying(false); }
+        }
+      })();
     }
 
     // Remaining cards: stagger by 1.5s each to avoid server overload
@@ -198,29 +212,23 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     return () => { cancelled.value = true; timers.forEach(clearTimeout); setIsPreloading(false); };
   }, [cards]);
 
-  // When the user changes voice language (stored in localStorage), revoke stale blob
-  // URLs and pre-generate fresh audio in the new language for all current cards.
-  // Uses a custom 'perala-voice-lang-change' event dispatched by the home page when the
-  // language selector changes — more reliable than 'storage' events (same-tab changes
-  // do NOT fire 'storage' in the same window in all browsers).
+  // When the user changes voice language, revoke stale blob URLs and re-preload.
+  // Uses 'perala-voice-lang-change' custom event dispatched by home.tsx on language change.
   useEffect(() => {
     const handleLangChange = () => {
       const newLang = localStorage.getItem('voiceLanguage') || 'en';
       if (newLang === lastVoiceLanguageRef.current) return;
       lastVoiceLanguageRef.current = newLang;
 
-      // Stop any playing audio first
       if (currentAudioRef.current) {
         currentAudioRef.current.pause();
         currentAudioRef.current = null;
       }
       setIsPlaying(false);
 
-      // Revoke all existing blob URLs to free memory (old language entries)
       audioCacheRef.current.forEach(url => URL.revokeObjectURL(url));
       audioCacheRef.current.clear();
 
-      // Pre-generate audio for all cards in new language
       const cancelled = { value: false };
       const postCards = cards.filter(c => c.type === 'post');
       if (postCards.length > 0) {
@@ -233,40 +241,12 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     };
 
     window.addEventListener('perala-voice-lang-change', handleLangChange);
-    // Also handle cross-tab changes
     window.addEventListener('storage', (e) => {
       if (e.key === 'voiceLanguage') handleLangChange();
     });
     return () => {
       window.removeEventListener('perala-voice-lang-change', handleLangChange);
     };
-  }, [cards]);
-
-  // Auto-play the card queued by swipeCard once the cards state has updated (uses TTS API)
-  useEffect(() => {
-    const cardToPlay = pendingAutoPlayRef.current;
-    if (!cardToPlay || cardToPlay.type !== 'post') return;
-    pendingAutoPlayRef.current = null;
-
-    const cancelled = { value: false };
-    (async () => {
-      try {
-        const audioUrl = await fetchAndCacheTTS(cardToPlay, cancelled);
-        if (cancelled.value || !audioUrl) return;
-
-        if (currentAudioRef.current) currentAudioRef.current.pause();
-        const audio = new Audio(audioUrl);
-        currentAudioRef.current = audio;
-        audio.onended = () => { setIsPlaying(false); };
-        audio.onerror = () => { setIsPlaying(false); };
-        audio.play();
-        setIsPlaying(true);
-      } catch {
-        if (!cancelled.value) setIsPlaying(false);
-      }
-    })();
-
-    return () => { cancelled.value = true; };
   }, [cards]);
 
   const formatTimeAgo = (date: Date) => {

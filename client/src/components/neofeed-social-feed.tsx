@@ -1531,8 +1531,6 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
 
   const handleSearchCancel = () => {
     setIsSearchOpen(false);
-    setSearchQuery('');
-    onSearch();
   };
 
   return (
@@ -1555,7 +1553,7 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
               <Input
                 ref={searchInputRef}
                 autoFocus
-                placeholder="Search posts, people, #tags, $stocks…"
+                placeholder="Search stocks"
                 value={searchQuery}
                 onChange={handleInputChange}
                 onKeyDown={(e) => { if (e.key === 'Escape') handleSearchCancel(); }}
@@ -1595,9 +1593,9 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4 pointer-events-none" />
                 <Input
                   readOnly
-                  placeholder="Search posts, people, #tags, $stocks…"
+                  placeholder="Search stocks"
                   value={searchQuery}
-                  className="pl-10 pr-4 py-2 bg-muted/60 border-transparent cursor-pointer rounded-full text-gray-500 dark:text-gray-400 placeholder:text-gray-500 dark:placeholder:text-gray-400"
+                  className="pl-10 pr-4 py-2 bg-muted/60 border-transparent cursor-pointer rounded-full text-sm text-foreground placeholder:text-gray-500 dark:placeholder:text-gray-400"
                   data-testid="input-neo-feed-search"
                 />
               </div>
@@ -1642,10 +1640,8 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
           <div className="flex overflow-x-auto border-b border-border -mb-[1px] no-scrollbar">
             {[
               { id: 'All', label: 'All' },
-              { id: 'Bullish', label: '📈 Bullish' },
-              { id: 'Bearish', label: '📉 Bearish' },
-              { id: 'P&L', label: '💰 P&L' },
-              { id: 'Tradebook', label: '📋 Tradebook' },
+              { id: 'Bullish', label: 'Bullish' },
+              { id: 'Bearish', label: 'Bearish' },
               { id: 'Profile', label: 'Profile' },
             ].map(({ id: filter, label }, index) => (
               <button

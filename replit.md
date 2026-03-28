@@ -55,7 +55,13 @@ Key secrets managed via Replit environment:
 - `GOOGLE_GENERATIVE_AI_API_KEY`, `OPENAI_API_KEY`
 
 ## Deployment
-- **Target**: Autoscale
-- **Build command**: `npm run build`
-- **Run command**: `node ./dist/index.js`
-- Port 5000 mapped to external port 80
+- **Target**: AWS Elastic Beanstalk (primary production)
+  - Application: `TradingMaster`
+  - Environment: `perala-prod`
+  - Region: `ap-south-1`
+  - URL: `perala-prod.eba-uhnreree.ap-south-1.elasticbeanstalk.com`
+  - Deploy script: `bash scripts/deploy-perala-eb.sh`
+  - S3 bucket: `elasticbeanstalk-ap-south-1-323726447850`
+- **Replit autoscale** (secondary): `npm run build` → `node ./dist/index.js`
+- **Procfile**: `web: npm start` (runs `node dist/index.js` in production)
+- Port defaults to `PORT` env var or 8080 in production

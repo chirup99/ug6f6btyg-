@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Radio, Play, Heart, MessageCircle, Share, MoreVertical, Trash2 } from 'lucide-react';
+import { Radio, Play, Pause, Heart, MessageCircle, Share, MoreVertical, Trash2, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -58,6 +58,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   isOwner = false
 }: AudioMinicastCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
   const [localLiked, setLocalLiked] = useState(isLiked);
   const [likeCount, setLikeCount] = useState(likes);
   const [isLiking, setIsLiking] = useState(false);
@@ -165,15 +166,24 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   // Track the last known voiceLanguage so we can detect changes
   const lastVoiceLanguageRef = useRef(localStorage.getItem('voiceLanguage') || 'en');
 
-  // Pre-generate audio for all post cards in the background so playback is instant
+  // Pre-generate audio for post cards — top card is immediate, rest are staggered
+  // so the first card is always ready to play without waiting for others
   useEffect(() => {
     if (cards.length === 0) return;
     const cancelled = { value: false };
     const postCards = cards.filter(c => c.type === 'post');
-    postCards.forEach(card => {
-      fetchAndCacheTTS(card, cancelled);
+    const timers: ReturnType<typeof setTimeout>[] = [];
+    // First card: pre-cache immediately (highest priority)
+    if (postCards.length > 0) {
+      fetchAndCacheTTS(postCards[0], cancelled);
+    }
+    // Remaining cards: stagger by 1.5s each to avoid server overload
+    postCards.slice(1).forEach((card, i) => {
+      timers.push(setTimeout(() => {
+        if (!cancelled.value) fetchAndCacheTTS(card, cancelled);
+      }, (i + 1) * 1500));
     });
-    return () => { cancelled.value = true; };
+    return () => { cancelled.value = true; timers.forEach(clearTimeout); };
   }, [cards]);
 
   // When the user changes voice language (stored in localStorage), revoke stale blob
@@ -259,6 +269,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
     }
     window.speechSynthesis.cancel();
     setIsPlaying(false);
+    setIsLoadingAudio(false);
   }, []);
 
   // Stop audio when the browser tab becomes hidden
@@ -414,8 +425,10 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
       const currentCard = cards[0];
       if (currentCard && currentCard.type === 'post') {
         try {
+          setIsLoadingAudio(true);
           const cancelled = { value: false };
           const audioUrl = await fetchAndCacheTTS(currentCard, cancelled);
+          setIsLoadingAudio(false);
           if (!audioUrl) return;
 
           if (currentAudioRef.current) currentAudioRef.current.pause();
@@ -428,6 +441,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
         } catch (error) {
           console.error('🎤 [AudioMinicast] TTS playback failed:', error);
           setIsPlaying(false);
+          setIsLoadingAudio(false);
         }
       }
     }
@@ -809,18 +823,25 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
 
                       {/* Bottom - Play button */}
                       <button
-                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-2.5 py-1 rounded-full text-[8px] font-medium transition-all"
+                        className="bg-white/20 hover:bg-white/30 backdrop-blur-sm border border-white/30 text-white px-2.5 py-1 rounded-full text-[8px] font-medium transition-all disabled:opacity-60"
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (isTop) {
+                          if (isTop && !isLoadingAudio) {
                             togglePlay();
                           }
                         }}
+                        disabled={isTop && isLoadingAudio}
                         data-testid="button-play-audio-card"
                       >
                         <div className="flex items-center gap-0.5">
-                          <Play className="w-1.5 h-1.5 fill-white" />
-                          <span>{isPlaying ? 'Playing' : 'Play Now'}</span>
+                          {isTop && isLoadingAudio ? (
+                            <Loader2 className="w-1.5 h-1.5 animate-spin" />
+                          ) : isTop && isPlaying ? (
+                            <Pause className="w-1.5 h-1.5 fill-white" />
+                          ) : (
+                            <Play className="w-1.5 h-1.5 fill-white" />
+                          )}
+                          <span>{isTop && isLoadingAudio ? 'Loading...' : isTop && isPlaying ? 'Pause' : 'Play Now'}</span>
                         </div>
                       </button>
                     </div>

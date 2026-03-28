@@ -2463,9 +2463,9 @@ export default function Home() {
     setVoiceLangLoading(true);
     setVoiceLangProgress(0);
     const startTime = Date.now();
-    const DURATION = 4000;
+    const DURATION = 600;
 
-    // Animate the progress bar over 4 seconds
+    // Animate the progress bar quickly (600ms)
     const tick = () => {
       const elapsed = Date.now() - startTime;
       const pct = Math.min((elapsed / DURATION) * 100, 99);
@@ -2475,12 +2475,60 @@ export default function Home() {
     requestAnimationFrame(tick);
 
     // Trigger swipe card audio preloading in the selected language in background
-    // (fire-and-forget — preloading runs in parallel with the 4-second animation)
+    // (fire-and-forget — no blocking wait)
     if ((window as any)._preloadSwipeCardsForLang) {
       (window as any)._preloadSwipeCardsForLang(lang);
     }
 
-    // Wait the full 4 seconds so the UI animation completes smoothly
+    // Pre-warm greeting audio for all voice profiles in the new language (fire-and-forget)
+    const greetingsByLang: { [key: string]: (p: string) => string } = {
+      en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
+      hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
+      bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
+      ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
+      te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
+      mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
+      gu: (p) => `નમસ્તે! હું ${p} છું. પేరలામাં तमारू સ્વাگت છे!`,
+      kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+      ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
+    };
+    const profilesByLang: { [key: string]: Array<{id: string, name: string}> } = {
+      en: [{ id: 'en-IN-PrabhatNeural', name: 'Prabhat' }, { id: 'en-IN-NeerjaNeural', name: 'Neerja' }],
+      hi: [{ id: 'hi-IN-MadhurNeural', name: 'Madhur' }, { id: 'hi-IN-SwaraNeural', name: 'Swara' }],
+      bn: [{ id: 'bn-IN-BashkarNeural', name: 'Bashkar' }, { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa' }],
+      ta: [{ id: 'ta-IN-ValluvarNeural', name: 'Valluvar' }, { id: 'ta-IN-PallaviNeural', name: 'Pallavi' }],
+      te: [{ id: 'te-IN-MohanNeural', name: 'Mohan' }, { id: 'te-IN-ShrutiNeural', name: 'Shruti' }],
+      mr: [{ id: 'mr-IN-ManoharNeural', name: 'Manohar' }, { id: 'mr-IN-AarohiNeural', name: 'Aarohi' }],
+      gu: [{ id: 'gu-IN-NiranjanNeural', name: 'Niranjan' }, { id: 'gu-IN-DhwaniNeural', name: 'Dhwani' }],
+      kn: [{ id: 'kn-IN-GaganNeural', name: 'Gagan' }, { id: 'kn-IN-SapnaNeural', name: 'Sapna' }],
+      ml: [{ id: 'ml-IN-MidhunNeural', name: 'Midhun' }, { id: 'ml-IN-SobhanaNeural', name: 'Sobhana' }],
+    };
+    const getGreeting = greetingsByLang[lang] || greetingsByLang['en'];
+    const profiles = profilesByLang[lang] || profilesByLang['en'];
+    profiles.forEach((profile) => {
+      const cacheKey = `${profile.id}_${lang}`;
+      setVoiceAudioCache(prev => {
+        if (prev[cacheKey]) return prev; // already cached
+        const text = getGreeting(profile.name);
+        fetch('/api/tts/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, language: lang, speaker: profile.id, speed: 1.0, pitch: 1.0 }),
+        }).then(r => r.ok ? r.json() : null).then(data => {
+          if (data?.audioBase64) {
+            const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+            const binary = atob(base64Data);
+            const bytes = new Uint8Array(binary.length);
+            for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+            const audioUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+            setVoiceAudioCache(prev2 => ({ ...prev2, [cacheKey]: audioUrl }));
+          }
+        }).catch(() => {});
+        return prev;
+      });
+    });
+
+    // Short wait just for the UI animation to look smooth
     await new Promise(r => setTimeout(r, DURATION));
     setVoiceLangProgress(100);
     setVoiceLangLoading(false);

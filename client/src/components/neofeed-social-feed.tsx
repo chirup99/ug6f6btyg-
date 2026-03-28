@@ -1144,26 +1144,382 @@ function PriceChartSection({ ticker, analysisData }: { ticker: string; analysisD
   );
 }
 
-function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, searchQuery, setSearchQuery, onSearch, showAppBar, onBackClick }: { onAllClick: () => void; isRefreshing: boolean; selectedFilter: string; onFilterChange: (filter: string) => void; searchQuery: string; setSearchQuery: (query: string) => void; onSearch: () => void; showAppBar: boolean; onBackClick?: () => void }) {
+// ─── SearchOverlay ──────────────────────────────────────────────────────────
+type SearchCategory = 'all' | 'people' | 'posts' | 'tags' | 'stocks' | 'bullish' | 'bearish' | 'pnl' | 'tradebook';
+
+function SearchOverlay({
+  query,
+  posts,
+  onClose,
+  onViewProfile,
+}: {
+  query: string;
+  posts: FeedPost[];
+  onClose: () => void;
+  onViewProfile: (username: string) => void;
+}) {
+  const [category, setCategory] = useState<SearchCategory>('all');
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try { return JSON.parse(localStorage.getItem('nf_recent_searches') || '[]'); } catch { return []; }
+  });
+
+  const [userResults, setUserResults] = useState<{ username: string; displayName: string; avatar: string | null }[]>([]);
+  const [userLoading, setUserLoading] = useState(false);
+
+  useEffect(() => {
+    if (!query.trim() || (category !== 'all' && category !== 'people')) { setUserResults([]); return; }
+    const t = setTimeout(async () => {
+      setUserLoading(true);
+      try {
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(query.trim())}&limit=8`);
+        if (res.ok) { const d = await res.json(); setUserResults(d.users || d || []); }
+      } catch { setUserResults([]); }
+      finally { setUserLoading(false); }
+    }, 200);
+    return () => clearTimeout(t);
+  }, [query, category]);
+
+  const saveSearch = (q: string) => {
+    if (!q.trim()) return;
+    const next = [q, ...recentSearches.filter(r => r !== q)].slice(0, 8);
+    setRecentSearches(next);
+    localStorage.setItem('nf_recent_searches', JSON.stringify(next));
+  };
+  const removeRecent = (q: string) => {
+    const next = recentSearches.filter(r => r !== q);
+    setRecentSearches(next);
+    localStorage.setItem('nf_recent_searches', JSON.stringify(next));
+  };
+
+  const now = Date.now();
+  const q = query.toLowerCase().trim();
+
+  const filteredPosts = posts.filter(p => {
+    if (category === 'tradebook') {
+      const isRange = p.metadata?.type === 'range_report';
+      if (!isRange) return false;
+      const age = now - new Date(p.createdAt as string).getTime();
+      return age < 24 * 60 * 60 * 1000;
+    }
+    if (category === 'bullish') return p.sentiment === 'bullish';
+    if (category === 'bearish') return p.sentiment === 'bearish';
+    if (category === 'pnl') return p.metadata?.type === 'trade_insight' || p.tags?.some(t => t.toLowerCase().includes('pnl') || t.toLowerCase().includes('p&l'));
+    if (category === 'stocks') return !q ? (p.stockMentions && p.stockMentions.length > 0) : p.stockMentions?.some(s => s.toLowerCase().includes(q)) || p.ticker?.toLowerCase().includes(q);
+    if (category === 'tags') return !q ? (p.tags && p.tags.length > 0) : p.tags?.some(t => t.toLowerCase().includes(q));
+    if (category === 'people') return false;
+    if (!q) return true;
+    return (
+      p.content?.toLowerCase().includes(q) ||
+      p.user?.username?.toLowerCase().includes(q) ||
+      p.user?.handle?.toLowerCase().includes(q) ||
+      p.authorUsername?.toLowerCase().includes(q) ||
+      p.ticker?.toLowerCase().includes(q) ||
+      p.stockMentions?.some(s => s.toLowerCase().includes(q)) ||
+      p.tags?.some(t => t.toLowerCase().includes(q))
+    );
+  }).slice(0, 30);
+
+  const allHashtags = useMemo(() => {
+    const tagMap: Record<string, number> = {};
+    posts.forEach(p => p.tags?.forEach(t => { const k = t.toLowerCase(); tagMap[k] = (tagMap[k] || 0) + 1; }));
+    return Object.entries(tagMap).sort((a, b) => b[1] - a[1]).map(([tag, count]) => ({ tag, count }));
+  }, [posts]);
+
+  const filteredTags = (category === 'all' || category === 'tags')
+    ? (q ? allHashtags.filter(h => h.tag.includes(q)) : allHashtags).slice(0, 8)
+    : [];
+
+  const allStocks = useMemo(() => {
+    const sm: Record<string, number> = {};
+    posts.forEach(p => p.stockMentions?.forEach(s => { const k = s.toUpperCase(); sm[k] = (sm[k] || 0) + 1; }));
+    return Object.entries(sm).sort((a, b) => b[1] - a[1]).map(([stock, count]) => ({ stock, count }));
+  }, [posts]);
+
+  const filteredStocks = (category === 'all' || category === 'stocks')
+    ? (q ? allStocks.filter(s => s.stock.toLowerCase().includes(q)) : allStocks).slice(0, 8)
+    : [];
+
+  const getRangeCountdown = (createdAt: string | Date) => {
+    const expiry = new Date(createdAt).getTime() + 24 * 60 * 60 * 1000;
+    const msLeft = expiry - now;
+    if (msLeft <= 0) return { expired: true, hoursLeft: 0, label: 'Expired' };
+    const h = Math.floor(msLeft / (60 * 60 * 1000));
+    const m = Math.floor((msLeft % (60 * 60 * 1000)) / 60000);
+    return { expired: false, hoursLeft: h, label: h > 0 ? `${h}h left` : `${m}m left` };
+  };
+
+  const CATS: { id: SearchCategory; label: string; emoji?: string }[] = [
+    { id: 'all', label: 'All' },
+    { id: 'people', label: 'People', emoji: '👤' },
+    { id: 'posts', label: 'Posts', emoji: '📝' },
+    { id: 'tags', label: '#Tags' },
+    { id: 'stocks', label: '$Stocks' },
+    { id: 'bullish', label: 'Bullish', emoji: '📈' },
+    { id: 'bearish', label: 'Bearish', emoji: '📉' },
+    { id: 'pnl', label: 'P&L', emoji: '💰' },
+    { id: 'tradebook', label: 'Tradebook', emoji: '📋' },
+  ];
+
+  const isEmpty = !q && filteredPosts.length === 0 && userResults.length === 0 && filteredTags.length === 0 && filteredStocks.length === 0;
+  const showRecent = !q && recentSearches.length > 0;
+
+  return (
+    <div className="fixed inset-0 z-[200] bg-background flex flex-col" data-testid="search-overlay">
+      {/* Category scroll */}
+      <div className="flex-shrink-0 border-b border-border bg-background">
+        <div className="flex gap-1 px-3 py-2 overflow-x-auto no-scrollbar">
+          {CATS.map(c => (
+            <button
+              key={c.id}
+              onClick={() => setCategory(c.id)}
+              data-testid={`search-cat-${c.id}`}
+              className={`flex-shrink-0 px-3 py-1.5 rounded-full text-xs font-medium transition-colors whitespace-nowrap ${
+                category === c.id
+                  ? 'bg-foreground text-background'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              {c.emoji ? `${c.emoji} ${c.label}` : c.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Results */}
+      <div className="flex-1 overflow-y-auto">
+        {/* Recent searches */}
+        {showRecent && (
+          <div className="px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">Recent</p>
+            <div className="flex flex-wrap gap-2">
+              {recentSearches.map(r => (
+                <div key={r} className="flex items-center gap-1 bg-muted rounded-full pl-3 pr-1 py-1">
+                  <span className="text-sm text-foreground">{r}</span>
+                  <button onClick={() => removeRecent(r)} className="text-muted-foreground hover:text-foreground ml-1 p-0.5" data-testid={`remove-recent-${r}`}><X className="w-3 h-3" /></button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tradebook section */}
+        {(category === 'tradebook' || (category === 'all' && !q)) && (() => {
+          const rangePostsAll = posts.filter(p => {
+            if (p.metadata?.type !== 'range_report') return false;
+            const age = now - new Date(p.createdAt as string).getTime();
+            return age < 24 * 60 * 60 * 1000;
+          }).slice(0, 20);
+          if (rangePostsAll.length === 0 && category === 'tradebook') {
+            return (
+              <div className="flex flex-col items-center justify-center py-12 text-center px-6">
+                <div className="w-12 h-12 rounded-full bg-muted flex items-center justify-center mb-3">
+                  <BarChart3 className="w-6 h-6 text-muted-foreground" />
+                </div>
+                <p className="text-sm font-medium text-foreground">No tradebook posts in the last 24h</p>
+                <p className="text-xs text-muted-foreground mt-1">Range posts appear here with a 24h countdown</p>
+              </div>
+            );
+          }
+          if (rangePostsAll.length === 0) return null;
+          return (
+            <div className="px-4 py-3">
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+                <BarChart3 className="w-3.5 h-3.5" /> Tradebook · Last 24h
+              </p>
+              <div className="space-y-2">
+                {rangePostsAll.map(p => {
+                  const countdown = getRangeCountdown(p.createdAt as string);
+                  const avatar = p.authorAvatar || null;
+                  const displayName = p.authorDisplayName || p.user?.username || p.authorUsername || 'Trader';
+                  const handle = p.authorUsername || p.user?.handle || '';
+                  return (
+                    <div
+                      key={p.id}
+                      className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
+                      onClick={() => { saveSearch('#tradebook'); onClose(); }}
+                      data-testid={`tradebook-post-${p.id}`}
+                    >
+                      <Avatar className="w-9 h-9 shrink-0">
+                        {avatar ? <img src={avatar} alt="" className="w-full h-full object-cover rounded-full" onError={e => { (e.target as HTMLImageElement).style.display = 'none'; }} /> : null}
+                        <AvatarFallback className="bg-gradient-to-br from-violet-600 to-indigo-700 text-white text-xs font-semibold">
+                          {displayName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-foreground truncate">{displayName}</p>
+                        <p className="text-xs text-muted-foreground truncate">@{handle}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">{p.content?.slice(0, 60) || 'Range report'}</p>
+                      </div>
+                      <div className="flex-shrink-0 text-right">
+                        <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${countdown.expired ? 'bg-red-100 dark:bg-red-900/30 text-red-500' : 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400'}`}>
+                          {countdown.label}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
+
+        {/* People results */}
+        {(category === 'all' || category === 'people') && (userLoading || userResults.length > 0) && (
+          <div className="px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              <Users className="w-3.5 h-3.5" /> People
+            </p>
+            {userLoading ? (
+              <div className="flex items-center gap-2 py-2">
+                <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">Searching…</span>
+              </div>
+            ) : (
+              <div className="space-y-1">
+                {userResults.map(u => (
+                  <div
+                    key={u.username}
+                    onClick={() => { saveSearch(u.username); onViewProfile(u.username); onClose(); }}
+                    className="flex items-center gap-3 p-2.5 rounded-xl hover:bg-muted transition-colors cursor-pointer"
+                    data-testid={`search-user-${u.username}`}
+                  >
+                    <Avatar className="w-9 h-9 shrink-0">
+                      {u.avatar ? <img src={u.avatar} alt="" className="w-full h-full object-cover rounded-full" /> : null}
+                      <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-xs font-semibold">
+                        {(u.displayName || u.username).charAt(0).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-foreground truncate">{u.displayName || u.username}</p>
+                      <p className="text-xs text-muted-foreground">@{u.username}</p>
+                    </div>
+                    <ArrowLeft className="w-4 h-4 text-muted-foreground rotate-180 flex-shrink-0" />
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Hashtags */}
+        {filteredTags.length > 0 && (
+          <div className="px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">#Trending Tags</p>
+            <div className="flex flex-wrap gap-2">
+              {filteredTags.map(({ tag, count }) => (
+                <button
+                  key={tag}
+                  onClick={() => saveSearch('#' + tag)}
+                  data-testid={`search-tag-${tag}`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
+                >
+                  <span>#{tag}</span>
+                  <span className="text-blue-400 dark:text-blue-500 text-[10px]">{count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Stocks */}
+        {filteredStocks.length > 0 && (
+          <div className="px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2">$Stocks Mentioned</p>
+            <div className="flex flex-wrap gap-2">
+              {filteredStocks.map(({ stock, count }) => (
+                <button
+                  key={stock}
+                  onClick={() => saveSearch('$' + stock)}
+                  data-testid={`search-stock-${stock}`}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
+                >
+                  <span>${stock}</span>
+                  <span className="text-emerald-400 text-[10px]">{count}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Posts */}
+        {(category !== 'people' && category !== 'tags' && category !== 'stocks') && filteredPosts.length > 0 && (
+          <div className="px-4 py-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-2 flex items-center gap-1.5">
+              {category === 'tradebook' ? <><BarChart3 className="w-3.5 h-3.5" /> Range Posts</> :
+               category === 'bullish' ? <><TrendingUp className="w-3.5 h-3.5 text-green-500" /> Bullish Posts</> :
+               category === 'bearish' ? <><TrendingDown className="w-3.5 h-3.5 text-red-500" /> Bearish Posts</> :
+               category === 'pnl' ? <><BarChart3 className="w-3.5 h-3.5 text-amber-500" /> P&amp;L Posts</> :
+               <><MessageCircle className="w-3.5 h-3.5" /> Posts</>}
+            </p>
+            <div className="space-y-2">
+              {filteredPosts.slice(0, category === 'tradebook' ? 0 : 20).map(p => {
+                if (category === 'tradebook') return null;
+                const displayName = p.authorDisplayName || p.user?.username || p.authorUsername || 'Trader';
+                const handle = p.authorUsername || p.user?.handle || '';
+                const countdown = p.metadata?.type === 'range_report' && p.createdAt ? getRangeCountdown(p.createdAt as string) : null;
+                const isBullish = p.sentiment === 'bullish';
+                const isBearish = p.sentiment === 'bearish';
+                return (
+                  <div
+                    key={p.id}
+                    onClick={() => { if (q) saveSearch(q); onClose(); }}
+                    className="p-3 rounded-xl bg-muted/40 hover:bg-muted transition-colors cursor-pointer"
+                    data-testid={`search-post-${p.id}`}
+                  >
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Avatar className="w-7 h-7 shrink-0">
+                        {p.authorAvatar ? <img src={p.authorAvatar} alt="" className="w-full h-full object-cover rounded-full" /> : null}
+                        <AvatarFallback className="bg-gradient-to-br from-slate-600 to-slate-800 text-white text-[10px] font-semibold">
+                          {displayName.charAt(0).toUpperCase()}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-semibold text-foreground truncate">{displayName}</span>
+                      <span className="text-xs text-muted-foreground">@{handle}</span>
+                      {isBullish && <span className="ml-auto text-[10px] bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 px-1.5 py-0.5 rounded-full font-medium">📈 Bullish</span>}
+                      {isBearish && <span className="ml-auto text-[10px] bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 px-1.5 py-0.5 rounded-full font-medium">📉 Bearish</span>}
+                      {countdown && !countdown.expired && <span className="ml-auto text-[10px] bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 px-1.5 py-0.5 rounded-full font-medium">{countdown.label}</span>}
+                    </div>
+                    <p className="text-xs text-foreground line-clamp-2">{p.content?.slice(0, 120)}</p>
+                    {(p.stockMentions?.length || p.tags?.length) ? (
+                      <div className="flex flex-wrap gap-1 mt-1.5">
+                        {p.stockMentions?.slice(0, 3).map(s => <span key={s} className="text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">${s}</span>)}
+                        {p.tags?.slice(0, 3).map(t => <span key={t} className="text-[10px] text-blue-500 dark:text-blue-400">#{t}</span>)}
+                      </div>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Empty state */}
+        {q && filteredPosts.length === 0 && userResults.length === 0 && filteredTags.length === 0 && filteredStocks.length === 0 && !userLoading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center px-6">
+            <div className="w-14 h-14 rounded-full bg-muted flex items-center justify-center mb-4">
+              <Search className="w-6 h-6 text-muted-foreground" />
+            </div>
+            <p className="text-base font-semibold text-foreground">No results for "{query}"</p>
+            <p className="text-sm text-muted-foreground mt-1">Try searching for a stock, hashtag, or username</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, searchQuery, setSearchQuery, onSearch, showAppBar, onBackClick, posts, onViewProfile }: { onAllClick: () => void; isRefreshing: boolean; selectedFilter: string; onFilterChange: (filter: string) => void; searchQuery: string; setSearchQuery: (query: string) => void; onSearch: () => void; showAppBar: boolean; onBackClick?: () => void; posts?: FeedPost[]; onViewProfile?: (username: string) => void }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [chatQuery, setChatQuery] = useState('');
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
-    setSearchQuery(value);
-    
-    // Only open AI chat if user clicks "Ask AI" button, not while typing
-    // This allows search filtering to work properly
+    setSearchQuery(e.target.value);
   };
 
   const handleSearch = () => {
-    if (searchQuery.trim()) {
-      // If search query exists, trigger feed search
-      onSearch();
-    } else {
-      // If empty, clear search
-      onSearch();
-    }
+    onSearch();
   };
 
   const handleAskAI = () => {
@@ -1173,8 +1529,49 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
     }
   };
 
+  const handleSearchCancel = () => {
+    setIsSearchOpen(false);
+    setSearchQuery('');
+    onSearch();
+  };
+
   return (
     <>
+      {/* Full-screen search overlay */}
+      {isSearchOpen && posts && (
+        <div className="fixed inset-0 z-[200] bg-background flex flex-col">
+          {/* Search bar row */}
+          <div className="flex-shrink-0 flex items-center gap-2 px-3 py-2 border-b border-border bg-background">
+            <div className="relative flex-1">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <Input
+                ref={searchInputRef}
+                autoFocus
+                placeholder="Search posts, people, #tags, $stocks…"
+                value={searchQuery}
+                onChange={handleInputChange}
+                onKeyDown={(e) => { if (e.key === 'Escape') handleSearchCancel(); }}
+                className="pl-9 pr-4 h-10 bg-muted border-transparent focus:border-blue-500 focus:ring-blue-500 rounded-full text-sm"
+                data-testid="input-search-overlay"
+              />
+            </div>
+            <button
+              onClick={handleSearchCancel}
+              className="flex-shrink-0 text-sm font-medium text-blue-500 hover:text-blue-600 px-1"
+              data-testid="button-search-cancel"
+            >
+              Cancel
+            </button>
+          </div>
+          <SearchOverlay
+            query={searchQuery}
+            posts={posts}
+            onClose={handleSearchCancel}
+            onViewProfile={(username) => { onViewProfile?.(username); handleSearchCancel(); }}
+          />
+        </div>
+      )}
+
       <div id="neofeed-sticky-header" className="bg-background border-b border-border sticky top-0 z-50">
         
         <div className="max-w-7xl mx-auto px-4 pt-3 pb-0">
@@ -1183,14 +1580,13 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
             showAppBar ? 'max-h-16 opacity-100 mb-3' : 'max-h-0 opacity-0 mb-0'
           }`}>
             <div className="flex items-center gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4" />
+              <div className="relative flex-1" onClick={() => setIsSearchOpen(true)}>
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-500 dark:text-gray-400 h-4 w-4 pointer-events-none" />
                 <Input
-                  placeholder="Search stocks"
+                  readOnly
+                  placeholder="Search posts, people, #tags, $stocks…"
                   value={searchQuery}
-                  onChange={handleInputChange}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
-                  className="pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white placeholder:text-gray-500 dark:placeholder:text-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                  className="pl-10 pr-4 py-2 bg-muted/60 border-transparent cursor-pointer rounded-full text-gray-500 dark:text-gray-400 placeholder:text-gray-500 dark:placeholder:text-gray-400"
                   data-testid="input-neo-feed-search"
                 />
               </div>
@@ -1232,8 +1628,15 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
 
         {/* Filter Tabs */}
         <div className="flex items-center justify-between gap-2">
-          <div className="flex overflow-x-auto border-b border-border -mb-[1px]">
-            {['All', 'Bullish', 'Bearish', 'Profile'].map((filter, index) => (
+          <div className="flex overflow-x-auto border-b border-border -mb-[1px] no-scrollbar">
+            {[
+              { id: 'All', label: 'All' },
+              { id: 'Bullish', label: '📈 Bullish' },
+              { id: 'Bearish', label: '📉 Bearish' },
+              { id: 'P&L', label: '💰 P&L' },
+              { id: 'Tradebook', label: '📋 Tradebook' },
+              { id: 'Profile', label: 'Profile' },
+            ].map(({ id: filter, label }, index) => (
               <button
                 key={filter}
                 onClick={filter === 'All' ? onAllClick : () => onFilterChange(filter)}
@@ -1243,12 +1646,13 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
                 }`}
+                data-testid={`filter-tab-${filter.toLowerCase()}`}
               >
                 <div className="flex items-center gap-2">
                   {index === 0 && isRefreshing && (
                     <div className="w-3.5 h-3.5 border-2 border-current border-t-transparent rounded-full animate-spin"></div>
                   )}
-                  {filter}
+                  {label}
                 </div>
                 {selectedFilter === filter && (
                   <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500 rounded-t-full"></div>
@@ -6822,6 +7226,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
 
   // Apply filter tabs to search results - using real username from DynamoDB state
   // Use case-insensitive matching for Profile filter to handle username case variations
+  const nowMs = Date.now();
   let filteredData: FeedPost[] = selectedFilter === 'All' 
     ? searchFilteredData
     : selectedFilter === 'Symbol' 
@@ -6830,6 +7235,14 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
     ? searchFilteredData.filter(post => post.sentiment === 'bullish')
     : selectedFilter === 'Bearish'
     ? searchFilteredData.filter(post => post.sentiment === 'bearish')
+    : selectedFilter === 'P&L'
+    ? searchFilteredData.filter(post => post.metadata?.type === 'trade_insight' || post.tags?.some(t => t.toLowerCase().includes('pnl') || t.toLowerCase().includes('p&l')))
+    : selectedFilter === 'Tradebook'
+    ? searchFilteredData.filter(post => {
+        if (post.metadata?.type !== 'range_report') return false;
+        const age = nowMs - new Date(post.createdAt as string).getTime();
+        return age < 24 * 60 * 60 * 1000;
+      })
     : selectedFilter === 'Profile'
     ? (() => {
         const profilePosts = searchFilteredData.filter(post => 
@@ -6893,7 +7306,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   if (isLoading && posts.length === 0) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <FeedHeader onAllClick={handleAllClick} isRefreshing={isFetching} selectedFilter={selectedFilter} onFilterChange={handleFilterChange} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} showAppBar={showAppBar} onBackClick={onBackClick} />
+        <FeedHeader onAllClick={handleAllClick} isRefreshing={isFetching} selectedFilter={selectedFilter} onFilterChange={handleFilterChange} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} showAppBar={showAppBar} onBackClick={onBackClick} posts={allFeedData} onViewProfile={setViewingUserProfile} />
         <div className="max-w-3xl mx-auto px-3 py-3">
           <div className="space-y-4">
             {[...Array(8)].map((_, i) => (
@@ -6928,7 +7341,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
   if (error) {
     return (
       <div className="min-h-screen bg-background text-foreground">
-        <FeedHeader onAllClick={handleAllClick} isRefreshing={isFetching} selectedFilter={selectedFilter} onFilterChange={handleFilterChange} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} showAppBar={showAppBar} onBackClick={onBackClick} />
+        <FeedHeader onAllClick={handleAllClick} isRefreshing={isFetching} selectedFilter={selectedFilter} onFilterChange={handleFilterChange} searchQuery={searchQuery} setSearchQuery={setSearchQuery} onSearch={handleSearch} showAppBar={showAppBar} onBackClick={onBackClick} posts={allFeedData} onViewProfile={setViewingUserProfile} />
         <div className="max-w-3xl mx-auto px-3 py-3">
           <Card className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 shadow-sm">
             <CardContent className="p-4 text-center">
@@ -6982,6 +7395,8 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
         onSearch={handleSearch}
         showAppBar={showAppBar}
         onBackClick={onBackClick}
+        posts={allFeedData}
+        onViewProfile={setViewingUserProfile}
       />
       
       {/* Live Banner - Spans full width (Hidden in Profile view) */}

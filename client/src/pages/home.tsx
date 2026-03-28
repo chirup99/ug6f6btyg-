@@ -391,11 +391,11 @@ function SwipeableCardStack({
     'ml': 'ml-IN-MidhunNeural',
   };
 
-  // Build cache key — always keyed to a specific lang so every language has its own slot
+  // Build cache key — always keyed to a specific lang+speaker so every voice has its own slot
   // IMPORTANT: always prioritize localStorage over the closed-over prop to avoid stale closures
   const getCacheKey = (sector: string, lang?: string, speaker?: string) => {
     const l = lang || localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
-    const s = speaker || localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
+    const s = speaker || localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[l] || 'en-IN-NeerjaNeural';
     return `${sector}-${l}-${s}`;
   };
 
@@ -433,7 +433,7 @@ function SwipeableCardStack({
     if (!cleanText) return null;
 
     const useLang = lang || localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
-    const useSpeaker = speaker || localStorage.getItem('activeVoiceProfileId') || 'en-US-AriaNeural';
+    const useSpeaker = speaker || localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[useLang] || 'en-IN-NeerjaNeural';
 
     const response = await fetch('/api/tts/generate', {
       method: 'POST',
@@ -765,7 +765,8 @@ function SwipeableCardStack({
   React.useEffect(() => {
     if (cards.length === 0) return;
     const timers: ReturnType<typeof setTimeout>[] = [];
-    const activeLang = voiceLanguage || localStorage.getItem('voiceLanguage') || 'en';
+    // Always read localStorage first — the prop starts as 'en' default before parent syncs saved value
+    const activeLang = localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
     const activeSpeaker = localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[activeLang] || 'en-IN-NeerjaNeural';
 
     // ── Phase 1: current language, fast stagger ────────────────────────────
@@ -778,12 +779,15 @@ function SwipeableCardStack({
     });
 
     // ── Phase 2: all other languages, slow stagger (starts at 15 s) ────────
+    // Use activeSpeaker (user's profile ID) for ALL languages so cache keys match
+    // what fetchAndPlayContent generates when user switches language. The backend
+    // resolves unknown profile IDs to the language-default voice anyway.
     const otherLangs = Object.entries(ALL_LANGUAGES).filter(([lang]) => lang !== activeLang);
     let jobIndex = 0;
-    otherLangs.forEach(([lang, defaultSpeaker]) => {
+    otherLangs.forEach(([lang]) => {
       cards.forEach((card) => {
         const delay = 15000 + jobIndex * 3000;
-        timers.push(setTimeout(() => preloadForSectorAndLang(card.sector, lang, defaultSpeaker), delay));
+        timers.push(setTimeout(() => preloadForSectorAndLang(card.sector, lang, activeSpeaker), delay));
         jobIndex++;
       });
     });
@@ -791,16 +795,27 @@ function SwipeableCardStack({
     return () => timers.forEach(clearTimeout);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // When voiceLanguage changes: stop any playing audio.
-  // No cache wipe needed — all languages are pre-cached in the background.
-  // fetchAndPlayContent will find the correct cache key and play instantly.
+  // When voiceLanguage prop changes: stop audio and immediately preload all sectors
+  // in the newly selected language so the next card swipe plays without any delay.
   React.useEffect(() => {
     if (currentAudioRef.current) {
       currentAudioRef.current.pause();
       currentAudioRef.current = null;
     }
     setIsPlaying(false);
-    console.log(`[LANG CHANGE] Switched to ${voiceLanguage} — audio cache ready for instant play`);
+
+    // Preload all cards in the new language — use localStorage so we get the latest
+    // profile ID even if the closure captured an older value
+    const lang = localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
+    const speaker = localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[lang] || 'en-IN-NeerjaNeural';
+    cards.forEach((card, i) => {
+      if (i === 0) {
+        preloadForSectorAndLang(card.sector, lang, speaker);
+      } else {
+        setTimeout(() => preloadForSectorAndLang(card.sector, lang, speaker), i * 1500);
+      }
+    });
+    console.log(`[LANG CHANGE] Switched to ${lang} — preloading ${cards.length} sectors with speaker: ${speaker}`);
   }, [voiceLanguage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (

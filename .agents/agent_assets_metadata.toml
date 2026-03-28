@@ -35,4 +35,10 @@ title = "aws_latest_v2.zip — Fixed AWS Elastic Beanstalk Package"
 id = "GD8czZ5WpgdehXcp3V0oV"
 uri = "file://perala-aws-deploy.zip"
 type = "unspecified"
-title = "perala-aws-deploy.zip — AWS Elastic Beanstalk Package"
+title = "perala-aws-deploy.zip — Latest Production Deployment"
+
+[[outputs]]
+id = "J7NGb6BdnlZZ-hELHr4pK"
+uri = "file://AWS_EB_Deployment_Guide.docx"
+type = "word_document"
+title = "AWS Elastic Beanstalk Deployment Guide — Beginner Step-by-Step"

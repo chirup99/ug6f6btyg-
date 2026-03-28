@@ -1282,6 +1282,106 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
   );
 }
 
+function FollowDialogUserRow({
+  user,
+  currentUsername,
+  isSelf,
+  initialFollowing,
+  getAvatar,
+  testId,
+}: {
+  user: any;
+  currentUsername: string;
+  isSelf: boolean;
+  initialFollowing: boolean;
+  getAvatar: (username: string) => string | null;
+  testId: string;
+}) {
+  const [following, setFollowing] = useState(initialFollowing);
+  const [pending, setPending] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  const handleToggle = async () => {
+    if (!currentUsername || isSelf) return;
+    const action = following ? 'unfollow' : 'follow';
+    setPending(true);
+    try {
+      const idToken = await getCognitoToken();
+      const response = await fetch(`/api/users/${user.username}/${action}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(idToken ? { 'Authorization': `Bearer ${idToken}` } : {}),
+        },
+        body: JSON.stringify({ currentUser: currentUsername }),
+      });
+      if (!response.ok) throw new Error('Failed');
+      setFollowing(!following);
+      queryClient.invalidateQueries({ queryKey: ['profile-stats', currentUsername] });
+      queryClient.invalidateQueries({ queryKey: ['following-list', currentUsername] });
+      queryClient.invalidateQueries({ queryKey: ['followers-list', currentUsername] });
+    } catch {
+      toast({ description: `Failed to ${action}`, variant: 'destructive' });
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const avatarUrl = user.avatar || getAvatar(user.username);
+
+  return (
+    <div
+      className="flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-gray-50 dark:hover:bg-white/5 transition-colors"
+      data-testid={testId}
+    >
+      <Avatar className="w-10 h-10 shrink-0">
+        {avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
+          <img
+            src={avatarUrl}
+            alt=""
+            className="aspect-square h-full w-full object-cover rounded-full"
+            loading="eager"
+            decoding="async"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
+          />
+        ) : (
+          <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold text-sm">
+            {(user.displayName || user.username || 'U').charAt(0).toUpperCase()}
+          </AvatarFallback>
+        )}
+      </Avatar>
+      <div className="flex-1 min-w-0">
+        <p className="font-semibold text-gray-900 dark:text-white text-sm truncate leading-tight">
+          {user.displayName || user.username}
+        </p>
+        <p className="text-xs text-gray-400 dark:text-gray-500 truncate">@{user.username}</p>
+      </div>
+      {!isSelf && currentUsername && (
+        following ? (
+          <button
+            onClick={handleToggle}
+            disabled={pending}
+            data-testid={`button-unfollow-${user.username}`}
+            className="shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold border border-gray-300 dark:border-white/20 text-gray-700 dark:text-gray-300 hover:border-red-400 hover:text-red-500 dark:hover:border-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/10 transition-colors disabled:opacity-50"
+          >
+            {pending ? '...' : 'Unfollow'}
+          </button>
+        ) : (
+          <button
+            onClick={handleToggle}
+            disabled={pending}
+            data-testid={`button-follow-${user.username}`}
+            className="shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold bg-blue-600 hover:bg-blue-700 text-white transition-colors disabled:opacity-50"
+          >
+            {pending ? '...' : 'Follow'}
+          </button>
+        )
+      )}
+    </div>
+  );
+}
+
 function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void }) {
   const [activeTab, setActiveTab] = useState('Posts');
   const [showEditProfile, setShowEditProfile] = useState(false);
@@ -2279,44 +2379,39 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
       {/* Followers Dialog */}
       <Dialog open={showFollowersDialog} onOpenChange={setShowFollowersDialog}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Users className="w-5 h-5" />
-              Followers
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 mt-4">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[80vh] overflow-y-auto rounded-2xl p-0 bg-white dark:bg-[#14142a] border border-gray-200 dark:border-white/10 shadow-2xl">
+          <div className="sticky top-0 z-10 bg-white dark:bg-[#14142a] border-b border-gray-100 dark:border-white/10 px-5 py-4 rounded-t-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-white text-base font-bold">
+                <Users className="w-5 h-5 text-blue-500" />
+                Followers
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="space-y-1 p-3">
             {followersList.followers.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>No followers yet</p>
+              <div className="text-center py-10 text-gray-400 dark:text-gray-500">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                <p className="text-sm">No followers yet</p>
               </div>
             ) : (
-              followersList.followers.map((follower: any) => (
-                <div 
-                  key={follower.id} 
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                  data-testid={`follower-${follower.id}`}
-                >
-                  <Avatar className="w-10 h-10">
-                    {(() => {
-                      const avatarUrl = follower.avatar || getAvatar(follower.username);
-                      return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
-                        <img src={avatarUrl} alt="" className="aspect-square h-full w-full object-cover rounded-full" loading="eager" decoding="async" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                      ) : (
-                        <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
-                          {(follower.displayName || follower.username || 'U').charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      );
-                    })()}
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900 dark:text-white">{follower.displayName || follower.username}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">@{follower.username}</p>
-                  </div>
-                </div>
-              ))
+              followersList.followers.map((follower: any) => {
+                const isAlreadyFollowing = followingList.following.some(
+                  (f: any) => f.username?.toLowerCase() === follower.username?.toLowerCase()
+                );
+                const isSelf = follower.username?.toLowerCase() === username?.toLowerCase();
+                return (
+                  <FollowDialogUserRow
+                    key={follower.id}
+                    user={follower}
+                    currentUsername={username}
+                    isSelf={isSelf}
+                    initialFollowing={isAlreadyFollowing}
+                    getAvatar={getAvatar}
+                    testId={`follower-${follower.id}`}
+                  />
+                );
+              })
             )}
           </div>
         </DialogContent>
@@ -2324,44 +2419,36 @@ function ProfileHeader({ onTabChange }: { onTabChange?: (tab: string) => void })
 
       {/* Following Dialog */}
       <Dialog open={showFollowingDialog} onOpenChange={setShowFollowingDialog}>
-        <DialogContent className="max-w-md max-h-[80vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <UserPlus className="w-5 h-5" />
-              Following
-            </DialogTitle>
-          </DialogHeader>
-          <div className="space-y-3 mt-4">
+        <DialogContent className="w-[calc(100vw-1.5rem)] sm:max-w-md max-h-[80vh] overflow-y-auto rounded-2xl p-0 bg-white dark:bg-[#14142a] border border-gray-200 dark:border-white/10 shadow-2xl">
+          <div className="sticky top-0 z-10 bg-white dark:bg-[#14142a] border-b border-gray-100 dark:border-white/10 px-5 py-4 rounded-t-2xl">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-gray-900 dark:text-white text-base font-bold">
+                <UserPlus className="w-5 h-5 text-blue-500" />
+                Following
+              </DialogTitle>
+            </DialogHeader>
+          </div>
+          <div className="space-y-1 p-3">
             {followingList.following.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-                <UserPlus className="w-12 h-12 mx-auto mb-2 opacity-50" />
-                <p>Not following anyone yet</p>
+              <div className="text-center py-10 text-gray-400 dark:text-gray-500">
+                <UserPlus className="w-12 h-12 mx-auto mb-3 opacity-40" />
+                <p className="text-sm">Not following anyone yet</p>
               </div>
             ) : (
-              followingList.following.map((user: any) => (
-                <div 
-                  key={user.id} 
-                  className="flex items-center gap-3 p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors cursor-pointer"
-                  data-testid={`following-${user.id}`}
-                >
-                  <Avatar className="w-10 h-10">
-                    {(() => {
-                      const avatarUrl = user.avatar || getAvatar(user.username);
-                      return avatarUrl && !avatarUrl.includes('ui-avatars.com') ? (
-                        <img src={avatarUrl} alt="" className="aspect-square h-full w-full object-cover rounded-full" loading="eager" decoding="async" onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }} />
-                      ) : (
-                        <AvatarFallback className="bg-gradient-to-br from-blue-600 to-purple-600 text-white font-bold">
-                          {(user.displayName || user.username || 'U').charAt(0).toUpperCase()}
-                        </AvatarFallback>
-                      );
-                    })()}
-                  </Avatar>
-                  <div className="flex-1">
-                    <p className="font-semibold text-gray-900 dark:text-white">{user.displayName || user.username}</p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">@{user.username}</p>
-                  </div>
-                </div>
-              ))
+              followingList.following.map((user: any) => {
+                const isSelf = user.username?.toLowerCase() === username?.toLowerCase();
+                return (
+                  <FollowDialogUserRow
+                    key={user.id}
+                    user={user}
+                    currentUsername={username}
+                    isSelf={isSelf}
+                    initialFollowing={true}
+                    getAvatar={getAvatar}
+                    testId={`following-${user.id}`}
+                  />
+                );
+              })
             )}
           </div>
         </DialogContent>

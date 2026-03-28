@@ -59,6 +59,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
 }: AudioMinicastCardProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoadingAudio, setIsLoadingAudio] = useState(false);
+  const [isPreloading, setIsPreloading] = useState(false);
   const [localLiked, setLocalLiked] = useState(isLiked);
   const [likeCount, setLikeCount] = useState(likes);
   const [isLiking, setIsLiking] = useState(false);
@@ -167,23 +168,34 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   const lastVoiceLanguageRef = useRef(localStorage.getItem('voiceLanguage') || 'en');
 
   // Pre-generate audio for post cards — top card is immediate, rest are staggered
-  // so the first card is always ready to play without waiting for others
+  // so the first card is always ready to play without waiting for others.
+  // isPreloading is set while the top card's audio is being prepared so the
+  // play button can show a "Preparing…" hint instead of a blank "Play Now".
   useEffect(() => {
     if (cards.length === 0) return;
     const cancelled = { value: false };
     const postCards = cards.filter(c => c.type === 'post');
     const timers: ReturnType<typeof setTimeout>[] = [];
-    // First card: pre-cache immediately (highest priority)
+
     if (postCards.length > 0) {
-      fetchAndCacheTTS(postCards[0], cancelled);
+      const topCard = postCards[0];
+      const cacheKey = `${topCard.id}::${localStorage.getItem('voiceLanguage') || 'en'}::${localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural'}`;
+      const alreadyCached = audioCacheRef.current.has(cacheKey);
+      if (!alreadyCached) {
+        setIsPreloading(true);
+        fetchAndCacheTTS(topCard, cancelled).then(() => {
+          if (!cancelled.value) setIsPreloading(false);
+        });
+      }
     }
+
     // Remaining cards: stagger by 1.5s each to avoid server overload
     postCards.slice(1).forEach((card, i) => {
       timers.push(setTimeout(() => {
         if (!cancelled.value) fetchAndCacheTTS(card, cancelled);
       }, (i + 1) * 1500));
     });
-    return () => { cancelled.value = true; timers.forEach(clearTimeout); };
+    return () => { cancelled.value = true; timers.forEach(clearTimeout); setIsPreloading(false); };
   }, [cards]);
 
   // When the user changes voice language (stored in localStorage), revoke stale blob
@@ -210,9 +222,14 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
 
       // Pre-generate audio for all cards in new language
       const cancelled = { value: false };
-      cards.filter(c => c.type === 'post').forEach(card => {
-        fetchAndCacheTTS(card, cancelled);
-      });
+      const postCards = cards.filter(c => c.type === 'post');
+      if (postCards.length > 0) {
+        setIsPreloading(true);
+        fetchAndCacheTTS(postCards[0], cancelled).then(() => {
+          if (!cancelled.value) setIsPreloading(false);
+        });
+        postCards.slice(1).forEach(card => fetchAndCacheTTS(card, cancelled));
+      }
     };
 
     window.addEventListener('perala-voice-lang-change', handleLangChange);
@@ -521,10 +538,10 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   };
 
   return (
-    <Card ref={cardRef} className="border-0 border-b border-gray-200 dark:border-gray-700 rounded-none overflow-hidden bg-white dark:bg-gray-900">
+    <Card ref={cardRef} className="mb-4 border border-gray-100 dark:border-zinc-800/50 rounded-xl overflow-hidden shadow-sm bg-white dark:bg-zinc-950">
       <CardContent className="p-0">
         {/* Author Header */}
-        <div className="p-4 flex items-center gap-3 bg-gray-50 dark:bg-gray-800/50">
+        <div className="p-4 flex items-center gap-3 bg-gray-50 dark:bg-zinc-900">
           {(() => {
             const avatarUrl = author.avatar;
             const isValidAvatar = avatarUrl &&
@@ -578,7 +595,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
         </div>
 
         {/* Swipeable Cards Container */}
-        <div className="bg-gray-50 dark:bg-gray-800/30 pb-6 flex items-center justify-center">
+        <div className="bg-gray-50 dark:bg-zinc-900/50 pb-6 flex items-center justify-center">
           <div className="relative w-28 h-40" style={{ perspective: '1000px' }}>
             {cards.slice(0, 5).map((card, index) => {
               const isTop = index === 0;
@@ -838,10 +855,14 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
                             <Loader2 className="w-1.5 h-1.5 animate-spin" />
                           ) : isTop && isPlaying ? (
                             <Pause className="w-1.5 h-1.5 fill-white" />
+                          ) : isTop && isPreloading ? (
+                            <Loader2 className="w-1.5 h-1.5 animate-spin opacity-70" />
                           ) : (
                             <Play className="w-1.5 h-1.5 fill-white" />
                           )}
-                          <span>{isTop && isLoadingAudio ? 'Loading...' : isTop && isPlaying ? 'Pause' : 'Play Now'}</span>
+                          <span>
+                            {isTop && isLoadingAudio ? 'Loading...' : isTop && isPlaying ? 'Pause' : isTop && isPreloading ? 'Preparing...' : 'Play Now'}
+                          </span>
                         </div>
                       </button>
                     </div>
@@ -858,7 +879,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
         </div>
 
         {/* Engagement Actions */}
-        <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-gray-700">
+        <div className="flex items-center justify-between p-4 border-t border-gray-200 dark:border-zinc-800">
           <Button
             variant="ghost"
             size="sm"

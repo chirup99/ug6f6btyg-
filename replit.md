@@ -36,9 +36,14 @@ scripts/         - Deployment and utility scripts
 ```
 
 ## Development
-- **Start**: `npm run dev` — runs Express + Vite dev server on port 5000
+- **Start**: `npm run dev` — runs Express + Vite dev server on port 5000 (uses local tsx binary)
 - **Build**: `npm run build` — builds frontend with Vite + bundles server with esbuild into `dist/`
 - **DB Sync**: `npm run db:push` — syncs Drizzle schema to PostgreSQL
+
+## Replit Setup Notes
+- Dev script uses `node_modules/.bin/tsx` (not `npx tsx`) to avoid interactive install prompts
+- Workflow: "Start application" runs `npm run dev`, listening on port 5000 (webview)
+- HMR configured for Replit dev domain via REPLIT_DEV_DOMAIN env var
 
 ## Environment Variables
 Key secrets managed via Replit environment:

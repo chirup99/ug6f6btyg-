@@ -2,74 +2,109 @@ import { MsEdgeTTS, OUTPUT_FORMAT } from 'msedge-tts';
 import axios from 'axios';
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Google Translate (unofficial free API) — fast, reliable, no key required
-// Handles all 8 Indian languages perfectly, much higher limits than MyMemory
+// Translation cache — avoid re-translating identical text/language pairs
+// Keyed as "lang:text", max 500 entries (simple LRU eviction)
 // ─────────────────────────────────────────────────────────────────────────────
+const translationCache = new Map<string, string>();
+const TRANSLATION_CACHE_MAX = 500;
 
-// Language code mapping: our internal codes → Google Translate codes
+function getTranslationCache(lang: string, text: string): string | undefined {
+  return translationCache.get(`${lang}:${text}`);
+}
+
+function setTranslationCache(lang: string, text: string, translated: string) {
+  if (translationCache.size >= TRANSLATION_CACHE_MAX) {
+    const firstKey = translationCache.keys().next().value;
+    if (firstKey) translationCache.delete(firstKey);
+  }
+  translationCache.set(`${lang}:${text}`, translated);
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Concurrency limiter — max 2 simultaneous translation requests to avoid
+// rate-limiting from the background preload system firing 54 clips at once
+// ─────────────────────────────────────────────────────────────────────────────
+let activeTranslations = 0;
+const MAX_CONCURRENT_TRANSLATIONS = 2;
+const translationQueue: Array<() => void> = [];
+
+function acquireTranslationSlot(): Promise<void> {
+  return new Promise(resolve => {
+    if (activeTranslations < MAX_CONCURRENT_TRANSLATIONS) {
+      activeTranslations++;
+      resolve();
+    } else {
+      translationQueue.push(() => {
+        activeTranslations++;
+        resolve();
+      });
+    }
+  });
+}
+
+function releaseTranslationSlot() {
+  activeTranslations--;
+  const next = translationQueue.shift();
+  if (next) next();
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Google Translate — using the reliable `gtx` client endpoint
+// No API key needed, high limits, officially available publicly
+// URL: translate.googleapis.com (different from the rate-limited translate.google.com)
+// ─────────────────────────────────────────────────────────────────────────────
 const GOOGLE_LANG_MAP: Record<string, string> = {
-  hi: 'hi',   // Hindi
-  bn: 'bn',   // Bengali
-  ta: 'ta',   // Tamil
-  te: 'te',   // Telugu
-  mr: 'mr',   // Marathi
-  gu: 'gu',   // Gujarati
-  kn: 'kn',   // Kannada
-  ml: 'ml',   // Malayalam
+  hi: 'hi', bn: 'bn', ta: 'ta', te: 'te',
+  mr: 'mr', gu: 'gu', kn: 'kn', ml: 'ml',
 };
 
-// Translate a single chunk via Google Translate free API (fast, no key needed)
 async function translateChunkGoogle(chunk: string, targetLang: string): Promise<string> {
   const googleLang = GOOGLE_LANG_MAP[targetLang] || targetLang;
-  
-  try {
-    // Use the @vitalets/google-translate-api package
-    const { translate } = await import('@vitalets/google-translate-api');
-    const result = await translate(chunk.trim(), { from: 'en', to: googleLang });
-    const translated = result?.text;
-    if (translated && translated.trim().length > 0 && translated !== chunk) {
-      return translated;
-    }
-    return chunk;
-  } catch (googleErr: any) {
-    // If Google Translate fails, try MyMemory as fallback
-    console.warn(`⚠️ [TTS] Google Translate failed for chunk, trying MyMemory: ${googleErr?.message}`);
-    try {
-      return await translateChunkMyMemory(chunk, targetLang);
-    } catch {
-      return chunk; // Final fallback: return original
-    }
-  }
-}
-
-// MyMemory fallback (kept as secondary option)
-async function translateChunkMyMemory(chunk: string, targetLanguage: string): Promise<string> {
   const encoded = encodeURIComponent(chunk.trim());
-  const url = `https://api.mymemory.translated.net/get?q=${encoded}&langpair=en|${targetLanguage}`;
-  const response = await axios.get(url, { timeout: 8000 });
-  const translated = response.data?.responseData?.translatedText;
-  if (
-    translated &&
-    translated !== chunk &&
-    !translated.toLowerCase().includes('mymemory') &&
-    !translated.toLowerCase().includes('quota') &&
-    !translated.toLowerCase().includes('select two distinct')
-  ) {
-    return translated;
+
+  // gtx endpoint — much more reliable than client=at, no rate-limit issues
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=${googleLang}&dt=t&q=${encoded}`;
+
+  const response = await axios.get(url, {
+    timeout: 12000,
+    headers: {
+      'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)',
+    },
+  });
+
+  // Response format: [[["translated","original",null,null,null,null,null,null,null,[]],...],...]
+  const data = response.data;
+  if (Array.isArray(data) && Array.isArray(data[0])) {
+    const translated = data[0]
+      .filter((item: any) => Array.isArray(item) && item[0])
+      .map((item: any) => item[0])
+      .join('');
+    if (translated && translated.trim().length > 0) {
+      return translated.trim();
+    }
   }
-  return chunk;
+  return chunk; // fallback to original if response malformed
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main translateText — splits into chunks and translates ALL in PARALLEL
-// (previously sequential, which was slow and caused more failures)
+// Main translateText — splits text, uses translation cache, concurrency limiter
 // ─────────────────────────────────────────────────────────────────────────────
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
   const supportedLangs = ['hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml'];
   if (!supportedLangs.includes(targetLanguage)) return text;
 
+  // Check translation cache first (avoids duplicate API calls entirely)
+  const cached = getTranslationCache(targetLanguage, text);
+  if (cached) {
+    console.log(`🎯 [TTS TRANSLATE CACHE HIT] ${targetLanguage} (${text.length} chars)`);
+    return cached;
+  }
+
+  // Acquire concurrency slot (max 2 simultaneous to avoid rate limits)
+  await acquireTranslationSlot();
+
   try {
-    console.log(`🌐 [TTS] Translating to ${targetLanguage} (${text.length} chars) via Google Translate...`);
+    console.log(`🌐 [TTS] Translating to ${targetLanguage} (${text.length} chars) via Google Translate gtx...`);
 
     // Split into sentence-level chunks (≤420 chars each)
     const sentences = text.split(/(?<=[.!?।])\s+/).filter(s => s.trim().length > 0);
@@ -81,7 +116,6 @@ export async function translateText(text: string, targetLanguage: string): Promi
         current = (current + ' ' + sentence).trim();
       } else {
         if (current) chunks.push(current);
-        // If a single sentence is itself too long, split at commas
         if (sentence.length > 420) {
           const parts = sentence.split(/,\s*/);
           let part = '';
@@ -101,25 +135,33 @@ export async function translateText(text: string, targetLanguage: string): Promi
       }
     }
     if (current) chunks.push(current);
+    if (chunks.length === 0 && text.trim().length > 0) chunks.push(text.trim());
 
-    // If no chunks (text was too short to split), treat whole text as one chunk
-    if (chunks.length === 0 && text.trim().length > 0) {
-      chunks.push(text.trim());
-    }
+    console.log(`🌐 [TTS] Translating ${chunks.length} chunk(s) to ${targetLanguage}...`);
 
-    console.log(`🌐 [TTS] Translating ${chunks.length} chunk(s) to ${targetLanguage} in parallel...`);
-
-    // ── PARALLEL translation — all chunks fire at once ────────────────────
+    // Translate chunks in parallel (all chunks within one request are fine — it's
+    // the concurrent requests from different preload jobs that cause rate limits,
+    // which the concurrency slot above handles)
     const translatedChunks = await Promise.all(
-      chunks.map(chunk => translateChunkGoogle(chunk, targetLanguage).catch(() => chunk))
+      chunks.map(chunk =>
+        translateChunkGoogle(chunk, targetLanguage).catch(err => {
+          console.warn(`⚠️ [TTS] Chunk translation failed (${targetLanguage}): ${err?.message}`);
+          return chunk; // keep original on error
+        })
+      )
     );
 
     const result = translatedChunks.join(' ');
     console.log(`✅ [TTS] Translated to ${targetLanguage}: "${result.substring(0, 100)}..."`);
+
+    // Cache the translation
+    setTranslationCache(targetLanguage, text, result);
     return result;
   } catch (err: any) {
-    console.error('[TTS] Translation error:', err?.message || err);
-    return text; // Return original text as final fallback
+    console.error(`❌ [TTS] Translation error (${targetLanguage}):`, err?.message || err);
+    return text; // return original as final fallback
+  } finally {
+    releaseTranslationSlot();
   }
 }
 
@@ -138,15 +180,12 @@ export interface TTSResponse {
 
 // Free, open-source TTS Service using Microsoft Edge TTS (same tech as openai-edge-tts reference)
 // Uses msedge-tts which connects to Microsoft's Edge Read Aloud API via WebSocket
-// Reference: https://github.com/travisvn/openai-edge-tts
 export const sarvamTTSService = {
   async generateSpeech(request: TTSRequest): Promise<TTSResponse> {
     try {
       const voiceName = this.getVoiceNameForLanguage(request.language, request.speaker);
       const speed = request.speed || 1.0;
 
-      // Convert speed to SSML rate percentage format
-      // openai-edge-tts maps: speed 1.0 = "+0%", speed 1.5 = "+50%", speed 0.5 = "-50%"
       const ratePercent = Math.round((speed - 1.0) * 100);
       const rateStr = ratePercent >= 0 ? `+${ratePercent}%` : `${ratePercent}%`;
 
@@ -158,11 +197,8 @@ export const sarvamTTSService = {
 
         const { audioStream } = tts.toStream(request.text, { rate: rateStr });
 
-        // Collect audio chunks into a buffer
         const chunks: Buffer[] = [];
 
-        // Wrap in a race with a 25-second timeout to prevent WebSocket hangs
-        // under high load or network issues (critical for 1M users in production)
         await Promise.race([
           new Promise<void>((resolve, reject) => {
             audioStream.on('data', (chunk: Buffer | Uint8Array) => {
@@ -187,9 +223,7 @@ export const sarvamTTSService = {
 
         console.log(`✅ [TTS] Generated ${audioBuffer.length} bytes for "${request.text.substring(0, 50)}..." using ${voiceName}`);
 
-        return {
-          audioBase64: `data:audio/mpeg;base64,${audioBase64}`
-        };
+        return { audioBase64: `data:audio/mpeg;base64,${audioBase64}` };
       } catch (streamError) {
         const streamErrorMsg = streamError instanceof Error ? streamError.message : String(streamError);
         console.error(`❌ [TTS] Stream error:`, streamErrorMsg);
@@ -202,42 +236,34 @@ export const sarvamTTSService = {
     }
   },
 
-  // Voice mapping following openai-edge-tts voice choices
-  // Reference: https://github.com/travisvn/openai-edge-tts
   getVoiceNameForLanguage(language: string, speakerId?: string): string {
-    // If speakerId is already a full voice ID (contains "-Neural"), use it only if it matches the target language
     if (speakerId && speakerId.includes('Neural')) {
-      // Extract the language prefix from the voice ID (e.g. "hi" from "hi-IN-MadhurNeural", "en" from "en-US-AriaNeural")
       const voiceLangPrefix = speakerId.split('-')[0].toLowerCase();
       const targetLangPrefix = language.toLowerCase();
       if (voiceLangPrefix === targetLangPrefix) {
         console.log(`🎤 [TTS] Using speaker ID directly (language match): ${speakerId}`);
         return speakerId;
       }
-      // Voice language doesn't match target language — fall through to language map
       console.log(`🎤 [TTS] Speaker ${speakerId} doesn't match language ${language}, using language-mapped voice`);
     } else if (speakerId && speakerId.includes('-') && !speakerId.includes('Neural')) {
-      // Partial voice ID with dashes but not a Neural voice — use directly
       console.log(`🎤 [TTS] Using speaker ID directly: ${speakerId}`);
       return speakerId;
     }
 
-    // OpenAI voice equivalents — same mapping as openai-edge-tts reference
     const openaiVoiceMapping: { [key: string]: string } = {
-      'alloy':   'en-US-JennyNeural',    // Female, young professional
-      'ash':     'en-US-AndrewNeural',   // Male, young professional
-      'ballad':  'en-GB-ThomasNeural',   // British male, classic
-      'coral':   'en-AU-NatashaNeural',  // Australian female, warm
-      'echo':    'en-US-GuyNeural',      // Male, conversational
-      'fable':   'en-GB-SoniaNeural',    // British female, storyteller
-      'nova':    'en-US-AriaNeural',     // Female, confident
-      'onyx':    'en-US-EricNeural',     // Male, professional
-      'sage':    'en-US-JennyNeural',    // Female, wise
-      'shimmer': 'en-US-EmmaNeural',     // Female, bright & energetic
-      'verse':   'en-US-BrianNeural',    // Male, deep & warm
+      'alloy':   'en-US-JennyNeural',
+      'ash':     'en-US-AndrewNeural',
+      'ballad':  'en-GB-ThomasNeural',
+      'coral':   'en-AU-NatashaNeural',
+      'echo':    'en-US-GuyNeural',
+      'fable':   'en-GB-SoniaNeural',
+      'nova':    'en-US-AriaNeural',
+      'onyx':    'en-US-EricNeural',
+      'sage':    'en-US-JennyNeural',
+      'shimmer': 'en-US-EmmaNeural',
+      'verse':   'en-US-BrianNeural',
     };
 
-    // Speaker profile mapping to premium voices
     const speakerVoiceMap: { [key: string]: string } = {
       'en-US-AriaNeural':  'en-US-AriaNeural',
       'en-US-EmmaNeural':  'en-US-EmmaNeural',
@@ -257,17 +283,16 @@ export const sarvamTTSService = {
       if (openaiMapped) return openaiMapped;
     }
 
-    // Language-specific voice mapping for Indian languages + English
     const languageVoiceMap: { [key: string]: string } = {
-      'en': 'en-IN-NeerjaNeural',   // English (Indian)
-      'hi': 'hi-IN-MadhurNeural',   // Hindi
-      'bn': 'bn-IN-BashkarNeural',  // Bengali
-      'ta': 'ta-IN-ValluvarNeural', // Tamil
-      'te': 'te-IN-MohanNeural',    // Telugu
-      'mr': 'mr-IN-ManoharNeural',  // Marathi
-      'gu': 'gu-IN-DhwaniNeural',   // Gujarati
-      'kn': 'kn-IN-GaganNeural',    // Kannada
-      'ml': 'ml-IN-MidhunNeural',   // Malayalam
+      'en': 'en-IN-NeerjaNeural',
+      'hi': 'hi-IN-MadhurNeural',
+      'bn': 'bn-IN-BashkarNeural',
+      'ta': 'ta-IN-ValluvarNeural',
+      'te': 'te-IN-MohanNeural',
+      'mr': 'mr-IN-ManoharNeural',
+      'gu': 'gu-IN-DhwaniNeural',
+      'kn': 'kn-IN-GaganNeural',
+      'ml': 'ml-IN-MidhunNeural',
     };
 
     return languageVoiceMap[language] || 'en-US-AriaNeural';

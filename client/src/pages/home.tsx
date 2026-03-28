@@ -732,7 +732,7 @@ function SwipeableCardStack({
       let jobIndex = 0;
       otherLangs.forEach(([l]) => {
         cards.forEach((card) => {
-          const delay = 8000 + jobIndex * 2000;
+          const delay = 10000 + jobIndex * 4000;
           setTimeout(() => preloadForSectorAndLang(card.sector, l, speaker), delay);
           jobIndex++;
         });
@@ -827,7 +827,7 @@ function SwipeableCardStack({
     let jobIndex = 0;
     otherLangs.forEach(([lang]) => {
       cards.forEach((card) => {
-        const delay = 15000 + jobIndex * 3000;
+        const delay = 20000 + jobIndex * 5000;
         timers.push(setTimeout(() => preloadForSectorAndLang(card.sector, lang, activeSpeaker), delay));
         jobIndex++;
       });

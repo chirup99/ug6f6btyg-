@@ -17107,139 +17107,155 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                           Login
                         </button>
 
-                        {/* Voice Profiles for Guest Users */}
-                        <div className="w-full px-2 py-4 bg-gray-800/50 border border-gray-700 rounded-lg">
-                          <div className="flex flex-col items-center gap-4">
-                            <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">Try Voice Profiles</span>
-                            <div className="flex items-center justify-start gap-4 py-2 overflow-x-auto w-full px-2" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
-                              {(() => {
-                                const voicesByLanguage: { [key: string]: any[] } = {
-                                  'en': [
-                                    { id: 'en-IN-PrabhatNeural', name: 'Prabhat', description: 'Indian English', gender: 'Male' },
-                                    { id: 'en-IN-NeerjaNeural', name: 'Neerja', description: 'Indian English', gender: 'Female' }
-                                  ],
-                                  'hi': [
-                                    { id: 'hi-IN-MadhurNeural', name: 'Madhur', description: 'Natural Hindi', gender: 'Male' },
-                                    { id: 'hi-IN-SwaraNeural', name: 'Swara', description: 'Natural Hindi', gender: 'Female' }
-                                  ],
-                                  'bn': [
-                                    { id: 'bn-IN-BashkarNeural', name: 'Bashkar', description: 'Natural Bengali', gender: 'Male' },
-                                    { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa', description: 'Natural Bengali', gender: 'Female' }
-                                  ],
-                                  'ta': [
-                                    { id: 'ta-IN-ValluvarNeural', name: 'Valluvar', description: 'Natural Tamil', gender: 'Male' },
-                                    { id: 'ta-IN-PallaviNeural', name: 'Pallavi', description: 'Natural Tamil', gender: 'Female' }
-                                  ],
-                                  'te': [
-                                    { id: 'te-IN-MohanNeural', name: 'Mohan', description: 'Natural Telugu', gender: 'Male' },
-                                    { id: 'te-IN-ShrutiNeural', name: 'Shruti', description: 'Natural Telugu', gender: 'Female' }
-                                  ],
-                                  'mr': [
-                                    { id: 'mr-IN-ManoharNeural', name: 'Manohar', description: 'Natural Marathi', gender: 'Male' },
-                                    { id: 'mr-IN-AarohiNeural', name: 'Aarohi', description: 'Natural Marathi', gender: 'Female' }
-                                  ],
-                                  'gu': [
-                                    { id: 'gu-IN-NiranjanNeural', name: 'Niranjan', description: 'Natural Gujarati', gender: 'Male' },
-                                    { id: 'gu-IN-DhwaniNeural', name: 'Dhwani', description: 'Natural Gujarati', gender: 'Female' }
-                                  ],
-                                  'kn': [
-                                    { id: 'kn-IN-GaganNeural', name: 'Gagan', description: 'Natural Kannada', gender: 'Male' },
-                                    { id: 'kn-IN-SapnaNeural', name: 'Sapna', description: 'Natural Kannada', gender: 'Female' }
-                                  ],
-                                  'ml': [
-                                    { id: 'ml-IN-MidhunNeural', name: 'Midhun', description: 'Natural Malayalam', gender: 'Male' },
-                                    { id: 'ml-IN-SobhanaNeural', name: 'Sobhana', description: 'Natural Malayalam', gender: 'Female' }
-                                  ]
-                                };
-                                const languageScripts: { [key: string]: string } = {
-                                  'en': 'A', 'hi': 'हि', 'bn': 'বা', 'ta': 'த', 'te': 'తె',
-                                  'mr': 'मर', 'gu': 'ગુ', 'kn': 'ಕ', 'ml': 'മ'
-                                };
-                                const currentLanguageVoices = voicesByLanguage[voiceLanguage] || voicesByLanguage['en'];
-                                return currentLanguageVoices.map((profile) => {
-                                  const isSelected = activeVoiceProfileId === profile.id;
-                                  const isMale = profile.gender === 'Male';
-                                  const languageText = languageScripts[voiceLanguage] || 'A';
-                                  return (
-                                    <div
-                                      key={profile.id}
-                                      className="flex flex-col items-center gap-1.5 group cursor-pointer"
-                                      onClick={async () => {
-                                        setActiveVoiceProfileId(profile.id);
-                                        if (currentAudioRef.current) {
-                                          currentAudioRef.current.pause();
-                                          currentAudioRef.current = null;
-                                        }
-                                        const voiceGreetings: { [key: string]: (p: string) => string } = {
-                                          en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
-                                          hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
-                                          bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
-                                          ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
-                                          te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
-                                          mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
-                                          gu: (p) => `નમસ્તે! હું ${p} છું. પેરલામાં તમારું સ્વાગત છે!`,
-                                          kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
-                                          ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
-                                        };
-                                        const text = voiceGreetings[voiceLanguage] ? voiceGreetings[voiceLanguage](profile.name) : `Hello! I am ${profile.name}. Welcome to Perala!`;
-                                        try {
-                                          const response = await fetch('/api/tts/generate', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ text, language: voiceLanguage || 'en', speaker: profile.id, speed: voiceRate || 1.0, pitch: voicePitch || 1.0 })
-                                          });
-                                          if (response.ok) {
-                                            const data = await response.json();
-                                            if (data.audioBase64) {
-                                              const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-                                              const binaryString = atob(base64Data);
-                                              const bytes = new Uint8Array(binaryString.length);
-                                              for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
-                                              const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-                                              const audioUrl = URL.createObjectURL(audioBlob);
-                                              const audio = new Audio(audioUrl);
-                                              currentAudioRef.current = audio;
-                                              audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));
-                                            }
+                        {/* Voice button — identical to logged-in sidebar */}
+                        <button
+                          onClick={() => setIsVoiceActive(!isVoiceActive)}
+                          className="w-full px-4 py-3 text-white hover:bg-white/10 rounded-lg transition-colors text-left flex items-center justify-start"
+                          data-testid="nav-voice-guest"
+                        >
+                          <Mic className="h-4 w-4 mr-2" />
+                          <span>Voice</span>
+                          <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${isVoiceActive ? "rotate-180" : ""}`} />
+                        </button>
+
+                        {isVoiceActive && (
+                          <div className="px-4 py-6 bg-gray-800/50 border border-gray-700 rounded-lg animate-in fade-in slide-in-from-top-2 duration-200 no-scrollbar max-h-[400px] overflow-y-auto pl-[0px] pr-[0px] pt-[10px] pb-[10px] mt-[2px] mb-[2px]" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                            <div className="flex flex-col items-center gap-4">
+                              <span className="text-xs text-gray-400 uppercase tracking-wider font-semibold">voice profiles</span>
+                              <div className="flex items-center justify-start gap-4 py-2 overflow-x-auto no-scrollbar scroll-smooth pl-[10px] pr-[10px]" style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}>
+                                {(() => {
+                                  const voicesByLanguage: { [key: string]: any[] } = {
+                                    'en': [
+                                      { id: 'en-IN-PrabhatNeural', name: 'Prabhat', description: 'Indian English', gender: 'Male' },
+                                      { id: 'en-IN-NeerjaNeural', name: 'Neerja', description: 'Indian English', gender: 'Female' }
+                                    ],
+                                    'hi': [
+                                      { id: 'hi-IN-MadhurNeural', name: 'Madhur', description: 'Natural Hindi', gender: 'Male' },
+                                      { id: 'hi-IN-SwaraNeural', name: 'Swara', description: 'Natural Hindi', gender: 'Female' }
+                                    ],
+                                    'bn': [
+                                      { id: 'bn-IN-BashkarNeural', name: 'Bashkar', description: 'Natural Bengali', gender: 'Male' },
+                                      { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa', description: 'Natural Bengali', gender: 'Female' }
+                                    ],
+                                    'ta': [
+                                      { id: 'ta-IN-ValluvarNeural', name: 'Valluvar', description: 'Natural Tamil', gender: 'Male' },
+                                      { id: 'ta-IN-PallaviNeural', name: 'Pallavi', description: 'Natural Tamil', gender: 'Female' }
+                                    ],
+                                    'te': [
+                                      { id: 'te-IN-MohanNeural', name: 'Mohan', description: 'Natural Telugu', gender: 'Male' },
+                                      { id: 'te-IN-ShrutiNeural', name: 'Shruti', description: 'Natural Telugu', gender: 'Female' }
+                                    ],
+                                    'mr': [
+                                      { id: 'mr-IN-ManoharNeural', name: 'Manohar', description: 'Natural Marathi', gender: 'Male' },
+                                      { id: 'mr-IN-AarohiNeural', name: 'Aarohi', description: 'Natural Marathi', gender: 'Female' }
+                                    ],
+                                    'gu': [
+                                      { id: 'gu-IN-NiranjanNeural', name: 'Niranjan', description: 'Natural Gujarati', gender: 'Male' },
+                                      { id: 'gu-IN-DhwaniNeural', name: 'Dhwani', description: 'Natural Gujarati', gender: 'Female' }
+                                    ],
+                                    'kn': [
+                                      { id: 'kn-IN-GaganNeural', name: 'Gagan', description: 'Natural Kannada', gender: 'Male' },
+                                      { id: 'kn-IN-SapnaNeural', name: 'Sapna', description: 'Natural Kannada', gender: 'Female' }
+                                    ],
+                                    'ml': [
+                                      { id: 'ml-IN-MidhunNeural', name: 'Midhun', description: 'Natural Malayalam', gender: 'Male' },
+                                      { id: 'ml-IN-SobhanaNeural', name: 'Sobhana', description: 'Natural Malayalam', gender: 'Female' }
+                                    ]
+                                  };
+                                  const languageScripts: { [key: string]: string } = {
+                                    'en': 'A', 'hi': 'हि', 'bn': 'বা', 'ta': 'த', 'te': 'తె',
+                                    'mr': 'मर', 'gu': 'ગુ', 'kn': 'ಕ', 'ml': 'മ'
+                                  };
+                                  const currentLanguageVoices = voicesByLanguage[voiceLanguage] || voicesByLanguage['en'];
+                                  return currentLanguageVoices.map((profile) => {
+                                    const isSelected = activeVoiceProfileId === profile.id;
+                                    const isMale = profile.gender === 'Male';
+                                    const languageText = languageScripts[voiceLanguage] || 'A';
+                                    return (
+                                      <div
+                                        key={profile.id}
+                                        className="flex flex-col items-center gap-1.5 group cursor-pointer"
+                                        onClick={async () => {
+                                          setActiveVoiceProfileId(profile.id);
+                                          if (currentAudioRef.current) {
+                                            currentAudioRef.current.pause();
+                                            currentAudioRef.current = null;
                                           }
-                                        } catch (error) {
-                                          console.error('🎤 [TTS] Error:', error);
-                                        }
-                                      }}
-                                    >
-                                      <div className={`relative w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all group-hover:scale-105 ${isSelected ? (isMale ? "border-blue-500 ring-2 ring-blue-500/50" : "border-pink-500 ring-2 ring-pink-500/50") : "border-transparent"} active:scale-95 overflow-hidden ${isMale ? 'bg-gradient-to-br from-blue-600 to-blue-400' : 'bg-gradient-to-br from-pink-600 to-pink-400'} shadow-lg`}>
-                                        <span className="text-xs font-bold text-white">{languageText}</span>
+                                          const voiceGreetings: { [key: string]: (p: string) => string } = {
+                                            en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
+                                            hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
+                                            bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
+                                            ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
+                                            te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
+                                            mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
+                                            gu: (p) => `નમસ્તે! હું ${p} છું. પેરલામાં તમારું સ્વાગત છે!`,
+                                            kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+                                            ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
+                                          };
+                                          const text = voiceGreetings[voiceLanguage] ? voiceGreetings[voiceLanguage](profile.name) : `Hello! I am ${profile.name}. Welcome to Perala!`;
+                                          try {
+                                            const response = await fetch('/api/tts/generate', {
+                                              method: 'POST',
+                                              headers: { 'Content-Type': 'application/json' },
+                                              body: JSON.stringify({ text, language: voiceLanguage || 'en', speaker: profile.id, speed: voiceRate || 1.0, pitch: voicePitch || 1.0 })
+                                            });
+                                            if (response.ok) {
+                                              const data = await response.json();
+                                              if (data.audioBase64) {
+                                                const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+                                                const binaryString = atob(base64Data);
+                                                const bytes = new Uint8Array(binaryString.length);
+                                                for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                                                const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+                                                const audioUrl = URL.createObjectURL(audioBlob);
+                                                const audio = new Audio(audioUrl);
+                                                currentAudioRef.current = audio;
+                                                audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));
+                                              }
+                                            }
+                                          } catch (error) {
+                                            console.error('🎤 [TTS] Error:', error);
+                                          }
+                                        }}
+                                      >
+                                        <div className={`relative w-12 h-12 rounded-full flex items-center justify-center border-2 transition-all group-hover:scale-105 ${isSelected ? (isMale ? "border-blue-500 ring-2 ring-blue-500/50" : "border-pink-500 ring-2 ring-pink-500/50") : "border-transparent"} active:scale-95 overflow-hidden ${isMale ? 'bg-gradient-to-br from-blue-600 to-blue-400' : 'bg-gradient-to-br from-pink-600 to-pink-400'} shadow-lg`}>
+                                          <span className="text-xs font-bold text-white">{languageText}</span>
+                                        </div>
+                                        <span className={`text-[10px] font-medium transition-colors flex items-center gap-1 ${isSelected ? (isMale ? "text-blue-400" : "text-pink-400") + " font-bold" : "text-gray-300 group-hover:" + (isMale ? "text-blue-400" : "text-pink-400")}`}>
+                                          {profile.name} {isSelected && <Check className="h-2.5 w-2.5" />}
+                                        </span>
                                       </div>
-                                      <span className={`text-[10px] font-medium transition-colors flex items-center gap-1 ${isSelected ? (isMale ? "text-blue-400" : "text-pink-400") + " font-bold" : "text-gray-300"}`}>
-                                        {profile.name} {isSelected && <Check className="h-2.5 w-2.5" />}
-                                      </span>
-                                    </div>
-                                  );
-                                });
-                              })()}
+                                    );
+                                  });
+                                })()}
+                              </div>
+                              <div className="w-full h-px bg-gray-700/50 my-1" />
+                              <div className="flex items-center gap-3">
+                                <div className="flex-1">
+                                  <p className="text-[11px] text-gray-500 italic mb-2">Language & Voice</p>
+                                  <select
+                                    value={voiceLanguage}
+                                    onChange={(e) => setVoiceLanguage(e.target.value)}
+                                    className="w-full px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-gray-200 focus:border-blue-400 focus:outline-none"
+                                  >
+                                    <option value="en">English (Indian)</option>
+                                    <option value="hi">हिंदी (Hindi)</option>
+                                    <option value="bn">বাংলা (Bengali)</option>
+                                    <option value="ta">தமிழ் (Tamil)</option>
+                                    <option value="te">తెలుగు (Telugu)</option>
+                                    <option value="mr">मराठी (Marathi)</option>
+                                    <option value="gu">ગુજરાતી (Gujarati)</option>
+                                    <option value="kn">ಕನ್ನಡ (Kannada)</option>
+                                    <option value="ml">മലയാളം (Malayalam)</option>
+                                  </select>
+                                </div>
+                              </div>
+                              <div className="flex items-center justify-between mt-3">
+                                <p className="text-[11px] text-gray-500 italic">Select a voice for your audio post</p>
+                              </div>
                             </div>
-                            <div className="w-full h-px bg-gray-700/50" />
-                            <div className="w-full px-2">
-                              <p className="text-[11px] text-gray-500 italic mb-2">Language & Voice</p>
-                              <select
-                                value={voiceLanguage}
-                                onChange={(e) => setVoiceLanguage(e.target.value)}
-                                className="w-full px-2 py-1 text-xs bg-gray-700 border border-gray-600 rounded text-gray-200 focus:border-blue-400 focus:outline-none"
-                              >
-                                <option value="en">English (Indian)</option>
-                                <option value="hi">हिंदी (Hindi)</option>
-                                <option value="bn">বাংলা (Bengali)</option>
-                                <option value="ta">தமிழ் (Tamil)</option>
-                                <option value="te">తెలుగు (Telugu)</option>
-                                <option value="mr">मराठी (Marathi)</option>
-                                <option value="gu">ગુજરાતી (Gujarati)</option>
-                                <option value="kn">ಕನ್ನಡ (Kannada)</option>
-                                <option value="ml">മലയാളം (Malayalam)</option>
-                              </select>
-                            </div>
-                            <p className="text-[10px] text-gray-500 italic text-center">Tap a voice to preview</p>
                           </div>
-                        </div>
+                        )}
                       </div>
                     )}
                   </div>

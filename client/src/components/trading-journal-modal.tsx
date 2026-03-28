@@ -48,17 +48,17 @@ export function TradingJournalModal({ open, onOpenChange, isAutoPopup = false }:
     }}>
       <DialogContent className="max-w-sm w-[90vw] pl-[5px] pr-[5px] pt-[12px] pb-[12px] rounded-lg">
         <DialogHeader className="text-center">
-          <div className="flex justify-center mb-2">
-            <div className="w-12 h-12 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
-              <Info className="h-6 w-6 text-white" />
+          <div className="flex justify-center mb-1.5">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-400 to-blue-600 flex items-center justify-center">
+              <Info className="h-4 w-4 text-white" />
             </div>
           </div>
-          <DialogTitle className="text-xl font-bold text-center">Trading Journal</DialogTitle>
-          <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+          <DialogTitle className="text-lg font-bold text-center">Trading Journal</DialogTitle>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 text-center">
             Track Your Trading Progress
           </p>
         </DialogHeader>
-        <div className="py-4 space-y-3">
+        <div className="py-2 space-y-2">
           {/* Daily Trade Tracking + AI Performance Analysis — side by side, compact height */}
           <div className="grid grid-cols-2 gap-2">
             <div className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800/50 rounded-lg">

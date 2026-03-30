@@ -29400,20 +29400,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <ReferenceLine y={0} stroke="rgba(255,255,255,0.3)" strokeDasharray="4 2" />
                                         <Line type="monotone" dataKey="target" stroke="#6ee7b7" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
                                         <Line type="monotone" dataKey="risk" stroke="#fca5a5" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
-                                        <Bar dataKey="pnl" radius={[3, 3, 0, 0]}
-                                          fill="rgba(255,255,255,0.3)"
-                                          label={false}
-                                        >
-                                          {chartData.map((entry, index) => (
-                                            <Cell key={`risk-cell-${index}`} fill={entry.pnl >= targetReward ? '#6ee7b7' : entry.pnl <= -riskCapital ? '#fca5a5' : 'rgba(255,255,255,0.35)'} />
-                                          ))}
-                                        </Bar>
+                                        <Line
+                                          type="monotone"
+                                          dataKey="pnl"
+                                          stroke="rgba(255,255,255,0.7)"
+                                          strokeWidth={2}
+                                          dot={({ cx, cy, payload, index }: any) => {
+                                            const color = payload.pnl >= targetReward ? '#6ee7b7' : payload.pnl <= -riskCapital ? '#fca5a5' : 'rgba(255,255,255,0.8)';
+                                            return <circle key={`rr-dot-${index}`} cx={cx} cy={cy} r={4} fill={color} stroke="rgba(255,255,255,0.3)" strokeWidth={1.5} />;
+                                          }}
+                                          activeDot={{ r: 6, fill: 'white', stroke: 'rgba(255,255,255,0.4)', strokeWidth: 2 }}
+                                        />
                                       </ComposedChart>
                                     </ResponsiveContainer>
                                     <div className="flex items-center gap-4 mt-2 text-[10px] opacity-70">
-                                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-emerald-300" /> Met R:R target</span>
-                                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-300" /> Breached risk</span>
-                                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-white/35" /> Within range</span>
+                                      <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-emerald-300" /> Met R:R</span>
+                                      <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-red-300" /> Breached risk</span>
+                                      <span className="flex items-center gap-1"><span className="inline-block w-2.5 h-2.5 rounded-full bg-white/70" /> Within range</span>
                                     </div>
                                   </div>
                                 ) : (

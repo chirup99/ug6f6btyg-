@@ -1190,6 +1190,7 @@ import {
   Area,
   BarChart,
   Bar,
+  ComposedChart,
   XAxis,
   YAxis,
   ResponsiveContainer,
@@ -12383,6 +12384,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [isIndicatorDropdownOpen, setIsIndicatorDropdownOpen] = useState(false);
   const [targetPeriod, setTargetPeriod] = useState<'weekly' | 'monthly'>('weekly');
   const [targetAmount, setTargetAmount] = useState(20000);
+  const [riskCapital, setRiskCapital] = useState<number>(() => {
+    const saved = localStorage.getItem('riskCapital');
+    return saved ? parseInt(saved) : 10000;
+  });
+  const [riskRewardRatio, setRiskRewardRatio] = useState<number>(() => {
+    const saved = localStorage.getItem('riskRewardRatio');
+    return saved ? parseFloat(saved) : 2;
+  });
   const [isCustomTimeframeDialogOpen, setIsCustomTimeframeDialogOpen] = useState(false);
   const [customTimeframeInput, setCustomTimeframeInput] = useState("");
 
@@ -29245,6 +29254,178 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 })()}
                               </CardContent>
                           </Card>
+                        </div>
+
+                        {/* Risk Management Analysis Window */}
+                        <div className="col-span-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-2xl mt-6">
+                          <div className="flex items-center gap-4 mb-6">
+                            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
+                              <ShieldCheck className="w-6 h-6" />
+                            </div>
+                            <div>
+                              <h3 className="text-xl font-bold">Risk Management Analysis</h3>
+                              <p className="opacity-80">Track your capital discipline and risk/reward consistency</p>
+                            </div>
+                          </div>
+
+                          {(() => {
+                            const allDates = Object.keys(filteredHeatmapData).sort();
+                            const dayMetrics = allDates.map(dateStr => {
+                              const d = filteredHeatmapData[dateStr];
+                              const metrics = d?.tradingData?.performanceMetrics || d?.performanceMetrics;
+                              const trades: any[] = d?.tradingData?.tradeHistory || d?.tradeHistory || d?.trades || [];
+                              const netPnL = metrics?.netPnL ?? trades.reduce((s: number, t: any) => s + (typeof t.pnl === 'number' ? t.pnl : parseFloat((t.pnl || '0').replace(/[₹,+\s]/g, '')) || 0), 0);
+                              const totalTrades = metrics?.totalTrades || trades.length;
+                              return { date: dateStr, netPnL, totalTrades };
+                            }).filter(d => d.totalTrades > 0);
+
+                            const totalDays = dayMetrics.length;
+                            const targetReward = riskCapital * riskRewardRatio;
+                            const daysMetRR = dayMetrics.filter(d => d.netPnL >= targetReward).length;
+                            const daysBreachedRisk = dayMetrics.filter(d => d.netPnL <= -riskCapital).length;
+                            const daysProfitable = dayMetrics.filter(d => d.netPnL > 0).length;
+
+                            // Capital consistency: compare avg P&L of first half vs second half
+                            const half = Math.floor(dayMetrics.length / 2);
+                            const firstHalfAvg = half > 0 ? dayMetrics.slice(0, half).reduce((s, d) => s + d.netPnL, 0) / half : 0;
+                            const secondHalfAvg = half > 0 ? dayMetrics.slice(half).reduce((s, d) => s + d.netPnL, 0) / (dayMetrics.length - half) : 0;
+                            const capitalTrend = totalDays < 2 ? 'no data' : secondHalfAvg > firstHalfAvg * 1.1 ? 'increasing' : secondHalfAvg < firstHalfAvg * 0.9 ? 'declining' : 'consistent';
+
+                            // Chart data
+                            const chartData = dayMetrics.map((d, i) => ({
+                              day: d.date.slice(5),
+                              pnl: d.netPnL,
+                              target: targetReward,
+                              risk: -riskCapital,
+                            }));
+
+                            return (
+                              <div className="space-y-6">
+                                {/* Settings Row */}
+                                <div className="grid md:grid-cols-2 gap-4">
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-bold uppercase tracking-wider opacity-90">Risk Capital Per Day</span>
+                                      <span className="text-sm font-black">₹{riskCapital.toLocaleString()}</span>
+                                    </div>
+                                    <input
+                                      type="range"
+                                      min="1000"
+                                      max="100000"
+                                      step="1000"
+                                      value={riskCapital}
+                                      onChange={e => {
+                                        const v = parseInt(e.target.value);
+                                        setRiskCapital(v);
+                                        localStorage.setItem('riskCapital', String(v));
+                                      }}
+                                      className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-white"
+                                    />
+                                    <div className="flex justify-between text-[10px] opacity-60">
+                                      <span>₹1K</span><span>₹50K</span><span>₹1L</span>
+                                    </div>
+                                  </div>
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 space-y-3">
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-xs font-bold uppercase tracking-wider opacity-90">Risk : Reward Ratio</span>
+                                      <span className="text-sm font-black">1 : {riskRewardRatio}</span>
+                                    </div>
+                                    <div className="flex gap-2">
+                                      {[1, 1.5, 2, 2.5, 3, 4, 5].map(r => (
+                                        <button
+                                          key={r}
+                                          onClick={() => {
+                                            setRiskRewardRatio(r);
+                                            localStorage.setItem('riskRewardRatio', String(r));
+                                          }}
+                                          className={`flex-1 py-1 text-[10px] font-bold rounded-lg transition-all ${riskRewardRatio === r ? 'bg-white text-blue-700 shadow-sm' : 'bg-white/10 hover:bg-white/20'}`}
+                                        >
+                                          {r}
+                                        </button>
+                                      ))}
+                                    </div>
+                                    <p className="text-[10px] opacity-60">Target reward: ₹{targetReward.toLocaleString()} per day</p>
+                                  </div>
+                                </div>
+
+                                {/* Stats Grid */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                    <div className="text-2xl font-bold">{totalDays > 0 ? `${daysMetRR}/${totalDays}` : '—'}</div>
+                                    <div className="text-sm opacity-80 mt-1">Days Met R:R</div>
+                                    <div className="text-[10px] opacity-60 mt-0.5">{totalDays > 0 ? `${((daysMetRR / totalDays) * 100).toFixed(0)}% success` : 'No data'}</div>
+                                  </div>
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                    <div className="text-2xl font-bold text-red-300">{daysBreachedRisk}</div>
+                                    <div className="text-sm opacity-80 mt-1">Risk Breached</div>
+                                    <div className="text-[10px] opacity-60 mt-0.5">{totalDays > 0 ? `${((daysBreachedRisk / totalDays) * 100).toFixed(0)}% of days` : 'No data'}</div>
+                                  </div>
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                    <div className={`text-2xl font-bold ${capitalTrend === 'increasing' ? 'text-emerald-300' : capitalTrend === 'declining' ? 'text-red-300' : 'text-white'}`}>
+                                      {capitalTrend === 'no data' ? '—' : capitalTrend === 'increasing' ? '↑' : capitalTrend === 'declining' ? '↓' : '→'}
+                                    </div>
+                                    <div className="text-sm opacity-80 mt-1">Capital Trend</div>
+                                    <div className="text-[10px] opacity-60 mt-0.5 capitalize">{capitalTrend}</div>
+                                  </div>
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
+                                    <div className="text-2xl font-bold text-emerald-300">{daysProfitable}</div>
+                                    <div className="text-sm opacity-80 mt-1">Profitable Days</div>
+                                    <div className="text-[10px] opacity-60 mt-0.5">{totalDays > 0 ? `${((daysProfitable / totalDays) * 100).toFixed(0)}% win rate` : 'No data'}</div>
+                                  </div>
+                                </div>
+
+                                {/* Trend Chart */}
+                                {chartData.length > 1 ? (
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                      <span className="text-xs font-bold uppercase tracking-wider opacity-90">Daily P&amp;L vs Risk/Reward Bands</span>
+                                      <div className="flex items-center gap-3 text-[10px] opacity-70">
+                                        <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-white rounded" /> P&L</span>
+                                        <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-emerald-300 border-dashed border-t-2 border-emerald-300 rounded" /> Target</span>
+                                        <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-red-300 border-dashed border-t-2 border-red-300 rounded" /> Risk</span>
+                                      </div>
+                                    </div>
+                                    <ResponsiveContainer width="100%" height={180}>
+                                      <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
+                                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+                                        <XAxis dataKey="day" tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.6)' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                                        <YAxis tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.6)' }} tickLine={false} axisLine={false} width={40} tickFormatter={v => `${v >= 0 ? '' : '-'}${(Math.abs(v) / 1000).toFixed(0)}K`} />
+                                        <Tooltip
+                                          contentStyle={{ background: '#1e3a5f', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: '#e2e8f0', fontSize: '11px' }}
+                                          formatter={(v: any, name: string) => {
+                                            const label = name === 'pnl' ? 'Daily P&L' : name === 'target' ? 'Target (R:R)' : 'Max Risk';
+                                            return [`${v >= 0 ? '₹' : '-₹'}${Math.abs(v).toLocaleString()}`, label];
+                                          }}
+                                        />
+                                        <ReferenceLine y={0} stroke="rgba(255,255,255,0.3)" strokeDasharray="4 2" />
+                                        <Line type="monotone" dataKey="target" stroke="#6ee7b7" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
+                                        <Line type="monotone" dataKey="risk" stroke="#fca5a5" strokeWidth={1.5} strokeDasharray="5 3" dot={false} />
+                                        <Bar dataKey="pnl" radius={[3, 3, 0, 0]}
+                                          fill="rgba(255,255,255,0.3)"
+                                          label={false}
+                                        >
+                                          {chartData.map((entry, index) => (
+                                            <Cell key={`risk-cell-${index}`} fill={entry.pnl >= targetReward ? '#6ee7b7' : entry.pnl <= -riskCapital ? '#fca5a5' : 'rgba(255,255,255,0.35)'} />
+                                          ))}
+                                        </Bar>
+                                      </ComposedChart>
+                                    </ResponsiveContainer>
+                                    <div className="flex items-center gap-4 mt-2 text-[10px] opacity-70">
+                                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-emerald-300" /> Met R:R target</span>
+                                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-red-300" /> Breached risk</span>
+                                      <span className="flex items-center gap-1"><span className="inline-block w-2 h-2 rounded-sm bg-white/35" /> Within range</span>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 text-center">
+                                    <ShieldCheck className="w-10 h-10 mx-auto mb-3 opacity-40" />
+                                    <p className="font-medium opacity-80">No trading data yet</p>
+                                    <p className="text-sm opacity-60 mt-1">Save trades to see your risk/reward trend</p>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* Full Width Loss Making Analysis - Extended Like Discipline Window */}

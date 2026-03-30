@@ -163,17 +163,40 @@ export function BrokerData(props: BrokerDataProps) {
   // Live LTP overlay for Groww positions — updated every 600ms
   const [growwLivePrices, setGrowwLivePrices] = useState<Record<string, number>>({});
 
+  // Pre-fetch Groww orders + positions the moment Groww connects so data is ready
+  // before the user opens the dialog — eliminates the "Loading..." delay on first open
+  useEffect(() => {
+    if (activeBroker !== 'groww' || !growwAccessToken) return;
+    let cancelled = false;
+    const prefetch = async () => {
+      try {
+        const [ordersRes, posRes] = await Promise.all([
+          apiRequest("GET", `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken)}`, null),
+          apiRequest("GET", `/api/broker/groww/positions?accessToken=${encodeURIComponent(growwAccessToken)}`, null),
+        ]);
+        if (cancelled) return;
+        if (ordersRes.success && ordersRes.orders) {
+          setGrowwOrders(ordersRes.orders);
+          growwInitialLoadDone.current = true;
+        }
+        if (posRes.success && posRes.positions) setGrowwPositions(posRes.positions);
+      } catch (e) {
+        // silent — modal polling will retry
+      }
+    };
+    prefetch();
+    return () => { cancelled = true; };
+  }, [activeBroker, growwAccessToken]);
+
   // Refresh Groww orders every 10 seconds if connected (reduced from 3s to avoid constant loading flicker)
   useEffect(() => {
     if (activeBroker !== 'groww' || !showOrderModal) return;
 
-    // Reset initial load flag when modal opens
-    growwInitialLoadDone.current = false;
-
+    // Only show loading if pre-fetch hasn't completed yet (growwInitialLoadDone stays true after pre-fetch)
     const refreshGrowwOrders = async () => {
-      // Only show loading spinner on the very first fetch; background polls are silent
-      const isFirst = !growwInitialLoadDone.current;
-      if (isFirst) setFetchingGrowwOrders(true);
+      // Show loading only if we have no data yet (pre-fetch not done or failed)
+      const needsLoader = !growwInitialLoadDone.current;
+      if (needsLoader) setFetchingGrowwOrders(true);
       try {
         const response = await apiRequest("GET", `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
         if (response.success && response.orders) {
@@ -182,7 +205,7 @@ export function BrokerData(props: BrokerDataProps) {
       } catch (error) {
         console.error("Error refreshing Groww orders:", error);
       } finally {
-        if (isFirst) {
+        if (needsLoader) {
           setFetchingGrowwOrders(false);
           growwInitialLoadDone.current = true;
         }
@@ -224,7 +247,7 @@ export function BrokerData(props: BrokerDataProps) {
       clearInterval(ordersInterval);
       clearInterval(fundsInterval);
       setGrowwFundsValue(null);
-      growwInitialLoadDone.current = false;
+      // Don't reset growwInitialLoadDone here — pre-fetched data should persist across modal re-opens
     };
   }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
 

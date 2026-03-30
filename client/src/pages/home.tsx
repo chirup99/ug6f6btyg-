@@ -5439,34 +5439,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     
     setIsGrowwConnecting(true);
     try {
-      const response = await apiRequest("POST", "/api/brokers/import", {
-        broker: "groww",
-        credentials: {
-          apiKey: growwApiKeyInput,
-          apiSecret: growwApiSecretInput
-        }
+      const response = await apiRequest("POST", "/api/broker/groww/connect", {
+        apiKey: growwApiKeyInput,
+        apiSecret: growwApiSecretInput,
       });
 
       if (response.success) {
         const accessToken = response.accessToken;
+        const userId = response.userId || growwApiKeyInput.substring(0, 8);
+        const userName = response.userName || "Groww User";
+        const funds = response.funds;
 
-        // Fetch profile and funds in parallel — no sequential waiting
-        let userId = growwApiKeyInput.substring(0, 6);
-        let userName = "Groww User";
-        const [profileResult, fundsResult] = await Promise.allSettled([
-          fetch(`/api/broker/groww/profile?accessToken=${encodeURIComponent(accessToken)}`).then(r => r.json()),
-          fetch(`/api/broker/groww/funds?accessToken=${encodeURIComponent(accessToken)}`).then(r => r.json()),
-        ]);
-
-        if (profileResult.status === 'fulfilled' && profileResult.value?.success) {
-          userId = profileResult.value.userId || userId;
-          userName = profileResult.value.userName || userName;
-        }
-        if (fundsResult.status === 'fulfilled' && fundsResult.value?.success) {
-          setBrokerFunds(fundsResult.value.funds);
-          localStorage.setItem("zerodha_broker_funds", String(fundsResult.value.funds));
-        }
-
+        // Save and update state immediately — close dialog without delay
         localStorage.setItem("growwIsConnected", "true");
         localStorage.setItem("growwAccessToken", accessToken);
         localStorage.setItem("growwUserId", userId);
@@ -5477,6 +5461,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         setGrowwUserId(userId);
         setGrowwUserName(userName);
         setIsGrowwDialogOpen(false);
+        setIsGrowwConnecting(false);
+
+        if (funds != null) {
+          setBrokerFunds(funds);
+          localStorage.setItem("zerodha_broker_funds", String(funds));
+        }
 
         toast({
           title: "Connected",

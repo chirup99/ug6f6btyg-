@@ -50,7 +50,7 @@ export async function getGrowwAccessToken(apiKey: string, apiSecret: string): Pr
   try {
     const response = await axios.post(`${BASE_URL}/token/api/access`, body, {
       headers: buildHeaders(apiKey),
-      timeout: 15000,
+      timeout: 8000,
     });
 
     const token = response.data?.token ?? response.data?.payload?.token;
@@ -79,7 +79,7 @@ export async function getGrowwUserProfile(accessToken: string): Promise<{ userId
     console.log('👤 Fetching Groww user profile...');
     const response = await axios.get(`${BASE_URL}/user/detail`, {
       headers: buildHeaders(accessToken),
-      timeout: 10000,
+      timeout: 6000,
     });
 
     const data = parsePayload(response.data);
@@ -116,7 +116,7 @@ export async function fetchGrowwFunds(accessToken: string): Promise<number | nul
     console.log('💰 Fetching Groww margin/funds from /margins/detail/user...');
     const response = await axios.get(`${BASE_URL}/margins/detail/user`, {
       headers: buildHeaders(accessToken),
-      timeout: 10000,
+      timeout: 6000,
     });
 
     const data = parsePayload(response.data);

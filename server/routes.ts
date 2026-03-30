@@ -12295,6 +12295,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // BROKER INTEGRATIONS
   // ============================================================================
 
+  // Groww connect: authenticate only — returns token immediately so the dialog can close fast.
+  // Profile and funds are fetched in parallel server-side and returned together,
+  // but profile/funds failures never block the connection from succeeding.
+  app.post("/api/broker/groww/connect", async (req, res) => {
+    try {
+      const { apiKey, apiSecret } = req.body;
+      if (!apiKey || !apiSecret) {
+        return res.status(400).json({ success: false, error: "apiKey and apiSecret are required" });
+      }
+
+      const {
+        getGrowwAccessToken,
+        getGrowwUserProfile,
+        fetchGrowwFunds,
+      } = await import('./services/broker-integrations/growwService');
+
+      // Step 1: authenticate — this is the only blocking step
+      const accessToken = await getGrowwAccessToken(apiKey, apiSecret);
+
+      // Step 2: profile + funds in parallel with short timeout — best-effort, never block auth
+      const [profileResult, fundsResult] = await Promise.allSettled([
+        Promise.race([
+          getGrowwUserProfile(accessToken),
+          new Promise<null>((_, reject) => setTimeout(() => reject(new Error('profile timeout')), 4000)),
+        ]),
+        Promise.race([
+          fetchGrowwFunds(accessToken),
+          new Promise<null>((_, reject) => setTimeout(() => reject(new Error('funds timeout')), 4000)),
+        ]),
+      ]);
+
+      const profile = profileResult.status === 'fulfilled' ? profileResult.value as any : null;
+      const funds   = fundsResult.status   === 'fulfilled' ? fundsResult.value   as any : null;
+
+      return res.json({
+        success: true,
+        accessToken,
+        userId:   profile?.userId   || apiKey.substring(0, 8),
+        userName: profile?.userName || 'Groww User',
+        funds:    typeof funds === 'number' ? funds : null,
+      });
+    } catch (error: any) {
+      console.error('❌ [GROWW CONNECT] Error:', error.message);
+      return res.status(400).json({ success: false, error: error.message });
+    }
+  });
+
   // Broker Integration Routes
   app.post("/api/brokers/import", async (req, res) => {
     try {

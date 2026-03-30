@@ -138,6 +138,15 @@ export async function fetchGrowwFunds(accessToken: string): Promise<number> {
   }
 }
 
+function normalizeGrowwStatus(raw: string | undefined): string {
+  const s = String(raw || '').toUpperCase().trim();
+  if (s === 'COMPLETE' || s === 'EXECUTED' || s === 'FILLED') return 'COMPLETE';
+  if (s === 'REJECTED' || s === 'FAILED') return 'REJECTED';
+  if (s === 'CANCELLED' || s === 'CANCELED') return 'CANCELLED';
+  if (s === 'PENDING' || s === 'OPEN' || s === 'TRIGGER_PENDING' || s === 'PUT ORDER REQ RECEIVED' || s === 'VALIDATION PENDING') return 'PENDING';
+  return s || 'PENDING';
+}
+
 export async function fetchGrowwTrades(accessToken: string): Promise<any[]> {
   try {
     console.log('📜 Fetching Groww orders from /order/list...');
@@ -156,16 +165,35 @@ export async function fetchGrowwTrades(accessToken: string): Promise<any[]> {
       (Array.isArray(data) ? data : []);
 
     if (Array.isArray(orderList)) {
-      return orderList.map((order: any) => ({
-        time: order.created_at || order.createdAt || order.exchange_time || order.exchangeTime || new Date().toISOString(),
-        order: order.transaction_type || order.transactionType || order.side,
-        symbol: order.trading_symbol || order.tradingSymbol || order.symbol,
-        type: order.order_type || order.orderType,
-        qty: order.quantity,
-        price: order.average_fill_price || order.averageFillPrice || order.average_price || order.averagePrice || order.price,
-        status: order.order_status || order.orderStatus || order.status,
-        groww_order_id: order.groww_order_id || order.growwOrderId || order.order_id || order.orderId,
-      }));
+      return orderList.map((order: any) => {
+        const rawStatus = order.order_status || order.orderStatus || order.status;
+        const mappedStatus = normalizeGrowwStatus(rawStatus);
+
+        const rawTime =
+          order.exchange_time || order.exchangeTime ||
+          order.created_at || order.createdAt ||
+          order.order_timestamp || order.orderTimestamp ||
+          new Date().toISOString();
+
+        let displayTime = rawTime;
+        try {
+          const d = new Date(rawTime);
+          if (!isNaN(d.getTime())) {
+            displayTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+          }
+        } catch (_) {}
+
+        return {
+          time: displayTime,
+          order: (order.transaction_type || order.transactionType || order.side || '').toUpperCase(),
+          symbol: order.trading_symbol || order.tradingSymbol || order.symbol || '',
+          type: (order.order_type || order.orderType || 'MARKET').toUpperCase(),
+          qty: order.quantity || order.filled_quantity || order.filledQuantity || 0,
+          price: order.average_fill_price || order.averageFillPrice || order.average_price || order.averagePrice || order.price || 0,
+          status: mappedStatus,
+          groww_order_id: order.groww_order_id || order.growwOrderId || order.order_id || order.orderId,
+        };
+      });
     }
 
     return [];
@@ -186,14 +214,63 @@ export async function fetchGrowwPositions(accessToken: string): Promise<any[]> {
     const data = parsePayload(response.data);
     console.log('💼 Groww positions raw keys:', Object.keys(data || {}));
 
-    const positions =
+    const rawList =
       data?.positionList ||
       data?.position_list ||
       data?.positions ||
       (Array.isArray(data) ? data : []);
 
-    if (Array.isArray(positions)) return positions;
-    return [];
+    if (!Array.isArray(rawList)) return [];
+
+    return rawList.map((pos: any) => {
+      const symbol =
+        pos.trading_symbol || pos.tradingSymbol ||
+        pos.symbol || pos.scrip_code || pos.scripCode || '';
+
+      const entryPrice = Number(
+        pos.buy_avg || pos.buy_average || pos.average_buy_price ||
+        pos.average_price || pos.avgPrice || pos.avg_price ||
+        pos.entry_price || pos.entryPrice || 0
+      );
+
+      const currentPrice = Number(
+        pos.ltp || pos.last_price || pos.last_traded_price || pos.lastTradedPrice ||
+        pos.current_price || pos.currentPrice || pos.close_price || pos.closePrice || 0
+      );
+
+      const qty = Number(
+        pos.net_quantity || pos.netQuantity ||
+        pos.quantity || pos.net_qty || pos.netQty || 0
+      );
+
+      const unrealizedPnl = Number(
+        pos.pnl !== undefined ? pos.pnl :
+        pos.unrealized_pnl !== undefined ? pos.unrealized_pnl :
+        pos.unrealisedPnl !== undefined ? pos.unrealisedPnl :
+        (currentPrice - entryPrice) * qty
+      );
+
+      const posStatus = (qty !== 0) ? 'OPEN' : 'CLOSED';
+
+      const product =
+        pos.product || pos.product_type || pos.productType ||
+        pos.exchange || '';
+
+      return {
+        symbol,
+        entryPrice,
+        entry_price: entryPrice,
+        currentPrice,
+        current_price: currentPrice,
+        ltp: currentPrice,
+        qty,
+        quantity: qty,
+        unrealizedPnl,
+        unrealized_pnl: unrealizedPnl,
+        status: posStatus,
+        product,
+      };
+    }).filter((pos: any) => pos.symbol && pos.qty !== 0);
   } catch (error: any) {
     console.error('❌ Groww Positions Error:', error.response?.data || error.message);
     return [];

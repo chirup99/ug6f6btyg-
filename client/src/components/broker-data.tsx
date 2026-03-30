@@ -209,7 +209,7 @@ export function BrokerData(props: BrokerDataProps) {
       refreshGrowwOrders();
       refreshGrowwPositions();
       refreshGrowwFunds();
-    }, 15000);
+    }, 3000);
     return () => clearInterval(interval);
   }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
 
@@ -368,8 +368,8 @@ export function BrokerData(props: BrokerDataProps) {
                     <td className="px-2 py-2">{trade.qty}</td>
                     <td className="px-2 py-2">₹{typeof trade.price === 'number' ? trade.price.toFixed(2) : trade.price}</td>
                     <td className="px-2 py-2">
-                      <span className={`text-xs font-medium ${(status === 'COMPLETE' || status === 'COMPLETED') ? 'text-green-600 dark:text-green-400' : status === 'REJECTED' ? 'text-red-600 dark:text-red-400' : status === 'CANCELLED' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                        {(trade.status || 'PENDING').toUpperCase()}
+                      <span className={`text-xs font-medium ${(status === 'COMPLETE' || status === 'COMPLETED' || status === 'EXECUTED' || status === 'FILLED') ? 'text-green-600 dark:text-green-400' : status === 'REJECTED' || status === 'FAILED' ? 'text-red-600 dark:text-red-400' : status === 'CANCELLED' || status === 'CANCELED' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                        {status === 'COMPLETE' ? 'EXECUTED' : (trade.status || 'PENDING').toUpperCase()}
                       </span>
                     </td>
                   </tr>
@@ -482,7 +482,7 @@ export function BrokerData(props: BrokerDataProps) {
                 {renderOrdersTable(displayOrders, isFetchingOrders, recordAllBrokerOrders)}
               </TabsContent>
               <TabsContent value="positions" className="space-y-4">
-                {renderPositionsTable(brokerPositions)}
+                {renderPositionsTable(displayPositions)}
               </TabsContent>
             </Tabs>
           </div>

@@ -122,26 +122,37 @@ export async function fetchGrowwFunds(accessToken: string): Promise<number | nul
     const data = parsePayload(response.data);
     console.log('💰 Groww funds raw:', JSON.stringify(data));
 
-    // Groww SDK: payload.equity.net or payload.equity.available_margin
-    const equitySegment = data?.equity || data?.Equity || null;
-    if (equitySegment) {
-      const val =
-        equitySegment.net ??
-        equitySegment.available_margin ??
-        equitySegment.available_amount ??
-        equitySegment.available_balance ??
-        equitySegment.availableMargin ??
-        equitySegment.clear_cash ??
-        null;
-      if (val !== null) return Number(val);
+    // Groww actual API response structure (from /margins/detail/user):
+    // {
+    //   clear_cash: 98.81,                         ← total cash deposited
+    //   equity_margin_details: {
+    //     cnc_balance_available: 84.13,            ← available after CNC holdings (correct value to show)
+    //     mis_balance_available: 84.13,
+    //     cnc_margin_used: -8.7,
+    //   },
+    //   fno_margin_details: {
+    //     future_balance_available: 84.13,
+    //     option_buy_balance_available: 84.13,
+    //   }
+    // }
+    // Use cnc_balance_available as the "available funds" — reflects cash after open CNC positions
+    const equityDetails = data?.equity_margin_details || data?.equityMarginDetails || null;
+    if (equityDetails) {
+      // cnc_balance_available = cash available after CNC holdings (most accurate for equity investors)
+      if (equityDetails.cnc_balance_available != null) return Number(equityDetails.cnc_balance_available);
+      if (equityDetails.mis_balance_available != null) return Number(equityDetails.mis_balance_available);
+      // Derive: total cash minus margin used
+      if (data?.clear_cash != null && equityDetails.net_equity_margin_used != null) {
+        return Number(data.clear_cash) + Number(equityDetails.net_equity_margin_used);
+      }
     }
 
     // Flat-structure fallbacks
     const flatVal =
-      data?.net ??
       data?.available_margin ??
       data?.availableMargin ??
       data?.clear_cash ??
+      data?.net ??
       data?.available_balance ??
       data?.availableBalance ??
       data?.available_cash ??
@@ -238,31 +249,43 @@ export async function fetchGrowwPositions(accessToken: string): Promise<any[]> {
     if (!Array.isArray(rawList)) return [];
 
     return rawList.map((pos: any) => {
+      console.log('💼 [DEBUG] Mapping position:', JSON.stringify(pos));
       const symbol =
         pos.trading_symbol || pos.tradingSymbol ||
         pos.symbol || pos.scrip_code || pos.scripCode || '';
 
+      // Groww API actual fields (from /positions/user):
+      // credit_price = average buy price (entry)
+      // net_price    = net average price
+      // credit_quantity / debit_quantity = buy/sell qty
+      // quantity     = net quantity held
+      // realised_pnl = closed P&L
+      // NOTE: Groww positions endpoint does NOT return live LTP
       const entryPrice = Number(
+        pos.credit_price ?? pos.net_price ??
         pos.buy_avg_price ?? pos.buy_avg ?? pos.buy_average ?? pos.average_buy_price ??
         pos.average_price ?? pos.avgPrice ?? pos.avg_price ??
         pos.entry_price ?? pos.entryPrice ?? 0
       );
 
+      // Groww doesn't provide live LTP in positions — use net_price as best available fallback
       const currentPrice = Number(
         pos.ltp ?? pos.last_traded_price ?? pos.lastTradedPrice ??
         pos.last_price ?? pos.current_price ?? pos.currentPrice ??
-        pos.close_price ?? pos.closePrice ?? 0
+        pos.close_price ?? pos.closePrice ??
+        pos.net_price ?? pos.credit_price ?? 0
       );
 
       const qty = Number(
-        pos.net_quantity || pos.netQuantity ||
-        pos.quantity || pos.net_qty || pos.netQty || 0
+        pos.quantity ?? pos.net_quantity ?? pos.netQuantity ??
+        pos.net_qty ?? pos.netQty ?? 0
       );
 
       const unrealizedPnl = Number(
         pos.pnl !== undefined ? pos.pnl :
         pos.unrealized_pnl !== undefined ? pos.unrealized_pnl :
         pos.unrealisedPnl !== undefined ? pos.unrealisedPnl :
+        pos.realised_pnl !== undefined ? pos.realised_pnl :
         (currentPrice - entryPrice) * qty
       );
 

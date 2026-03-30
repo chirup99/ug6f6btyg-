@@ -175,16 +175,8 @@ export async function fetchGrowwTrades(accessToken: string): Promise<any[]> {
           order.order_timestamp || order.orderTimestamp ||
           new Date().toISOString();
 
-        let displayTime = rawTime;
-        try {
-          const d = new Date(rawTime);
-          if (!isNaN(d.getTime())) {
-            displayTime = d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-          }
-        } catch (_) {}
-
         return {
-          time: displayTime,
+          time: rawTime,
           order: (order.transaction_type || order.transactionType || order.side || '').toUpperCase(),
           symbol: order.trading_symbol || order.tradingSymbol || order.symbol || '',
           type: (order.order_type || order.orderType || 'MARKET').toUpperCase(),

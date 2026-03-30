@@ -205,12 +205,15 @@ export function BrokerData(props: BrokerDataProps) {
     refreshGrowwOrders();
     refreshGrowwPositions();
     refreshGrowwFunds();
-    const interval = setInterval(() => {
+    const ordersInterval = setInterval(() => {
       refreshGrowwOrders();
       refreshGrowwPositions();
-      refreshGrowwFunds();
     }, 3000);
-    return () => clearInterval(interval);
+    const fundsInterval = setInterval(refreshGrowwFunds, 600);
+    return () => {
+      clearInterval(ordersInterval);
+      clearInterval(fundsInterval);
+    };
   }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
 
   const displayOrders = activeBroker === 'groww' ? growwOrders : brokerOrders;
@@ -342,16 +345,23 @@ export function BrokerData(props: BrokerDataProps) {
                 let displayTime = trade.time || trade.executedAt || trade.created_at;
                 if (displayTime) {
                   try {
-                    const dateObj = new Date(displayTime);
-                    if (!isNaN(dateObj.getTime())) {
-                      displayTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-                    } else if (displayTime.includes(' ')) {
-                      const dateParts = displayTime.split(' ');
-                      if (dateParts.length >= 2) {
-                        displayTime = dateParts[1];
-                        const timeObj = new Date(`2000-01-01 ${displayTime}`);
+                    const raw = String(displayTime).trim();
+                    // Already a formatted locale time like "12:10:22 PM" — use as-is
+                    if (/^\d{1,2}:\d{2}(:\d{2})?(\s*(AM|PM))?$/i.test(raw)) {
+                      displayTime = raw;
+                    } else {
+                      const dateObj = new Date(raw);
+                      if (!isNaN(dateObj.getTime())) {
+                        displayTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                      } else if (raw.includes(' ')) {
+                        // Handle "YYYY-MM-DD HH:MM:SS" — time is dateParts[1]
+                        const dateParts = raw.split(' ');
+                        const timePart = dateParts[1] || dateParts[0];
+                        const timeObj = new Date(`2000-01-01T${timePart}`);
                         if (!isNaN(timeObj.getTime())) {
                           displayTime = timeObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
+                        } else {
+                          displayTime = timePart;
                         }
                       }
                     }
@@ -369,7 +379,7 @@ export function BrokerData(props: BrokerDataProps) {
                     <td className="px-2 py-2">₹{typeof trade.price === 'number' ? trade.price.toFixed(2) : trade.price}</td>
                     <td className="px-2 py-2">
                       <span className={`text-xs font-medium ${(status === 'COMPLETE' || status === 'COMPLETED' || status === 'EXECUTED' || status === 'FILLED') ? 'text-green-600 dark:text-green-400' : status === 'REJECTED' || status === 'FAILED' ? 'text-red-600 dark:text-red-400' : status === 'CANCELLED' || status === 'CANCELED' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                        {status === 'COMPLETE' ? 'EXECUTED' : (trade.status || 'PENDING').toUpperCase()}
+                        {(trade.status || 'PENDING').toUpperCase()}
                       </span>
                     </td>
                   </tr>

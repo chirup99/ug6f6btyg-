@@ -34858,21 +34858,27 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
               return (
                 <div className="space-y-5 py-2">
                   {/* Charge Summary */}
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="bg-violet-50 dark:bg-violet-500/10 rounded-xl p-3 text-center border border-violet-100 dark:border-violet-500/20">
-                      <p className="text-[10px] font-bold text-violet-500 uppercase tracking-wide mb-1">Trades</p>
-                      <p className="text-2xl font-black text-violet-700 dark:text-violet-300">{tradeCount}</p>
-                      <p className="text-[10px] text-violet-400">× ₹2 each</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <div className="bg-violet-50 dark:bg-violet-500/10 rounded-lg px-3 py-2 flex items-center justify-between border border-violet-100 dark:border-violet-500/20">
+                      <p className="text-[10px] font-bold text-violet-500 uppercase tracking-wide">Trades</p>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-violet-700 dark:text-violet-300">{tradeCount}</p>
+                        <p className="text-[9px] text-violet-400">× ₹2 each</p>
+                      </div>
                     </div>
-                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-center border border-slate-200 dark:border-slate-700">
-                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">GST (18%)</p>
-                      <p className="text-2xl font-black text-slate-700 dark:text-slate-200">₹{gstAmount.toFixed(2)}</p>
-                      <p className="text-[10px] text-slate-400">on ₹{baseCharge.toFixed(2)}</p>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2 flex items-center justify-between border border-slate-200 dark:border-slate-700">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">GST 18%</p>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-slate-700 dark:text-slate-200">₹{gstAmount.toFixed(2)}</p>
+                        <p className="text-[9px] text-slate-400">on ₹{baseCharge.toFixed(2)}</p>
+                      </div>
                     </div>
-                    <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-3 text-center border border-emerald-100 dark:border-emerald-500/20">
-                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide mb-1">Total</p>
-                      <p className="text-2xl font-black text-emerald-700 dark:text-emerald-300">₹{totalCharge.toFixed(2)}</p>
-                      <p className="text-[10px] text-emerald-500">incl. GST</p>
+                    <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-lg px-3 py-2 flex items-center justify-between border border-emerald-100 dark:border-emerald-500/20">
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Total</p>
+                      <div className="text-right">
+                        <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">₹{totalCharge.toFixed(2)}</p>
+                        <p className="text-[9px] text-emerald-500">incl. GST</p>
+                      </div>
                     </div>
                   </div>
 

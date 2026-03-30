@@ -14419,7 +14419,19 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // Import handling functions
   const calculateSimplePnL = (trades: any[]) => {
-    const processedTrades = [...trades];
+    // Pre-sort by time BEFORE the P&L loop so broker API order doesn't matter.
+    // Groww returns newest-first; Zerodha returns oldest-first.
+    // Without this sort, SELLs arrive before BUYs and no position is open → P&L stays "-".
+    const processedTrades = [...trades].sort((a, b) => {
+      const tA = parseTradeTime(a.time).getTime();
+      const tB = parseTradeTime(b.time).getTime();
+      if (tA !== tB) return tA - tB;
+      // Same timestamp: BUY before SELL (open before close)
+      if (a.order === 'BUY' && b.order !== 'BUY') return -1;
+      if (a.order !== 'BUY' && b.order === 'BUY') return 1;
+      return 0;
+    });
+
     const positions: {
       [symbol: string]: {
         qty: number;

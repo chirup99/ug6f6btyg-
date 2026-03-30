@@ -2745,6 +2745,23 @@ export default function Home() {
   const [adminAccessRole, setAdminAccessRole] = useState<"developer" | "admin">("developer");
   const [showBrokerageChargesDialog, setShowBrokerageChargesDialog] = useState(false);
   const [showJournalChargesDialog, setShowJournalChargesDialog] = useState(false);
+  const [journalFundBase, setJournalFundBase] = useState<number>(() => {
+    const saved = localStorage.getItem('journalFundBase');
+    return saved ? parseFloat(saved) : 1000;
+  });
+  const [showReferDialog, setShowReferDialog] = useState(false);
+  const [referralCodeInput, setReferralCodeInput] = useState('');
+  const [referralApplied, setReferralApplied] = useState<boolean>(() => {
+    return localStorage.getItem('journalReferralApplied') === 'true';
+  });
+  const myReferralCode = useMemo(() => {
+    let code = localStorage.getItem('myReferralCode');
+    if (!code) {
+      code = 'PERALA' + Math.random().toString(36).substring(2, 7).toUpperCase();
+      localStorage.setItem('myReferralCode', code);
+    }
+    return code;
+  }, []);
   const [adminBugReports, setAdminBugReports] = useState<Array<{ bugId: string; title: string; reportDate: string; bugLocate: string; status: string; username: string; }>>([]); 
   const [loadingBugReports, setLoadingBugReports] = useState(false);
   const [expandedBugId, setExpandedBugId] = useState<string | null>(null);
@@ -28944,29 +28961,50 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         </div>
                                       </div>
                                       
-                                      {/* Utilized Funds Card */}
-                                      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                                        <div className="flex items-center justify-between mb-4">
-                                          <div className="p-2 bg-amber-500/10 rounded-lg text-amber-600 dark:text-amber-400">
-                                            <TrendingUp className="w-5 h-5" />
+                                      {/* Journal Fund Card */}
+                                      {(() => {
+                                        const tradeCharges = parseFloat((tradeHistoryData.length * 2 * 1.18).toFixed(2));
+                                        const journalBalance = parseFloat((journalFundBase - tradeCharges).toFixed(2));
+                                        const isLow = journalBalance < 100;
+                                        return (
+                                          <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                                            <div className="flex items-center justify-between mb-4">
+                                              <div className="p-2 bg-green-500/10 rounded-lg text-green-600 dark:text-green-400">
+                                                <Wallet className="w-5 h-5" />
+                                              </div>
+                                              <Badge variant="outline" className="bg-green-500/5 text-green-600 border-green-500/20 text-[10px]">Journal Fund</Badge>
+                                            </div>
+                                            <div className="space-y-1">
+                                              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Available Balance</p>
+                                              <h4 className={`text-2xl font-black flex items-baseline gap-1 ${journalBalance < 0 ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-900 dark:text-white'}`}>
+                                                ₹{Math.max(0, journalBalance).toFixed(2)}
+                                              </h4>
+                                              <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                ₹{tradeCharges.toFixed(2)} deducted · ₹{journalFundBase.toFixed(0)} base
+                                              </p>
+                                            </div>
+                                            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                                              <button
+                                                className="flex-1 py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[11px] font-bold pointer-events-none select-none cursor-default opacity-60"
+                                                tabIndex={-1}
+                                                aria-disabled="true"
+                                                data-testid="button-add-fund"
+                                              >
+                                                + Add Fund
+                                              </button>
+                                              <button
+                                                onClick={() => setShowReferDialog(true)}
+                                                className="flex-1 py-1.5 px-3 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
+                                                data-testid="button-refer-friend"
+                                              >
+                                                <UserPlus className="w-3 h-3" />
+                                                Refer
+                                              </button>
+                                            </div>
+                                            <p className="text-[9px] text-green-600 dark:text-green-400 font-medium mt-2">🎁 ₹1,000 joining offer applied</p>
                                           </div>
-                                          <Badge variant="outline" className="bg-amber-500/5 text-amber-600 border-amber-500/20">Utilized</Badge>
-                                        </div>
-                                        <div className="space-y-1">
-                                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Margin Used</p>
-                                          <h4 className="text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1">
-                                            {activeBroker === 'delta' ? '$' : '₹'}0.00
-                                          </h4>
-                                        </div>
-                                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                          <span>Live Exposure</span>
-                                          <div className="flex gap-1">
-                                            <div className="w-1 h-1 rounded-full bg-amber-500" />
-                                            <div className="w-1 h-1 rounded-full bg-amber-500/40" />
-                                            <div className="w-1 h-1 rounded-full bg-amber-500/20" />
-                                          </div>
-                                        </div>
-                                      </div>
+                                        );
+                                      })()}
 
                                       {/* Journal Charges Card */}
                                       {(() => {
@@ -35153,6 +35191,86 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </ul>
                   </div>
                 </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Refer Dialog */}
+        <Dialog open={showReferDialog} onOpenChange={setShowReferDialog}>
+          <DialogContent className="w-[95vw] max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0 overflow-hidden">
+            <button
+              onClick={() => setShowReferDialog(false)}
+              className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+              data-testid="close-refer-dialog"
+            >
+              <X className="w-4 h-4" />
+            </button>
+            <div className="bg-gradient-to-br from-violet-500 to-purple-600 p-6 text-white text-center">
+              <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                <UserPlus className="w-6 h-6" />
+              </div>
+              <h3 className="text-lg font-black">Refer &amp; Earn</h3>
+              <p className="text-sm text-violet-100 mt-1">Get <span className="font-black text-white">₹200</span> journal fund for every friend you refer!</p>
+            </div>
+            <div className="p-5 space-y-4">
+              <div>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Your Referral Code</p>
+                <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
+                  <span className="flex-1 font-black text-slate-900 dark:text-white tracking-wider text-sm">{myReferralCode}</span>
+                  <button
+                    onClick={() => {
+                      navigator.clipboard?.writeText(myReferralCode);
+                      toast({ title: "Copied!", description: "Referral code copied to clipboard" });
+                    }}
+                    className="text-violet-500 hover:text-violet-600 transition-colors"
+                    data-testid="copy-referral-code"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
+              <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Have a Referral Code?</p>
+                {referralApplied ? (
+                  <div className="flex items-center gap-2 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl px-4 py-3">
+                    <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                    <span className="text-sm font-bold text-green-700 dark:text-green-400">Referral bonus of ₹200 applied!</span>
+                  </div>
+                ) : (
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={referralCodeInput}
+                      onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+                      placeholder="Enter code e.g. PERALA12345"
+                      className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                      data-testid="input-referral-code"
+                    />
+                    <button
+                      onClick={() => {
+                        if (!referralCodeInput.trim()) {
+                          toast({ title: "Enter a code", description: "Please enter a referral code", variant: "destructive" });
+                          return;
+                        }
+                        const newBase = journalFundBase + 200;
+                        setJournalFundBase(newBase);
+                        localStorage.setItem('journalFundBase', String(newBase));
+                        setReferralApplied(true);
+                        localStorage.setItem('journalReferralApplied', 'true');
+                        setReferralCodeInput('');
+                        toast({ title: "₹200 Added!", description: "Referral bonus applied to your journal fund!" });
+                      }}
+                      className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl transition-colors"
+                      data-testid="button-apply-referral"
+                    >
+                      Apply
+                    </button>
+                  </div>
+                )}
+              </div>
+              <div className="bg-violet-50 dark:bg-violet-500/10 rounded-xl p-3 text-[11px] text-violet-700 dark:text-violet-300 leading-relaxed">
+                Share your code → Friend signs up → <span className="font-bold">Both get ₹200</span> journal fund added instantly.
               </div>
             </div>
           </DialogContent>

@@ -12326,7 +12326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!accessToken) return res.status(400).json({ error: "Access token required" });
       const { fetchGrowwFunds } = await import('./services/broker-integrations/growwService');
       const funds = await fetchGrowwFunds(accessToken as string);
-      res.json({ success: true, funds });
+      res.json({ success: true, funds: funds ?? 0, fundsAvailable: funds !== null });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
     }

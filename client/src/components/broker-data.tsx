@@ -158,7 +158,7 @@ export function BrokerData(props: BrokerDataProps) {
   const [growwOrders, setGrowwOrders] = useState<any[]>([]);
   const [fetchingGrowwOrders, setFetchingGrowwOrders] = useState(false);
   const [growwPositions, setGrowwPositions] = useState<any[]>([]);
-  const [growwFundsValue, setGrowwFundsValue] = useState<number>(0);
+  const [growwFundsValue, setGrowwFundsValue] = useState<number | null>(null);
 
   // Refresh Groww orders every 15 seconds if connected
   useEffect(() => {
@@ -194,8 +194,8 @@ export function BrokerData(props: BrokerDataProps) {
     const refreshGrowwFunds = async () => {
       try {
         const response = await apiRequest("GET", `/api/broker/groww/funds?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
-        if (response.success && response.funds !== undefined) {
-          setGrowwFundsValue(response.funds);
+        if (response.success && response.fundsAvailable) {
+          setGrowwFundsValue(Number(response.funds));
         }
       } catch (error) {
         console.error("Error refreshing Groww funds:", error);
@@ -209,10 +209,11 @@ export function BrokerData(props: BrokerDataProps) {
       refreshGrowwOrders();
       refreshGrowwPositions();
     }, 3000);
-    const fundsInterval = setInterval(refreshGrowwFunds, 600);
+    const fundsInterval = setInterval(refreshGrowwFunds, 5000);
     return () => {
       clearInterval(ordersInterval);
       clearInterval(fundsInterval);
+      setGrowwFundsValue(null);
     };
   }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
 
@@ -243,7 +244,7 @@ export function BrokerData(props: BrokerDataProps) {
   };
 
   const brokerFundsValue = activeBroker === 'groww'
-    ? (growwFundsValue || brokerFunds || 0)
+    ? (growwFundsValue !== null ? growwFundsValue : (brokerFunds ?? 0))
     : brokerFunds;
 
   const allBrokerInfo: Record<string, { logo: string; id: string; name: string; rounded?: boolean }> = {

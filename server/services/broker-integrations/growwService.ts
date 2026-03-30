@@ -111,7 +111,7 @@ export async function getGrowwUserProfile(accessToken: string): Promise<{ userId
   }
 }
 
-export async function fetchGrowwFunds(accessToken: string): Promise<number> {
+export async function fetchGrowwFunds(accessToken: string): Promise<number | null> {
   try {
     console.log('💰 Fetching Groww margin/funds from /margins/detail/user...');
     const response = await axios.get(`${BASE_URL}/margins/detail/user`, {
@@ -122,7 +122,25 @@ export async function fetchGrowwFunds(accessToken: string): Promise<number> {
     const data = parsePayload(response.data);
     console.log('💰 Groww funds raw:', JSON.stringify(data));
 
-    return (
+    // Groww SDK: payload.equity.net or payload.equity.available_margin
+    const equitySegment = data?.equity || data?.Equity || null;
+    if (equitySegment) {
+      const val =
+        equitySegment.net ??
+        equitySegment.available_margin ??
+        equitySegment.available_amount ??
+        equitySegment.available_balance ??
+        equitySegment.availableMargin ??
+        equitySegment.clear_cash ??
+        null;
+      if (val !== null) return Number(val);
+    }
+
+    // Flat-structure fallbacks
+    const flatVal =
+      data?.net ??
+      data?.available_margin ??
+      data?.availableMargin ??
       data?.clear_cash ??
       data?.available_balance ??
       data?.availableBalance ??
@@ -130,11 +148,12 @@ export async function fetchGrowwFunds(accessToken: string): Promise<number> {
       data?.availableCash ??
       data?.net_available ??
       data?.netAvailable ??
-      0
-    );
+      null;
+
+    return flatVal !== null ? Number(flatVal) : null;
   } catch (error: any) {
     console.error('❌ Groww Funds Error:', error.response?.data || error.message);
-    return 0;
+    return null;
   }
 }
 
@@ -205,6 +224,10 @@ export async function fetchGrowwPositions(accessToken: string): Promise<any[]> {
 
     const data = parsePayload(response.data);
     console.log('💼 Groww positions raw keys:', Object.keys(data || {}));
+    if (Array.isArray(data?.positionList || data?.position_list || data?.positions || (Array.isArray(data) ? data : []))) {
+      const firstPos = (data?.positionList || data?.position_list || data?.positions || data)?.[0];
+      if (firstPos) console.log('💼 Groww first position sample:', JSON.stringify(firstPos));
+    }
 
     const rawList =
       data?.positionList ||
@@ -220,14 +243,15 @@ export async function fetchGrowwPositions(accessToken: string): Promise<any[]> {
         pos.symbol || pos.scrip_code || pos.scripCode || '';
 
       const entryPrice = Number(
-        pos.buy_avg || pos.buy_average || pos.average_buy_price ||
-        pos.average_price || pos.avgPrice || pos.avg_price ||
-        pos.entry_price || pos.entryPrice || 0
+        pos.buy_avg_price ?? pos.buy_avg ?? pos.buy_average ?? pos.average_buy_price ??
+        pos.average_price ?? pos.avgPrice ?? pos.avg_price ??
+        pos.entry_price ?? pos.entryPrice ?? 0
       );
 
       const currentPrice = Number(
-        pos.ltp || pos.last_price || pos.last_traded_price || pos.lastTradedPrice ||
-        pos.current_price || pos.currentPrice || pos.close_price || pos.closePrice || 0
+        pos.ltp ?? pos.last_traded_price ?? pos.lastTradedPrice ??
+        pos.last_price ?? pos.current_price ?? pos.currentPrice ??
+        pos.close_price ?? pos.closePrice ?? 0
       );
 
       const qty = Number(

@@ -5371,6 +5371,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [dhanTokenInput, setDhanTokenInput] = useState(localStorage.getItem("dhan_access_token") || "");
   const [showDhanToken, setShowDhanToken] = useState(false);
   const [isGrowwDialogOpen, setIsGrowwDialogOpen] = useState(false);
+  const [isGrowwConnecting, setIsGrowwConnecting] = useState(false);
   const [growwApiKeyInput, setGrowwApiKeyInput] = useState("");
   const [growwApiSecretInput, setGrowwApiSecretInput] = useState("");
   const [showGrowwSecret, setShowGrowwSecret] = useState(false);
@@ -5436,6 +5437,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       return;
     }
     
+    setIsGrowwConnecting(true);
     try {
       const response = await apiRequest("POST", "/api/brokers/import", {
         broker: "groww",
@@ -5448,18 +5450,21 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       if (response.success) {
         const accessToken = response.accessToken;
 
-        // Fetch real user profile from Groww
+        // Fetch profile and funds in parallel — no sequential waiting
         let userId = growwApiKeyInput.substring(0, 6);
         let userName = "Groww User";
-        try {
-          const profileRes = await fetch(`/api/broker/groww/profile?accessToken=${encodeURIComponent(accessToken)}`);
-          const profileData = await profileRes.json();
-          if (profileData.success) {
-            userId = profileData.userId || userId;
-            userName = profileData.userName || userName;
-          }
-        } catch (e) {
-          console.error("Failed to fetch Groww profile", e);
+        const [profileResult, fundsResult] = await Promise.allSettled([
+          fetch(`/api/broker/groww/profile?accessToken=${encodeURIComponent(accessToken)}`).then(r => r.json()),
+          fetch(`/api/broker/groww/funds?accessToken=${encodeURIComponent(accessToken)}`).then(r => r.json()),
+        ]);
+
+        if (profileResult.status === 'fulfilled' && profileResult.value?.success) {
+          userId = profileResult.value.userId || userId;
+          userName = profileResult.value.userName || userName;
+        }
+        if (fundsResult.status === 'fulfilled' && fundsResult.value?.success) {
+          setBrokerFunds(fundsResult.value.funds);
+          localStorage.setItem("zerodha_broker_funds", String(fundsResult.value.funds));
         }
 
         localStorage.setItem("growwIsConnected", "true");
@@ -5472,18 +5477,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         setGrowwUserId(userId);
         setGrowwUserName(userName);
         setIsGrowwDialogOpen(false);
-        
-        // Fetch funds after connection
-        try {
-          const fundsRes = await fetch(`/api/broker/groww/funds?accessToken=${encodeURIComponent(accessToken)}`);
-          const fundsData = await fundsRes.json();
-          if (fundsData.success) {
-            setBrokerFunds(fundsData.funds);
-            localStorage.setItem("zerodha_broker_funds", fundsData.funds.toString());
-          }
-        } catch (e) {
-          console.error("Failed to fetch Groww funds", e);
-        }
 
         toast({
           title: "Connected",
@@ -5496,6 +5489,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         description: error.message || "Failed to connect to Groww",
         variant: "destructive"
       });
+    } finally {
+      setIsGrowwConnecting(false);
     }
   };
 
@@ -26501,15 +26496,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 </div>
                               </div>
                                 <div className="flex justify-end gap-3 pt-2">
-                                  <Button variant="outline" onClick={() => setIsGrowwDialogOpen(false)}>
+                                  <Button variant="outline" onClick={() => setIsGrowwDialogOpen(false)} disabled={isGrowwConnecting}>
                                     Cancel
                                   </Button>
                                   <Button 
                                     onClick={submitGrowwCredentials} 
-                                    className="bg-blue-600 hover:bg-blue-700 text-white"
-                                    disabled={!growwApiKeyInput || !growwApiSecretInput}
+                                    className="bg-blue-600 hover:bg-blue-700 text-white min-w-[140px]"
+                                    disabled={!growwApiKeyInput || !growwApiSecretInput || isGrowwConnecting}
                                   >
-                                    Connect Account
+                                    {isGrowwConnecting ? (
+                                      <span className="flex items-center gap-2">
+                                        <svg className="animate-spin h-3.5 w-3.5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                        </svg>
+                                        Connecting...
+                                      </span>
+                                    ) : "Connect Account"}
                                   </Button>
                                 </div>
                             </DialogContent>

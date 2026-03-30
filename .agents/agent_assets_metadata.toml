@@ -42,3 +42,9 @@ id = "J7NGb6BdnlZZ-hELHr4pK"
 uri = "file://AWS_EB_Deployment_Guide.docx"
 type = "word_document"
 title = "AWS Elastic Beanstalk Deployment Guide — Beginner Step-by-Step"
+
+[[outputs]]
+id = "EaHOSYg2iggWRtl4uXjRR"
+uri = "file://Perala_AWS_Deployment_Guide.docx"
+type = "word_document"
+title = "Perala AWS Deployment Guide — Complete Beginner's Reference"

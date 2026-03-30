@@ -13490,6 +13490,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     const dateKey = formatDateKey(date);
 
     // If awsData is provided (from PersonalHeatmap), use it directly - NO API FETCH
+    // Also check tradingDataByDate cache (loaded at startup) so we skip the API call for known dates
+    const cachedData = awsData !== undefined ? awsData : tradingDataByDate[dateKey];
+    if (cachedData !== undefined) {
+      console.log(`✅ Using cached data for ${dateKey} (no API fetch needed):`, cachedData);
+      awsData = cachedData;
+    }
+
     if (awsData !== undefined) {
       console.log(`✅ Using FRESH AWS data from PersonalHeatmap for ${dateKey}:`, awsData);
       let journalData = awsData;

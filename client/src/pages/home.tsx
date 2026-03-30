@@ -28993,9 +28993,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                               <h4 className={`text-2xl font-black flex items-baseline gap-1 ${journalFundBase < 0 ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-900 dark:text-white'}`}>
                                                 ₹{Math.max(0, journalFundBase).toFixed(2)}
                                               </h4>
-                                              <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                                                ₹{journalLastDeducted.toFixed(2)} deducted on save
-                                              </p>
+                                              <button
+                                                onClick={() => setShowJournalChargesDialog(true)}
+                                                className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-colors mt-1"
+                                                data-testid="button-journal-charges-info"
+                                              >
+                                                <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-tight">
+                                                  {tradeHistoryData.length} trades × ₹2 + 18% GST
+                                                </span>
+                                                <Info className="w-3 h-3 text-violet-400 dark:text-violet-500 flex-shrink-0" />
+                                              </button>
                                             </div>
                                             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
                                               <button

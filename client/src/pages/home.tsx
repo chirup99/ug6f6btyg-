@@ -168,6 +168,7 @@ import {
   Mic,
   MessageCircle,
   BookOpen,
+  Receipt,
   Home as HomeIcon,
   Search,
   Code,
@@ -2743,6 +2744,7 @@ export default function Home() {
   const [adminAccessEmail, setAdminAccessEmail] = useState("");
   const [adminAccessRole, setAdminAccessRole] = useState<"developer" | "admin">("developer");
   const [showBrokerageChargesDialog, setShowBrokerageChargesDialog] = useState(false);
+  const [showJournalChargesDialog, setShowJournalChargesDialog] = useState(false);
   const [adminBugReports, setAdminBugReports] = useState<Array<{ bugId: string; title: string; reportDate: string; bugLocate: string; status: string; username: string; }>>([]); 
   const [loadingBugReports, setLoadingBugReports] = useState(false);
   const [expandedBugId, setExpandedBugId] = useState<string | null>(null);
@@ -28887,7 +28889,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   }
 
                                   return (
-                                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                       {/* Available Cash Card */}
                                       <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                                         <div className="flex items-center justify-between mb-4">
@@ -28965,6 +28967,63 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                           </div>
                                         </div>
                                       </div>
+
+                                      {/* Journal Charges Card */}
+                                      {(() => {
+                                        const tradeCount = tradeHistoryData.length;
+                                        const baseCharge = tradeCount * 2;
+                                        const gstAmount = baseCharge * 0.18;
+                                        const totalCharge = baseCharge + gstAmount;
+
+                                        // Build per-day charge data from tradingDataByDate
+                                        const chargeTrendData = Object.keys(tradingDataByDate).sort().map(dateKey => {
+                                          const dayData = tradingDataByDate[dateKey];
+                                          const dayTrades = (dayData?.tradeHistory || []).length || (dayData?.tradingData?.performanceMetrics?.totalTrades || dayData?.performanceMetrics?.totalTrades || 0);
+                                          const dayBase = dayTrades * 2;
+                                          const dayTotal = dayBase * 1.18;
+                                          return { date: dateKey, trades: dayTrades, charge: parseFloat(dayTotal.toFixed(2)) };
+                                        }).filter(d => d.trades > 0);
+
+                                        const avgDailyTrades = chargeTrendData.length > 0
+                                          ? chargeTrendData.reduce((s, d) => s + d.trades, 0) / chargeTrendData.length
+                                          : 0;
+                                        const isOverTrading = tradeCount > avgDailyTrades * 1.5 && avgDailyTrades > 0;
+
+                                        return (
+                                          <div
+                                            className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer"
+                                            onClick={() => setShowJournalChargesDialog(true)}
+                                            data-testid="journal-charges-card"
+                                          >
+                                            <div className="flex items-center justify-between mb-4">
+                                              <div className="p-2 bg-violet-500/10 rounded-lg text-violet-600 dark:text-violet-400">
+                                                <Receipt className="w-5 h-5" />
+                                              </div>
+                                              <Badge variant="outline" className="bg-violet-500/5 text-violet-600 border-violet-500/20 text-[10px]">Today's Fee</Badge>
+                                            </div>
+                                            <div className="space-y-1">
+                                              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Journal Charges</p>
+                                              <h4 className="text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1">
+                                                ₹{totalCharge.toFixed(2)}
+                                              </h4>
+                                              <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                                                {tradeCount} trade{tradeCount !== 1 ? 's' : ''} × ₹2 + 18% GST
+                                              </p>
+                                            </div>
+                                            <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                                              <span className="flex items-center gap-1">
+                                                {isOverTrading && <span className="text-orange-500">⚠</span>}
+                                                {isOverTrading ? 'Over-Trading' : 'Current Day'}
+                                              </span>
+                                              <div className="flex gap-1">
+                                                <div className="w-1 h-1 rounded-full bg-violet-500" />
+                                                <div className="w-1 h-1 rounded-full bg-violet-500/40" />
+                                                <div className="w-1 h-1 rounded-full bg-violet-500/20" />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        );
+                                      })()}
 
                                       {/* P&L Impact Card */}
                                       <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
@@ -34701,6 +34760,198 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         </Dialog>
 
         {/* Brokerage Charges Breakdown Dialog */}
+        {/* Journal Charges Dialog */}
+        <Dialog open={showJournalChargesDialog} onOpenChange={setShowJournalChargesDialog}>
+          <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-lg font-bold">
+                <div className="p-2 bg-violet-500/10 rounded-lg text-violet-600 dark:text-violet-400">
+                  <Receipt className="w-5 h-5" />
+                </div>
+                Journal Charges Breakdown
+              </DialogTitle>
+              <DialogDescription className="text-slate-500 dark:text-slate-400">
+                Perala charges ₹2 per trade + 18% GST to support psychology-based journaling without a subscription.
+              </DialogDescription>
+            </DialogHeader>
+            {(() => {
+              const tradeCount = tradeHistoryData.length;
+              const baseCharge = tradeCount * 2;
+              const gstAmount = parseFloat((baseCharge * 0.18).toFixed(2));
+              const totalCharge = parseFloat((baseCharge + gstAmount).toFixed(2));
+
+              const chargeTrendData = Object.keys(tradingDataByDate).sort().map(dateKey => {
+                const dayData = tradingDataByDate[dateKey];
+                const dayTrades = (dayData?.tradeHistory || []).length || (dayData?.tradingData?.performanceMetrics?.totalTrades || dayData?.performanceMetrics?.totalTrades || 0);
+                const dayBase = dayTrades * 2;
+                const dayTotal = parseFloat((dayBase * 1.18).toFixed(2));
+                const label = dateKey.slice(5); // "MM-DD"
+                return { date: label, fullDate: dateKey, trades: dayTrades, charge: dayTotal };
+              }).filter(d => d.trades > 0);
+
+              const avgDailyTrades = chargeTrendData.length > 0
+                ? chargeTrendData.reduce((s, d) => s + d.trades, 0) / chargeTrendData.length
+                : 0;
+              const avgDailyCharge = chargeTrendData.length > 0
+                ? chargeTrendData.reduce((s, d) => s + d.charge, 0) / chargeTrendData.length
+                : 0;
+              const isOverTrading = tradeCount > avgDailyTrades * 1.5 && avgDailyTrades > 0;
+              const isFOMO = tradeCount > avgDailyTrades * 2 && avgDailyTrades > 0;
+              const overTradingPct = avgDailyTrades > 0 ? Math.round(((tradeCount - avgDailyTrades) / avgDailyTrades) * 100) : 0;
+
+              return (
+                <div className="space-y-5 py-2">
+                  {/* Charge Summary */}
+                  <div className="grid grid-cols-3 gap-3">
+                    <div className="bg-violet-50 dark:bg-violet-500/10 rounded-xl p-3 text-center border border-violet-100 dark:border-violet-500/20">
+                      <p className="text-[10px] font-bold text-violet-500 uppercase tracking-wide mb-1">Trades</p>
+                      <p className="text-2xl font-black text-violet-700 dark:text-violet-300">{tradeCount}</p>
+                      <p className="text-[10px] text-violet-400">× ₹2 each</p>
+                    </div>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl p-3 text-center border border-slate-200 dark:border-slate-700">
+                      <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide mb-1">GST (18%)</p>
+                      <p className="text-2xl font-black text-slate-700 dark:text-slate-200">₹{gstAmount.toFixed(2)}</p>
+                      <p className="text-[10px] text-slate-400">on ₹{baseCharge.toFixed(2)}</p>
+                    </div>
+                    <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-3 text-center border border-emerald-100 dark:border-emerald-500/20">
+                      <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide mb-1">Total</p>
+                      <p className="text-2xl font-black text-emerald-700 dark:text-emerald-300">₹{totalCharge.toFixed(2)}</p>
+                      <p className="text-[10px] text-emerald-400">incl. GST</p>
+                    </div>
+                  </div>
+
+                  {/* Per-trade Breakdown */}
+                  {tradeCount > 0 && (
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                      <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Per-Trade Breakdown</h4>
+                      </div>
+                      <div className="max-h-48 overflow-y-auto">
+                        <table className="w-full text-xs text-left">
+                          <thead className="text-[10px] uppercase bg-slate-50/80 dark:bg-slate-800/30 text-slate-500 sticky top-0">
+                            <tr>
+                              <th className="px-3 py-2 font-bold">#</th>
+                              <th className="px-3 py-2 font-bold">Trade</th>
+                              <th className="px-3 py-2 font-bold text-right">Base</th>
+                              <th className="px-3 py-2 font-bold text-right">GST</th>
+                              <th className="px-3 py-2 font-bold text-right">Total</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                            {tradeHistoryData.map((trade: any, idx: number) => (
+                              <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
+                                <td className="px-3 py-2 text-slate-400">{idx + 1}</td>
+                                <td className="px-3 py-2">
+                                  <span className={`font-bold ${trade.order === 'BUY' ? 'text-emerald-600' : 'text-red-500'}`}>{trade.order}</span>
+                                  <span className="text-slate-600 dark:text-slate-400 ml-1">{trade.symbol || trade.name || '-'}</span>
+                                </td>
+                                <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-400">₹2.00</td>
+                                <td className="px-3 py-2 text-right text-slate-500">₹0.36</td>
+                                <td className="px-3 py-2 text-right font-bold text-violet-600 dark:text-violet-400">₹2.36</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                          <tfoot className="bg-violet-50 dark:bg-violet-500/10 border-t border-violet-100 dark:border-violet-500/20">
+                            <tr>
+                              <td className="px-3 py-2 font-bold text-violet-700 dark:text-violet-300" colSpan={2}>Total ({tradeCount} trades)</td>
+                              <td className="px-3 py-2 text-right font-bold text-violet-700 dark:text-violet-300">₹{baseCharge.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right font-bold text-violet-700 dark:text-violet-300">₹{gstAmount.toFixed(2)}</td>
+                              <td className="px-3 py-2 text-right font-black text-violet-700 dark:text-violet-300">₹{totalCharge.toFixed(2)}</td>
+                            </tr>
+                          </tfoot>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* FOMO & Over-Trading Insights */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                      <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Over-Trading & FOMO Insight</h4>
+                      {isOverTrading && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">
+                          {isFOMO ? '🔥 FOMO Alert' : '⚠ Over-Trading'}
+                        </span>
+                      )}
+                    </div>
+                    <div className="p-4 space-y-3">
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3">
+                          <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Today's Trades</p>
+                          <p className={`text-xl font-black ${isOverTrading ? 'text-orange-500' : 'text-slate-800 dark:text-slate-200'}`}>{tradeCount}</p>
+                          <p className="text-[10px] text-slate-400">Avg: {avgDailyTrades.toFixed(1)} trades/day</p>
+                        </div>
+                        <div className="bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3">
+                          <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Today's Charges</p>
+                          <p className={`text-xl font-black ${isOverTrading ? 'text-orange-500' : 'text-violet-600 dark:text-violet-400'}`}>₹{totalCharge.toFixed(2)}</p>
+                          <p className="text-[10px] text-slate-400">Avg: ₹{(avgDailyCharge).toFixed(2)}/day</p>
+                        </div>
+                      </div>
+                      {isOverTrading && (
+                        <div className={`rounded-lg p-3 text-xs border ${isFOMO ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400' : 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20 text-orange-700 dark:text-orange-400'}`}>
+                          {isFOMO
+                            ? `🔥 FOMO detected! You traded ${overTradingPct}% more than your average today. Excessive trading often leads to emotional decisions and compounding losses.`
+                            : `⚠ You're trading ${overTradingPct}% above your daily average. Consider if each trade had a clear setup — over-trading erodes discipline and increases costs.`
+                          }
+                        </div>
+                      )}
+                      {!isOverTrading && tradeCount > 0 && (
+                        <div className="rounded-lg p-3 text-xs bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400">
+                          ✅ Good discipline! Your trade count is within healthy range compared to your average.
+                        </div>
+                      )}
+                      {tradeCount === 0 && (
+                        <div className="rounded-lg p-3 text-xs bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 text-slate-500">
+                          No trades recorded for this session yet.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Trend Chart */}
+                  {chargeTrendData.length > 1 && (
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                      <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Journal Charges Trend</h4>
+                        <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-violet-500 rounded" /> Charges (₹)</span>
+                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-orange-400 rounded border-t-2 border-dashed border-orange-400" /> Avg</span>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <ResponsiveContainer width="100%" height={160}>
+                          <LineChart data={chargeTrendData} margin={{ top: 5, right: 15, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
+                            <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                            <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={28} tickFormatter={v => `₹${v}`} />
+                            <Tooltip
+                              content={({ active, payload, label }: any) => {
+                                if (active && payload && payload.length) {
+                                  const d = payload[0]?.payload;
+                                  return (
+                                    <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 shadow-lg text-xs">
+                                      <p className="font-bold text-slate-700 dark:text-slate-200 mb-1">{label}</p>
+                                      <p className="text-violet-600 dark:text-violet-400">{d.trades} trades → ₹{d.charge.toFixed(2)}</p>
+                                      {avgDailyCharge > 0 && <p className="text-orange-400">Avg: ₹{avgDailyCharge.toFixed(2)}</p>}
+                                    </div>
+                                  );
+                                }
+                                return null;
+                              }}
+                            />
+                            <ReferenceLine y={avgDailyCharge} stroke="#fb923c" strokeDasharray="4 2" strokeWidth={1.5} label={{ value: 'Avg', position: 'right', fontSize: 8, fill: '#fb923c' }} />
+                            <Line type="monotone" dataKey="charge" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3, fill: '#8b5cf6', strokeWidth: 0 }} activeDot={{ r: 4 }} />
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
+          </DialogContent>
+        </Dialog>
+
         <Dialog open={showBrokerageChargesDialog} onOpenChange={setShowBrokerageChargesDialog}>
           <DialogContent className="w-[95vw] max-w-4xl max-h-[90dvh] overflow-y-auto rounded-2xl">
             <DialogHeader>

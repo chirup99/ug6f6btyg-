@@ -7024,8 +7024,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             return;
           }
           const data = await res.json();
-          setBrokerOrders(data.trades || []);
-          console.log('✅ [ORDERS]', broker, 'Fetched', (data.trades || []).length, 'trades');
+          setBrokerOrders(data.trades || data.orders || []);
+          console.log('✅ [ORDERS]', broker, 'Fetched', (data.trades || data.orders || []).length, 'trades');
         } catch (err) {
           console.error('❌ [ORDERS] Error fetching trades:', err);
           setBrokerOrders([]);

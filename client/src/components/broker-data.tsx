@@ -157,34 +157,41 @@ export function BrokerData(props: BrokerDataProps) {
 
   const [growwOrders, setGrowwOrders] = useState<any[]>([]);
   const [fetchingGrowwOrders, setFetchingGrowwOrders] = useState(false);
+  const growwInitialLoadDone = useRef(false);
   const [growwPositions, setGrowwPositions] = useState<any[]>([]);
   const [growwFundsValue, setGrowwFundsValue] = useState<number | null>(null);
   // Live LTP overlay for Groww positions — updated every 600ms
   const [growwLivePrices, setGrowwLivePrices] = useState<Record<string, number>>({});
 
-  // Refresh Groww orders every 15 seconds if connected
+  // Refresh Groww orders every 10 seconds if connected (reduced from 3s to avoid constant loading flicker)
   useEffect(() => {
     if (activeBroker !== 'groww' || !showOrderModal) return;
 
+    // Reset initial load flag when modal opens
+    growwInitialLoadDone.current = false;
+
     const refreshGrowwOrders = async () => {
-      setFetchingGrowwOrders(true);
+      // Only show loading spinner on the very first fetch; background polls are silent
+      const isFirst = !growwInitialLoadDone.current;
+      if (isFirst) setFetchingGrowwOrders(true);
       try {
         const response = await apiRequest("GET", `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
-        console.log("🔍 [GROWW] Orders refresh response:", response);
         if (response.success && response.orders) {
           setGrowwOrders(response.orders);
         }
       } catch (error) {
         console.error("Error refreshing Groww orders:", error);
       } finally {
-        setFetchingGrowwOrders(false);
+        if (isFirst) {
+          setFetchingGrowwOrders(false);
+          growwInitialLoadDone.current = true;
+        }
       }
     };
 
     const refreshGrowwPositions = async () => {
       try {
         const response = await apiRequest("GET", `/api/broker/groww/positions?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
-        console.log("🔍 [GROWW] Positions refresh response:", response);
         if (response.success && response.positions) {
           setGrowwPositions(response.positions);
         }
@@ -207,15 +214,17 @@ export function BrokerData(props: BrokerDataProps) {
     refreshGrowwOrders();
     refreshGrowwPositions();
     refreshGrowwFunds();
+    // Poll every 10s instead of 3s — orders don't change that fast and 3s caused constant loading flicker
     const ordersInterval = setInterval(() => {
       refreshGrowwOrders();
       refreshGrowwPositions();
-    }, 3000);
-    const fundsInterval = setInterval(refreshGrowwFunds, 5000);
+    }, 10000);
+    const fundsInterval = setInterval(refreshGrowwFunds, 10000);
     return () => {
       clearInterval(ordersInterval);
       clearInterval(fundsInterval);
       setGrowwFundsValue(null);
+      growwInitialLoadDone.current = false;
     };
   }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
 

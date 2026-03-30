@@ -220,24 +220,34 @@ export function BrokerData(props: BrokerDataProps) {
   }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
 
   // Real-time LTP polling for Groww positions — fires every 600ms
+  // Works whether Groww is the primary or secondary connected broker
   useEffect(() => {
-    if (activeBroker !== 'groww' || !showOrderModal || growwPositions.length === 0) return;
+    const isGrowwPrimary   = activeBroker === 'groww' && showOrderModal;
+    const isGrowwSecondary = secondaryBroker === 'groww' && showSecondaryOrderModal;
+    if (!isGrowwPrimary && !isGrowwSecondary) return;
+    if (!growwAccessToken) return;
+
+    // Use whichever positions list is available
+    const positionsToUse = isGrowwPrimary
+      ? growwPositions
+      : (secondaryBrokerPositions || []);
+
+    if (positionsToUse.length === 0) return;
 
     const fetchLTP = async () => {
       try {
-        // Build "NSE_IDEA,NSE_YESBANK" style exchange_symbols string
-        const exchangeSymbols = growwPositions
-          .filter(p => p.symbol && (p.status || 'OPEN').toUpperCase() === 'OPEN')
-          .map(p => `${p.exchange || 'NSE'}_${p.symbol}`)
-          .join(',');
+        // Build repeated exchange_symbols params as Groww Python SDK does
+        const symbolsToFetch = positionsToUse
+          .filter(p => p.symbol && (p.status || 'OPEN').toUpperCase() === 'OPEN');
 
-        if (!exchangeSymbols) return;
+        if (!symbolsToFetch.length) return;
 
-        const response = await apiRequest(
-          "GET",
-          `/api/broker/groww/ltp?accessToken=${encodeURIComponent(growwAccessToken || '')}&exchange_symbols=${encodeURIComponent(exchangeSymbols)}&segment=CASH`,
-          null,
-        );
+        const qs = new URLSearchParams({ accessToken: growwAccessToken, segment: 'CASH' });
+        for (const p of symbolsToFetch) {
+          qs.append('exchange_symbols', `${p.exchange || 'NSE'}_${p.symbol}`);
+        }
+
+        const response = await apiRequest("GET", `/api/broker/groww/ltp?${qs.toString()}`, null);
 
         if (response.success && response.prices) {
           setGrowwLivePrices(response.prices as Record<string, number>);
@@ -250,7 +260,7 @@ export function BrokerData(props: BrokerDataProps) {
     fetchLTP();
     const ltpInterval = setInterval(fetchLTP, 600);
     return () => clearInterval(ltpInterval);
-  }, [activeBroker, growwAccessToken, showOrderModal, growwPositions]);
+  }, [activeBroker, secondaryBroker, growwAccessToken, showOrderModal, showSecondaryOrderModal, growwPositions, secondaryBrokerPositions]);
 
   const displayOrders = activeBroker === 'groww' ? growwOrders : brokerOrders;
   const displayPositions = activeBroker === 'groww' ? growwPositions : brokerPositions;
@@ -556,7 +566,7 @@ export function BrokerData(props: BrokerDataProps) {
                   {renderOrdersTable(secondaryBrokerOrders, fetchingSecondaryBroker || false, recordSecondaryBrokerOrders ? () => recordSecondaryBrokerOrders(secondaryBrokerOrders) : undefined)}
                 </TabsContent>
                 <TabsContent value="positions" className="space-y-4">
-                  {renderPositionsTable(secondaryBrokerPositions)}
+                  {renderPositionsTable(secondaryBrokerPositions, secondaryBroker === 'groww' ? growwLivePrices : {})}
                 </TabsContent>
               </Tabs>
             </div>

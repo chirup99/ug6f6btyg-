@@ -12419,11 +12419,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const { accessToken, exchange_symbols, segment } = req.query;
       if (!accessToken) return res.status(400).json({ error: "Access token required" });
-      if (!exchange_symbols) return res.status(400).json({ error: "exchange_symbols required (e.g. NSE_IDEA,NSE_YESBANK)" });
+      if (!exchange_symbols) return res.status(400).json({ error: "exchange_symbols required" });
+
+      // express parses repeated params as arrays; normalise to comma-joined string for fetchGrowwLTP
+      const symbolsStr = Array.isArray(exchange_symbols)
+        ? exchange_symbols.join(',')
+        : (exchange_symbols as string);
+
       const { fetchGrowwLTP } = await import('./services/broker-integrations/growwService');
       const prices = await fetchGrowwLTP(
         accessToken as string,
-        exchange_symbols as string,
+        symbolsStr,
         (segment as string) || 'CASH',
       );
       res.json({ success: true, prices });

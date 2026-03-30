@@ -237,27 +237,44 @@ export async function fetchGrowwLTP(
   exchangeSymbols: string,
   segment: string = 'CASH',
 ): Promise<Record<string, number>> {
+  const symbolList = exchangeSymbols.split(',').map(s => s.trim()).filter(Boolean);
+  if (!symbolList.length) return {};
+
   try {
-    console.log(`📡 [GROWW LTP] Fetching LTP for: ${exchangeSymbols}`);
-    const response = await axios.get(`${BASE_URL}/live-data/ltp`, {
+    console.log(`📡 [GROWW LTP] Fetching LTP for: ${symbolList.join(', ')}`);
+
+    // Groww Python SDK sends exchange_symbols as repeated query params — NOT comma-joined.
+    // axios needs paramsSerializer or manual URLSearchParams to replicate this.
+    const qs = new URLSearchParams();
+    qs.set('segment', segment);
+    for (const sym of symbolList) qs.append('exchange_symbols', sym);
+    const url = `${BASE_URL}/live-data/ltp?${qs.toString()}`;
+
+    const response = await axios.get(url, {
       headers: buildHeaders(accessToken),
-      params: { segment, exchange_symbols: exchangeSymbols },
       timeout: 5000,
     });
 
+    console.log(`📡 [GROWW LTP] Raw response:`, JSON.stringify(response.data).substring(0, 500));
+
+    // Handle both { payload: { NSE_IDEA: { ltp } } } and flat { NSE_IDEA: { ltp } }
     const payload = parsePayload(response.data);
-    // payload = { "NSE_IDEA": { ltp: 8.72 }, "NSE_YESBANK": { ltp: 17.35 } }
     const result: Record<string, number> = {};
-    for (const [key, val] of Object.entries(payload || {})) {
-      const ltp = (val as any)?.ltp;
-      if (ltp !== undefined && ltp !== null) {
-        result[key] = Number(ltp);
+
+    if (payload && typeof payload === 'object') {
+      for (const [key, val] of Object.entries(payload)) {
+        // Possible formats: { ltp: 8.72 } or just 8.72
+        const ltp = typeof val === 'object' ? (val as any)?.ltp ?? (val as any)?.last_price ?? (val as any)?.lastPrice : val;
+        if (ltp !== undefined && ltp !== null && !isNaN(Number(ltp))) {
+          result[key] = Number(ltp);
+        }
       }
     }
-    console.log(`✅ [GROWW LTP] Response:`, JSON.stringify(result));
+
+    console.log(`✅ [GROWW LTP] Parsed prices:`, JSON.stringify(result));
     return result;
   } catch (error: any) {
-    console.error('❌ Groww LTP Error:', error.response?.data || error.message);
+    console.error('❌ Groww LTP Error:', error.response?.status, JSON.stringify(error.response?.data || error.message));
     return {};
   }
 }

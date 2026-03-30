@@ -159,6 +159,8 @@ export function BrokerData(props: BrokerDataProps) {
   const [fetchingGrowwOrders, setFetchingGrowwOrders] = useState(false);
   const [growwPositions, setGrowwPositions] = useState<any[]>([]);
   const [growwFundsValue, setGrowwFundsValue] = useState<number | null>(null);
+  // Live LTP overlay for Groww positions — updated every 600ms
+  const [growwLivePrices, setGrowwLivePrices] = useState<Record<string, number>>({});
 
   // Refresh Groww orders every 15 seconds if connected
   useEffect(() => {
@@ -216,6 +218,39 @@ export function BrokerData(props: BrokerDataProps) {
       setGrowwFundsValue(null);
     };
   }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
+
+  // Real-time LTP polling for Groww positions — fires every 600ms
+  useEffect(() => {
+    if (activeBroker !== 'groww' || !showOrderModal || growwPositions.length === 0) return;
+
+    const fetchLTP = async () => {
+      try {
+        // Build "NSE_IDEA,NSE_YESBANK" style exchange_symbols string
+        const exchangeSymbols = growwPositions
+          .filter(p => p.symbol && (p.status || 'OPEN').toUpperCase() === 'OPEN')
+          .map(p => `${p.exchange || 'NSE'}_${p.symbol}`)
+          .join(',');
+
+        if (!exchangeSymbols) return;
+
+        const response = await apiRequest(
+          "GET",
+          `/api/broker/groww/ltp?accessToken=${encodeURIComponent(growwAccessToken || '')}&exchange_symbols=${encodeURIComponent(exchangeSymbols)}&segment=CASH`,
+          null,
+        );
+
+        if (response.success && response.prices) {
+          setGrowwLivePrices(response.prices as Record<string, number>);
+        }
+      } catch {
+        // silently ignore — stale price shown if fetch fails
+      }
+    };
+
+    fetchLTP();
+    const ltpInterval = setInterval(fetchLTP, 600);
+    return () => clearInterval(ltpInterval);
+  }, [activeBroker, growwAccessToken, showOrderModal, growwPositions]);
 
   const displayOrders = activeBroker === 'groww' ? growwOrders : brokerOrders;
   const displayPositions = activeBroker === 'groww' ? growwPositions : brokerPositions;
@@ -402,7 +437,8 @@ export function BrokerData(props: BrokerDataProps) {
   );
 
   // Reusable positions table (full-width single-broker style)
-  const renderPositionsTable = (positions: any[]) => (
+  // livePrices: map of "NSE_SYMBOL" → ltp — injected for Groww real-time updates
+  const renderPositionsTable = (positions: any[], livePrices: Record<string, number> = {}) => (
     <>
       <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
         <table className="w-full min-w-[560px] text-xs">
@@ -431,9 +467,14 @@ export function BrokerData(props: BrokerDataProps) {
                 return (aS === "OPEN" ? 0 : 999) - (bS === "OPEN" ? 0 : 999);
               }).map((pos, index) => {
                 const entryPrice = (pos.entryPrice || pos.entry_price || pos.avgPrice || 0) as number;
-                const currentPrice = (pos.currentPrice || pos.current_price || pos.ltp || 0) as number;
+                // Resolve live LTP: check livePrices map using "EXCHANGE_SYMBOL" key first
+                const ltpKey = `${pos.exchange || 'NSE'}_${pos.symbol}`;
+                const liveLTP = livePrices[ltpKey];
+                const currentPrice = liveLTP !== undefined
+                  ? liveLTP
+                  : (pos.currentPrice || pos.current_price || pos.ltp || 0) as number;
                 const qty = (pos.qty || pos.quantity || pos.netQty || 0) as number;
-                const unrealizedPnl = pos.unrealizedPnl !== undefined ? pos.unrealizedPnl : (currentPrice - entryPrice) * qty;
+                const unrealizedPnl = (currentPrice - entryPrice) * qty;
                 const status = String(pos.status || "Open").toUpperCase().trim();
                 const isClosed = status === "CLOSED";
                 const returnPercent = (entryPrice > 0 && !isClosed) ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
@@ -493,7 +534,7 @@ export function BrokerData(props: BrokerDataProps) {
                 {renderOrdersTable(displayOrders, isFetchingOrders, recordAllBrokerOrders)}
               </TabsContent>
               <TabsContent value="positions" className="space-y-4">
-                {renderPositionsTable(displayPositions)}
+                {renderPositionsTable(displayPositions, activeBroker === 'groww' ? growwLivePrices : {})}
               </TabsContent>
             </Tabs>
           </div>

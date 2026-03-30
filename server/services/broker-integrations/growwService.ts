@@ -225,6 +225,43 @@ export async function fetchGrowwTrades(accessToken: string): Promise<any[]> {
   }
 }
 
+/**
+ * Fetch live LTP for one or more symbols using Groww's Live Data API.
+ * @param accessToken  Groww bearer token
+ * @param exchangeSymbols  Comma-separated "NSE_SYMBOL" or "BSE_SYMBOL" strings, e.g. "NSE_IDEA,NSE_YESBANK"
+ * @param segment  "CASH" | "FNO" | "COMMODITY"  (default: "CASH")
+ * @returns map of { "NSE_IDEA": 8.72, "NSE_YESBANK": 17.35 }
+ */
+export async function fetchGrowwLTP(
+  accessToken: string,
+  exchangeSymbols: string,
+  segment: string = 'CASH',
+): Promise<Record<string, number>> {
+  try {
+    console.log(`📡 [GROWW LTP] Fetching LTP for: ${exchangeSymbols}`);
+    const response = await axios.get(`${BASE_URL}/live-data/ltp`, {
+      headers: buildHeaders(accessToken),
+      params: { segment, exchange_symbols: exchangeSymbols },
+      timeout: 5000,
+    });
+
+    const payload = parsePayload(response.data);
+    // payload = { "NSE_IDEA": { ltp: 8.72 }, "NSE_YESBANK": { ltp: 17.35 } }
+    const result: Record<string, number> = {};
+    for (const [key, val] of Object.entries(payload || {})) {
+      const ltp = (val as any)?.ltp;
+      if (ltp !== undefined && ltp !== null) {
+        result[key] = Number(ltp);
+      }
+    }
+    console.log(`✅ [GROWW LTP] Response:`, JSON.stringify(result));
+    return result;
+  } catch (error: any) {
+    console.error('❌ Groww LTP Error:', error.response?.data || error.message);
+    return {};
+  }
+}
+
 export async function fetchGrowwPositions(accessToken: string): Promise<any[]> {
   try {
     console.log('💼 Fetching Groww positions from /positions/user...');
@@ -295,6 +332,10 @@ export async function fetchGrowwPositions(accessToken: string): Promise<any[]> {
         pos.product || pos.product_type || pos.productType ||
         pos.exchange || '';
 
+      // Determine exchange for LTP key construction (e.g. "NSE_IDEA")
+      const rawExchange = (pos.exchange || pos.segment || '').toUpperCase();
+      const exchange = rawExchange.startsWith('BSE') ? 'BSE' : 'NSE';
+
       return {
         symbol,
         entryPrice,
@@ -308,6 +349,7 @@ export async function fetchGrowwPositions(accessToken: string): Promise<any[]> {
         unrealized_pnl: unrealizedPnl,
         status: posStatus,
         product,
+        exchange,
       };
     }).filter((pos: any) => pos.symbol && pos.qty !== 0);
   } catch (error: any) {

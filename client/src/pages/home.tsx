@@ -2749,6 +2749,10 @@ export default function Home() {
     const saved = localStorage.getItem('journalFundBase');
     return saved ? parseFloat(saved) : 1000;
   });
+  const [journalLastDeducted, setJournalLastDeducted] = useState<number>(() => {
+    const saved = localStorage.getItem('journalLastDeducted');
+    return saved ? parseFloat(saved) : 0;
+  });
   const [showReferDialog, setShowReferDialog] = useState(false);
   const [referralCodeInput, setReferralCodeInput] = useState('');
   const [referralApplied, setReferralApplied] = useState<boolean>(() => {
@@ -14239,6 +14243,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           });
 
           const saveLocation = heatmapMode === 0 ? "Demo" : heatmapMode === 1 ? "Personal-1" : "Personal-2";
+
+          // Deduct journal charges for saved trades
+          if (safeTradeHistory.length > 0) {
+            const charge = parseFloat((safeTradeHistory.length * 2 * 1.18).toFixed(2));
+            setJournalLastDeducted(charge);
+            localStorage.setItem('journalLastDeducted', String(charge));
+            setJournalFundBase(prev => {
+              const newBalance = parseFloat((prev - charge).toFixed(2));
+              localStorage.setItem('journalFundBase', String(newBalance));
+              return newBalance;
+            });
+          }
 
           setSaveConfirmationData({
             formattedDate,
@@ -28963,9 +28979,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       
                                       {/* Journal Fund Card */}
                                       {(() => {
-                                        const tradeCharges = parseFloat((tradeHistoryData.length * 2 * 1.18).toFixed(2));
-                                        const journalBalance = parseFloat((journalFundBase - tradeCharges).toFixed(2));
-                                        const isLow = journalBalance < 100;
+                                        const isLow = journalFundBase < 100;
                                         return (
                                           <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                                             <div className="flex items-center justify-between mb-4">
@@ -28976,11 +28990,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             </div>
                                             <div className="space-y-1">
                                               <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Available Balance</p>
-                                              <h4 className={`text-2xl font-black flex items-baseline gap-1 ${journalBalance < 0 ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-900 dark:text-white'}`}>
-                                                ₹{Math.max(0, journalBalance).toFixed(2)}
+                                              <h4 className={`text-2xl font-black flex items-baseline gap-1 ${journalFundBase < 0 ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-900 dark:text-white'}`}>
+                                                ₹{Math.max(0, journalFundBase).toFixed(2)}
                                               </h4>
                                               <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                                                ₹{tradeCharges.toFixed(2)} deducted · ₹{journalFundBase.toFixed(0)} base
+                                                ₹{journalLastDeducted.toFixed(2)} deducted on save
                                               </p>
                                             </div>
                                             <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">

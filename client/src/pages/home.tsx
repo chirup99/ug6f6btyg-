@@ -34763,6 +34763,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         {/* Journal Charges Dialog */}
         <Dialog open={showJournalChargesDialog} onOpenChange={setShowJournalChargesDialog}>
           <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900">
+            <button
+              onClick={() => setShowJournalChargesDialog(false)}
+              className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+              data-testid="close-journal-charges-dialog"
+            >
+              <X className="w-4 h-4" />
+            </button>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2 text-lg font-bold">
                 <div className="p-2 bg-violet-500/10 rounded-lg text-violet-600 dark:text-violet-400">
@@ -34771,7 +34778,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 Journal Charges Breakdown
               </DialogTitle>
               <DialogDescription className="text-slate-500 dark:text-slate-400">
-                Perala charges ₹2 per trade + 18% GST to support psychology-based journaling without a subscription.
+                Perala charges ₹2 per trade + 18% GST
               </DialogDescription>
             </DialogHeader>
             {(() => {
@@ -34780,24 +34787,21 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
               const gstAmount = parseFloat((baseCharge * 0.18).toFixed(2));
               const totalCharge = parseFloat((baseCharge + gstAmount).toFixed(2));
 
-              const chargeTrendData = Object.keys(tradingDataByDate).sort().map(dateKey => {
+              const fomoTrendData = Object.keys(tradingDataByDate).sort().map(dateKey => {
                 const dayData = tradingDataByDate[dateKey];
                 const dayTrades = (dayData?.tradeHistory || []).length || (dayData?.tradingData?.performanceMetrics?.totalTrades || dayData?.performanceMetrics?.totalTrades || 0);
-                const dayBase = dayTrades * 2;
-                const dayTotal = parseFloat((dayBase * 1.18).toFixed(2));
-                const label = dateKey.slice(5); // "MM-DD"
-                return { date: label, fullDate: dateKey, trades: dayTrades, charge: dayTotal };
+                const label = dateKey.slice(5);
+                return { date: label, fullDate: dateKey, trades: dayTrades };
               }).filter(d => d.trades > 0);
 
-              const avgDailyTrades = chargeTrendData.length > 0
-                ? chargeTrendData.reduce((s, d) => s + d.trades, 0) / chargeTrendData.length
+              const avgDailyTrades = fomoTrendData.length > 0
+                ? fomoTrendData.reduce((s, d) => s + d.trades, 0) / fomoTrendData.length
                 : 0;
-              const avgDailyCharge = chargeTrendData.length > 0
-                ? chargeTrendData.reduce((s, d) => s + d.charge, 0) / chargeTrendData.length
+              const avgDailyCharge = fomoTrendData.length > 0
+                ? fomoTrendData.reduce((s, d) => s + d.trades * 2 * 1.18, 0) / fomoTrendData.length
                 : 0;
               const isOverTrading = tradeCount > avgDailyTrades * 1.5 && avgDailyTrades > 0;
               const isFOMO = tradeCount > avgDailyTrades * 2 && avgDailyTrades > 0;
-              const overTradingPct = avgDailyTrades > 0 ? Math.round(((tradeCount - avgDailyTrades) / avgDailyTrades) * 100) : 0;
 
               return (
                 <div className="space-y-5 py-2">
@@ -34816,7 +34820,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-xl p-3 text-center border border-emerald-100 dark:border-emerald-500/20">
                       <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide mb-1">Total</p>
                       <p className="text-2xl font-black text-emerald-700 dark:text-emerald-300">₹{totalCharge.toFixed(2)}</p>
-                      <p className="text-[10px] text-emerald-400">incl. GST</p>
+                      <p className="text-[10px] text-emerald-500">incl. GST</p>
                     </div>
                   </div>
 
@@ -34864,95 +34868,126 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
                   )}
 
-                  {/* FOMO & Over-Trading Insights */}
-                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Over-Trading & FOMO Insight</h4>
-                      {isOverTrading && (
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-orange-100 dark:bg-orange-500/20 text-orange-600 dark:text-orange-400">
-                          {isFOMO ? '🔥 FOMO Alert' : '⚠ Over-Trading'}
-                        </span>
-                      )}
-                    </div>
-                    <div className="p-4 space-y-3">
-                      <div className="grid grid-cols-2 gap-3">
-                        <div className="bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3">
-                          <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Today's Trades</p>
-                          <p className={`text-xl font-black ${isOverTrading ? 'text-orange-500' : 'text-slate-800 dark:text-slate-200'}`}>{tradeCount}</p>
-                          <p className="text-[10px] text-slate-400">Avg: {avgDailyTrades.toFixed(1)} trades/day</p>
-                        </div>
-                        <div className="bg-slate-50 dark:bg-slate-800/30 rounded-lg p-3">
-                          <p className="text-[10px] text-slate-500 uppercase font-bold mb-1">Today's Charges</p>
-                          <p className={`text-xl font-black ${isOverTrading ? 'text-orange-500' : 'text-violet-600 dark:text-violet-400'}`}>₹{totalCharge.toFixed(2)}</p>
-                          <p className="text-[10px] text-slate-400">Avg: ₹{(avgDailyCharge).toFixed(2)}/day</p>
-                        </div>
-                      </div>
-                      {isOverTrading && (
-                        <div className={`rounded-lg p-3 text-xs border ${isFOMO ? 'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/20 text-red-700 dark:text-red-400' : 'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/20 text-orange-700 dark:text-orange-400'}`}>
-                          {isFOMO
-                            ? `🔥 FOMO detected! You traded ${overTradingPct}% more than your average today. Excessive trading often leads to emotional decisions and compounding losses.`
-                            : `⚠ You're trading ${overTradingPct}% above your daily average. Consider if each trade had a clear setup — over-trading erodes discipline and increases costs.`
-                          }
-                        </div>
-                      )}
-                      {!isOverTrading && tradeCount > 0 && (
-                        <div className="rounded-lg p-3 text-xs bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/20 text-emerald-700 dark:text-emerald-400">
-                          ✅ Good discipline! Your trade count is within healthy range compared to your average.
-                        </div>
-                      )}
-                      {tradeCount === 0 && (
-                        <div className="rounded-lg p-3 text-xs bg-slate-50 dark:bg-slate-800/30 border border-slate-200 dark:border-slate-700 text-slate-500">
-                          No trades recorded for this session yet.
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* Trend Chart */}
-                  {chargeTrendData.length > 1 && (
+                  {/* FOMO & Over-Trading Performance Trend */}
+                  {fomoTrendData.length > 1 && (
                     <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
                       <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Journal Charges Trend</h4>
+                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">FOMO & Over-Trading Performance Trend</h4>
                         <div className="flex items-center gap-3 text-[10px] text-slate-400">
-                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-violet-500 rounded" /> Charges (₹)</span>
-                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-orange-400 rounded border-t-2 border-dashed border-orange-400" /> Avg</span>
+                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-orange-500 rounded" /> Trades</span>
+                          <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-violet-400 rounded border-t-2 border-dashed border-violet-400" /> Avg</span>
                         </div>
                       </div>
                       <div className="p-3">
                         <ResponsiveContainer width="100%" height={160}>
-                          <LineChart data={chargeTrendData} margin={{ top: 5, right: 15, left: 0, bottom: 5 }}>
+                          <LineChart data={fomoTrendData} margin={{ top: 5, right: 15, left: 0, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
                             <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                            <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={28} tickFormatter={v => `₹${v}`} />
+                            <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={24} />
                             <Tooltip
                               content={({ active, payload, label }: any) => {
                                 if (active && payload && payload.length) {
                                   const d = payload[0]?.payload;
+                                  const pct = avgDailyTrades > 0 ? Math.round(((d.trades - avgDailyTrades) / avgDailyTrades) * 100) : 0;
+                                  const isOver = d.trades > avgDailyTrades * 1.5;
+                                  const isFomoDay = d.trades > avgDailyTrades * 2;
                                   return (
                                     <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 shadow-lg text-xs">
                                       <p className="font-bold text-slate-700 dark:text-slate-200 mb-1">{label}</p>
-                                      <p className="text-violet-600 dark:text-violet-400">{d.trades} trades → ₹{d.charge.toFixed(2)}</p>
-                                      {avgDailyCharge > 0 && <p className="text-orange-400">Avg: ₹{avgDailyCharge.toFixed(2)}</p>}
+                                      <p className="text-orange-500">{d.trades} trades</p>
+                                      {isOver && <p className={`font-bold ${isFomoDay ? 'text-red-500' : 'text-orange-400'}`}>{isFomoDay ? '🔥 FOMO' : '⚠ Over-Trading'} +{pct}%</p>}
                                     </div>
                                   );
                                 }
                                 return null;
                               }}
                             />
-                            <ReferenceLine y={avgDailyCharge} stroke="#fb923c" strokeDasharray="4 2" strokeWidth={1.5} label={{ value: 'Avg', position: 'right', fontSize: 8, fill: '#fb923c' }} />
-                            <Line type="monotone" dataKey="charge" stroke="#8b5cf6" strokeWidth={2} dot={{ r: 3, fill: '#8b5cf6', strokeWidth: 0 }} activeDot={{ r: 4 }} />
+                            <ReferenceLine y={avgDailyTrades} stroke="#8b5cf6" strokeDasharray="4 2" strokeWidth={1.5} label={{ value: 'Avg', position: 'right', fontSize: 8, fill: '#8b5cf6' }} />
+                            <ReferenceLine y={avgDailyTrades * 2} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1} label={{ value: 'FOMO', position: 'right', fontSize: 8, fill: '#ef4444' }} />
+                            <Line type="monotone" dataKey="trades" stroke="#f97316" strokeWidth={2} dot={({ cx, cy, payload, index }: any) => {
+                              const isFomoDay = avgDailyTrades > 0 && payload.trades > avgDailyTrades * 2;
+                              const isOverDay = avgDailyTrades > 0 && payload.trades > avgDailyTrades * 1.5;
+                              const color = isFomoDay ? '#ef4444' : isOverDay ? '#f97316' : '#8b5cf6';
+                              return <circle key={`fomo-dot-${index}`} cx={cx} cy={cy} r={3} fill={color} stroke="none" />;
+                            }} activeDot={{ r: 4 }} />
                           </LineChart>
                         </ResponsiveContainer>
                       </div>
                     </div>
                   )}
+
+                  {/* Plans Section */}
+                  <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+                      <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Choose Your Plan</h4>
+                    </div>
+                    <div className="p-3 grid grid-cols-2 gap-3">
+                      {/* Basic Plan */}
+                      <div className="rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col overflow-hidden">
+                        <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 text-center">
+                          <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Basic</p>
+                          <p className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-0.5">₹2<span className="text-xs font-normal text-slate-400">/trade</span></p>
+                        </div>
+                        <div className="p-3 flex-1 space-y-1.5 text-[10px]">
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Chart analysis</div>
+                          <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> Image uploads</div>
+                          <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> Past trade chart analysis</div>
+                          <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> Paper trading</div>
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Single broker account</div>
+                          <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> FOMO & over-trade tracking</div>
+                        </div>
+                        <div className="p-3 pt-0">
+                          <button
+                            className="w-full py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-300 dark:hover:bg-slate-600 transition-colors"
+                            data-testid="activate-basic-plan"
+                          >
+                            Activate Basic
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Pro Plan */}
+                      <div className="rounded-xl border-2 border-violet-400 dark:border-violet-500 bg-white dark:bg-slate-900 flex flex-col overflow-hidden relative">
+                        <div className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse">60% OFF</div>
+                        <div className="bg-violet-600 px-3 py-2 text-center">
+                          <p className="text-[10px] font-bold text-violet-200 uppercase tracking-widest">Pro</p>
+                          <div className="flex items-center justify-center gap-2 mt-0.5">
+                            <p className="text-sm font-bold text-violet-300 relative">
+                              ₹5
+                              <span className="absolute inset-0 flex items-center">
+                                <span className="w-full border-t-2 border-red-400" />
+                              </span>
+                            </p>
+                            <p className="text-2xl font-black text-white">₹2<span className="text-xs font-normal text-violet-300">/trade</span></p>
+                          </div>
+                        </div>
+                        <div className="p-3 flex-1 space-y-1.5 text-[10px]">
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Live chart analysis</div>
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Image uploads</div>
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Past trade chart analysis</div>
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Paper trading</div>
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> 2 broker accounts</div>
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> FOMO & over-trade tracking</div>
+                          <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Time duration analysis</div>
+                        </div>
+                        <div className="p-3 pt-0">
+                          <button
+                            className="w-full py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-colors shadow-sm"
+                            data-testid="activate-pro-plan"
+                          >
+                            Activate Pro — ₹2/trade
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               );
             })()}
           </DialogContent>
         </Dialog>
 
-        <Dialog open={showBrokerageChargesDialog} onOpenChange={setShowBrokerageChargesDialog}>
+                <Dialog open={showBrokerageChargesDialog} onOpenChange={setShowBrokerageChargesDialog}>
           <DialogContent className="w-[95vw] max-w-4xl max-h-[90dvh] overflow-y-auto rounded-2xl">
             <DialogHeader>
               <DialogTitle>Brokerage Charges Breakdown</DialogTitle>

@@ -19759,8 +19759,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </div>
                     </div>
 
-                    {/* Animated Floating Tutor Button */}
-                    {!searchResults && (
+                    {/* Animated Floating Tutor Button - Admin only */}
+                    {!searchResults && currentUser && authorizedUsers.some(u => u.email.toLowerCase() === currentUser?.email?.toLowerCase()) && (
                     <div className="fixed bottom-8 left-1/2 transform -translate-x-1/2 z-50 pointer-events-auto">
                       <div className="relative">
                         {/* Background animation rings */}

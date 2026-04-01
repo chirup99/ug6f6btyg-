@@ -1592,7 +1592,7 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
               <div className="relative flex-1 cursor-pointer" onClick={() => setIsSearchOpen(true)}>
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-4 w-4 pointer-events-none z-10" />
                 <div
-                  className="w-full pl-10 pr-4 h-10 flex items-center bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-900 dark:text-gray-100 select-none"
+                  className="w-full pl-10 pr-10 h-10 flex items-center bg-gray-100 dark:bg-gray-800 rounded-full text-sm text-gray-900 dark:text-gray-100 select-none"
                   data-testid="input-neo-feed-search"
                 >
                   {searchQuery
@@ -1600,6 +1600,15 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
                     : <span className="text-gray-400 dark:text-gray-500">Search stocks</span>
                   }
                 </div>
+                <button
+                  onClick={(e) => { e.stopPropagation(); handleAskAI(); }}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 flex items-center justify-center rounded-full bg-blue-500 hover:bg-blue-600 active:bg-blue-700 transition-colors z-10"
+                  data-testid="button-search-ai"
+                  aria-label="Ask AI"
+                  title="Ask AI"
+                >
+                  <Bot className="h-4 w-4 text-white" />
+                </button>
               </div>
               <div className="flex items-center gap-2 flex-shrink-0">
                 <DropdownMenu>

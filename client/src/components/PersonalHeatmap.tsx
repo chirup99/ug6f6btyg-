@@ -105,10 +105,22 @@ function getPnLColor(pnl: number): string {
   }
 }
 
+// Module-level cache keyed by userId — survives remounts, cleared only on explicit refresh
+const _personalHeatmapCache: Record<string, { data: Record<string, any>; time: number }> = {};
+const PERSONAL_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
+
 export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView = false, refreshTrigger = 0, onFeedPost, hideNavigation = false, initialDate, defaultTitle = "Personal Trading Calendar" }: PersonalHeatmapProps) {
+  const cacheKey = userId || "__none__";
+  const cachedEntry = _personalHeatmapCache[cacheKey];
+  const cacheValid = cachedEntry && (Date.now() - cachedEntry.time) < PERSONAL_CACHE_TTL_MS;
+
   const [currentDate, setCurrentDate] = useState(initialDate || new Date());
-  const [heatmapData, setHeatmapData] = useState<Record<string, any>>({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [heatmapData, setHeatmapData] = useState<Record<string, any>>(
+    () => (cacheValid && !isPublicView) ? cachedEntry.data : {}
+  );
+  const [isLoading, setIsLoading] = useState(
+    () => !(cacheValid && !isPublicView)
+  );
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [isRangeSelectMode, setIsRangeSelectMode] = useState(false);
@@ -143,7 +155,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
     }
   }, []);
 
-  // FETCH ALL DATES FROM AWS DYNAMODB - SIMPLE AND DIRECT (Migrated Dec 3, 2025)
+  // FETCH ALL DATES FROM AWS DYNAMODB - stale-while-revalidate pattern
   useEffect(() => {
     if (!userId) {
       console.log("🔥 PersonalHeatmap: No userId provided, skipping fetch");
@@ -152,56 +164,66 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
       return;
     }
 
-    console.log("🔥 PersonalHeatmap: CLEARING old data and fetching FRESH AWS data for userId:", userId);
-    setHeatmapData({});
-    setIsLoading(true);
+    const cached = _personalHeatmapCache[userId];
+    const age = cached ? Date.now() - cached.time : Infinity;
+    const isFresh = cached && age < PERSONAL_CACHE_TTL_MS && refreshKey === 0 && refreshTrigger === 0;
+
+    // Fresh cache — use immediately and skip network call
+    if (isFresh) {
+      console.log(`⚡ PersonalHeatmap: Fresh cache hit for ${userId} (${Object.keys(cached.data).length} dates)`);
+      setHeatmapData(cached.data);
+      setIsLoading(false);
+      if (onDataUpdate) onDataUpdate(cached.data);
+      return;
+    }
+
+    // Stale-while-revalidate: show old data instantly, fetch fresh in background
+    if (cached) {
+      console.log(`⚡ PersonalHeatmap: Showing stale cache while revalidating for ${userId}`);
+      setHeatmapData(cached.data);
+      setIsLoading(false);
+      if (onDataUpdate) onDataUpdate(cached.data);
+    } else {
+      setIsLoading(true); // Only show spinner when there's truly nothing to show
+    }
+
+    console.log("🔥 PersonalHeatmap: Fetching fresh AWS data for userId:", userId);
 
     fetch(`/api/user-journal/${userId}/all?t=${Date.now()}`)
       .then(res => res.json())
       .then(data => {
-        console.log("✅ PersonalHeatmap: Raw AWS DynamoDB data received:", data);
-        console.log("✅ PersonalHeatmap: Total dates:", Object.keys(data).length);
+        console.log("✅ PersonalHeatmap: Raw AWS DynamoDB data received, total keys:", Object.keys(data).length);
 
-        // ✅ CRITICAL FIX: Normalize keys to YYYY-MM-DD format for filtering compatibility
         const normalizedData: Record<string, any> = {};
-        Object.keys(data).forEach(key => {
-          // Check if key is already in YYYY-MM-DD format
-          if (key.match(/^\d{4}-\d{2}-\d{2}$/)) {
-            normalizedData[key] = data[key];
+        Object.keys(data).forEach(k => {
+          if (k.match(/^\d{4}-\d{2}-\d{2}$/)) {
+            normalizedData[k] = data[k];
           } else {
-            // Try to extract date from various formats
-            const dateMatch = key.match(/(\d{4}-\d{2}-\d{2})/);
+            const dateMatch = k.match(/(\d{4}-\d{2}-\d{2})/);
             if (dateMatch) {
-              normalizedData[dateMatch[1]] = data[key];
-            } else if (data[key].date && data[key].date.match(/^\d{4}-\d{2}-\d{2}$/)) {
-              // Use the date field from the data itself
-              normalizedData[data[key].date] = data[key];
+              normalizedData[dateMatch[1]] = data[k];
+            } else if (data[k].date && data[k].date.match(/^\d{4}-\d{2}-\d{2}$/)) {
+              normalizedData[data[k].date] = data[k];
             } else {
-              console.warn(`⚠️ PersonalHeatmap: Could not normalize key ${key}, skipping`);
+              console.warn(`⚠️ PersonalHeatmap: Could not normalize key ${k}, skipping`);
             }
           }
         });
 
-        console.log(`📦 PersonalHeatmap: Normalized ${Object.keys(data).length} keys to ${Object.keys(normalizedData).length} YYYY-MM-DD format keys`);
+        console.log(`📦 PersonalHeatmap: Normalized to ${Object.keys(normalizedData).length} YYYY-MM-DD keys`);
 
-        // Store the normalized data
+        // Store in module-level cache
+        _personalHeatmapCache[userId] = { data: normalizedData, time: Date.now() };
+
         setHeatmapData(normalizedData);
         setIsLoading(false);
 
-        // Auto-navigate to the month/year of the latest data entry
         const latestDateKey = Object.keys(normalizedData).sort().pop();
         if (latestDateKey) {
           const [yr, mo] = latestDateKey.split('-').map(Number);
           setCurrentDate(new Date(yr, mo - 1, 1));
         }
 
-        // Log each date for debugging
-        Object.keys(normalizedData).forEach(dateKey => {
-          const pnl = calculatePnL(normalizedData[dateKey]);
-          console.log(`📊 PersonalHeatmap: ${dateKey} = ₹${pnl.toFixed(2)}`);
-        });
-
-        // Emit normalized data to parent component
         if (onDataUpdate) {
           console.log(`📤 PersonalHeatmap: Emitting ${Object.keys(normalizedData).length} normalized dates to parent`);
           onDataUpdate(normalizedData);
@@ -211,7 +233,7 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
         console.error("❌ PersonalHeatmap: Fetch error:", error);
         setIsLoading(false);
       });
-  }, [userId, refreshKey, refreshTrigger]); // Add refreshKey and refreshTrigger to dependencies
+  }, [userId, refreshKey, refreshTrigger]);
 
   // Handle "Feed" menu item click
   const handleFeedClick = () => {

@@ -5376,6 +5376,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   }, []);
   const [deltaExchangeApiKey, setDeltaExchangeApiKey] = useState(localStorage.getItem("delta_api_key") || "");
   const [deltaExchangeApiSecret, setDeltaExchangeApiSecret] = useState(localStorage.getItem("delta_api_secret") || "");
+  const [deltaExchangeUserId, setDeltaExchangeUserId] = useState<string | null>(localStorage.getItem("delta_exchange_user_id"));
+  const [deltaExchangeAccountName, setDeltaExchangeAccountName] = useState<string | null>(localStorage.getItem("delta_exchange_account_name"));
   const [showDeltaSecret, setShowDeltaSecret] = useState(false);
   const [dhanClientIdInput, setDhanClientIdInput] = useState(localStorage.getItem("dhan_client_id") || "");
   const [dhanTokenInput, setDhanTokenInput] = useState(localStorage.getItem("dhan_access_token") || "");
@@ -26066,6 +26068,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           deltaExchangeIsConnected={deltaExchangeIsConnected}
           deltaExchangeApiKey={deltaExchangeApiKey}
           deltaExchangeApiSecret={deltaExchangeApiSecret}
+          deltaExchangeUserId={deltaExchangeUserId}
+          deltaExchangeAccountName={deltaExchangeAccountName}
           fyersStatus={fyersStatus}
           brokerOrders={zerodhaAccessToken ? brokerOrders : upstoxAccessToken ? brokerOrders : userAngelOneIsConnected ? brokerOrders : dhanAccessToken ? brokerOrders : growwAccessToken ? (brokerOrders || []) : deltaExchangeIsConnected ? (deltaExchangeTradesData || []) : fyersIsConnected ? (fyersOrders || []) : []}
           fetchingBrokerOrders={zerodhaAccessToken ? fetchingBrokerOrders : upstoxAccessToken ? fetchingBrokerOrders : userAngelOneIsConnected ? fetchingBrokerOrders : dhanAccessToken ? (fetchingBrokerOrders || false) : growwAccessToken ? (fetchingBrokerOrders || false) : deltaExchangeIsConnected ? deltaExchangeFetching : fetchingFyersOrders}

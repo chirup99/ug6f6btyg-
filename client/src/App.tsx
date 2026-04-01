@@ -511,7 +511,7 @@ function App() {
           const currentPath = window.location.pathname;
           if (currentPath === '/landing' || currentPath === '/login') {
             console.log('🚀 [App] User already authenticated on auth page, redirecting to home...');
-            window.location.href = '/';
+            window.location.replace('/');
             return;
           }
           

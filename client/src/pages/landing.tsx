@@ -279,7 +279,7 @@ export default function Landing() {
           localStorage.setItem("currentUserName", user.displayName);
 
           console.log("🚀 [Landing] Redirecting to home page...");
-          window.location.href = "/";
+          window.location.replace("/");
           return true;
         } else {
           console.log(
@@ -372,12 +372,7 @@ export default function Landing() {
             log("✅ Redirecting to Home...");
 
             // Clean up URL before redirect
-            window.history.replaceState(
-              {},
-              document.title,
-              window.location.pathname,
-            );
-            window.location.href = "/";
+            window.location.replace("/");
             return;
           } else {
             console.error("❌ [Google OAuth] Failed to get user from callback");
@@ -523,7 +518,7 @@ export default function Landing() {
       localStorage.setItem("currentUserName", authUser.name);
 
       console.log("✅ Auto-login successful, redirecting to app...");
-      window.location.href = "/";
+      window.location.replace("/");
     } catch (error: any) {
       console.error("❌ Verification error:", error);
       toast({
@@ -631,7 +626,7 @@ export default function Landing() {
         localStorage.setItem("currentUserName", user.name);
 
         console.log("✅ Authentication successful, redirecting to app...");
-        window.location.href = "/";
+        window.location.replace("/");
       } else {
         console.log("🔐 Signing up with AWS Cognito...");
         await cognitoSignUp(email, password, name);

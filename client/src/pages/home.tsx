@@ -14716,7 +14716,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   onClick={() => isNavOpen && setIsNavOpen(false)}
                   className={`min-h-screen bg-gray-900 flex flex-col transition-all duration-500 ease-out relative z-20 ${
                     isNavOpen
-                      ? "scale-90 -translate-x-[70%] rounded-tr-3xl shadow-2xl"
+                      ? "scale-[0.88] -translate-x-[82%] rounded-tr-3xl shadow-2xl"
                       : "scale-100 translate-x-0"
                   }`}
                   style={{

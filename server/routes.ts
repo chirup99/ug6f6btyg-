@@ -7650,34 +7650,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const seenUrls = new Set<string>();
       const articles: any[] = [];
 
-      for (const q of queries) {
-        try {
-          const rssUrl = `https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-IN&gl=IN&ceid=IN:en`;
-          const rssRes = await fetch(rssUrl, {
+      const parseRssXml = (xml: string) => {
+        const results: any[] = [];
+        const itemRegex = /<item>([\s\S]*?)<\/item>/g;
+        let m: RegExpExecArray | null;
+        while ((m = itemRegex.exec(xml)) !== null) {
+          const item = m[1];
+          const titleM = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/);
+          const linkM  = item.match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/)  || item.match(/<link>(.*?)<\/link>/);
+          const dateM  = item.match(/<pubDate>(.*?)<\/pubDate>/);
+          const srcM   = item.match(/<source[^>]*>(.*?)<\/source>/);
+          const title  = (titleM?.[1] || '').replace(/<!\[CDATA\[/g,'').replace(/\]\]>/g,'').replace(/&[^;]+;/g,' ').trim();
+          const link   = (linkM?.[1]  || '').replace(/<!\[CDATA\[/g,'').replace(/\]\]>/g,'').trim();
+          if (!title || !link) continue;
+          const pubDate = dateM ? new Date(dateM[1]) : new Date();
+          const publishedAt = isNaN(pubDate.getTime()) ? new Date().toISOString() : pubDate.toISOString();
+          results.push({ title, url: link, source: srcM?.[1] || 'Google News', publishedAt });
+        }
+        return results;
+      };
+
+      const fetchResults = await Promise.allSettled(
+        queries.map(q =>
+          fetch(`https://news.google.com/rss/search?q=${encodeURIComponent(q)}&hl=en-IN&gl=IN&ceid=IN:en`, {
             headers: {
               'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
               'Accept': 'application/rss+xml, application/xml, text/xml'
             }
-          });
-          if (!rssRes.ok) continue;
-          const xml = await rssRes.text();
-          const itemRegex = /<item>([\s\S]*?)<\/item>/g;
-          let m: RegExpExecArray | null;
-          while ((m = itemRegex.exec(xml)) !== null) {
-            const item = m[1];
-            const titleM = item.match(/<title><!\[CDATA\[(.*?)\]\]><\/title>/) || item.match(/<title>(.*?)<\/title>/);
-            const linkM  = item.match(/<link><!\[CDATA\[(.*?)\]\]><\/link>/)  || item.match(/<link>(.*?)<\/link>/);
-            const dateM  = item.match(/<pubDate>(.*?)<\/pubDate>/);
-            const srcM   = item.match(/<source[^>]*>(.*?)<\/source>/);
-            const title  = (titleM?.[1] || '').replace(/<!\[CDATA\[/g,'').replace(/\]\]>/g,'').replace(/&[^;]+;/g,' ').trim();
-            const link   = (linkM?.[1]  || '').replace(/<!\[CDATA\[/g,'').replace(/\]\]>/g,'').trim();
-            if (!title || !link || seenUrls.has(link)) continue;
-            const pubDate = dateM ? new Date(dateM[1]) : new Date();
-            const publishedAt = isNaN(pubDate.getTime()) ? new Date().toISOString() : pubDate.toISOString();
-            seenUrls.add(link);
-            articles.push({ title, url: link, source: srcM?.[1] || 'Google News', publishedAt });
-          }
-        } catch {}
+          }).then(r => r.ok ? r.text() : Promise.reject(r.status))
+        )
+      );
+
+      for (const result of fetchResults) {
+        if (result.status !== 'fulfilled') continue;
+        for (const article of parseRssXml(result.value)) {
+          if (seenUrls.has(article.url)) continue;
+          seenUrls.add(article.url);
+          articles.push(article);
+        }
       }
 
       articles.sort((a, b) => new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime());

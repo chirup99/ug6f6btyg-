@@ -10,7 +10,7 @@ import {
   Search, Bell, Settings, MessageCircle, Repeat, Heart, 
   Share, MoreHorizontal, CheckCircle, BarChart3, Clock,
   TrendingUp, TrendingDown, Activity, Plus, Home, PenTool,
-  Copy, ExternalLink, X, Send, Bot, Trash2, User, MapPin, Calendar,
+  Copy, ExternalLink, X, Send, Trash2, User, MapPin, Calendar,
   ChevronDown, ChevronUp, ArrowLeft, Check, Layers, Mic, Newspaper,
   Users, UserPlus, UserMinus, ThumbsUp, Loader2, Camera, ZoomIn, ZoomOut, Move,
   Link as LinkIcon, Facebook, MessageCircle as WhatsApp, Send as Telegram, Linkedin,
@@ -39,7 +39,6 @@ import { Textarea } from './ui/textarea';
 import { useToast } from '@/hooks/use-toast';
 import { useCurrentUser } from '@/hooks/useCurrentUser';
 import { SwipeableCarousel } from './swipeable-carousel';
-import { AIChatWindow } from './ai-chat-window';
 import { UserIdSetupDialog } from './user-id-setup-dialog';
 import { UserProfileDropdown } from './user-profile-dropdown';
 import { AudioMinicastCard } from './audio-minicast-card';
@@ -1509,8 +1508,6 @@ function SearchOverlay({
 }
 
 function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, searchQuery, setSearchQuery, onSearch, showAppBar, onBackClick, posts, onViewProfile }: { onAllClick: () => void; isRefreshing: boolean; selectedFilter: string; onFilterChange: (filter: string) => void; searchQuery: string; setSearchQuery: (query: string) => void; onSearch: () => void; showAppBar: boolean; onBackClick?: () => void; posts?: FeedPost[]; onViewProfile?: (username: string) => void }) {
-  const [isChatOpen, setIsChatOpen] = useState(false);
-  const [chatQuery, setChatQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -1520,13 +1517,6 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
 
   const handleSearch = () => {
     onSearch();
-  };
-
-  const handleAskAI = () => {
-    if (searchQuery.trim()) {
-      setChatQuery(searchQuery);
-      setIsChatOpen(true);
-    }
   };
 
   const handleSearchCancel = () => {
@@ -1686,11 +1676,6 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
       </div>
       </div>
 
-      <AIChatWindow
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        initialQuery={chatQuery}
-      />
     </>
   );
 }

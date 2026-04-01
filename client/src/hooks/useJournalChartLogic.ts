@@ -935,6 +935,10 @@ export function useJournalChartLogic(config: JournalChartConfig) {
 
         console.log(`✅ [HEATMAP FETCH] Chart ready: ${candleData.length} candles for ${cleanSymbol} on ${date}`);
         setHeatmapChartData(candleData);
+        // Switch to heatmap mode in the same sync block so React batches both state updates
+        // into one render — container becomes visible at the same moment data is set,
+        // ensuring the chart container has non-zero dimensions when the chart init effect fires.
+        setJournalChartMode("heatmap");
 
         // STEP 7: Also fetch journal data for trade history markers
         try {

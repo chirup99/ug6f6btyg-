@@ -1483,5 +1483,6 @@ export function usePaperTrading(params: UsePaperTradingParams) {
     exitAllPaperPositions,
     exitPosition,
     getSearchPlaceholder,
+    getLotSizeForInstrument,
   };
 }

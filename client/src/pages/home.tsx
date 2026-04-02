@@ -20,7 +20,6 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthButtonAngelOne, AngelOneStatus, AngelOneApiStatistics, AngelOneSystemStatus, AngelOneLiveMarketPrices } from "@/components/auth-button-angelone";
 
 import { AuthButtonUpstox } from "@/components/auth-button-upstox";
-import { AuthButtonFyers } from "@/components/auth-button-fyers";
 import { TradingJournalModal } from "@/components/trading-journal-modal";
 import { PaperTradingModal } from "@/components/PaperTradingModal";
 import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
@@ -37,15 +36,7 @@ import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
 // import { ErrorPanel } from "@/components/error-panel";
 
 
-import { TradingViewWidget } from "@/components/tradingview-widget";
-
 import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-chart";
-
-import { EnhancedTradingViewWidget } from "@/components/enhanced-tradingview-widget";
-
-import { TradingViewStyleChart } from "@/components/tradingview-style-chart";
-
-import { MinimalChart } from "@/components/minimal-chart";
 
 import {
 
@@ -56,8 +47,6 @@ import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-disp
 
 
 import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
-
-import { StrategyBuilder } from "@/components/strategy-builder";
 
 import { TradingMaster } from "@/components/trading-master";
 
@@ -247,9 +236,6 @@ import {
 } from "lucide-react";
 import { AIChatWindow } from "@/components/ai-chat-window";
 
-import { BrokerImportDialog } from "@/components/broker-import-dialog";
-
-import { TradeBlockEditor } from "@/components/TradeBlockEditor";
 import { TradingNotesWindow } from "@/components/TradingNotesWindow";
 import { JournalAIReportPanel } from "@/components/JournalAIReportPanel";
 import { SocialFeedInsightsPanel } from "@/components/SocialFeedInsightsPanel";
@@ -7306,6 +7292,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     exitAllPaperPositions,
     exitPosition,
     getSearchPlaceholder,
+    getLotSizeForInstrument,
   } = usePaperTrading({
     zerodhaAccessToken,
     upstoxAccessToken,

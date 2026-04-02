@@ -84,7 +84,7 @@ interface JournalChartWindowProps {
   fetchJournalChartData: () => void;
   journalTimeframeOptions: Array<{ value: string; label: string }>;
   searchedInstruments: Instrument[];
-  setSearchedInstruments: (v: any) => void;
+  setSearchedInstruments: (v: Instrument[]) => void;
   isSearchingInstruments: boolean;
   selectedInstrument: any | null;
   setSelectedInstrument: (v: any) => void;

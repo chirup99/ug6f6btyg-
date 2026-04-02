@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 
 // Global window type declarations for tab state management
 declare global {
@@ -33,18 +33,49 @@ import {
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
-import Dashboard from "@/pages/home";
-import Landing from "@/pages/landing";
-import PrivacyPolicy from "@/pages/privacy";
-import TermsOfService from "@/pages/terms";
-import NotFound from "@/pages/not-found";
-import PublicHeatmap from "@/pages/public-heatmap";
-import SharedReport from "@/pages/shared-report";
-import TradingJournalDemo from "@/pages/trading-journal-demo";
-import MarketNews from "@/pages/market-news";
-import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
-import ZerodhaDebug from "@/pages/zerodha-debug";
+
+// Lazy-load all heavy page/component chunks — only downloaded when that route is visited
+const Dashboard = lazy(() => import("@/pages/home"));
+const Landing = lazy(() => import("@/pages/landing"));
+const PrivacyPolicy = lazy(() => import("@/pages/privacy"));
+const TermsOfService = lazy(() => import("@/pages/terms"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const PublicHeatmap = lazy(() => import("@/pages/public-heatmap"));
+const SharedReport = lazy(() => import("@/pages/shared-report"));
+const TradingJournalDemo = lazy(() => import("@/pages/trading-journal-demo"));
+const MarketNews = lazy(() => import("@/pages/market-news"));
+const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed"));
+const ZerodhaDebug = lazy(() => import("@/pages/zerodha-debug"));
+
 import { AngelOneGlobalAutoConnect } from "@/hooks/useAngelOneAutoconnect";
+
+// Instant skeleton shown while a route chunk is downloading — matches dark app bg
+function PageSkeleton() {
+  return (
+    <div className="min-h-screen bg-[#0f1117] flex flex-col">
+      {/* Top bar skeleton */}
+      <div className="h-14 bg-[#141720] border-b border-[#1e2130] flex items-center px-4 gap-3 animate-pulse">
+        <div className="w-8 h-8 rounded-lg bg-[#1e2130]" />
+        <div className="w-32 h-4 rounded bg-[#1e2130]" />
+        <div className="flex-1" />
+        <div className="w-24 h-8 rounded-full bg-[#1e2130]" />
+        <div className="w-24 h-8 rounded-full bg-[#1e2130]" />
+        <div className="w-24 h-8 rounded-full bg-[#1e2130]" />
+      </div>
+      {/* Content skeleton */}
+      <div className="flex-1 p-4 space-y-4 animate-pulse">
+        <div className="h-6 w-48 rounded bg-[#1e2130]" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {[1,2,3].map(i => (
+            <div key={i} className="h-28 rounded-xl bg-[#141720] border border-[#1e2130]" />
+          ))}
+        </div>
+        <div className="h-64 rounded-xl bg-[#141720] border border-[#1e2130]" />
+        <div className="h-48 rounded-xl bg-[#141720] border border-[#1e2130]" />
+      </div>
+    </div>
+  );
+}
 import { getCognitoToken, getCognitoUser, initializeCognito } from "@/cognito";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
 
@@ -551,7 +582,9 @@ function App() {
         <TooltipProvider>
           <AngelOneGlobalAutoConnect />
           <Toaster />
-          <Router />
+          <Suspense fallback={<PageSkeleton />}>
+            <Router />
+          </Suspense>
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

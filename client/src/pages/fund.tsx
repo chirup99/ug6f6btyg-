@@ -115,39 +115,16 @@ export function FundsAnalysis({
 
           <CardContent className="p-6 relative z-10">
             {(() => {
-              const effectiveIsConnected = isConnected || isDemoMode;
               const displayFunds = isDemoMode ? 42000 : (Number(totalBrokerFunds) || 0);
               const displayBrokerFunds = isDemoMode ? {
                 'zerodha': 25000,
                 'upstox': 17000
               } : allBrokerFunds;
-
-              if (!effectiveIsConnected) {
-                return (
-                  <div className="flex flex-col items-center justify-center py-12 text-center bg-white/30 dark:bg-slate-900/30 rounded-3xl border border-dashed border-indigo-500/30">
-                    <div className="relative mb-6">
-                      <div className="absolute inset-0 bg-indigo-500/20 rounded-full blur-2xl animate-pulse" />
-                      <div className="relative p-6 bg-indigo-500/10 rounded-full border border-indigo-500/20">
-                        <Wallet className="w-12 h-12 text-indigo-500" />
-                      </div>
-                    </div>
-                    <h4 className="text-xl font-bold text-slate-800 dark:text-white mb-2">No Data Available</h4>
-                    <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md px-6">
-                      Connect your broker to view real-time funds analysis, margin utilization, and capital monitoring.
-                    </p>
-                    <Button
-                      onClick={() => setShowConnectDialog(true)}
-                      className="mt-6 bg-indigo-600 hover:bg-indigo-700 text-white px-8 rounded-full font-bold transition-all hover:scale-105 active:scale-95 shadow-lg shadow-indigo-500/25"
-                    >
-                      Connect Broker Now
-                    </Button>
-                  </div>
-                );
-              }
+              const needsBrokerForBalance = !isDemoMode && !isConnected;
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  {/* Available Cash Card */}
+                  {/* Net Balance Card */}
                   <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
                     <div className="flex items-center justify-between mb-4">
                       <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
@@ -184,21 +161,37 @@ export function FundsAnalysis({
                         )}
                       </div>
                     </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Net Balance</p>
-                      <h4 className="text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1">
-                        {activeBroker === 'delta' ? '$' : '₹'}
-                        {displayFunds.toLocaleString(activeBroker === 'delta' ? 'en-US' : 'en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </h4>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      <span>Updated Just Now</span>
-                      <div className="flex gap-1">
-                        <div className="w-1 h-1 rounded-full bg-emerald-500" />
-                        <div className="w-1 h-1 rounded-full bg-emerald-500/40" />
-                        <div className="w-1 h-1 rounded-full bg-emerald-500/20" />
+                    {needsBrokerForBalance ? (
+                      <div className="flex flex-col items-center justify-center py-4 text-center gap-3">
+                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Net Balance</p>
+                        <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-snug">Connect a broker to view your live net balance</p>
+                        <Button
+                          size="sm"
+                          onClick={() => setShowConnectDialog(true)}
+                          className="mt-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] px-4 py-1 h-7 rounded-full font-bold transition-all hover:scale-105 active:scale-95 shadow shadow-indigo-500/25"
+                        >
+                          Connect Broker
+                        </Button>
                       </div>
-                    </div>
+                    ) : (
+                      <>
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Net Balance</p>
+                          <h4 className="text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1">
+                            {activeBroker === 'delta' ? '$' : '₹'}
+                            {displayFunds.toLocaleString(activeBroker === 'delta' ? 'en-US' : 'en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </h4>
+                        </div>
+                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          <span>Updated Just Now</span>
+                          <div className="flex gap-1">
+                            <div className="w-1 h-1 rounded-full bg-emerald-500" />
+                            <div className="w-1 h-1 rounded-full bg-emerald-500/40" />
+                            <div className="w-1 h-1 rounded-full bg-emerald-500/20" />
+                          </div>
+                        </div>
+                      </>
+                    )}
                   </div>
 
                   {/* Journal Fund Card */}

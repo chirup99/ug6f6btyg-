@@ -428,6 +428,7 @@ export function TradeBook({
                               onRangeChange={handleDateRangeChange}
                               highlightedDates={activeTagHighlight}
                               refreshTrigger={personalHeatmapRevision}
+                              initialData={tradingDataByDate}
                               onFeedPost={(mode, data) => {
                                 setReportPostMode(mode);
                                 if (mode === 'selected') {
@@ -449,6 +450,7 @@ export function TradeBook({
                               onRangeChange={handleDateRangeChange}
                               highlightedDates={activeTagHighlight}
                               refreshTrigger={personal2HeatmapRevision}
+                              initialData={tradingDataByDate}
                               onFeedPost={(mode, data) => {
                                 setReportPostMode(mode);
                                 if (mode === 'selected') {

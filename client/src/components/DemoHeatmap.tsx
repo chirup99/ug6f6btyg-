@@ -249,6 +249,18 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
       return;
     }
 
+    // ⚡ FAST PATH: If parent already has data, seed the cache and use it immediately
+    // This avoids an API round-trip when tradingDataByDate is already populated in home.tsx
+    if (!cacheValid && tradingDataByDate && Object.keys(tradingDataByDate).length > 0 && refreshKey === 0 && refreshTrigger === 0) {
+      console.log(`⚡ DemoHeatmap: Seeding cache from parent tradingDataByDate (${Object.keys(tradingDataByDate).length} dates) — skipping API fetch`);
+      _demoHeatmapCache = tradingDataByDate;
+      _demoHeatmapCacheTime = Date.now();
+      setHeatmapData(tradingDataByDate);
+      setIsLoading(false);
+      if (onDataUpdate) onDataUpdate(tradingDataByDate);
+      return;
+    }
+
     console.log(`🔥 DemoHeatmap: Fetching demo data from API... (refreshKey: ${refreshKey})`);
     setIsLoading(true);
 

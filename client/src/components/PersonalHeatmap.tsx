@@ -30,6 +30,7 @@ interface PersonalHeatmapProps {
   hideNavigation?: boolean;
   initialDate?: Date;
   defaultTitle?: string;
+  initialData?: Record<string, any>;
 }
 
 // Simple function to calculate P&L from trade data
@@ -109,7 +110,7 @@ function getPnLColor(pnl: number): string {
 const _personalHeatmapCache: Record<string, { data: Record<string, any>; time: number }> = {};
 const PERSONAL_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
-export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView = false, refreshTrigger = 0, onFeedPost, hideNavigation = false, initialDate, defaultTitle = "Personal Trading Calendar" }: PersonalHeatmapProps) {
+export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView = false, refreshTrigger = 0, onFeedPost, hideNavigation = false, initialDate, defaultTitle = "Personal Trading Calendar", initialData }: PersonalHeatmapProps) {
   const cacheKey = userId || "__none__";
   const cachedEntry = _personalHeatmapCache[cacheKey];
   const cacheValid = cachedEntry && (Date.now() - cachedEntry.time) < PERSONAL_CACHE_TTL_MS;
@@ -162,6 +163,13 @@ export function PersonalHeatmap({ userId, onDateSelect, selectedDate, onDataUpda
       setHeatmapData({});
       setIsLoading(false);
       return;
+    }
+
+    // ⚡ FAST PATH: If parent passed initialData and cache is empty, seed the cache
+    // This lets us show data immediately while still fetching fresh data in background
+    if (!_personalHeatmapCache[userId] && initialData && Object.keys(initialData).length > 0 && refreshKey === 0 && refreshTrigger === 0) {
+      console.log(`⚡ PersonalHeatmap: Seeding cache from parent initialData (${Object.keys(initialData).length} dates) — showing instantly`);
+      _personalHeatmapCache[userId] = { data: initialData, time: 0 }; // time=0 → stale, triggers background revalidation
     }
 
     const cached = _personalHeatmapCache[userId];

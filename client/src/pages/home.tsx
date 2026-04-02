@@ -2632,6 +2632,17 @@ export default function Home() {
 
   const [activeTab, setActiveTab] = useState("trading-home");
 
+  // Track which tabs have been visited so we only start loading their data when needed
+  const [visitedTabs, setVisitedTabs] = useState<Set<string>>(() => new Set(["trading-home"]));
+  useEffect(() => {
+    setVisitedTabs(prev => {
+      if (prev.has(activeTab)) return prev;
+      const next = new Set(prev);
+      next.add(activeTab);
+      return next;
+    });
+  }, [activeTab]);
+
   // Stop all audio (voice profile + swipeable news cards) when user switches tabs
   useEffect(() => {
     if (currentAudioRef.current) {
@@ -5041,10 +5052,11 @@ ${fundamentalInsights}**📈 Essential Analysis Framework:**
     setSelectedPodcast(podcast);
   };
 
-  // Load default podcasts on startup
+  // Load default podcasts only when tutor tab is first visited
   React.useEffect(() => {
+    if (!visitedTabs.has("tutor")) return;
     fetchTrendingPodcasts("FINANCE");
-  }, []);
+  }, [visitedTabs.has("tutor")]);
 
   // Podcasts are now only selected when manually clicked
   // Removed AI image generation - using user provided images
@@ -5185,6 +5197,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const { data: fyersStatus } = useQuery({
     queryKey: ["/api/fyers/status"],
     refetchInterval: 5000,
+    enabled: visitedTabs.has("dashboard") || visitedTabs.has("journal"),
   });
   const fyersIsConnected = fyersStatus?.connected && fyersStatus?.authenticated;
   const isConnected = zerodhaIsConnected || upstoxIsConnected || userAngelOneIsConnected || angelOneIsConnected || dhanIsConnected || deltaExchangeIsConnected || fyersIsConnected || growwIsConnected;
@@ -5230,6 +5243,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [deltaWhitelistedIP, setDeltaWhitelistedIP] = useState<string>("Loading...");
 
   useEffect(() => {
+    if (!isDeltaExchangeDialogOpen) return;
     fetch('https://ifconfig.me/ip')
       .then(res => res.text())
       .then(ip => setDeltaWhitelistedIP(ip.trim()))
@@ -5237,7 +5251,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         console.error("Failed to fetch public IP:", err);
         setDeltaWhitelistedIP(window.location.hostname);
       });
-  }, []);
+  }, [isDeltaExchangeDialogOpen]);
   const [deltaExchangeApiKey, setDeltaExchangeApiKey] = useState(localStorage.getItem("delta_api_key") || "");
   const [deltaExchangeApiSecret, setDeltaExchangeApiSecret] = useState(localStorage.getItem("delta_api_secret") || "");
   const [deltaExchangeUserId, setDeltaExchangeUserId] = useState<string | null>(localStorage.getItem("delta_exchange_user_id"));
@@ -7999,10 +8013,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const { data: nifty50ChartData = [], isLoading: isNifty50Loading } = useQuery({
     queryKey: ['stock-chart', 'NSE:NIFTY50-INDEX', nifty50Timeframe],
     queryFn: () => fetch(`/api/stock-chart-data/NSE:NIFTY50-INDEX?timeframe=${nifty50Timeframe}`).then(res => res.json()),
-    refetchInterval: nifty50Timeframe === '1D' ? 60000 : 300000,
-    staleTime: 0,
+    enabled: activeTab === 'trading-home',
+    refetchInterval: nifty50Timeframe === '1D' ? 120000 : 600000,
+    staleTime: 60000,
     gcTime: 600000,
-    refetchOnMount: true,
+    refetchOnMount: false,
     refetchOnWindowFocus: false
   });
 
@@ -8012,10 +8027,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       const symbol = selectedWatchlistSymbol;
       return fetch(`/api/stock-chart-data/${symbol}?timeframe=${niftyBankTimeframe}`).then(res => res.json());
     },
-    refetchInterval: niftyBankTimeframe === '1D' ? 60000 : 300000,
-    staleTime: 0,
+    enabled: activeTab === 'trading-home',
+    refetchInterval: niftyBankTimeframe === '1D' ? 120000 : 600000,
+    staleTime: 60000,
     gcTime: 600000,
-    refetchOnMount: true,
+    refetchOnMount: false,
     refetchOnWindowFocus: false
   });
 

@@ -1,3 +1,4 @@
+import { type MutableRefObject } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -93,6 +94,7 @@ interface PaperTradingModalProps {
   recordAllPaperTrades: () => void;
   resetPaperTradingAccount: () => void;
   searchPaperTradingInstruments: (query: string) => void;
+  paperTradingEventSourcesRef: MutableRefObject<Map<string, EventSource>>;
   toast: (opts: { title?: string; description?: string; variant?: string }) => void;
 }
 
@@ -151,6 +153,7 @@ export function PaperTradingModal({
   recordAllPaperTrades,
   resetPaperTradingAccount,
   searchPaperTradingInstruments,
+  paperTradingEventSourcesRef,
   toast,
 }: PaperTradingModalProps) {
   return (

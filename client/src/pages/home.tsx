@@ -16043,6 +16043,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           recordAllPaperTrades={recordAllPaperTrades}
           resetPaperTradingAccount={resetPaperTradingAccount}
           searchPaperTradingInstruments={searchPaperTradingInstruments}
+          paperTradingEventSourcesRef={paperTradingEventSourcesRef}
           toast={toast}
         />
 

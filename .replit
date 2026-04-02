@@ -9,7 +9,7 @@ packages = ["jq", "python3", "awscli2", "zip", "unzip"]
 [deployment]
 deploymentTarget = "autoscale"
 build = ["npm", "run", "build"]
-run = ["node", "./dist/index.cjs"]
+run = ["node", "./dist/index.js"]
 
 [[ports]]
 localPort = 5000

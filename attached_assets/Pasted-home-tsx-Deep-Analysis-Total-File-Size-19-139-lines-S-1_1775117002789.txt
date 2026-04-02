@@ -1,0 +1,78 @@
+home.tsx — Deep Analysis
+Total File Size: 19,139 lines
+________________________________________
+SECTION 1 — Imports (Lines 1–312)
+~312 lines of imports covering:
+•	UI components (shadcn Cards, Dialogs, Tabs, Buttons, Tables, Select, etc.)
+•	External libraries (React, wouter, framer-motion, lightweight-charts, lucide-react, tanstack/react-query)
+•	Internal components (charts, brokers, social feed, trading modal, etc.)
+•	Hooks (useCurrentUser, useJournalChartLogic, useToast, etc.)
+•	Auth utilities (Cognito, parseBrokerTrades)
+________________________________________
+SECTION 2 — Helper Sub-components (Lines 313–2476)
+These are standalone components defined outside the main Home() function:
+Component	Start Line	End Line	Lines	Purpose
+SwipeableCardStack	314	1231	918	Audio/news card swiper UI with playback, wave animation, sector preloading
+NiftyIndex	1232	1362	131	Nifty 50 live index display widget
+HistoricalDataSection	1363	1856	494	Historical OHLCV chart + data table with interval selector
+MicroAnimationsDemoPage	1857	2197	341	Demo page for price/trade/PnL micro-animations
+Global constants	2198	2209	12	isDevelopmentMode, API_BASE_URL, getFullApiUrl()
+RangeHeatmapPreview	2210	2476	267	Heatmap preview grid with color-coded range cells
+________________________________________
+SECTION 3 — Main Home() Component (Lines 2477–19139)
+3a — State Declarations & Hooks (Lines 2477–~3559)
+~1,080 lines of useState, useRef, useEffect, useQuery, and useMutation declarations for:
+•	Voice language, audio cache, profile
+•	Active tab (activeTab), broker connection states
+•	Journal trades, heatmap, paper trading, modals
+•	Angel One / Upstox / Dhan / Zerodha connection state
+3b — Business Logic & Handlers (Lines ~3560–12548)
+~8,990 lines — the biggest single block in the file. Contains:
+•	setTabWithAuthCheck() / checkAuthAndNavigate() — tab nav with auth guard (3562–3577)
+•	handleTradingMasterAccess() / handleMinicastAccess() — special access logic (3579–3607)
+•	handleShareDialogClose(), createShareableReport() — report sharing
+•	Angel One session, token freshness, trade data fetch logic
+•	Journal trade CRUD, P&L calculations, heatmap data builders
+•	handleTabChange() — stops audio on tab switch (12499–12506)
+•	URL-based tab restoration from ?tab= query param (12527–12546)
+________________________________________
+SECTION 4 — Tab Rendering (Early Returns + Main JSX)
+Tab: voice — Social Feed (Lines 12549–12585)
+37 lines — Early return (exits before main JSX)
+•	Full-screen NeoFeedSocialFeed component
+•	Guest login floating prompt
+Tab: tutor — MiniCast (Lines 12586–13471)
+886 lines — Early return (exits before main JSX)
+•	Hardcoded demo MiniCast posts with audio waveforms, comments, likes
+•	Full swipeable MiniCast player UI built inline
+•	Publish MiniCast button
+________________________________________
+Main return() JSX Block (Lines 13473–19139)
+The main layout wrapper. All remaining tabs render inside here conditionally:
+Tab (activeTab)	Start Line	End Line	Lines	Content
+dashboard	13486	13667	182	Angel One stats, system status, live prices — only visible to chiranjeevi.perala99@gmail.com
+trading-home	13669	16882	3,214 ← LARGEST	Main home screen: world map, watchlist ticker, nav cards (Watchlist, Market News, Social Feed, Trading Journal, Trade Challenge), profile section, broker connect
+trading-master	16886	16900	15	Thin wrapper rendering <TradingMaster /> component
+chart	16903	16917	15	Thin wrapper rendering <AdvancedCandlestickChart /> + <IndicatorCrossingsDisplay />
+journal	16919	18919	2,001 ← 2ND LARGEST	Full Trading Journal: trade list, P&L heatmap, personal heatmap, paper trading, stats, dialogs, chart window
+________________________________________
+SECTION 5 — Outside Main Return (Lines 18920–19139)
+Block	Lines	Purpose
+Mobile floating pill nav (journal only)	18920–19004	Bottom nav bar: Home / Insight / Paper Trade / Ranking tabs, only shown when activeTab === "journal"
+Mobile Paper Trade full-screen (journal only)	19006–19109	<PaperTradingMobileTab /> when mobile paper trade is active
+Guest login dialog (journal only)	19111–19139	Prompts unauthenticated users to log in
+________________________________________
+Size Summary — Largest to Smallest
+Section	Lines	% of File
+Business logic & handlers (3560–12548)	~8,990	47%
+trading-home tab JSX	3,214	17%
+journal tab JSX	2,001	10%
+tutor MiniCast tab (early return)	886	5%
+SwipeableCardStack component	918	5%
+State declarations	~1,080	6%
+HistoricalDataSection component	494	3%
+Everything else (imports, small tabs, mobile nav)	~556	3%
+________________________________________
+Key takeaway: Nearly half the file is business logic and handlers (lines 3560–12548). The two heaviest rendered tabs are trading-home (3,214 lines) and journal (2,001 lines). The chart and trading-master tabs are just thin wrappers — all their real code lives in imported components.
+
+

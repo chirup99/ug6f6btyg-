@@ -12,8 +12,8 @@ import { Countdown } from '@/components/countdown';
 import { SidebarNavMenu } from '@/components/SidebarNavMenu';
 import { motion, AnimatePresence } from "framer-motion";
 
-const WatchlistResultTab = lazy(() => import('@/components/WatchlistResultTab').then(m => ({ default: m.WatchlistResultTab })));
-const MarketNewsResultTab = lazy(() => import('@/components/MarketNewsResultTab').then(m => ({ default: m.MarketNewsResultTab })));
+import { WatchlistResultTab } from '@/components/WatchlistResultTab';
+import { MarketNewsResultTab } from '@/components/MarketNewsResultTab';
 
 import { BrokerData } from "@/components/broker-data";
 import { useLocation } from "wouter";
@@ -41,7 +41,7 @@ import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
 
 const AdvancedCandlestickChart = lazy(() => import("@/components/advanced-candlestick-chart").then(m => ({ default: m.AdvancedCandlestickChart })));
 const IndicatorCrossingsDisplay = lazy(() => import("@/components/indicator-crossings-display").then(m => ({ default: m.IndicatorCrossingsDisplay })));
-const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed"));
+import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
 const TradingMaster = lazy(() => import("@/components/trading-master").then(m => ({ default: m.TradingMaster })));
 const MiniCastTab = lazy(() => import("@/components/MiniCastTab").then(m => ({ default: m.MiniCastTab })));
 const TradingDashboardTab = lazy(() => import("@/components/TradingDashboardTab").then(m => ({ default: m.TradingDashboardTab })));
@@ -242,7 +242,7 @@ import { TradingNotesWindow } from "@/components/TradingNotesWindow";
 import { JournalAIReportPanel } from "@/components/JournalAIReportPanel";
 import { SocialFeedInsightsPanel } from "@/components/SocialFeedInsightsPanel";
 import { usePaperTrading } from "@/hooks/usePaperTrading";
-const JournalTabContent = lazy(() => import("./JournalTabContent").then(m => ({ default: m.JournalTabContent })));
+import { JournalTabContent } from "./JournalTabContent";
 
 import type { BrokerTrade } from "@shared/schema";
 
@@ -11097,9 +11097,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         {/* Full-width Social Feed - No Sidebar */}
         <main className="h-screen w-full">
-            <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" /></div>}>
               <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
-            </Suspense>
         </main>
         {/* Guest login prompt for unauthenticated users */}
         {showGuestDialog && (
@@ -14418,7 +14416,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             )}
 
             {activeTab === "journal" && (
-              <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" /></div>}>
               <JournalTabContent
                 setTabWithAuthCheck={setTabWithAuthCheck}
                 mobileBottomTab={mobileBottomTab}
@@ -14764,7 +14761,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 showGuestDialog={showGuestDialog}
                 setShowGuestDialog={setShowGuestDialog}
               />
-              </Suspense>
             )}
 
 

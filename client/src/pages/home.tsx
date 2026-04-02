@@ -4,13 +4,11 @@ import React, {
   useMemo,
   useCallback,
   useRef,
-  lazy,
-  Suspense,
 } from "react";
 import { Countdown } from '@/components/countdown';
 import { SidebarNavMenu } from '@/components/SidebarNavMenu';
-const WatchlistResultTab = lazy(() => import('@/components/WatchlistResultTab').then(m => ({ default: m.WatchlistResultTab })));
-const MarketNewsResultTab = lazy(() => import('@/components/MarketNewsResultTab').then(m => ({ default: m.MarketNewsResultTab })));
+import { WatchlistResultTab } from '@/components/WatchlistResultTab';
+import { MarketNewsResultTab } from '@/components/MarketNewsResultTab';
 import { motion, AnimatePresence } from "framer-motion";
 
 import { BrokerData } from "@/components/broker-data";
@@ -47,10 +45,8 @@ import {
 import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
 
 
-const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed"));
-const TradingMaster = lazy(() =>
-  import("@/components/trading-master").then((m) => ({ default: m.TradingMaster }))
-);
+import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
+import { TradingMaster } from "@/components/trading-master";
 
 import { WorldMap } from "@/components/world-map";
 
@@ -11096,9 +11092,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         {/* Full-width Social Feed - No Sidebar */}
         <main className="h-screen w-full">
-          <Suspense fallback={null}>
             <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
-          </Suspense>
         </main>
         {/* Guest login prompt for unauthenticated users */}
         {showGuestDialog && (
@@ -14560,9 +14554,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <Suspense fallback={null}>
                   <TradingMaster />
-                </Suspense>
               </div>
             )}
 

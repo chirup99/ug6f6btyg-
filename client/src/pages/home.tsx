@@ -1,7 +1,7 @@
 import { Countdown } from '@/components/countdown';
 import { SidebarNavMenu } from '@/components/SidebarNavMenu';
-import { WatchlistResultTab } from '@/components/WatchlistResultTab';
-import { MarketNewsResultTab } from '@/components/MarketNewsResultTab';
+const WatchlistResultTab = lazy(() => import('@/components/WatchlistResultTab').then(m => ({ default: m.WatchlistResultTab })));
+const MarketNewsResultTab = lazy(() => import('@/components/MarketNewsResultTab').then(m => ({ default: m.MarketNewsResultTab })));
 ﻿import { motion, AnimatePresence } from "framer-motion";
 
 import { BrokerData } from "@/components/broker-data";

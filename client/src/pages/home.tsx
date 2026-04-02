@@ -1,11 +1,3 @@
-import { Countdown } from '@/components/countdown';
-import { SidebarNavMenu } from '@/components/SidebarNavMenu';
-const WatchlistResultTab = lazy(() => import('@/components/WatchlistResultTab').then(m => ({ default: m.WatchlistResultTab })));
-const MarketNewsResultTab = lazy(() => import('@/components/MarketNewsResultTab').then(m => ({ default: m.MarketNewsResultTab })));
-﻿import { motion, AnimatePresence } from "framer-motion";
-
-import { BrokerData } from "@/components/broker-data";
-
 import React, {
   useState,
   useEffect,
@@ -15,6 +7,13 @@ import React, {
   lazy,
   Suspense,
 } from "react";
+import { Countdown } from '@/components/countdown';
+import { SidebarNavMenu } from '@/components/SidebarNavMenu';
+const WatchlistResultTab = lazy(() => import('@/components/WatchlistResultTab').then(m => ({ default: m.WatchlistResultTab })));
+const MarketNewsResultTab = lazy(() => import('@/components/MarketNewsResultTab').then(m => ({ default: m.MarketNewsResultTab })));
+import { motion, AnimatePresence } from "framer-motion";
+
+import { BrokerData } from "@/components/broker-data";
 import { useLocation } from "wouter";
 
 import { useToast } from "@/hooks/use-toast";

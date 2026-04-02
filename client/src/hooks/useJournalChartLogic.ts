@@ -2359,6 +2359,8 @@ export function useJournalChartLogic(config: JournalChartConfig) {
     journalEma26SeriesRef,
     heatmapChartRef,
     heatmapCandlestickSeriesRef,
+    heatmapEma12SeriesRef,
+    heatmapEma26SeriesRef,
 
     // Functions
     fetchJournalChartData,

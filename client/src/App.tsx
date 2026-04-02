@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, lazy, Suspense } from "react";
 
 // Global window type declarations for tab state management
 declare global {
@@ -43,7 +43,7 @@ import PublicHeatmap from "@/pages/public-heatmap";
 import SharedReport from "@/pages/shared-report";
 import TradingJournalDemo from "@/pages/trading-journal-demo";
 import MarketNews from "@/pages/market-news";
-import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
+const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed"));
 import ZerodhaDebug from "@/pages/zerodha-debug";
 
 import { AngelOneGlobalAutoConnect } from "@/hooks/useAngelOneAutoconnect";
@@ -471,7 +471,9 @@ function Router() {
       </Route>
       <Route path="/voice">
         <MainLayout>
-          <NeoFeedSocialFeed />
+          <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-900"><div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" /></div>}>
+            <NeoFeedSocialFeed />
+          </Suspense>
         </MainLayout>
       </Route>
       <Route path="/journal-demo">

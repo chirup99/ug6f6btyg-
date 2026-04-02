@@ -4,12 +4,16 @@ import React, {
   useMemo,
   useCallback,
   useRef,
+  lazy,
+  Suspense,
+  startTransition,
 } from "react";
 import { Countdown } from '@/components/countdown';
 import { SidebarNavMenu } from '@/components/SidebarNavMenu';
-import { WatchlistResultTab } from '@/components/WatchlistResultTab';
-import { MarketNewsResultTab } from '@/components/MarketNewsResultTab';
 import { motion, AnimatePresence } from "framer-motion";
+
+const WatchlistResultTab = lazy(() => import('@/components/WatchlistResultTab').then(m => ({ default: m.WatchlistResultTab })));
+const MarketNewsResultTab = lazy(() => import('@/components/MarketNewsResultTab').then(m => ({ default: m.MarketNewsResultTab })));
 
 import { BrokerData } from "@/components/broker-data";
 import { useLocation } from "wouter";
@@ -35,26 +39,24 @@ import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
 // import { ErrorPanel } from "@/components/error-panel";
 
 
-import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-chart";
+const AdvancedCandlestickChart = lazy(() => import("@/components/advanced-candlestick-chart").then(m => ({ default: m.AdvancedCandlestickChart })));
+const IndicatorCrossingsDisplay = lazy(() => import("@/components/indicator-crossings-display").then(m => ({ default: m.IndicatorCrossingsDisplay })));
+const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed"));
+const TradingMaster = lazy(() => import("@/components/trading-master").then(m => ({ default: m.TradingMaster })));
+const MiniCastTab = lazy(() => import("@/components/MiniCastTab").then(m => ({ default: m.MiniCastTab })));
+const TradingDashboardTab = lazy(() => import("@/components/TradingDashboardTab").then(m => ({ default: m.TradingDashboardTab })));
 
 import {
 
   MultipleImageUpload,
   MultipleImageUploadRef,
 } from "@/components/multiple-image-upload";
-import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
-
-
-import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
-import { TradingMaster } from "@/components/trading-master";
 
 import { WorldMap } from "@/components/world-map";
 
 import { NeoFeedPostDialog } from "@/components/NeoFeedPostDialog";
 import { ShareReportTradebookDialog } from "@/components/ShareReportTradebookDialog";
 import { ImportPnLDialog } from "@/components/ImportPnLDialog";
-import { MiniCastTab } from "@/components/MiniCastTab";
-import { TradingDashboardTab } from "@/components/TradingDashboardTab";
 
 
 import { useTheme } from "@/components/theme-provider";
@@ -240,7 +242,7 @@ import { TradingNotesWindow } from "@/components/TradingNotesWindow";
 import { JournalAIReportPanel } from "@/components/JournalAIReportPanel";
 import { SocialFeedInsightsPanel } from "@/components/SocialFeedInsightsPanel";
 import { usePaperTrading } from "@/hooks/usePaperTrading";
-import { JournalTabContent } from "./JournalTabContent";
+const JournalTabContent = lazy(() => import("./JournalTabContent").then(m => ({ default: m.JournalTabContent })));
 
 import type { BrokerTrade } from "@shared/schema";
 
@@ -3540,7 +3542,9 @@ export default function Home() {
     const isAuthenticated = userId && userEmail && userId !== 'null' && userEmail !== 'null';
 
     console.log('[AUTH] Navigating to tab:', tabName, '| authenticated:', !!isAuthenticated);
-    setActiveTab(tabName);
+    startTransition(() => {
+      setActiveTab(tabName);
+    });
     return true;
   };
 
@@ -11093,7 +11097,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         {/* Full-width Social Feed - No Sidebar */}
         <main className="h-screen w-full">
-            <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
+            <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" /></div>}>
+              <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
+            </Suspense>
         </main>
         {/* Guest login prompt for unauthenticated users */}
         {showGuestDialog && (
@@ -11126,7 +11132,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   // MiniCast/Tutor tab with full page view
   if (activeTab === "tutor") {
-    return <MiniCastTab setActiveTab={setActiveTab} />;
+    return (
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-900"><div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" /></div>}>
+        <MiniCastTab setActiveTab={setActiveTab} />
+      </Suspense>
+    );
   }
 
 
@@ -11144,7 +11154,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             {/* Render content based on active tab */}
 
             {activeTab === 'dashboard' && localStorage.getItem('currentUserEmail') === 'chiranjeevi.perala99@gmail.com' && (
-              <TradingDashboardTab setActiveTab={setActiveTab} />
+              <Suspense fallback={<div className="flex items-center justify-center h-full py-20"><div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
+                <TradingDashboardTab setActiveTab={setActiveTab} />
+              </Suspense>
             )}
 
             {activeTab === "trading-home" && (
@@ -11860,6 +11872,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       // Handle Market News view
                                       if (searchResults.includes("[CHART:MARKET_NEWS]")) {
                                         return (
+                                          <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 border-green-500 border-t-transparent rounded-full animate-spin" /></div>}>
                                           <MarketNewsResultTab
                                             marketNewsMode={marketNewsMode}
                                             setMarketNewsMode={setMarketNewsMode}
@@ -11886,6 +11899,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             fetchNifty50News={fetchNifty50News}
                                             getWatchlistNewsRelativeTime={getWatchlistNewsRelativeTime}
                                           />
+                                          </Suspense>
                                         );
                                       }
 
@@ -12150,6 +12164,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       // Handle Watchlist view
                                       if (searchResults.includes("[CHART:WATCHLIST]")) {
                                         return (
+                                          <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" /></div>}>
                                           <WatchlistResultTab
                                             watchlistSymbols={watchlistSymbols}
                                             selectedWatchlistSymbol={selectedWatchlistSymbol}
@@ -12204,6 +12219,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             handleCompareAnalysis={handleCompareAnalysis}
                                             getWatchlistNewsRelativeTime={getWatchlistNewsRelativeTime}
                                           />
+                                          </Suspense>
                                         );
                                       }
 
@@ -14376,7 +14392,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
+                <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
                   <TradingMaster />
+                </Suspense>
               </div>
             )}
 
@@ -14392,12 +14410,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <AdvancedCandlestickChart />
-                <IndicatorCrossingsDisplay />
+                <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="w-10 h-10 border-2 border-green-500 border-t-transparent rounded-full animate-spin" /></div>}>
+                  <AdvancedCandlestickChart />
+                  <IndicatorCrossingsDisplay />
+                </Suspense>
               </div>
             )}
 
             {activeTab === "journal" && (
+              <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="w-10 h-10 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" /></div>}>
               <JournalTabContent
                 setTabWithAuthCheck={setTabWithAuthCheck}
                 mobileBottomTab={mobileBottomTab}
@@ -14743,6 +14764,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 showGuestDialog={showGuestDialog}
                 setShowGuestDialog={setShowGuestDialog}
               />
+              </Suspense>
             )}
 
 

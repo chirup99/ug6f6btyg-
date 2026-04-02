@@ -12,6 +12,8 @@ import React, {
   useMemo,
   useCallback,
   useRef,
+  lazy,
+  Suspense,
 } from "react";
 import { useLocation } from "wouter";
 
@@ -46,9 +48,10 @@ import {
 import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
 
 
-import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
-
-import { TradingMaster } from "@/components/trading-master";
+const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed"));
+const TradingMaster = lazy(() =>
+  import("@/components/trading-master").then((m) => ({ default: m.TradingMaster }))
+);
 
 import { WorldMap } from "@/components/world-map";
 
@@ -11091,7 +11094,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         {/* Full-width Social Feed - No Sidebar */}
         <main className="h-screen w-full">
-          <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
+          <Suspense fallback={null}>
+            <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
+          </Suspense>
         </main>
         {/* Guest login prompt for unauthenticated users */}
         {showGuestDialog && (
@@ -15435,7 +15440,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <TradingMaster />
+                <Suspense fallback={null}>
+                  <TradingMaster />
+                </Suspense>
               </div>
             )}
 

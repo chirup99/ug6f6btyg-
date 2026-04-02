@@ -13,6 +13,7 @@ import {
   Tag,
   ShieldCheck,
   Home as HomeIcon,
+  X,
 } from "lucide-react";
 import {
   AreaChart,
@@ -40,6 +41,8 @@ import { TradeDurationAnalysis } from "./trade-duration";
 import { FundsAnalysis } from "./fund";
 import LossMakingAnalysisPanel from "@/components/LossMakingAnalysisPanel";
 import { DisciplineRiskPanel } from "@/components/DisciplineRiskPanel";
+import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
+import { useLocation } from "wouter";
 
 export interface JournalTabContentProps {
   // Navigation
@@ -345,6 +348,71 @@ export interface JournalTabContentProps {
 
   // LossMakingAnalysisPanel
   formatDuration: any;
+
+  // Mobile Pill Nav
+  isNavVisible: boolean;
+  navSparklineData: { trend: string; points: string };
+
+  // Mobile Paper Trade
+  paperTradingTotalPnl: any;
+  paperTradingCapital: any;
+  hidePositionDetails: any;
+  setHidePositionDetails: any;
+  paperPositions: any;
+  paperTradeHistory: any;
+  paperTradeSymbolSearch: any;
+  setPaperTradeSymbolSearch: any;
+  paperTradeSymbol: any;
+  setPaperTradeSymbol: any;
+  paperTradingEventSourcesRef: any;
+  setPaperTradingWsStatus: any;
+  setPaperTradeCurrentPrice: any;
+  searchPaperTradingInstruments: any;
+  setPaperTradeSearchResults: any;
+  paperTradeSearchLoading: any;
+  paperTradeSearchResults: any;
+  setSelectedPaperTradingInstrument: any;
+  fetchPaperTradePrice: any;
+  paperTradeType: any;
+  setPaperTradeType: any;
+  setPaperTradeQuantity: any;
+  setPaperTradeLotInput: any;
+  setPaperTradeSLPrice: any;
+  paperTradeQuantity: any;
+  paperTradeLotInput: any;
+  paperTradeCurrentPrice: any;
+  paperTradePriceLoading: any;
+  showMobilePaperTradeSLDropdown: any;
+  setShowMobilePaperTradeSLDropdown: any;
+  paperTradeSLEnabled: any;
+  setPaperTradeSLEnabled: any;
+  paperTradeSLPrice: any;
+  paperTradeSLType: any;
+  setPaperTradeSLType: any;
+  paperTradeSLTimeframe: any;
+  setPaperTradeSLTimeframe: any;
+  paperTradeSLDurationUnit: any;
+  setPaperTradeSLDurationUnit: any;
+  paperTradeSLValue: any;
+  setPaperTradeSLValue: any;
+  setPaperTradeAction: any;
+  executePaperTrade: any;
+  fetchOptionChainData: any;
+  setShowOptionChain: any;
+  paperTradingWsStatus: any;
+  recordAllPaperTrades: any;
+  exitAllPaperPositions: any;
+  swipeStartXRef: any;
+  swipeStartYRef: any;
+  swipedPositionId: any;
+  setSwipedPositionId: any;
+  exitPosition: any;
+  resetPaperTradingAccount: any;
+  toast: any;
+
+  // Guest Dialog
+  showGuestDialog: any;
+  setShowGuestDialog: any;
 }
 
 export function JournalTabContent({
@@ -632,8 +700,69 @@ export function JournalTabContent({
   getBrokerDisplayName,
   brokerIconMap,
   formatDuration,
+  isNavVisible,
+  navSparklineData,
+  paperTradingTotalPnl,
+  paperTradingCapital,
+  hidePositionDetails,
+  setHidePositionDetails,
+  paperPositions,
+  paperTradeHistory,
+  paperTradeSymbolSearch,
+  setPaperTradeSymbolSearch,
+  paperTradeSymbol,
+  setPaperTradeSymbol,
+  paperTradingEventSourcesRef,
+  setPaperTradingWsStatus,
+  setPaperTradeCurrentPrice,
+  searchPaperTradingInstruments,
+  setPaperTradeSearchResults,
+  paperTradeSearchLoading,
+  paperTradeSearchResults,
+  setSelectedPaperTradingInstrument,
+  fetchPaperTradePrice,
+  paperTradeType,
+  setPaperTradeType,
+  setPaperTradeQuantity,
+  setPaperTradeLotInput,
+  setPaperTradeSLPrice,
+  paperTradeQuantity,
+  paperTradeLotInput,
+  paperTradeCurrentPrice,
+  paperTradePriceLoading,
+  showMobilePaperTradeSLDropdown,
+  setShowMobilePaperTradeSLDropdown,
+  paperTradeSLEnabled,
+  setPaperTradeSLEnabled,
+  paperTradeSLPrice,
+  paperTradeSLType,
+  setPaperTradeSLType,
+  paperTradeSLTimeframe,
+  setPaperTradeSLTimeframe,
+  paperTradeSLDurationUnit,
+  setPaperTradeSLDurationUnit,
+  paperTradeSLValue,
+  setPaperTradeSLValue,
+  setPaperTradeAction,
+  executePaperTrade,
+  fetchOptionChainData,
+  setShowOptionChain,
+  paperTradingWsStatus,
+  recordAllPaperTrades,
+  exitAllPaperPositions,
+  swipeStartXRef,
+  swipeStartYRef,
+  swipedPositionId,
+  setSwipedPositionId,
+  exitPosition,
+  resetPaperTradingAccount,
+  toast,
+  showGuestDialog,
+  setShowGuestDialog,
 }: JournalTabContentProps) {
+  const [, setLocation] = useLocation();
   return (
+    <>
                 <div className="space-y-4 md:space-y-6 px-3 md:px-6 py-3 md:py-2 relative">
                 {/* Back Button - Mobile Only */}
                 <Button
@@ -1944,5 +2073,180 @@ export function JournalTabContent({
                   })()}
                 </div>
               </div>
+
+        {/* Minimalist Floating Pill Navigation - Mobile Only */}
+        <div className={`md:hidden fixed bottom-0 left-0 right-0 z-50 pb-4 px-6 pointer-events-none transition-transform duration-300 ${isNavVisible ? 'translate-y-0' : 'translate-y-full'}`}>
+          <div className="max-w-xs mx-auto bg-white/90 dark:bg-gray-900/90 backdrop-blur-md rounded-full shadow-lg border border-gray-200/50 dark:border-gray-700/50 pointer-events-auto">
+            <div className="flex items-center justify-around px-1.5 py-1.5">
+              {/* Home Tab */}
+              <button
+                onClick={() => setMobileBottomTab("home")}
+                className={`flex items-center justify-center flex-1 rounded-full px-4 py-2 transition-all duration-200 ${
+                  mobileBottomTab === "home"
+                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white"
+                }`}
+                data-testid="mobile-tab-home"
+              >
+                <HomeIcon className={`h-5 w-5 ${mobileBottomTab === "home" ? "fill-current" : ""}`} />
+              </button>
+
+              {/* Insight Tab */}
+              <button
+                onClick={() => setMobileBottomTab("insight")}
+                className={`flex items-center justify-center flex-1 rounded-full px-4 py-2 transition-all duration-200 ${
+                  mobileBottomTab === "insight"
+                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white"
+                }`}
+                data-testid="mobile-tab-insight"
+              >
+                <svg viewBox="0 0 24 16" className="h-5 w-6" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <defs>
+                    <linearGradient id={`navAreaGradient-${mobileBottomTab === "insight" ? "active" : navSparklineData.trend}`} x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={mobileBottomTab === "insight" ? "#d1d5db" : (navSparklineData.trend === "up" ? "#22c55e" : navSparklineData.trend === "down" ? "#ef4444" : "#9ca3af")} stopOpacity="0.4" />
+                      <stop offset="100%" stopColor={mobileBottomTab === "insight" ? "#d1d5db" : (navSparklineData.trend === "up" ? "#22c55e" : navSparklineData.trend === "down" ? "#ef4444" : "#9ca3af")} stopOpacity="0.05" />
+                    </linearGradient>
+                  </defs>
+                  <polygon
+                    points={`0,14 ${navSparklineData.points.split(' ').map((p, i) => {
+                      const [x, y] = p.split(',');
+                      return `${(parseFloat(x) / 40 * 22) + 1},${(parseFloat(y) / 24 * 12) + 1}`;
+                    }).join(' ')} 22,14`}
+                    fill={`url(#navAreaGradient-${mobileBottomTab === "insight" ? "active" : navSparklineData.trend})`}
+                  />
+                  <polyline
+                    points={navSparklineData.points.split(' ').map(p => {
+                      const [x, y] = p.split(',');
+                      return `${(parseFloat(x) / 40 * 22) + 1},${(parseFloat(y) / 24 * 12) + 1}`;
+                    }).join(' ')}
+                    stroke={mobileBottomTab === "insight" ? "#ffffff" : (navSparklineData.trend === "up" ? "#22c55e" : navSparklineData.trend === "down" ? "#ef4444" : "#9ca3af")}
+                    strokeWidth={mobileBottomTab === "insight" ? "2" : "1.5"}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                </svg>
+              </button>
+
+              {/* Paper Trade Tab */}
+              <button
+                onClick={() => setMobileBottomTab("paper-trade")}
+                className={`flex items-center justify-center flex-1 rounded-full px-4 py-2 transition-all duration-200 ${
+                  mobileBottomTab === "paper-trade"
+                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white"
+                }`}
+                data-testid="mobile-tab-paper-trade"
+              >
+                <TrendingUp className={`h-5 w-5 ${mobileBottomTab === "paper-trade" ? "fill-current" : ""}`} />
+              </button>
+
+              {/* Ranking Tab */}
+              <button
+                onClick={() => setMobileBottomTab("ranking")}
+                className={`flex items-center justify-center flex-1 rounded-full px-4 py-2 transition-all duration-200 ${
+                  mobileBottomTab === "ranking"
+                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white"
+                }`}
+                data-testid="mobile-tab-ranking"
+              >
+                <Trophy className={`h-5 w-5 ${mobileBottomTab === "ranking" ? "fill-current" : ""}`} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Paper Trade Tab - Full Screen */}
+        {mobileBottomTab === "paper-trade" && (
+          <PaperTradingMobileTab
+            paperTradingTotalPnl={paperTradingTotalPnl}
+            paperTradingCapital={paperTradingCapital}
+            hidePositionDetails={hidePositionDetails}
+            setHidePositionDetails={setHidePositionDetails}
+            paperPositions={paperPositions}
+            paperTradeHistory={paperTradeHistory}
+            paperTradeSymbolSearch={paperTradeSymbolSearch}
+            setPaperTradeSymbolSearch={setPaperTradeSymbolSearch}
+            paperTradeSymbol={paperTradeSymbol}
+            setPaperTradeSymbol={setPaperTradeSymbol}
+            paperTradingEventSourcesRef={paperTradingEventSourcesRef}
+            setPaperTradingWsStatus={setPaperTradingWsStatus}
+            setPaperTradeCurrentPrice={setPaperTradeCurrentPrice}
+            searchPaperTradingInstruments={searchPaperTradingInstruments}
+            setPaperTradeSearchResults={setPaperTradeSearchResults}
+            paperTradeSearchLoading={paperTradeSearchLoading}
+            paperTradeSearchResults={paperTradeSearchResults}
+            setSelectedPaperTradingInstrument={setSelectedPaperTradingInstrument}
+            fetchPaperTradePrice={fetchPaperTradePrice}
+            paperTradeType={paperTradeType}
+            setPaperTradeType={setPaperTradeType}
+            setPaperTradeQuantity={setPaperTradeQuantity}
+            setPaperTradeLotInput={setPaperTradeLotInput}
+            setSelectedPaperTradingInstrumentNull={() => setSelectedPaperTradingInstrument(null)}
+            setPaperTradeSLPrice={setPaperTradeSLPrice}
+            paperTradeQuantity={paperTradeQuantity}
+            paperTradeLotInput={paperTradeLotInput}
+            paperTradeCurrentPrice={paperTradeCurrentPrice}
+            paperTradePriceLoading={paperTradePriceLoading}
+            showMobilePaperTradeSLDropdown={showMobilePaperTradeSLDropdown}
+            setShowMobilePaperTradeSLDropdown={setShowMobilePaperTradeSLDropdown}
+            paperTradeSLEnabled={paperTradeSLEnabled}
+            setPaperTradeSLEnabled={setPaperTradeSLEnabled}
+            paperTradeSLPrice={paperTradeSLPrice}
+            paperTradeSLType={paperTradeSLType}
+            setPaperTradeSLType={setPaperTradeSLType}
+            paperTradeSLTimeframe={paperTradeSLTimeframe}
+            setPaperTradeSLTimeframe={setPaperTradeSLTimeframe}
+            paperTradeSLDurationUnit={paperTradeSLDurationUnit}
+            setPaperTradeSLDurationUnit={setPaperTradeSLDurationUnit}
+            paperTradeSLValue={paperTradeSLValue}
+            setPaperTradeSLValue={setPaperTradeSLValue}
+            setPaperTradeAction={setPaperTradeAction}
+            executePaperTrade={executePaperTrade}
+            fetchOptionChainData={fetchOptionChainData}
+            setShowOptionChain={setShowOptionChain}
+            showMobileTradeHistory={showMobileTradeHistory}
+            setShowMobileTradeHistory={setShowMobileTradeHistory}
+            paperTradingWsStatus={paperTradingWsStatus}
+            recordAllPaperTrades={recordAllPaperTrades}
+            exitAllPaperPositions={exitAllPaperPositions}
+            swipeStartXRef={swipeStartXRef}
+            swipeStartYRef={swipeStartYRef}
+            swipedPositionId={swipedPositionId}
+            setSwipedPositionId={setSwipedPositionId}
+            exitPosition={exitPosition}
+            resetPaperTradingAccount={resetPaperTradingAccount}
+            toast={toast}
+          />
+        )}
+
+        {/* Guest login prompt for unauthenticated users on Journal tab */}
+        {showGuestDialog && (
+          <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-full max-w-sm px-4">
+            <div className="bg-white/95 dark:bg-slate-800/95 backdrop-blur-sm border border-slate-200 dark:border-slate-600/50 rounded-2xl shadow-2xl p-4 flex items-center gap-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-slate-900 dark:text-white">Sign in to track trades</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">Log in to save your journal and P&L data.</p>
+              </div>
+              <button
+                onClick={() => setLocation('/landing')}
+                className="shrink-0 bg-violet-600 hover:bg-violet-500 text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors"
+                data-testid="guest-dialog-login-journal"
+              >
+                Login
+              </button>
+              <button
+                onClick={() => setShowGuestDialog(false)}
+                className="shrink-0 text-slate-400 hover:text-white transition-colors p-1"
+                data-testid="guest-dialog-close-journal"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+    </>
   );
 }

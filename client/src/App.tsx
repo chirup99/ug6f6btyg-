@@ -1,4 +1,4 @@
-import React, { useState, useEffect, lazy, Suspense } from "react";
+import React, { useState, useEffect } from "react";
 
 // Global window type declarations for tab state management
 declare global {
@@ -34,27 +34,21 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-// Lazy-load all heavy page/component chunks — only downloaded when that route is visited
-const Dashboard = lazy(() => import("@/pages/home"));
-const Landing = lazy(() => import("@/pages/landing"));
-const PrivacyPolicy = lazy(() => import("@/pages/privacy"));
-const TermsOfService = lazy(() => import("@/pages/terms"));
-const NotFound = lazy(() => import("@/pages/not-found"));
-const PublicHeatmap = lazy(() => import("@/pages/public-heatmap"));
-const SharedReport = lazy(() => import("@/pages/shared-report"));
-const TradingJournalDemo = lazy(() => import("@/pages/trading-journal-demo"));
-const MarketNews = lazy(() => import("@/pages/market-news"));
-const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed"));
-const ZerodhaDebug = lazy(() => import("@/pages/zerodha-debug"));
+import Dashboard from "@/pages/home";
+import Landing from "@/pages/landing";
+import PrivacyPolicy from "@/pages/privacy";
+import TermsOfService from "@/pages/terms";
+import NotFound from "@/pages/not-found";
+import PublicHeatmap from "@/pages/public-heatmap";
+import SharedReport from "@/pages/shared-report";
+import TradingJournalDemo from "@/pages/trading-journal-demo";
+import MarketNews from "@/pages/market-news";
+import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
+import ZerodhaDebug from "@/pages/zerodha-debug";
 
 import { AngelOneGlobalAutoConnect } from "@/hooks/useAngelOneAutoconnect";
 import { getCognitoToken, getCognitoUser, initializeCognito } from "@/cognito";
 import { useCurrentUser } from "@/hooks/useCurrentUser";
-
-// Minimal fallback — dark background only, no spinner, no skeleton
-function PageSkeleton() {
-  return <div className="min-h-screen bg-[#0f1117]" />;
-}
 
 // New Home Page Component
 function NewHome() {
@@ -559,9 +553,7 @@ function App() {
         <TooltipProvider>
           <AngelOneGlobalAutoConnect />
           <Toaster />
-          <Suspense fallback={<PageSkeleton />}>
-            <Router />
-          </Suspense>
+          <Router />
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>

@@ -41,9 +41,10 @@ scripts/         - Deployment and utility scripts
 - **DB Sync**: `npm run db:push` — syncs Drizzle schema to PostgreSQL
 
 ## Replit Setup Notes
-- Dev script uses `node_modules/.bin/tsx` (not `npx tsx`) to avoid interactive install prompts
+- Dev script uses `npx tsx` to run the server (resolves tsx from node_modules reliably)
 - Workflow: "Start application" runs `npm run dev`, listening on port 5000 (webview)
 - HMR configured for Replit dev domain via REPLIT_DEV_DOMAIN env var
+- Vite runs in middleware mode integrated into Express (not standalone) — all served on port 5000
 
 ## Environment Variables
 Key secrets managed via Replit environment:

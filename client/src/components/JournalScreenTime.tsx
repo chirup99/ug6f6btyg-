@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { Clock, Brain, Trophy, TrendingUp, TrendingDown, Minus, X, ChevronRight, Flame, Medal } from "lucide-react";
+import { Clock, Brain, Trophy, TrendingUp, TrendingDown, Minus, X, Flame } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { getCognitoToken } from "@/cognito";
 
@@ -287,186 +287,165 @@ export default function JournalScreenTime({ tradingDataByDate = {} }: Props) {
 
       {/* ── Detail Dialog ──────────────────────────── */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-md w-[95vw] rounded-3xl p-0 overflow-hidden border-0 bg-white dark:bg-slate-900 shadow-2xl max-h-[90vh] overflow-y-auto">
-          {/* Header */}
-          <div className="bg-gradient-to-br from-violet-600 to-purple-700 px-5 py-5 text-white">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 bg-white/20 rounded-xl flex items-center justify-center">
-                  <Brain className="w-4 h-4" />
-                </div>
-                <div>
-                  <h2 className="text-sm font-bold leading-none">Journal Screen Time</h2>
-                  <p className="text-[10px] text-white/70 mt-0.5">Psychology & Focus Analytics</p>
-                </div>
-              </div>
-              <button onClick={() => setOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-full bg-white/15 hover:bg-white/25 transition-colors">
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
+        <DialogContent className="max-w-sm w-[92vw] rounded-2xl p-0 overflow-hidden border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-900 shadow-xl max-h-[85vh] overflow-y-auto">
 
-            {/* Today's time big display */}
-            <div className="flex items-end justify-between">
+          {/* Header */}
+          <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <Clock className="w-4 h-4 text-violet-500" />
+              <span className="text-sm font-semibold text-slate-800 dark:text-slate-100">Screen Time</span>
+            </div>
+            <button onClick={() => setOpen(false)} className="w-6 h-6 flex items-center justify-center rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              <X className="w-3.5 h-3.5 text-slate-400" />
+            </button>
+          </div>
+
+          <div className="px-4 py-4 space-y-4">
+
+            {/* ── Today's summary ──────────────────────── */}
+            <div className="flex items-center justify-between">
               <div>
-                <p className="text-[10px] text-white/60 uppercase tracking-widest font-semibold">Today</p>
-                <p className="text-3xl font-black leading-none mt-0.5">{fmtTime(totalTodaySecs)}</p>
-                <p className="text-[10px] text-white/60 mt-1">
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest mb-0.5">Today</p>
+                <p className="text-2xl font-bold text-slate-800 dark:text-slate-100 leading-none">{fmtTime(totalTodaySecs)}</p>
+                <p className="text-[10px] text-slate-400 mt-1">
                   {todayHistory?.sessions || 0} session{(todayHistory?.sessions || 0) !== 1 ? "s" : ""} · limit {fmtTime(dailyLimit)}
                 </p>
               </div>
-              <div className="text-right">
+              <div className="flex flex-col items-end gap-2">
                 {limitReached ? (
-                  <span className="inline-flex items-center gap-1 bg-red-500/30 border border-red-400/40 text-red-200 text-[10px] font-bold px-2.5 py-1 rounded-full">
-                    <Flame className="w-3 h-3" /> Limit Reached
+                  <span className="inline-flex items-center gap-1 bg-red-50 dark:bg-red-900/20 text-red-500 text-[10px] font-semibold px-2 py-1 rounded-lg border border-red-100 dark:border-red-800/30">
+                    <Flame className="w-3 h-3" /> Limit reached
                   </span>
                 ) : (
-                  <span className="inline-flex items-center gap-1 bg-white/15 text-white/80 text-[10px] font-semibold px-2.5 py-1 rounded-full">
-                    <Clock className="w-3 h-3" /> {Math.round(pct * 100)}% used
-                  </span>
+                  <span className="text-[10px] text-slate-400">{Math.round(pct * 100)}% of limit</span>
                 )}
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="number"
+                    value={limitInput}
+                    min={15}
+                    max={480}
+                    onChange={e => {
+                      setLimitInput(e.target.value);
+                      const mins = parseInt(e.target.value);
+                      if (!isNaN(mins) && mins >= 15) setDailyLimit(mins * 60);
+                    }}
+                    className="w-12 text-[10px] font-semibold text-center bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-md px-1 py-0.5 border border-slate-200 dark:border-slate-700 focus:outline-none"
+                  />
+                  <span className="text-[10px] text-slate-400">min</span>
+                </div>
               </div>
             </div>
 
             {/* Progress bar */}
-            <div className="mt-3 h-2 bg-white/20 rounded-full overflow-hidden">
+            <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               <div
-                className={`h-full rounded-full transition-all duration-1000 ${limitReached ? "bg-red-400" : pct > 0.7 ? "bg-amber-400" : "bg-white"}`}
+                className={`h-full rounded-full transition-all duration-1000 ${limitReached ? "bg-red-500" : pct > 0.7 ? "bg-amber-500" : "bg-violet-500"}`}
                 style={{ width: `${Math.round(pct * 100)}%` }}
               />
             </div>
 
-            {/* Daily limit setter */}
-            <div className="flex items-center gap-2 mt-3">
-              <span className="text-[10px] text-white/60">Daily limit:</span>
-              <input
-                type="number"
-                value={limitInput}
-                min={15}
-                max={480}
-                onChange={e => {
-                  setLimitInput(e.target.value);
-                  const mins = parseInt(e.target.value);
-                  if (!isNaN(mins) && mins >= 15) setDailyLimit(mins * 60);
-                }}
-                className="w-14 text-[11px] font-bold text-center bg-white/20 text-white rounded-lg px-1 py-0.5 border border-white/20 focus:outline-none focus:bg-white/30"
-              />
-              <span className="text-[10px] text-white/60">minutes</span>
-            </div>
-          </div>
-
-          <div className="px-5 py-4 space-y-5">
-
             {/* ── Psychology insight ─────────────────── */}
-            <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Brain className="w-4 h-4 text-violet-500" />
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Trader Psychology</span>
-                {psychInsight.trend === "up" && <TrendingUp className="w-3.5 h-3.5 text-emerald-500 ml-auto" />}
-                {psychInsight.trend === "down" && <TrendingDown className="w-3.5 h-3.5 text-amber-500 ml-auto" />}
-                {psychInsight.trend === "warn" && <Flame className="w-3.5 h-3.5 text-red-500 ml-auto" />}
-                {psychInsight.trend === "neutral" && <Minus className="w-3.5 h-3.5 text-slate-400 ml-auto" />}
+            <div className="flex items-start gap-2.5 py-1">
+              <div className="mt-0.5 shrink-0">
+                {psychInsight.trend === "up" && <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />}
+                {psychInsight.trend === "down" && <TrendingDown className="w-3.5 h-3.5 text-amber-500" />}
+                {psychInsight.trend === "warn" && <Flame className="w-3.5 h-3.5 text-red-500" />}
+                {psychInsight.trend === "neutral" && <Brain className="w-3.5 h-3.5 text-violet-400" />}
               </div>
               <p className={`text-[11px] leading-relaxed ${psychInsight.color}`}>{psychInsight.text}</p>
-              {pnlCorrelation && (
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-2 leading-relaxed border-t border-slate-200 dark:border-slate-700 pt-2">{pnlCorrelation}</p>
-              )}
             </div>
 
-            {/* ── Ranking ────────────────────────────── */}
-            <div>
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Trophy className="w-4 h-4 text-amber-500" />
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">Today's Leaderboard</span>
+            {/* ── Leaderboard — top + me only ───────── */}
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+              <div className="flex items-center justify-between mb-2.5">
+                <div className="flex items-center gap-1.5">
+                  <Trophy className="w-3.5 h-3.5 text-amber-500" />
+                  <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">Today's Leaderboard</span>
                 </div>
-                {myRank && (
-                  <span className="text-[10px] font-bold bg-violet-100 dark:bg-violet-900/40 text-violet-600 dark:text-violet-300 px-2 py-0.5 rounded-full">
-                    {medalLabel(myRank.rank)} of {leaderTotal}
-                  </span>
+                {myRank && leaderTotal > 0 && (
+                  <span className="text-[10px] text-slate-400">{medalLabel(myRank.rank)} of {leaderTotal}</span>
                 )}
               </div>
 
               {loading ? (
-                <div className="flex justify-center py-4">
-                  <div className="w-5 h-5 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
+                <div className="flex justify-center py-3">
+                  <div className="w-4 h-4 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" />
                 </div>
               ) : leaderboard.length === 0 ? (
-                <div className="text-center py-4 text-[11px] text-slate-400">No one tracked yet today — you'll be #1!</div>
-              ) : (
-                <div className="space-y-1.5">
-                  {leaderboard.slice(0, 10).map(entry => {
-                    const isMe = myRank && entry.userId === leaderboard.find(e => e.rank === myRank.rank)?.userId;
-                    return (
-                      <div
-                        key={entry.userId}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-xl text-[11px] ${isMe ? "bg-violet-50 dark:bg-violet-900/30 ring-1 ring-violet-300 dark:ring-violet-600" : "bg-slate-50 dark:bg-slate-800/40"}`}
-                      >
-                        <span className="w-6 text-center font-bold text-slate-500 dark:text-slate-400 shrink-0">{medalLabel(entry.rank)}</span>
-                        <span className={`flex-1 font-semibold truncate ${isMe ? "text-violet-600 dark:text-violet-300" : "text-slate-700 dark:text-slate-300"}`}>
-                          {entry.username}{isMe ? " (you)" : ""}
+                <p className="text-center py-3 text-[11px] text-slate-400">No one tracked yet — you'll be #1!</p>
+              ) : (() => {
+                const topEntry = leaderboard.find(e => e.rank === 1);
+                const myUserId = myRank ? leaderboard.find(e => e.rank === myRank.rank)?.userId : null;
+                const myEntry = myUserId ? leaderboard.find(e => e.userId === myUserId) : null;
+                const isTopMe = topEntry && myEntry && topEntry.userId === myEntry.userId;
+                const showGap = myEntry && topEntry && !isTopMe && myEntry.rank > 2;
+                return (
+                  <div className="space-y-1.5">
+                    {topEntry && (
+                      <div className={`flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] ${isTopMe ? "bg-violet-50 dark:bg-violet-900/25 ring-1 ring-violet-200 dark:ring-violet-700" : "bg-slate-50 dark:bg-slate-800/50"}`}>
+                        <span className="w-5 text-center shrink-0">{medalLabel(1)}</span>
+                        <span className={`flex-1 font-medium truncate ${isTopMe ? "text-violet-600 dark:text-violet-300" : "text-slate-700 dark:text-slate-300"}`}>
+                          {topEntry.username}{isTopMe ? " (you)" : ""}
                         </span>
-                        <span className="font-bold text-slate-600 dark:text-slate-400 shrink-0">{fmtTimeShort(entry.totalSeconds)}</span>
+                        <span className="font-semibold text-slate-500 dark:text-slate-400 shrink-0">{fmtTimeShort(topEntry.totalSeconds)}</span>
                       </div>
-                    );
-                  })}
-                </div>
-              )}
+                    )}
+                    {showGap && (
+                      <div className="flex items-center justify-center py-0.5">
+                        <span className="text-[10px] text-slate-300 dark:text-slate-600">· · ·</span>
+                      </div>
+                    )}
+                    {myEntry && !isTopMe && (
+                      <div className="flex items-center gap-2.5 px-3 py-2 rounded-xl text-[11px] bg-violet-50 dark:bg-violet-900/25 ring-1 ring-violet-200 dark:ring-violet-700">
+                        <span className="w-5 text-center shrink-0">{medalLabel(myEntry.rank)}</span>
+                        <span className="flex-1 font-medium truncate text-violet-600 dark:text-violet-300">
+                          {myEntry.username} (you)
+                        </span>
+                        <span className="font-semibold text-violet-500 dark:text-violet-400 shrink-0">{fmtTimeShort(myEntry.totalSeconds)}</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
 
             {/* ── Daily History ──────────────────────── */}
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <TrendingUp className="w-4 h-4 text-violet-500" />
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wide">30-Day History</span>
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+              <div className="flex items-center gap-1.5 mb-2.5">
+                <TrendingUp className="w-3.5 h-3.5 text-violet-500" />
+                <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wide">30-Day History</span>
               </div>
 
               {history.length === 0 ? (
-                <div className="text-center py-3 text-[11px] text-slate-400">No history yet</div>
+                <p className="text-center py-3 text-[11px] text-slate-400">No history yet</p>
               ) : (
-                <div className="space-y-1.5 max-h-56 overflow-y-auto pr-1">
+                <div className="space-y-1 max-h-48 overflow-y-auto pr-1">
                   {history.slice(0, 30).map(entry => {
                     const p = Math.min(1, entry.totalSeconds / dailyLimit);
                     const isToday = entry.date === todayKey();
                     return (
-                      <div key={entry.date} className={`flex items-center gap-3 px-3 py-2 rounded-xl ${isToday ? "bg-violet-50 dark:bg-violet-900/20 ring-1 ring-violet-200 dark:ring-violet-800" : "bg-slate-50 dark:bg-slate-800/40"}`}>
-                        <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 w-14 shrink-0">
+                      <div key={entry.date} className="flex items-center gap-2.5 py-1.5">
+                        <span className="text-[10px] text-slate-400 w-12 shrink-0">
                           {isToday ? "Today" : formatDate(entry.date)}
                         </span>
-                        <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="flex-1 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div
                             className={`h-full rounded-full ${barColor(entry.totalSeconds)}`}
                             style={{ width: `${Math.round(p * 100)}%` }}
                           />
                         </div>
-                        <span className={`text-[10px] font-bold w-10 text-right shrink-0 ${isToday ? "text-violet-600 dark:text-violet-300" : "text-slate-600 dark:text-slate-400"}`}>
+                        <span className={`text-[10px] font-semibold w-9 text-right shrink-0 ${isToday ? "text-violet-600 dark:text-violet-400" : "text-slate-500 dark:text-slate-500"}`}>
                           {fmtTimeShort(entry.totalSeconds)}
                         </span>
                         {entry.totalSeconds >= dailyLimit && (
-                          <Flame className="w-3 h-3 text-red-500 shrink-0" />
+                          <Flame className="w-3 h-3 text-red-400 shrink-0" />
                         )}
                       </div>
                     );
                   })}
                 </div>
               )}
-            </div>
-
-            {/* ── Tips ───────────────────────────────── */}
-            <div className="bg-gradient-to-r from-violet-50 to-purple-50 dark:from-violet-900/20 dark:to-purple-900/20 rounded-2xl p-4 border border-violet-100 dark:border-violet-800/30">
-              <p className="text-[9px] uppercase tracking-widest text-violet-500 font-bold mb-2">Psychology Tips</p>
-              <ul className="space-y-1.5">
-                {[
-                  "Review trades, not prices — focus on decisions, not outcomes",
-                  "Shorter, focused journal sessions beat long distracted ones",
-                  "Hitting the time limit is a signal to step away and reset",
-                  "Compare your notes on winning vs losing days for patterns"
-                ].map((tip, i) => (
-                  <li key={i} className="flex items-start gap-2 text-[10px] text-slate-600 dark:text-slate-400">
-                    <ChevronRight className="w-3 h-3 text-violet-400 mt-0.5 shrink-0" />
-                    {tip}
-                  </li>
-                ))}
-              </ul>
             </div>
 
           </div>

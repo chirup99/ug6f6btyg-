@@ -143,14 +143,11 @@ export default function JournalScreenTime({ tradingDataByDate = {} }: Props) {
 
   // ── Mobile scroll hide/show ──────────────────────────────────
   useEffect(() => {
-    // Only apply on mobile (md breakpoint = 768px)
-    const handleScroll = (e: Event) => {
+    const handleScroll = () => {
       if (window.innerWidth >= 768) return;
-      const target = e.target as HTMLElement;
-      const currentY = target.scrollTop ?? 0;
-      const delta = currentY - lastScrollY.current;
+      const currentY = window.scrollY;
       // Hide on any downward scroll, show on upward scroll (same as bottom nav bar)
-      if (delta > 0) {
+      if (currentY > lastScrollY.current) {
         setBtnVisible(false);
       } else {
         setBtnVisible(true);
@@ -158,9 +155,8 @@ export default function JournalScreenTime({ tradingDataByDate = {} }: Props) {
       lastScrollY.current = currentY;
     };
 
-    // Attach to all overflow-auto scroll containers (capture phase)
-    document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
-    return () => document.removeEventListener('scroll', handleScroll, { capture: true });
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   // ── Start session timer ──────────────────────────────────────

@@ -1,5 +1,5 @@
-import { useState, useMemo } from 'react';
-import { Wallet, Banknote, Receipt, Activity, Info, UserPlus, X, Copy, CheckCircle, Plus } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Wallet, Banknote, Receipt, Activity, Info, UserPlus, X, Copy, CheckCircle, Plus, Users, Link2, ExternalLink, Share2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -32,6 +32,8 @@ interface FundsAnalysisProps {
   journalFundBase: number;
   setJournalFundBase: React.Dispatch<React.SetStateAction<number>>;
   journalWalletUserId?: string | null;
+  currentUserName?: string;
+  currentUserEmail?: string;
   tradeHistoryData: any[];
   tradingDataByDate: Record<string, any>;
   activeBroker: string;
@@ -39,6 +41,17 @@ interface FundsAnalysisProps {
   setShowConnectDialog: (v: boolean) => void;
   getBrokerDisplayName: (id: string) => string;
   brokerIconMap: Record<string, string>;
+}
+
+interface ReferralProfile {
+  userId: string;
+  code: string;
+  userName: string;
+  userEmail: string;
+  referredUsers: Array<{ userId: string; name: string; email: string; joinedAt: string }>;
+  referralApplied: boolean;
+  referredByCode: string | null;
+  referredByUserId: string | null;
 }
 
 export function FundsAnalysis({
@@ -49,6 +62,8 @@ export function FundsAnalysis({
   journalFundBase,
   setJournalFundBase,
   journalWalletUserId,
+  currentUserName,
+  currentUserEmail,
   tradeHistoryData,
   tradingDataByDate,
   activeBroker,
@@ -63,13 +78,41 @@ export function FundsAnalysis({
   const [showJournalChargesDialog, setShowJournalChargesDialog] = useState(false);
   const [showBrokerageChargesDialog, setShowBrokerageChargesDialog] = useState(false);
   const [showReferDialog, setShowReferDialog] = useState(false);
+  const [showReferredList, setShowReferredList] = useState(false);
   const [showAddFundDialog, setShowAddFundDialog] = useState(false);
   const [addFundAmount, setAddFundAmount] = useState('');
   const [addFundLoading, setAddFundLoading] = useState(false);
   const [referralCodeInput, setReferralCodeInput] = useState('');
-  const [referralApplied, setReferralApplied] = useState<boolean>(() => {
-    return localStorage.getItem('journalReferralApplied') === 'true';
-  });
+  const [applyReferralLoading, setApplyReferralLoading] = useState(false);
+  const [referralProfile, setReferralProfile] = useState<ReferralProfile | null>(null);
+  const [referralProfileLoading, setReferralProfileLoading] = useState(false);
+
+  const myReferralCode = referralProfile?.code ?? '';
+  const referralApplied = referralProfile?.referralApplied ?? false;
+  const referredUsers = referralProfile?.referredUsers ?? [];
+
+  const loadReferralProfile = useCallback(async () => {
+    if (!journalWalletUserId) return;
+    setReferralProfileLoading(true);
+    try {
+      const params = new URLSearchParams();
+      if (currentUserName) params.set('name', currentUserName);
+      if (currentUserEmail) params.set('email', currentUserEmail);
+      const res = await fetch(`/api/referral/${encodeURIComponent(journalWalletUserId)}?${params}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.profile) setReferralProfile(data.profile);
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not load referral profile');
+    } finally {
+      setReferralProfileLoading(false);
+    }
+  }, [journalWalletUserId, currentUserName, currentUserEmail]);
+
+  useEffect(() => {
+    if (journalWalletUserId) loadReferralProfile();
+  }, [journalWalletUserId, loadReferralProfile]);
 
   const handleAddFund = async () => {
     const amount = parseFloat(addFundAmount);
@@ -104,14 +147,54 @@ export function FundsAnalysis({
     }
   };
 
-  const myReferralCode = useMemo(() => {
-    let code = localStorage.getItem('myReferralCode');
-    if (!code) {
-      code = 'PERALA' + Math.random().toString(36).substring(2, 7).toUpperCase();
-      localStorage.setItem('myReferralCode', code);
+  const handleApplyReferral = async () => {
+    if (!referralCodeInput.trim()) {
+      toast({ title: 'Enter a code', description: 'Please enter a referral code', variant: 'destructive' });
+      return;
     }
-    return code;
-  }, []);
+    if (!journalWalletUserId) {
+      toast({ title: 'Not logged in', description: 'Please log in to apply a referral code.', variant: 'destructive' });
+      return;
+    }
+    setApplyReferralLoading(true);
+    try {
+      const res = await fetch('/api/referral/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId: journalWalletUserId,
+          code: referralCodeInput.trim().toUpperCase(),
+          userName: currentUserName || '',
+          userEmail: currentUserEmail || ''
+        })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setJournalFundBase(data.newBalance);
+        setReferralCodeInput('');
+        await loadReferralProfile();
+        toast({ title: '🎉 ₹200 Added!', description: 'Referral bonus applied — ₹200 added to your Journal Fund and ₹200 credited to your referrer!' });
+      } else {
+        toast({ title: 'Could not apply code', description: data.error || 'Please try again.', variant: 'destructive' });
+      }
+    } catch (err: any) {
+      toast({ title: 'Failed to apply referral', description: err.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setApplyReferralLoading(false);
+    }
+  };
+
+  const getReferralLink = () => {
+    const base = window.location.origin;
+    return myReferralCode ? `${base}/?ref=${myReferralCode}` : '';
+  };
+
+  const copyReferralLink = () => {
+    const link = getReferralLink();
+    if (!link) return;
+    navigator.clipboard?.writeText(link);
+    toast({ title: 'Link copied!', description: 'Share this link with friends to earn ₹200 each.' });
+  };
 
   return (
     <>
@@ -1032,98 +1115,179 @@ export function FundsAnalysis({
       </Dialog>
 
       {/* Refer Dialog */}
-      <Dialog open={showReferDialog} onOpenChange={setShowReferDialog}>
+      <Dialog open={showReferDialog} onOpenChange={(open) => { setShowReferDialog(open); if (!open) setShowReferredList(false); }}>
         <DialogContent className="w-[95vw] max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0 overflow-hidden">
-          <button
-            onClick={() => setShowReferDialog(false)}
-            className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
-            data-testid="close-refer-dialog"
-          >
-            <X className="w-4 h-4" />
-          </button>
-          <div className="bg-gradient-to-br from-violet-500 to-purple-600 p-6 text-white text-center">
-            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
-              <UserPlus className="w-6 h-6" />
-            </div>
-            <h3 className="text-lg font-black">Refer &amp; Earn</h3>
-            <p className="text-sm text-violet-100 mt-1">Get <span className="font-black text-white">₹200</span> journal fund for every friend you refer!</p>
+          {/* Header actions */}
+          <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">
+            <button
+              onClick={() => setShowReferredList(v => !v)}
+              className={`p-1.5 rounded-full transition-colors relative ${showReferredList ? 'bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400' : 'bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400'}`}
+              data-testid="toggle-referred-list"
+              title="View referred friends"
+            >
+              <Users className="w-4 h-4" />
+              {referredUsers.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-violet-500 text-white text-[9px] font-black rounded-full flex items-center justify-center">
+                  {referredUsers.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => setShowReferDialog(false)}
+              className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+              data-testid="close-refer-dialog"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
-          <div className="p-5 space-y-4">
-            <div>
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Your Referral Code</p>
-              <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
-                <span className="flex-1 font-black text-slate-900 dark:text-white tracking-wider text-sm">{myReferralCode}</span>
-                <button
-                  onClick={() => {
-                    navigator.clipboard?.writeText(myReferralCode);
-                    toast({ title: "Copied!", description: "Referral code copied to clipboard" });
-                  }}
-                  className="text-violet-500 hover:text-violet-600 transition-colors"
-                  data-testid="copy-referral-code"
-                >
-                  <Copy className="w-4 h-4" />
-                </button>
-              </div>
+
+          {/* Hero */}
+          <div className={`bg-gradient-to-br ${showReferredList ? 'from-slate-600 to-slate-800' : 'from-violet-500 to-purple-600'} p-5 text-white text-center transition-all`}>
+            <div className="w-11 h-11 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-2.5">
+              {showReferredList ? <Users className="w-5 h-5" /> : <UserPlus className="w-5 h-5" />}
             </div>
-            <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
-              <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Have a Referral Code?</p>
-              {referralApplied ? (
-                <div className="flex items-center gap-2 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl px-4 py-3">
-                  <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
-                  <span className="text-sm font-bold text-green-700 dark:text-green-400">Referral bonus of ₹200 applied!</span>
+            <h3 className="text-base font-black">{showReferredList ? 'Your Referred Friends' : 'Refer & Earn'}</h3>
+            <p className="text-xs text-white/80 mt-0.5">
+              {showReferredList
+                ? `${referredUsers.length} friend${referredUsers.length !== 1 ? 's' : ''} joined via your code · ₹${(referredUsers.length * 200).toLocaleString('en-IN')} earned`
+                : <>Get <span className="font-black text-white">₹200</span> for every friend who joins with your code</>
+              }
+            </p>
+          </div>
+
+          {showReferredList ? (
+            /* ── Referred Friends List ── */
+            <div className="p-4 space-y-2 max-h-80 overflow-y-auto">
+              {referralProfileLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <span className="w-5 h-5 border-2 border-violet-400/30 border-t-violet-500 rounded-full animate-spin" />
+                </div>
+              ) : referredUsers.length === 0 ? (
+                <div className="text-center py-8">
+                  <Users className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                  <p className="text-sm font-semibold text-slate-400 dark:text-slate-500">No referrals yet</p>
+                  <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1">Share your code to earn ₹200 per friend</p>
                 </div>
               ) : (
-                <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={referralCodeInput}
-                    onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
-                    placeholder="Enter code e.g. PERALA12345"
-                    className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
-                    data-testid="input-referral-code"
-                  />
-                  <button
-                    onClick={async () => {
-                      if (!referralCodeInput.trim()) {
-                        toast({ title: "Enter a code", description: "Please enter a referral code", variant: "destructive" });
-                        return;
-                      }
-                      setReferralApplied(true);
-                      localStorage.setItem('journalReferralApplied', 'true');
-                      setReferralCodeInput('');
-                      if (journalWalletUserId) {
-                        try {
-                          const res = await fetch(`/api/journal-wallet/${encodeURIComponent(journalWalletUserId)}/topup`, {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({ amount: 200, note: '🎁 Referral bonus' })
-                          });
-                          const data = await res.json();
-                          if (data.success && data.wallet) {
-                            setJournalFundBase(data.wallet.balance);
-                          } else {
-                            setJournalFundBase(prev => prev + 200);
-                          }
-                        } catch {
-                          setJournalFundBase(prev => prev + 200);
-                        }
-                      } else {
-                        setJournalFundBase(prev => prev + 200);
-                      }
-                      toast({ title: "₹200 Added!", description: "Referral bonus applied to your journal fund!" });
-                    }}
-                    className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl transition-colors"
-                    data-testid="button-apply-referral"
-                  >
-                    Apply
-                  </button>
-                </div>
+                referredUsers.map((user, i) => (
+                  <div key={user.userId || i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-800 rounded-xl px-3 py-2.5" data-testid={`referred-user-${i}`}>
+                    <div className="w-8 h-8 rounded-full bg-violet-500/20 dark:bg-violet-500/30 flex items-center justify-center flex-shrink-0">
+                      <span className="text-violet-600 dark:text-violet-400 text-xs font-black">
+                        {(user.name || user.email || '?').charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{user.name || user.email || 'User'}</p>
+                      {user.email && user.name && (
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">{user.email}</p>
+                      )}
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                        Joined {new Date(user.joinedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </p>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-xs font-black text-green-600 dark:text-green-400">+₹200</span>
+                    </div>
+                  </div>
+                ))
               )}
             </div>
-            <div className="bg-violet-50 dark:bg-violet-500/10 rounded-xl p-3 text-[11px] text-violet-700 dark:text-violet-300 leading-relaxed">
-              Share your code → Friend signs up → <span className="font-bold">Both get ₹200</span> journal fund added instantly.
+          ) : (
+            /* ── Refer & Earn Form ── */
+            <div className="p-5 space-y-4">
+              {referralProfileLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <span className="w-5 h-5 border-2 border-violet-400/30 border-t-violet-500 rounded-full animate-spin" />
+                </div>
+              ) : (
+                <>
+                  {/* Referral Code */}
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Your Referral Code</p>
+                    <div className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3">
+                      <span className="flex-1 font-black text-slate-900 dark:text-white tracking-wider text-sm">
+                        {myReferralCode || '...'}
+                      </span>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard?.writeText(myReferralCode);
+                          toast({ title: "Code copied!", description: "Share this code with friends." });
+                        }}
+                        className="text-violet-500 hover:text-violet-600 transition-colors"
+                        data-testid="copy-referral-code"
+                        disabled={!myReferralCode}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Shareable Link */}
+                  <div>
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Shareable Link</p>
+                    <div className="flex gap-2">
+                      <div className="flex-1 flex items-center gap-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 overflow-hidden">
+                        <Link2 className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                        <span className="text-[11px] text-slate-500 dark:text-slate-400 truncate font-medium">
+                          {myReferralCode ? `perala.app/?ref=${myReferralCode}` : '...'}
+                        </span>
+                      </div>
+                      <button
+                        onClick={copyReferralLink}
+                        disabled={!myReferralCode}
+                        className="px-3 py-2.5 rounded-xl bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 transition-colors text-[11px] font-bold flex items-center gap-1 disabled:opacity-50"
+                        data-testid="copy-referral-link"
+                      >
+                        <Share2 className="w-3 h-3" />
+                        Share
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Apply Code */}
+                  <div className="border-t border-slate-100 dark:border-slate-800 pt-4">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1.5">Have a Referral Code?</p>
+                    {referralApplied ? (
+                      <div className="flex items-center gap-2 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 rounded-xl px-4 py-3">
+                        <CheckCircle className="w-4 h-4 text-green-500 flex-shrink-0" />
+                        <div>
+                          <p className="text-sm font-bold text-green-700 dark:text-green-400">₹200 referral bonus applied!</p>
+                          {referralProfile?.referredByCode && (
+                            <p className="text-[10px] text-green-600/70 dark:text-green-400/70">Code: {referralProfile.referredByCode}</p>
+                          )}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={referralCodeInput}
+                          onChange={(e) => setReferralCodeInput(e.target.value.toUpperCase())}
+                          placeholder="Enter code e.g. PERALAABCDEF"
+                          className="flex-1 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2.5 text-sm font-medium text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-violet-500/30"
+                          data-testid="input-referral-code"
+                          onKeyDown={e => e.key === 'Enter' && handleApplyReferral()}
+                        />
+                        <button
+                          onClick={handleApplyReferral}
+                          disabled={applyReferralLoading || !referralCodeInput.trim()}
+                          className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                          data-testid="button-apply-referral"
+                        >
+                          {applyReferralLoading ? <span className="w-3.5 h-3.5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
+                          Apply
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="bg-violet-50 dark:bg-violet-500/10 rounded-xl p-3 text-[11px] text-violet-700 dark:text-violet-300 leading-relaxed">
+                    Share your link → Friend signs up → <span className="font-bold">Both get ₹200</span> added instantly.
+                  </div>
+                </>
+              )}
             </div>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </>

@@ -488,6 +488,76 @@ class AWSDynamoDBService {
       return false;
     }
   }
+
+  // ── Referral System ───────────────────────────────────────────────────────
+
+  async getReferralProfile(userId: string): Promise<any | null> {
+    if (!this.isConnected()) return null;
+    try {
+      const command = new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { dateKey: `referral#${userId}` }
+      });
+      const response = await this.docClient!.send(command);
+      return response.Item?.data ?? null;
+    } catch (error) {
+      console.error(`❌ AWS: Failed to get referral profile for ${userId}:`, error);
+      return null;
+    }
+  }
+
+  async saveReferralProfile(userId: string, data: any): Promise<boolean> {
+    if (!this.isConnected()) return false;
+    try {
+      const command = new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+          dateKey: `referral#${userId}`,
+          data: { ...data, updatedAt: new Date().toISOString() },
+          updatedAt: new Date().toISOString()
+        }
+      });
+      await this.docClient!.send(command);
+      return true;
+    } catch (error) {
+      console.error(`❌ AWS: Failed to save referral profile for ${userId}:`, error);
+      return false;
+    }
+  }
+
+  async getReferralByCode(code: string): Promise<any | null> {
+    if (!this.isConnected()) return null;
+    try {
+      const command = new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { dateKey: `referralcode#${code.toUpperCase()}` }
+      });
+      const response = await this.docClient!.send(command);
+      return response.Item?.data ?? null;
+    } catch (error) {
+      console.error(`❌ AWS: Failed to get referral by code ${code}:`, error);
+      return null;
+    }
+  }
+
+  async saveReferralCodeLookup(code: string, data: any): Promise<boolean> {
+    if (!this.isConnected()) return false;
+    try {
+      const command = new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+          dateKey: `referralcode#${code.toUpperCase()}`,
+          data,
+          updatedAt: new Date().toISOString()
+        }
+      });
+      await this.docClient!.send(command);
+      return true;
+    } catch (error) {
+      console.error(`❌ AWS: Failed to save referral code lookup for ${code}:`, error);
+      return false;
+    }
+  }
 }
 
 export const awsDynamoDBService = new AWSDynamoDBService();

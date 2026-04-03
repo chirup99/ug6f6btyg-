@@ -7506,13 +7506,47 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     return null;
   };
 
-  // Load journal wallet from server when user is identified
+  // Load journal wallet from server when user is identified; also auto-apply pending referral from URL
   useEffect(() => {
     const userId = currentUser?.userId;
-    if (userId) {
-      loadWallet(userId);
+    if (!userId) return;
+    loadWallet(userId);
+
+    // Auto-apply referral code from URL (?ref=CODE) if present and not yet applied
+    const urlParams = new URLSearchParams(window.location.search);
+    const pendingRef = urlParams.get('ref') || sessionStorage.getItem('pendingReferralCode');
+    if (pendingRef) {
+      // Remove from URL cleanly
+      const newUrl = window.location.pathname;
+      window.history.replaceState({}, '', newUrl);
+      sessionStorage.removeItem('pendingReferralCode');
+      // Apply referral via API
+      fetch('/api/referral/apply', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          userId,
+          code: pendingRef.toUpperCase(),
+          userName: currentUser?.displayName || currentUser?.username || '',
+          userEmail: currentUser?.email || ''
+        })
+      }).then(r => r.json()).then(data => {
+        if (data.success) {
+          setJournalFundBase(data.newBalance);
+          console.log('✅ Referral auto-applied from URL:', pendingRef);
+        }
+      }).catch(err => console.warn('⚠️ Auto referral apply failed:', err));
     }
   }, [currentUser?.userId]);
+
+  // Capture referral code from URL for unauthenticated users (store in sessionStorage)
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const ref = urlParams.get('ref');
+    if (ref && !currentUser?.userId) {
+      sessionStorage.setItem('pendingReferralCode', ref);
+    }
+  }, []);
 
   // Load all heatmap data on startup and when userId or tab changes - ALWAYS from userId, never demo
   useEffect(() => {
@@ -14775,6 +14809,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 journalFundBase={journalFundBase}
                 setJournalFundBase={setJournalFundBase}
                 journalWalletUserId={currentUser?.userId ?? null}
+                currentUserName={currentUser?.displayName || currentUser?.username || ''}
+                currentUserEmail={currentUser?.email || ''}
                 activeBroker={activeBroker}
                 getBrokerDisplayName={getBrokerDisplayName}
                 brokerIconMap={brokerIconMap}

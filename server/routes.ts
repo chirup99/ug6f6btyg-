@@ -7203,6 +7203,125 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==========================================
+  // REFERRAL SYSTEM ROUTES (AWS DynamoDB)
+  // ==========================================
+
+  const generateReferralCode = () =>
+    'PERALA' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+  const getOrCreateReferralProfile = async (userId: string, userName?: string, userEmail?: string) => {
+    let profile = await awsDynamoDBService.getReferralProfile(userId);
+    if (!profile) {
+      const code = generateReferralCode();
+      profile = {
+        userId,
+        code,
+        userName: userName || '',
+        userEmail: userEmail || '',
+        referredUsers: [],
+        referralApplied: false,
+        referredByCode: null,
+        referredByUserId: null,
+        createdAt: new Date().toISOString()
+      };
+      await awsDynamoDBService.saveReferralProfile(userId, profile);
+      await awsDynamoDBService.saveReferralCodeLookup(code, { userId, userName: userName || '', userEmail: userEmail || '' });
+    }
+    return profile;
+  };
+
+  // GET /api/referral/:userId — get or create referral profile
+  app.get('/api/referral/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { name, email } = req.query as { name?: string; email?: string };
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+
+      const profile = await getOrCreateReferralProfile(userId, name, email);
+      res.json({ success: true, profile });
+    } catch (error) {
+      console.error('❌ Error fetching referral profile:', error);
+      res.status(500).json({ error: 'Failed to fetch referral profile' });
+    }
+  });
+
+  // GET /api/referral/by-code/:code — look up who owns a code
+  app.get('/api/referral/by-code/:code', async (req, res) => {
+    try {
+      const { code } = req.params;
+      const lookup = await awsDynamoDBService.getReferralByCode(code);
+      if (!lookup) return res.status(404).json({ error: 'Code not found' });
+      res.json({ success: true, ...lookup });
+    } catch (error) {
+      res.status(500).json({ error: 'Failed to look up referral code' });
+    }
+  });
+
+  // POST /api/referral/apply — apply a referral code; credits both users ₹200
+  app.post('/api/referral/apply', async (req, res) => {
+    try {
+      const { userId, code, userName, userEmail } = req.body;
+      if (!userId || !code) return res.status(400).json({ error: 'userId and code required' });
+
+      // Validate the code
+      const lookup = await awsDynamoDBService.getReferralByCode(code.toUpperCase());
+      if (!lookup) return res.status(404).json({ error: 'Invalid referral code' });
+      if (lookup.userId === userId) return res.status(400).json({ error: 'Cannot use your own referral code' });
+
+      // Check if current user already applied a code
+      const myProfile = await getOrCreateReferralProfile(userId, userName, userEmail);
+      if (myProfile.referralApplied) return res.status(400).json({ error: 'Referral code already applied' });
+
+      const referrerId = lookup.userId;
+
+      // Credit referee (current user) ₹200
+      let myWallet = await awsDynamoDBService.getWallet(userId);
+      if (!myWallet) myWallet = { balance: 1000, totalTopUp: 1000, totalDeducted: 0, transactions: [], createdAt: new Date().toISOString() };
+      myWallet = {
+        ...myWallet,
+        balance: parseFloat(((myWallet.balance || 0) + 200).toFixed(2)),
+        totalTopUp: parseFloat(((myWallet.totalTopUp || 0) + 200).toFixed(2)),
+        transactions: [{ type: 'credit', amount: 200, note: '🎁 Referral bonus (you joined via referral)', at: new Date().toISOString() }, ...(myWallet.transactions || [])].slice(0, 100)
+      };
+      await awsDynamoDBService.saveWallet(userId, myWallet);
+
+      // Credit referrer ₹200
+      let referrerWallet = await awsDynamoDBService.getWallet(referrerId);
+      if (!referrerWallet) referrerWallet = { balance: 1000, totalTopUp: 1000, totalDeducted: 0, transactions: [], createdAt: new Date().toISOString() };
+      referrerWallet = {
+        ...referrerWallet,
+        balance: parseFloat(((referrerWallet.balance || 0) + 200).toFixed(2)),
+        totalTopUp: parseFloat(((referrerWallet.totalTopUp || 0) + 200).toFixed(2)),
+        transactions: [{ type: 'credit', amount: 200, note: `🎁 Referral bonus (${userName || userEmail || 'someone'} joined via your code)`, at: new Date().toISOString() }, ...(referrerWallet.transactions || [])].slice(0, 100)
+      };
+      await awsDynamoDBService.saveWallet(referrerId, referrerWallet);
+
+      // Update referee profile — mark referral as applied
+      const updatedMyProfile = { ...myProfile, referralApplied: true, referredByCode: code.toUpperCase(), referredByUserId: referrerId };
+      await awsDynamoDBService.saveReferralProfile(userId, updatedMyProfile);
+
+      // Update referrer profile — add to referredUsers list
+      const referrerProfile = await getOrCreateReferralProfile(referrerId);
+      const alreadyListed = (referrerProfile.referredUsers || []).some((u: any) => u.userId === userId);
+      if (!alreadyListed) {
+        const updatedReferrerProfile = {
+          ...referrerProfile,
+          referredUsers: [
+            { userId, name: userName || '', email: userEmail || '', joinedAt: new Date().toISOString() },
+            ...(referrerProfile.referredUsers || [])
+          ]
+        };
+        await awsDynamoDBService.saveReferralProfile(referrerId, updatedReferrerProfile);
+      }
+
+      res.json({ success: true, newBalance: myWallet.balance, referrerCredited: true });
+    } catch (error) {
+      console.error('❌ Error applying referral code:', error);
+      res.status(500).json({ error: 'Failed to apply referral code' });
+    }
+  });
+
+  // ==========================================
   // TRADING CHALLENGE ROUTES (AWS DynamoDB)
   // With Zod validation and Cognito authentication
   // ==========================================

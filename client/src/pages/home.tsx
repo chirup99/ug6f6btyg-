@@ -7323,6 +7323,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     localStorage.setItem("tradingJournalDemoMode", String(val));
   };
 
+  // Pre-connect Zerodha and Upstox in guest/demo mode so they appear ready without tapping
+  useEffect(() => {
+    if (isDemoMode) {
+      setZerodhaIsConnected(true);
+      setUpstoxIsConnected(true);
+    } else {
+      // In personal mode, only keep connected if a real access token exists
+      if (!zerodhaAccessToken) setZerodhaIsConnected(false);
+      if (!upstoxAccessToken) setUpstoxIsConnected(false);
+    }
+  }, [isDemoMode]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Loading state for heatmap data
   const [isLoadingHeatmapData, setIsLoadingHeatmapData] = useState(false);
 
@@ -14973,7 +14985,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           secondaryBroker={secondaryBroker}
           secondaryBrokerOrders={secondaryBroker === 'fyers' ? (fyersOrders || []) : secondaryBroker === 'delta' ? (deltaExchangeTradesData || []) : broker2Orders}
           secondaryBrokerPositions={secondaryBroker === 'fyers' ? (fyersPositions || []) : secondaryBroker === 'delta' ? (deltaExchangePositionsData || []) : broker2Positions}
-          secondaryBrokerFunds={broker2Funds}
+          secondaryBrokerFunds={isDemoMode ? 25000 : broker2Funds}
           fetchingSecondaryBroker={fetchingBroker2}
           showBrokerImportModal={showBrokerImportModal} 
           setShowBrokerImportModal={setShowBrokerImportModal} 

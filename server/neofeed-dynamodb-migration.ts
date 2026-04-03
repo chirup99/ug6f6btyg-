@@ -24,7 +24,8 @@ export const TABLES = {
   BANNERS: 'neofeed-banners',
   FOLLOWS: 'neofeed-follows',
   REPORT_BUGS: 'neofeed-report-bugs',
-  ADMIN_ACCESS: 'access-admin'
+  ADMIN_ACCESS: 'access-admin',
+  SCREEN_TIME: 'journal-screen-time'
 };
 
 export interface AdminAccess {
@@ -1596,3 +1597,77 @@ export interface BugReport {
   updatedAt: string;
 }
 
+
+// ==================== SCREEN TIME FUNCTIONS ====================
+
+export interface ScreenTimeEntry {
+  userId: string;
+  username: string;
+  date: string;
+  totalSeconds: number;
+  sessions: number;
+  updatedAt: string;
+}
+
+export async function upsertScreenTime(userId: string, username: string, date: string, addSeconds: number): Promise<ScreenTimeEntry> {
+  const pk = `USER#${userId}`;
+  const sk = `DATE#${date}`;
+  try {
+    const existing = await docClient.send(new GetCommand({ TableName: TABLES.SCREEN_TIME, Key: { pk, sk } }));
+    const prev = existing.Item as any;
+    const totalSeconds = (prev?.totalSeconds || 0) + addSeconds;
+    const sessions = (prev?.sessions || 0) + 1;
+    const now = new Date().toISOString();
+    const item = { pk, sk, userId, username, date, totalSeconds, sessions, updatedAt: now };
+    await docClient.send(new PutCommand({ TableName: TABLES.SCREEN_TIME, Item: item }));
+    return { userId, username, date, totalSeconds, sessions, updatedAt: now };
+  } catch (error) {
+    console.error('❌ Error upserting screen time:', error);
+    throw error;
+  }
+}
+
+export async function getUserScreenTimeHistory(userId: string, days: number = 30): Promise<ScreenTimeEntry[]> {
+  try {
+    const result = await docClient.send(new QueryCommand({
+      TableName: TABLES.SCREEN_TIME,
+      KeyConditionExpression: 'pk = :pk',
+      ExpressionAttributeValues: { ':pk': `USER#${userId}` },
+      ScanIndexForward: false,
+      Limit: days
+    }));
+    return (result.Items || []).map((item: any) => ({
+      userId: item.userId,
+      username: item.username,
+      date: item.date,
+      totalSeconds: item.totalSeconds,
+      sessions: item.sessions,
+      updatedAt: item.updatedAt
+    }));
+  } catch (error) {
+    console.error('❌ Error getting screen time history:', error);
+    return [];
+  }
+}
+
+export async function getScreenTimeLeaderboard(date: string): Promise<{ userId: string; username: string; totalSeconds: number; rank: number }[]> {
+  try {
+    const result = await docClient.send(new ScanCommand({
+      TableName: TABLES.SCREEN_TIME,
+      FilterExpression: '#d = :date',
+      ExpressionAttributeNames: { '#d': 'date' },
+      ExpressionAttributeValues: { ':date': date }
+    }));
+    const items = (result.Items || []) as any[];
+    items.sort((a, b) => b.totalSeconds - a.totalSeconds);
+    return items.map((item, i) => ({
+      userId: item.userId,
+      username: item.username || 'trader',
+      totalSeconds: item.totalSeconds,
+      rank: i + 1
+    }));
+  } catch (error) {
+    console.error('❌ Error getting screen time leaderboard:', error);
+    return [];
+  }
+}

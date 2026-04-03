@@ -35,6 +35,9 @@ import {
   getFollowingList,
   getAllRepostsForFeed,
   createBugReport,
+  upsertScreenTime,
+  getUserScreenTimeHistory,
+  getScreenTimeLeaderboard,
   TABLES 
 } from './neofeed-dynamodb-migration';
 
@@ -1683,6 +1686,57 @@ export function registerNeoFeedAwsRoutes(app: any) {
     } catch (error: any) {
       console.error('❌ Error updating user profile:', error);
       res.status(500).json({ error: 'Failed to update profile' });
+    }
+  });
+
+  // ==================== SCREEN TIME ROUTES ====================
+
+  // POST /api/journal/screen-time — save a session chunk
+  app.post('/api/journal/screen-time', async (req: any, res: any) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const { date, seconds } = req.body;
+      if (!date || typeof seconds !== 'number' || seconds <= 0) {
+        return res.status(400).json({ error: 'Invalid date or seconds' });
+      }
+      const entry = await upsertScreenTime(user.userId, user.username, date, Math.round(seconds));
+      res.json({ success: true, entry });
+    } catch (error: any) {
+      console.error('❌ Error saving screen time:', error);
+      res.status(500).json({ error: 'Failed to save screen time' });
+    }
+  });
+
+  // GET /api/journal/screen-time — get history for current user
+  app.get('/api/journal/screen-time', async (req: any, res: any) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const days = Math.min(Number(req.query.days) || 30, 90);
+      const history = await getUserScreenTimeHistory(user.userId, days);
+      res.json({ success: true, history, userId: user.userId });
+    } catch (error: any) {
+      console.error('❌ Error getting screen time history:', error);
+      res.status(500).json({ error: 'Failed to get screen time history' });
+    }
+  });
+
+  // GET /api/journal/screen-time/leaderboard — leaderboard for a date
+  app.get('/api/journal/screen-time/leaderboard', async (req: any, res: any) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+      const date = (req.query.date as string) || new Date().toISOString().split('T')[0];
+      const board = await getScreenTimeLeaderboard(date);
+      const myRank = board.find(e => e.userId === user.userId);
+      res.json({ success: true, leaderboard: board.slice(0, 20), myRank: myRank || null, total: board.length });
+    } catch (error: any) {
+      console.error('❌ Error getting screen time leaderboard:', error);
+      res.status(500).json({ error: 'Failed to get leaderboard' });
     }
   });
 

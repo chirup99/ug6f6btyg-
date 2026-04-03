@@ -42,6 +42,7 @@ import { FundsAnalysis } from "./fund";
 import LossMakingAnalysisPanel from "@/components/LossMakingAnalysisPanel";
 import { DisciplineRiskPanel } from "@/components/DisciplineRiskPanel";
 import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
+import JournalScreenTime from "@/components/JournalScreenTime";
 import { useLocation } from "wouter";
 
 export interface JournalTabContentProps {
@@ -2234,6 +2235,9 @@ export function JournalTabContent({
             toast={toast}
           />
         )}
+
+        {/* Journal Screen Time floating tracker */}
+        <JournalScreenTime tradingDataByDate={tradingDataByDate} />
 
         {/* Guest login prompt for unauthenticated users on Journal tab */}
         {showGuestDialog && (

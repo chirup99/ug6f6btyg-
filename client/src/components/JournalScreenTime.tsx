@@ -148,8 +148,13 @@ export default function JournalScreenTime({ tradingDataByDate = {} }: Props) {
       if (window.innerWidth >= 768) return;
       const target = e.target as HTMLElement;
       const currentY = target.scrollTop ?? 0;
-      // Only visible when at the very top of the screen (within 60px)
-      setBtnVisible(currentY < 60);
+      const delta = currentY - lastScrollY.current;
+      // Hide on any downward scroll, show on upward scroll (same as bottom nav bar)
+      if (delta > 0) {
+        setBtnVisible(false);
+      } else {
+        setBtnVisible(true);
+      }
       lastScrollY.current = currentY;
     };
 

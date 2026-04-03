@@ -64,11 +64,13 @@ export default function JournalScreenTime({ tradingDataByDate = {} }: Props) {
   const [dailyLimit, setDailyLimit] = useState(DEFAULT_DAILY_LIMIT_SECS);
   const [limitInput, setLimitInput] = useState("120"); // minutes
   const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [btnVisible, setBtnVisible] = useState(true);
 
   const sessionStart = useRef(Date.now());
   const lastSaved = useRef(0); // seconds already saved this session
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const saveTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastScrollY = useRef(0);
 
   // Today's total = history entry + unsaved session seconds
   const todayHistory = history.find(h => h.date === todayKey());
@@ -137,6 +139,24 @@ export default function JournalScreenTime({ tradingDataByDate = {} }: Props) {
     getCognitoToken().then(token => {
       setIsAuthenticated(!!token);
     });
+  }, []);
+
+  // ── Mobile scroll hide/show ──────────────────────────────────
+  useEffect(() => {
+    // Only apply on mobile (md breakpoint = 768px)
+    const handleScroll = (e: Event) => {
+      if (window.innerWidth >= 768) return;
+      const target = e.target as HTMLElement;
+      const currentY = target.scrollTop ?? 0;
+      const delta = currentY - lastScrollY.current;
+      if (Math.abs(delta) < 4) return; // ignore tiny jitter
+      setBtnVisible(delta < 0 || currentY < 60); // hide on down, show on up or near top
+      lastScrollY.current = currentY;
+    };
+
+    // Attach to all overflow-auto scroll containers (capture phase)
+    document.addEventListener('scroll', handleScroll, { passive: true, capture: true });
+    return () => document.removeEventListener('scroll', handleScroll, { capture: true });
   }, []);
 
   // ── Start session timer ──────────────────────────────────────
@@ -242,7 +262,7 @@ export default function JournalScreenTime({ tradingDataByDate = {} }: Props) {
       <button
         onClick={() => setOpen(true)}
         data-testid="button-journal-screen-time"
-        className="fixed bottom-24 right-3 z-40 md:bottom-6 flex flex-col items-center gap-0 rounded-2xl overflow-hidden shadow-xl border border-white/10 bg-gradient-to-b from-slate-800 to-slate-900 text-white min-w-[58px] hover:from-slate-700 hover:to-slate-800 transition-all active:scale-95 select-none"
+        className={`fixed bottom-24 right-3 z-40 md:bottom-6 md:translate-y-0 flex flex-col items-center gap-0 rounded-2xl overflow-hidden shadow-xl border border-white/10 bg-gradient-to-b from-slate-800 to-slate-900 text-white min-w-[58px] hover:from-slate-700 hover:to-slate-800 transition-all duration-300 active:scale-95 select-none ${btnVisible ? 'translate-y-0 opacity-100' : 'translate-y-40 opacity-0 pointer-events-none md:translate-y-0 md:opacity-100 md:pointer-events-auto'}`}
         title="Journal Screen Time"
       >
         {/* Top section */}

@@ -1,12 +1,5 @@
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import {
   Timer,
   Info,
@@ -14,43 +7,8 @@ import {
   ChevronDown,
   TrendingUp,
   Trophy,
-  X,
 } from "lucide-react";
 
-// ─── Demo data for guest mode ─────────────────────────────────────────────────
-const DEMO_BROKERS: Record<string, { clientId: string; name: string; funds: number; logo: string; orders: any[]; positions: any[] }> = {
-  zerodha: {
-    clientId: "ZA1234",
-    name: "Demo Trader",
-    funds: 25000,
-    logo: "https://zerodha.com/static/images/products/kite-logo.svg",
-    orders: [
-      { id: "100001", symbol: "RELIANCE", type: "BUY", qty: 1, price: 2850.50, status: "COMPLETE", time: "09:32 AM" },
-      { id: "100002", symbol: "NIFTY24DEC24950CE", type: "SELL", qty: 25, price: 145.00, status: "COMPLETE", time: "10:15 AM" },
-      { id: "100003", symbol: "TATAMOTORS", type: "BUY", qty: 5, price: 968.30, status: "COMPLETE", time: "11:05 AM" },
-      { id: "100004", symbol: "HDFCBANK", type: "SELL", qty: 2, price: 1745.60, status: "OPEN", time: "11:48 AM" },
-    ],
-    positions: [
-      { symbol: "RELIANCE", qty: 1, avgPrice: 2850.50, ltp: 2878.00, pnl: 27.50 },
-      { symbol: "TATAMOTORS", qty: 5, avgPrice: 968.30, ltp: 952.40, pnl: -79.50 },
-    ],
-  },
-  upstox: {
-    clientId: "UP5678",
-    name: "Demo Trader",
-    funds: 17000,
-    logo: "https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png",
-    orders: [
-      { id: "200001", symbol: "INFY", type: "BUY", qty: 2, price: 1923.75, status: "COMPLETE", time: "09:45 AM" },
-      { id: "200002", symbol: "BANKNIFTY24DEC51000PE", type: "SELL", qty: 15, price: 210.00, status: "COMPLETE", time: "10:30 AM" },
-      { id: "200003", symbol: "WIPRO", type: "BUY", qty: 10, price: 561.20, status: "OPEN", time: "12:10 PM" },
-    ],
-    positions: [
-      { symbol: "INFY", qty: 2, avgPrice: 1923.75, ltp: 1941.00, pnl: 34.50 },
-      { symbol: "WIPRO", qty: 10, avgPrice: 561.20, ltp: 558.90, pnl: -23.00 },
-    ],
-  },
-};
 
 // ─── Helper functions ────────────────────────────────────────────────────────
 
@@ -228,21 +186,6 @@ export default function TradeHistoryPanel({
   isDemoMode,
   selectedDate,
 }: TradeHistoryPanelProps) {
-  const [showDemoOrdersDialog, setShowDemoOrdersDialog] = useState(false);
-  const [demoOrdersBroker, setDemoOrdersBroker] = useState<"zerodha" | "upstox">("zerodha");
-  const [demoActiveTab, setDemoActiveTab] = useState<"orders" | "positions">("orders");
-  const [showDemoConnectDialog, setShowDemoConnectDialog] = useState(false);
-  const [demoConnectedBrokers, setDemoConnectedBrokers] = useState<Array<"zerodha" | "upstox">>([]);
-
-  const openDemoOrders = (broker: "zerodha" | "upstox") => {
-    setDemoOrdersBroker(broker);
-    setDemoActiveTab("orders");
-    setShowDemoOrdersDialog(true);
-  };
-
-  const connectDemoBroker = (broker: "zerodha" | "upstox") => {
-    setDemoConnectedBrokers(prev => prev.includes(broker) ? prev : [...prev, broker]);
-  };
 
   const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
@@ -647,50 +590,15 @@ export default function TradeHistoryPanel({
 
             {/* Action buttons */}
             <div className="flex gap-1.5">
-              {isDemoMode ? (
-                /* Guest mode: Connect button + connected broker icons */
-                <>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setShowDemoConnectDialog(true)}
-                    className="h-7 px-2 text-xs"
-                    data-testid="button-demo-connect"
-                  >
-                    Connect
-                  </Button>
-                  {demoConnectedBrokers.includes("zerodha") && (
-                    <button
-                      onClick={() => openDemoOrders("zerodha")}
-                      className="h-7 px-2 flex items-center rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      title="Kite (Zerodha) — Demo"
-                      data-testid="button-demo-kite-icon"
-                    >
-                      <img src="https://zerodha.com/static/images/products/kite-logo.svg" alt="Kite" className="h-4 w-4" />
-                    </button>
-                  )}
-                  {demoConnectedBrokers.includes("upstox") && (
-                    <button
-                      onClick={() => openDemoOrders("upstox")}
-                      className="h-7 px-2 flex items-center rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
-                      title="Upstox — Demo"
-                      data-testid="button-demo-upstox-icon"
-                    >
-                      <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-4 w-4 object-contain" />
-                    </button>
-                  )}
-                </>
-              ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setShowConnectDialog(true)}
-                  className="h-7 px-2 text-xs"
-                  data-testid="button-connect"
-                >
-                  Connect
-                </Button>
-              )}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowConnectDialog(true)}
+                className="h-7 px-2 text-xs"
+                data-testid="button-connect"
+              >
+                Connect
+              </Button>
               {zerodhaIsConnected && (
                 <Button
                   variant="ghost"
@@ -865,172 +773,6 @@ export default function TradeHistoryPanel({
         </CardContent>
       </Card>
 
-      {/* ── Demo: Connect Broker Dialog ──────────────────────────────────── */}
-      <Dialog open={showDemoConnectDialog} onOpenChange={setShowDemoConnectDialog}>
-        <DialogContent className="max-w-sm">
-          <DialogHeader>
-            <DialogTitle className="text-base font-semibold text-slate-800 dark:text-slate-100">
-              Connect your broker
-            </DialogTitle>
-          </DialogHeader>
-          <div className="flex flex-col gap-3 mt-1">
-            {/* Kite (Zerodha) */}
-            <button
-              onClick={() => connectDemoBroker("zerodha")}
-              className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left w-full"
-              data-testid="button-connect-demo-kite"
-            >
-              <img src="https://zerodha.com/static/images/products/kite-logo.svg" alt="Kite" className="h-8 w-8 shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">Kite by Zerodha</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">Connect to view orders &amp; positions</div>
-              </div>
-              {demoConnectedBrokers.includes("zerodha") ? (
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full shrink-0">Connected</span>
-              ) : (
-                <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full shrink-0">Connect</span>
-              )}
-            </button>
-
-            {/* Upstox */}
-            <button
-              onClick={() => connectDemoBroker("upstox")}
-              className="flex items-center gap-3 p-3 rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors text-left w-full"
-              data-testid="button-connect-demo-upstox"
-            >
-              <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-8 w-8 object-contain shrink-0" />
-              <div className="flex-1 min-w-0">
-                <div className="text-sm font-semibold text-slate-800 dark:text-slate-200">Upstox</div>
-                <div className="text-xs text-slate-500 dark:text-slate-400">Connect to view orders &amp; positions</div>
-              </div>
-              {demoConnectedBrokers.includes("upstox") ? (
-                <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/30 px-2 py-0.5 rounded-full shrink-0">Connected</span>
-              ) : (
-                <span className="text-[10px] font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded-full shrink-0">Connect</span>
-              )}
-            </button>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* ── Demo: Orders & Positions Dialog ─────────────────────────────────── */}
-      {showDemoOrdersDialog && (() => {
-        const broker = DEMO_BROKERS[demoOrdersBroker];
-        const isKite = demoOrdersBroker === "zerodha";
-        return (
-          <Dialog open={showDemoOrdersDialog} onOpenChange={setShowDemoOrdersDialog}>
-            <DialogContent className="max-w-lg">
-              <DialogHeader>
-                <div className="flex items-center gap-3">
-                  <img src={broker.logo} alt={isKite ? "Kite" : "Upstox"} className="h-7 w-7 object-contain" />
-                  <div>
-                    <DialogTitle className="text-sm font-semibold text-slate-800 dark:text-slate-100">
-                      {isKite ? "Kite by Zerodha" : "Upstox"}
-                    </DialogTitle>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      {broker.name} &nbsp;·&nbsp; ID: <span className="font-mono font-medium">{broker.clientId}</span>
-                    </p>
-                  </div>
-                  <div className="ml-auto text-right">
-                    <div className="text-[10px] text-slate-500 dark:text-slate-400">Available Funds</div>
-                    <div className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
-                      ₹{broker.funds.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
-                    </div>
-                  </div>
-                </div>
-              </DialogHeader>
-
-              {/* Tabs */}
-              <div className="flex border-b border-slate-200 dark:border-slate-700 mt-1">
-                {(["orders", "positions"] as const).map(tab => (
-                  <button
-                    key={tab}
-                    onClick={() => setDemoActiveTab(tab)}
-                    className={`px-4 py-2 text-xs font-semibold capitalize transition-colors border-b-2 -mb-px ${
-                      demoActiveTab === tab
-                        ? "border-blue-500 text-blue-600 dark:text-blue-400"
-                        : "border-transparent text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300"
-                    }`}
-                    data-testid={`tab-demo-${tab}`}
-                  >
-                    {tab.charAt(0).toUpperCase() + tab.slice(1)}
-                  </button>
-                ))}
-              </div>
-
-              {/* Orders tab */}
-              {demoActiveTab === "orders" && (
-                <div className="overflow-x-auto max-h-64 overflow-y-auto custom-thin-scrollbar mt-1">
-                  <table className="text-xs w-full">
-                    <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
-                      <tr>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Order ID</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Symbol</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Type</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Qty</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Price</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Status</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Time</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-slate-900">
-                      {broker.orders.map((order) => (
-                        <tr key={order.id} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                          <td className="px-2 py-2 font-mono text-slate-500 dark:text-slate-400">{order.id}</td>
-                          <td className="px-2 py-2 font-medium text-slate-800 dark:text-slate-200">{order.symbol}</td>
-                          <td className="px-2 py-2">
-                            <span className={`font-bold px-1.5 py-0.5 rounded text-[10px] ${order.type === "BUY" ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300" : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"}`}>
-                              {order.type}
-                            </span>
-                          </td>
-                          <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{order.qty}</td>
-                          <td className="px-2 py-2 text-amber-600 dark:text-amber-300 font-medium">₹{order.price.toLocaleString("en-IN")}</td>
-                          <td className="px-2 py-2">
-                            <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${order.status === "COMPLETE" ? "bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400" : "bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400"}`}>
-                              {order.status}
-                            </span>
-                          </td>
-                          <td className="px-2 py-2 text-slate-500 dark:text-slate-400">{order.time}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-
-              {/* Positions tab */}
-              {demoActiveTab === "positions" && (
-                <div className="overflow-x-auto max-h-64 overflow-y-auto custom-thin-scrollbar mt-1">
-                  <table className="text-xs w-full">
-                    <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800">
-                      <tr>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Symbol</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Qty</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">Avg Price</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">LTP</th>
-                        <th className="px-2 py-2 text-left text-slate-500 dark:text-slate-400 font-medium">P&amp;L</th>
-                      </tr>
-                    </thead>
-                    <tbody className="bg-white dark:bg-slate-900">
-                      {broker.positions.map((pos, i) => (
-                        <tr key={i} className="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                          <td className="px-2 py-2 font-medium text-slate-800 dark:text-slate-200">{pos.symbol}</td>
-                          <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{pos.qty}</td>
-                          <td className="px-2 py-2 text-amber-600 dark:text-amber-300 font-medium">₹{pos.avgPrice.toLocaleString("en-IN")}</td>
-                          <td className="px-2 py-2 text-slate-700 dark:text-slate-300">₹{pos.ltp.toLocaleString("en-IN")}</td>
-                          <td className={`px-2 py-2 font-bold ${pos.pnl >= 0 ? "text-emerald-600 dark:text-emerald-400" : "text-red-600 dark:text-red-400"}`}>
-                            {pos.pnl >= 0 ? "+" : ""}₹{pos.pnl.toFixed(2)}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </DialogContent>
-          </Dialog>
-        );
-      })()}
     </>
   );
 }

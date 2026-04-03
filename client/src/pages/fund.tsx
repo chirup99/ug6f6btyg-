@@ -74,6 +74,9 @@ export function FundsAnalysis({
 }: FundsAnalysisProps) {
   const { toast } = useToast();
 
+  // Demo mode only applies when the user is not logged in (guest/unauthenticated)
+  const isGuestMode = isDemoMode && !journalWalletUserId;
+
   const [showBrokerBreakupDialog, setShowBrokerBreakupDialog] = useState(false);
   const [showJournalChargesDialog, setShowJournalChargesDialog] = useState(false);
   const [showBrokerageChargesDialog, setShowBrokerageChargesDialog] = useState(false);
@@ -234,7 +237,7 @@ export function FundsAnalysis({
                 <div>
                   <CardTitle className="text-lg font-bold flex items-center gap-2">
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">Funds Analysis</span>
-                    {isDemoMode && (
+                    {isGuestMode && (
                       <span className="text-[9px] font-bold px-1.5 py-0.5 rounded-full bg-amber-400/15 text-amber-600 dark:text-amber-400 border border-amber-400/30">
                         Demo Cash
                       </span>
@@ -256,12 +259,12 @@ export function FundsAnalysis({
 
           <CardContent className="p-6 relative z-10">
             {(() => {
-              const displayFunds = isDemoMode ? 42000 : (Number(totalBrokerFunds) || 0);
-              const displayBrokerFunds = isDemoMode ? {
+              const displayFunds = isGuestMode ? 42000 : (Number(totalBrokerFunds) || 0);
+              const displayBrokerFunds = isGuestMode ? {
                 'zerodha': 25000,
                 'upstox': 17000
               } : allBrokerFunds;
-              const needsBrokerForBalance = !isDemoMode && !isConnected;
+              const needsBrokerForBalance = !isGuestMode && !isConnected;
 
               return (
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -621,7 +624,7 @@ export function FundsAnalysis({
             </div>
 
             <div className="space-y-2">
-              {(isDemoMode ? ([['zerodha', 25000], ['upstox', 17000]]) : Object.entries(allBrokerFunds))
+              {(isGuestMode ? ([['zerodha', 25000], ['upstox', 17000]]) : Object.entries(allBrokerFunds))
                 .filter(([_, funds]) => (funds as number) > 0)
                 .map(([brokerId, funds]) => (
                 <div key={brokerId as string} className="flex items-center justify-between p-3 rounded-[18px] bg-slate-50/50 dark:bg-slate-800/20 border border-slate-100/30 dark:border-slate-700/20">
@@ -646,7 +649,7 @@ export function FundsAnalysis({
                       {(brokerId as string) === "delta" ? "$" : "₹"}{(funds as number).toLocaleString((brokerId as string) === "delta" ? "en-US" : "en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </p>
                     <p className="text-[9px] font-bold text-slate-300 dark:text-slate-500">
-                      {(((funds as number) / (isDemoMode ? 42000 : totalBrokerFunds)) * 100).toFixed(0)}%
+                      {(((funds as number) / (isGuestMode ? 42000 : totalBrokerFunds)) * 100).toFixed(0)}%
                     </p>
                   </div>
                 </div>
@@ -656,7 +659,7 @@ export function FundsAnalysis({
             <div className="mt-5 pt-4 border-t border-slate-50 dark:border-slate-800/30 flex items-center justify-between px-1">
               <p className="text-[10px] font-black uppercase tracking-[0.05em] text-slate-400 dark:text-slate-500">Total Assets</p>
               <p className="text-[18px] font-black text-indigo-600 dark:text-indigo-400">
-                ₹{(isDemoMode ? 42000 : totalBrokerFunds).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                ₹{(isGuestMode ? 42000 : totalBrokerFunds).toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </p>
             </div>
 

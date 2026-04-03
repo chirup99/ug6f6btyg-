@@ -1139,6 +1139,7 @@ export function JournalTabContent({
                       handleGrowwDisconnect={handleGrowwDisconnect}
                       handleDeltaExchangeConnect={handleDeltaExchangeConnect}
                       handleDeltaExchangeDisconnect={handleDeltaExchangeDisconnect}
+                      isDemoMode={isDemoMode}
                     />
 
                     {/* Trade Book - Right Side (Functional Calendar) */}

@@ -141,6 +141,7 @@ interface ConnectBrokerDialogProps {
   handleGrowwDisconnect: () => void;
   handleDeltaExchangeConnect: () => Promise<void>;
   handleDeltaExchangeDisconnect: () => void;
+  isDemoMode?: boolean;
 }
 
 export function ConnectBrokerDialog({
@@ -254,6 +255,7 @@ export function ConnectBrokerDialog({
   handleGrowwDisconnect,
   handleDeltaExchangeConnect,
   handleDeltaExchangeDisconnect,
+  isDemoMode = false,
 }: ConnectBrokerDialogProps) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -407,7 +409,7 @@ export function ConnectBrokerDialog({
                     }`}
                     data-testid="button-upstox-dialog"
                     disabled={connectedBrokersCount >= 2 && !upstoxIsConnected}
-                    onClick={() => setIsUpstoxDialogOpen(true)}
+                    onClick={() => isDemoMode ? handleUpstoxConnect() : setIsUpstoxDialogOpen(true)}
                   >
                     <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-4 mr-2" />
                     Upstox

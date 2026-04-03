@@ -14998,7 +14998,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           currentUser={currentUser} 
           getCognitoToken={getCognitoToken} 
           setSavedFormats={setSavedFormats} 
-          importDataTextareaRef={importDataTextareaRef} brokerFunds={brokerFunds} 
+          importDataTextareaRef={importDataTextareaRef} brokerFunds={brokerFunds}
+          isDemoMode={isDemoMode}
         />
         {/* Broker Funds Breakup Dialog */}
         <ImportPnLDialog

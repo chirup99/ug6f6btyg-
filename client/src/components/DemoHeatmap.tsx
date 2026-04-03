@@ -131,7 +131,7 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
 
   // ✅ AUTO-FETCH: Only trigger on mount if cache is missing or stale
   useEffect(() => {
-    if (isPublicView || tradingDataByDate) return;
+    if (isPublicView || (tradingDataByDate && Object.keys(tradingDataByDate).length > 0)) return;
     const cacheAge = Date.now() - _demoHeatmapCacheTime;
     const cacheValid = _demoHeatmapCache !== null && cacheAge < DEMO_CACHE_TTL_MS;
     if (!cacheValid) {
@@ -232,6 +232,24 @@ export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeC
 
     if (onDataUpdate) onDataUpdate(tradingDataByDate);
   }, [isPublicView, tradingDataByDate]); // Only re-run when public mode data changes
+
+  // ⚡ LATE SYNC (non-public): If parent tradingDataByDate arrives after mount and we still have no
+  // data (stuck in loading / API fetch in-flight), apply it immediately to avoid the delay.
+  useEffect(() => {
+    if (isPublicView) return; // handled by the effect above
+    if (!tradingDataByDate || Object.keys(tradingDataByDate).length === 0) return;
+    setHeatmapData(prev => {
+      if (Object.keys(prev).length > 0) return prev; // already have data — don't overwrite
+      console.log(`⚡ DemoHeatmap: Late-sync from parent (${Object.keys(tradingDataByDate).length} dates) — applying immediately`);
+      _demoHeatmapCache = tradingDataByDate;
+      _demoHeatmapCacheTime = Date.now();
+      return tradingDataByDate;
+    });
+    setIsLoading(prev => {
+      if (!prev) return prev; // already resolved
+      return false;
+    });
+  }, [tradingDataByDate]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Effect for DEMO mode: fetch from API, use module cache to avoid re-fetching on remount
   useEffect(() => {

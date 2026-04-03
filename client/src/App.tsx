@@ -160,13 +160,13 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   const [location, setLocation] = useLocation();
   const { theme, toggleTheme } = useTheme();
   
-  // Sidebar intro visibility: show on load, auto-hide after 14s
+  // Sidebar intro visibility: show on load, auto-hide after 7s
   const [sidebarIntroVisible, setSidebarIntroVisible] = useState(true);
 
   useEffect(() => {
     const timer = setTimeout(() => {
       setSidebarIntroVisible(false);
-    }, 14000);
+    }, 7000);
     return () => clearTimeout(timer);
   }, []);
 

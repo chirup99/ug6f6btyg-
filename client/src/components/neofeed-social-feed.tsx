@@ -3659,76 +3659,40 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
             {/* Certificate image upload - shown when a cert is selected */}
             {certifiedRole && (
               <div className="space-y-2">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Certificate Image &amp; Verification</label>
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Certificate Image</label>
                 <input
                   ref={certInputRef}
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={(e) => { handleCertImageSelect(e); setCertVerifyResult(null); setCertVerificationStatus(''); }}
+                  onChange={(e) => { handleCertImageSelect(e); }}
                   data-testid="input-cert-image"
                 />
                 {certImagePreview ? (
                   <div className="space-y-2">
-                    {/* Cert card: header + clear image + data table below */}
                     <div className="rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/50 bg-gray-50 dark:bg-gray-800/60">
-
-                      {/* Top header row: status badge + candidate name */}
+                      {/* Top header row */}
                       <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800/40">
                         <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 12 12" fill="none">
-                          <circle cx="6" cy="6" r="5.5" fill={certVerificationStatus === 'verified' ? '#22C55E' : certVerificationStatus === 'failed' ? '#EF4444' : '#F59E0B'} />
-                          {certVerificationStatus === 'verified'
-                            ? <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                            : certVerificationStatus === 'failed'
-                              ? <path d="M4 4l4 4M8 4l-4 4" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
-                              : <path d="M6 3v3.5l2 1.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
-                          }
+                          <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
+                          <path d="M6 3v3.5l2 1.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
                         </svg>
                         <div className="flex-1 min-w-0">
-                          {certVerifyResult?.extracted?.candidateName ? (
-                            <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{certVerifyResult.extracted.candidateName}</p>
-                          ) : (
-                            <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
-                              {certVerificationStatus === 'verified' ? 'NISM Verified' : certVerificationStatus === 'failed' ? 'Verification Failed' : 'Certificate Uploaded'}
-                            </p>
-                          )}
-                          {certVerifyResult?.extracted?.examName && (
-                            <p className="text-[10px] text-amber-600 dark:text-amber-400 truncate">{certVerifyResult.extracted.examName}</p>
-                          )}
+                          <p className="text-xs font-medium text-amber-700 dark:text-amber-300">Certificate Uploaded</p>
                         </div>
                         {/* Change / Remove buttons */}
                         <div className="flex gap-1 flex-shrink-0">
                           <button type="button" onClick={() => certInputRef.current?.click()} className="text-[10px] px-2 py-0.5 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50" data-testid="button-change-cert-image">Change</button>
-                          <button type="button" onClick={() => { setCertImagePreview(''); setCertificationImageUrl(''); setCertImageFile(null); setCertVerifyResult(null); setCertVerificationStatus(''); }} className="text-[10px] px-2 py-0.5 rounded bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 hover:bg-red-100" data-testid="button-remove-cert-image">Remove</button>
+                          <button type="button" onClick={() => { setCertImagePreview(''); setCertificationImageUrl(''); setCertImageFile(null); }} className="text-[10px] px-2 py-0.5 rounded bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 hover:bg-red-100" data-testid="button-remove-cert-image">Remove</button>
                         </div>
                       </div>
-
-                      {/* Certificate image — shown clearly */}
+                      {/* Certificate image */}
                       <img
                         src={certImagePreview}
                         alt="Certificate"
                         className="w-full object-contain bg-white dark:bg-gray-900"
                         style={{ maxHeight: 160 }}
                       />
-
-                      {/* Data table — only after verification */}
-                      {certVerifyResult && (
-                        <div className="border-t border-amber-100 dark:border-amber-800/40 bg-gray-900/90 dark:bg-black/70">
-                          {[
-                            { label: 'Candidate', value: certVerifyResult.extracted?.candidateName },
-                            { label: 'Exam', value: certVerifyResult.extracted?.examName || certVerifyResult.extracted?.examCode },
-                            { label: 'Cert ID', value: certVerifyResult.extracted?.certId || certVerifyResult.extracted?.enrollmentNo },
-                            { label: 'Score', value: certVerifyResult.extracted?.score },
-                            { label: 'Date', value: certVerifyResult.extracted?.passingDate },
-                            { label: 'Valid Until', value: certVerifyResult.extracted?.validUntil },
-                          ].filter(r => r.value).map((row, i) => (
-                            <div key={i} className={`flex items-start gap-2 px-3 py-1 ${i % 2 === 0 ? 'bg-white/5' : ''}`}>
-                              <span className="text-[9px] font-semibold uppercase tracking-wider text-white/40 w-16 flex-shrink-0 pt-px">{row.label}</span>
-                              <span className="text-[10px] font-medium text-white/90 leading-tight">{row.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
                     </div>
                   </div>
                 ) : (
@@ -3744,76 +3708,6 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
                     <span className="text-xs text-gray-500 dark:text-gray-400">Upload certificate image</span>
                     <span className="text-[10px] text-gray-400 dark:text-gray-500">JPG, PNG, etc.</span>
                   </button>
-                )}
-
-                {/* Verify button — shown after image uploaded and not yet verified */}
-                {certImagePreview && certVerificationStatus !== 'verified' && (
-                  <button
-                    type="button"
-                    onClick={verifyCertificate}
-                    disabled={certVerifying}
-                    className="w-full flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-semibold bg-amber-500 hover:bg-amber-600 disabled:opacity-60 text-white transition-colors"
-                    data-testid="button-verify-certificate"
-                  >
-                    {certVerifying ? (
-                      <>
-                        <svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
-                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
-                        </svg>
-                        Verifying with AI…
-                      </>
-                    ) : (
-                      <>
-                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                        Verify Certificate
-                      </>
-                    )}
-                  </button>
-                )}
-
-                {/* Verification failure note */}
-                {certVerificationStatus === 'failed' && certVerifyResult && (
-                  <div className="flex items-start gap-2 px-3 py-2 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700/50">
-                    <svg className="w-3.5 h-3.5 flex-shrink-0 mt-0.5 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01M12 3a9 9 0 100 18A9 9 0 0012 3z"/>
-                    </svg>
-                    <div>
-                      <p className="text-[10px] font-semibold text-red-600 dark:text-red-400">Verification failed</p>
-                      {certVerifyResult.extracted?.candidateName ? (
-                        <p className="text-[10px] text-red-500 dark:text-red-400 mt-0.5">
-                          Certificate name: <span className="font-semibold">{certVerifyResult.extracted.candidateName}</span> — doesn't match your profile name. Update your display name to match, then retry.
-                        </p>
-                      ) : (
-                        <p className="text-[10px] text-red-500 dark:text-red-400 mt-0.5">Could not read the certificate clearly. Please upload a higher-quality image.</p>
-                      )}
-                      <button
-                        type="button"
-                        onClick={verifyCertificate}
-                        disabled={certVerifying}
-                        className="mt-1.5 text-[10px] font-semibold text-red-600 dark:text-red-400 underline disabled:opacity-60"
-                        data-testid="button-retry-verify"
-                      >
-                        Retry verification
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* Verification success note */}
-                {certVerificationStatus === 'verified' && (
-                  <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-700/50">
-                    <svg className="w-3.5 h-3.5 flex-shrink-0 text-green-500" viewBox="0 0 12 12" fill="none">
-                      <circle cx="6" cy="6" r="5.5" fill="#22C55E"/>
-                      <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    <div>
-                      <p className="text-[10px] font-semibold text-green-600 dark:text-green-400">NISM Verified</p>
-                      <p className="text-[10px] text-green-500 dark:text-green-400">Certificate matches your profile. This badge will appear on your posts.</p>
-                    </div>
-                  </div>
                 )}
               </div>
             )}

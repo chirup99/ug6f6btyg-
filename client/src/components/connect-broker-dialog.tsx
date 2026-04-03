@@ -820,7 +820,7 @@ export function ConnectBrokerDialog({
                 className="w-full h-10 bg-slate-50/50 dark:bg-slate-900/20 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 cursor-not-allowed relative hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
                 disabled
               >
-                <img src="https://play-lh.googleusercontent.com/rWCMrTgGm6Y0ZJdJ6KKMOKi14Jxmxo_Rqjoh2rlRTizFJBRG_jPj2-p2VuAF6JCjmA=w240-h480-rw" alt="5 Paisa" className="w-4 h-4 mr-2 rounded-full" />
+                <img src="https://www.google.com/s2/favicons?domain=5paisa.com&sz=64" alt="5 Paisa" className="w-4 h-4 mr-2 rounded-full" />
                 5 Paisa
                 <span className="absolute top-1 right-1 text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Coming Soon</span>
               </Button>
@@ -831,7 +831,7 @@ export function ConnectBrokerDialog({
                 className="w-full h-10 bg-slate-50/50 dark:bg-slate-900/20 text-slate-900 dark:text-white border-slate-200 dark:border-slate-800 cursor-not-allowed relative hover:bg-slate-50/50 dark:hover:bg-slate-900/20"
                 disabled
               >
-                <img src="https://play-lh.googleusercontent.com/byfkRPgqNjHPRSrk9kQPc7ywPNqBVKMJU1lLZ_xRqGNn3fMlrh8uWc7b5A6iNDyC6w=w240-h480-rw" alt="M Stock" className="w-4 h-4 mr-2 rounded-full" />
+                <img src="https://www.google.com/s2/favicons?domain=mstock.com&sz=64" alt="M Stock" className="w-4 h-4 mr-2 rounded-full" />
                 M Stock
                 <span className="absolute top-1 right-1 text-[8px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-tighter">Coming Soon</span>
               </Button>

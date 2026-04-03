@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTrigger, DialogClose } from "@/components/ui/dialog";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Headset,
@@ -215,19 +215,28 @@ export function TradeBook({
                                   <Headset className="h-3 w-3" />
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent className="w-[95vw] max-w-[700px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-none rounded-xl shadow-2xl">
-                                <div className="flex flex-col md:flex-row h-full min-h-[350px]">
-                                  {/* Left Side: Card Display */}
-                                  <div className="w-full md:w-1/2 flex flex-col bg-slate-100 dark:bg-slate-800 relative overflow-hidden border-r border-slate-200 dark:border-slate-700">
-                                    <div className="py-4 pr-0 pl-4 flex items-center justify-end">
-                                      <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] opacity-50">Mini</div>
+                              <DialogContent className="w-[95vw] max-w-[700px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-none rounded-xl shadow-2xl [&>button]:hidden">
+                                <div className="flex flex-col md:flex-row h-full md:min-h-[350px]">
+                                  {/* Left Side: Thumbnail — compact on mobile, full on desktop */}
+                                  <div className="w-full md:w-1/2 relative flex flex-col bg-slate-100 dark:bg-slate-800 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 h-40 md:h-auto">
+                                    {/* Mobile-only: MINI PLAY label centered at top of thumbnail */}
+                                    <div className="md:hidden absolute top-0 left-0 right-0 z-20 flex items-center justify-center pt-2 pointer-events-none">
+                                      <span className="text-[9px] font-bold text-white/70 uppercase tracking-[0.35em] bg-black/30 backdrop-blur-sm px-2 py-0.5 rounded-full">Mini Play</span>
                                     </div>
-                                    <div className="flex-1 p-8 flex items-center justify-center relative">
+                                    {/* Mobile-only: X close button top-right */}
+                                    <DialogClose asChild>
+                                      <button className="md:hidden absolute top-2 right-2 z-30 w-6 h-6 rounded-full bg-black/40 backdrop-blur-sm flex items-center justify-center text-white hover:bg-black/60 transition-colors" data-testid="button-miniplay-close-mobile">
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </DialogClose>
+                                    {/* Background glow */}
                                     <div className="absolute inset-0 opacity-10">
                                       <div className="absolute top-[-20%] left-[-20%] w-[140%] h-[140%] rounded-full bg-gradient-to-br from-violet-500 via-transparent to-transparent"></div>
                                     </div>
-                                    <motion.div key={selectedAudioTrack?.id || "none"} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className={`relative w-full aspect-[1.6/1] rounded-2xl shadow-2xl flex flex-col justify-start border border-white/10 overflow-hidden`}>
-                                      {selectedAudioTrack?.youtubeId && (
+                                    {/* Thumbnail card */}
+                                    <div className="flex-1 flex items-center justify-center p-3 md:p-8 relative">
+                                    <motion.div key={selectedAudioTrack?.id || "none"} initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ type: "spring", stiffness: 300, damping: 30 }} className="relative w-full aspect-[1.6/1] md:aspect-[1.6/1] rounded-xl md:rounded-2xl shadow-2xl flex flex-col justify-start border border-white/10 overflow-hidden">
+                                      {selectedAudioTrack?.youtubeId ? (
                                         <div className="absolute inset-0 z-0">
                                           <img 
                                             src={`https://img.youtube.com/vi/${selectedAudioTrack.youtubeId}/maxresdefault.jpg`} 
@@ -235,21 +244,12 @@ export function TradeBook({
                                             alt=""
                                           />
                                         </div>
+                                      ) : (
+                                        <div className="absolute inset-0 z-0 bg-gradient-to-br from-violet-800 to-purple-900" />
                                       )}
-                                      <div className="flex justify-start items-start">
-                                        <div className="text-[10px] font-medium tracking-widest text-black uppercase"></div>
-                                        <div className="text-[10px] font-bold text-green-400 uppercase tracking-wider"></div>
-                                      </div>
-                                      <div className="space-y-4">
-                                        <div className="flex items-center gap-2">
-                                          <div className="text-sm font-bold text-white tracking-[0.2em]"></div>
-                                          <button onClick={() => selectedAudioTrack?.youtubeId && window.open(`https://www.youtube.com/watch?v=${selectedAudioTrack.youtubeId}`, "_blank")} className="absolute bottom-4 right-4 z-10 hover:scale-110 transition-transform active:scale-95"><Info className="w-4 h-4 text-black" /></button>
-                                        </div>
-                                        <div className="flex justify-start items-end">
-                                          <div className="text-xs font-medium text-white/80 uppercase tracking-widest"></div>
-                                          <div className="text-[10px] font-mono text-black"></div>
-                                        </div>
-                                      </div>
+                                      <button onClick={() => selectedAudioTrack?.youtubeId && window.open(`https://www.youtube.com/watch?v=${selectedAudioTrack.youtubeId}`, "_blank")} className="absolute bottom-2 right-2 z-10 hover:scale-110 transition-transform active:scale-95">
+                                        <Info className="w-3.5 h-3.5 text-white/70" />
+                                      </button>
                                     </motion.div>
                                     </div>
                                   </div>

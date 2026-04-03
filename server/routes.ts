@@ -5937,74 +5937,148 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ──────────────────────────────────────────────
-  // NISM/SEBI Certificate AI Verification (OpenAI Vision OCR)
+  // NISM/SEBI Certificate Verification (Tesseract.js OCR — no API key required)
   // ──────────────────────────────────────────────
   app.post('/api/neofeed/verify-certificate', async (req: any, res: any) => {
     try {
       const { imageUrl, imageBase64, userDisplayName, userName } = req.body;
       if (!imageUrl && !imageBase64) return res.status(400).json({ error: 'imageUrl or imageBase64 is required' });
 
-      const openaiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
-      if (!openaiKey) return res.status(500).json({ error: 'AI service not configured' });
-
-      let dataUrl: string;
+      // Get image as Buffer
+      let imgBuffer: Buffer;
       if (imageBase64) {
-        // Already a base64 data URL from the frontend
-        dataUrl = imageBase64;
+        const base64Only = imageBase64.replace(/^data:[^;]+;base64,/, '');
+        imgBuffer = Buffer.from(base64Only, 'base64');
       } else {
-        // Fetch from remote URL and convert to base64 data URL
         const imgResponse = await fetch(imageUrl);
         if (!imgResponse.ok) throw new Error('Could not fetch certificate image');
-        const imgBuffer = await imgResponse.arrayBuffer();
-        const base64Data = Buffer.from(imgBuffer).toString('base64');
-        const mimeType = imgResponse.headers.get('content-type') || 'image/jpeg';
-        dataUrl = `data:${mimeType};base64,${base64Data}`;
+        imgBuffer = Buffer.from(await imgResponse.arrayBuffer());
       }
 
-      const { default: OpenAI } = await import('openai');
-      const openai = new OpenAI({
-        apiKey: openaiKey,
-        ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ? { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL } : {}),
+      // Run Tesseract OCR
+      const Tesseract = await import('tesseract.js');
+      const worker = await Tesseract.createWorker('eng', 1, {
+        logger: () => {},
+        errorHandler: () => {},
       });
+      const { data: { text: rawOcrText } } = await worker.recognize(imgBuffer);
+      await worker.terminate();
 
-      const prompt = `You are an expert at reading Indian NISM/SEBI/NSE/BSE financial certification documents.
-Carefully extract all text from this certificate image and return a JSON object with these exact fields:
-{
-  "candidateName": "Full name of the candidate printed on the certificate",
-  "enrollmentNo": "Enrollment number or registration number",
-  "certId": "Certificate ID or certificate number",
-  "examName": "Full name of the exam or certification title",
-  "examCode": "Exam code if visible (e.g. NISM-Series-VIII)",
-  "score": "Score percentage or marks obtained",
-  "passingDate": "Date of passing or date of issue (DD/MM/YYYY or similar)",
-  "validUntil": "Certificate validity expiry date if present",
-  "issuingOrg": "Issuing organization name (NISM, SEBI, NSE Academy, BSE Institute, etc.)",
-  "status": "PASS or FAIL if visible",
-  "allText": "All readable text from the certificate concatenated"
-}
-If any field is not present or not readable, use null for that field.
-Return ONLY valid JSON with no markdown or explanation.`;
+      const ocrText = rawOcrText || '';
+      const lines = ocrText.split('\n').map((l: string) => l.trim()).filter(Boolean);
 
-      const response = await openai.chat.completions.create({
-        model: 'gpt-4o',
-        temperature: 0.1,
-        messages: [{
-          role: 'user',
-          content: [
-            { type: 'text', text: prompt },
-            { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
-          ]
-        }],
-      });
+      // ── Field extraction helpers ──────────────────────────────────
+      const find = (patterns: RegExp[]): string | null => {
+        for (const pat of patterns) {
+          for (const line of lines) {
+            const m = line.match(pat);
+            if (m) return (m[2] || m[1] || '').trim() || null;
+          }
+          const m = ocrText.match(pat);
+          if (m) return (m[2] || m[1] || '').trim() || null;
+        }
+        return null;
+      };
 
-      const rawText = response.choices[0]?.message?.content || '{}';
-      let extracted: Record<string, any> = {};
-      try {
-        extracted = JSON.parse(rawText);
-      } catch {
-        const m = rawText.match(/\{[\s\S]*\}/);
-        extracted = m ? JSON.parse(m[0]) : {};
+      // Candidate name: lines after "awarded to", "certify that", or "Name:" label
+      let candidateName: string | null = null;
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i].toLowerCase();
+        if (l.includes('awarded to') || l.includes('certify that') || l.includes('this is to certify')) {
+          // Name is often on the same line after the phrase, or on the next line
+          const afterPhrase = lines[i].replace(/.*(?:awarded to|certify that|this is to certify)[:\s]*/i, '').trim();
+          if (afterPhrase.length > 2 && !/^\d/.test(afterPhrase)) { candidateName = afterPhrase; break; }
+          if (lines[i + 1]) { candidateName = lines[i + 1].trim(); break; }
+        }
       }
+      if (!candidateName) {
+        candidateName = find([
+          /(?:name|candidate)[:\s]+([A-Z][A-Za-z\s.]{3,50})/i,
+        ]);
+      }
+
+      // Cert / Registration / Enrollment number
+      const certId = find([
+        /(?:certificate\s*(?:no|number|id)[.:\s]+)([A-Z0-9/-]{4,30})/i,
+        /(?:reg(?:istration)?\s*(?:no|number)[.:\s]+)([A-Z0-9/-]{4,30})/i,
+        /(?:enrollment\s*(?:no|number)[.:\s]+)([A-Z0-9/-]{4,30})/i,
+        /(?:roll\s*(?:no|number)[.:\s]+)([A-Z0-9/-]{4,30})/i,
+        /(?:cert(?:ificate)?\s*id[.:\s]+)([A-Z0-9/-]{4,30})/i,
+      ]);
+
+      // Exam name — look for known NISM/NSE/BSE patterns first, then generic
+      const examName = find([
+        /(NISM[- ]Series[- ][IVXLCDM\d-]+[A-Z]*(?:[:\s][^,\n]{5,50})?)/i,
+        /(NSE Academy[^,\n]{5,60})/i,
+        /(BSE Institute[^,\n]{5,60})/i,
+        /(SEBI[^,\n]{5,60})/i,
+        /(?:examination|exam|course|program(?:me)?)[:\s]+([A-Za-z0-9\s-]{5,80})/i,
+      ]);
+
+      const examCode = find([
+        /(NISM-Series-[A-Z0-9-]+)/i,
+        /(?:exam\s*code|course\s*code)[:\s]+([A-Z0-9-]{3,20})/i,
+      ]);
+
+      // Score / percentage
+      const score = find([
+        /(?:score|marks?|percentage)[:\s]+([\d.]+\s*%?)/i,
+        /([\d.]+)\s*%\s*(?:marks|score|percentage)/i,
+        /(?:total\s*marks?|obtained)[:\s]+([\d.]+)/i,
+      ]);
+
+      // Dates — DD/MM/YYYY or Month DD, YYYY or DD-MM-YYYY
+      const datePatterns = [
+        /(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/g,
+        /(\d{1,2}\s+(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s+\d{2,4})/gi,
+      ];
+      const allDates: string[] = [];
+      for (const pat of datePatterns) {
+        let m: RegExpExecArray | null;
+        const rePat = new RegExp(pat.source, pat.flags);
+        while ((m = rePat.exec(ocrText)) !== null) allDates.push(m[1]);
+      }
+
+      let passingDate: string | null = null;
+      let validUntil: string | null = null;
+      for (let i = 0; i < lines.length; i++) {
+        const l = lines[i].toLowerCase();
+        if ((l.includes('pass') || l.includes('issue') || l.includes('award') || l.includes('dated')) && !passingDate) {
+          const m = lines[i].match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+          if (m) passingDate = m[1];
+        }
+        if ((l.includes('valid') || l.includes('expir') || l.includes('till')) && !validUntil) {
+          const m = lines[i].match(/(\d{1,2}[\/\-]\d{1,2}[\/\-]\d{2,4})/);
+          if (m) validUntil = m[1];
+        }
+      }
+      if (!passingDate && allDates.length > 0) passingDate = allDates[0];
+      if (!validUntil && allDates.length > 1) validUntil = allDates[allDates.length - 1];
+
+      // Issuing org
+      let issuingOrg: string | null = null;
+      if (/NISM/i.test(ocrText)) issuingOrg = 'NISM (National Institute of Securities Markets)';
+      else if (/NSE Academy/i.test(ocrText)) issuingOrg = 'NSE Academy';
+      else if (/BSE Institute/i.test(ocrText)) issuingOrg = 'BSE Institute';
+      else if (/SEBI/i.test(ocrText)) issuingOrg = 'SEBI';
+      else issuingOrg = find([/(?:issued by|issuing authority|organization)[:\s]+([A-Za-z\s]{4,50})/i]);
+
+      // Status
+      const status = /\bPASS(?:ED)?\b/i.test(ocrText) ? 'PASS' : /\bFAIL(?:ED)?\b/i.test(ocrText) ? 'FAIL' : null;
+
+      const extracted: Record<string, any> = {
+        candidateName: candidateName || null,
+        enrollmentNo: certId || null,
+        certId: certId || null,
+        examName: examName || null,
+        examCode: examCode || null,
+        score: score || null,
+        passingDate: passingDate || null,
+        validUntil: validUntil || null,
+        issuingOrg: issuingOrg || null,
+        status: status || null,
+        allText: ocrText.slice(0, 500),
+      };
 
       // Name matching — fuzzy check between cert name and profile names
       const normalize = (s: string | null | undefined) =>

@@ -7104,6 +7104,47 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     return () => { cancelled = true; clearInterval(interval); };
   }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken, fyersIsConnected]);
 
+  // Continuously merge secondary broker funds into allBrokerFunds (every 5s, always — not just when modal open)
+  useEffect(() => {
+    if (!secondaryBroker) {
+      // Remove secondary broker key when no secondary broker is connected
+      setAllBrokerFunds(prev => {
+        const next = { ...prev };
+        const knownBrokers = ['zerodha', 'upstox', 'angelone', 'dhan', 'groww', 'fyers', 'delta'];
+        let changed = false;
+        for (const key of knownBrokers) {
+          if (key in next && key !== activeBroker) {
+            delete next[key];
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+      return;
+    }
+    let cancelled = false;
+    const { token, fundsEp: ep } = getBrokerEndpoints(secondaryBroker);
+    if (!ep) return;
+    const fetchSecondaryFunds = async () => {
+      try {
+        const res = await fetch(ep, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
+        if (!cancelled && res.ok) {
+          const data = await res.json();
+          const funds = data.availableCash ?? data.availableFunds ?? data.funds ?? null;
+          if (funds !== null) {
+            setAllBrokerFunds(prev => ({ ...prev, [secondaryBroker]: funds }));
+            console.log('✅ [ALL-BROKER-FUNDS] Merged secondary', secondaryBroker, ':', funds);
+          }
+        }
+      } catch (e) {
+        console.warn('⚠️ [ALL-BROKER-FUNDS] Could not fetch secondary broker funds');
+      }
+    };
+    fetchSecondaryFunds();
+    const interval = setInterval(fetchSecondaryFunds, 5000);
+    return () => { cancelled = true; clearInterval(interval); };
+  }, [secondaryBroker, activeBroker, getBrokerEndpoints, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken, fyersIsConnected]);
+
 // Fetch broker funds when dialog opens - with auto-refresh polling
   useEffect(() => {
     if (showOrderModal && (zerodhaAccessToken || upstoxAccessToken)) {

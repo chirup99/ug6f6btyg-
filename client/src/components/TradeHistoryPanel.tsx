@@ -1,5 +1,12 @@
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Timer,
   Info,
@@ -7,7 +14,43 @@ import {
   ChevronDown,
   TrendingUp,
   Trophy,
+  X,
 } from "lucide-react";
+
+// ─── Demo data for guest mode ─────────────────────────────────────────────────
+const DEMO_BROKERS: Record<string, { clientId: string; name: string; funds: number; logo: string; orders: any[]; positions: any[] }> = {
+  zerodha: {
+    clientId: "ZA1234",
+    name: "Demo Trader",
+    funds: 25000,
+    logo: "https://zerodha.com/static/images/products/kite-logo.svg",
+    orders: [
+      { id: "100001", symbol: "RELIANCE", type: "BUY", qty: 1, price: 2850.50, status: "COMPLETE", time: "09:32 AM" },
+      { id: "100002", symbol: "NIFTY24DEC24950CE", type: "SELL", qty: 25, price: 145.00, status: "COMPLETE", time: "10:15 AM" },
+      { id: "100003", symbol: "TATAMOTORS", type: "BUY", qty: 5, price: 968.30, status: "COMPLETE", time: "11:05 AM" },
+      { id: "100004", symbol: "HDFCBANK", type: "SELL", qty: 2, price: 1745.60, status: "OPEN", time: "11:48 AM" },
+    ],
+    positions: [
+      { symbol: "RELIANCE", qty: 1, avgPrice: 2850.50, ltp: 2878.00, pnl: 27.50 },
+      { symbol: "TATAMOTORS", qty: 5, avgPrice: 968.30, ltp: 952.40, pnl: -79.50 },
+    ],
+  },
+  upstox: {
+    clientId: "UP5678",
+    name: "Demo Trader",
+    funds: 17000,
+    logo: "https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png",
+    orders: [
+      { id: "200001", symbol: "INFY", type: "BUY", qty: 2, price: 1923.75, status: "COMPLETE", time: "09:45 AM" },
+      { id: "200002", symbol: "BANKNIFTY24DEC51000PE", type: "SELL", qty: 15, price: 210.00, status: "COMPLETE", time: "10:30 AM" },
+      { id: "200003", symbol: "WIPRO", type: "BUY", qty: 10, price: 561.20, status: "OPEN", time: "12:10 PM" },
+    ],
+    positions: [
+      { symbol: "INFY", qty: 2, avgPrice: 1923.75, ltp: 1941.00, pnl: 34.50 },
+      { symbol: "WIPRO", qty: 10, avgPrice: 561.20, ltp: 558.90, pnl: -23.00 },
+    ],
+  },
+};
 
 // ─── Helper functions ────────────────────────────────────────────────────────
 
@@ -185,6 +228,16 @@ export default function TradeHistoryPanel({
   isDemoMode,
   selectedDate,
 }: TradeHistoryPanelProps) {
+  const [showDemoOrdersDialog, setShowDemoOrdersDialog] = useState(false);
+  const [demoOrdersBroker, setDemoOrdersBroker] = useState<"zerodha" | "upstox">("zerodha");
+  const [demoActiveTab, setDemoActiveTab] = useState<"orders" | "positions">("orders");
+
+  const openDemoOrders = (broker: "zerodha" | "upstox") => {
+    setDemoOrdersBroker(broker);
+    setDemoActiveTab("orders");
+    setShowDemoOrdersDialog(true);
+  };
+
   const monthNames = ["JAN", "FEB", "MAR", "APR", "MAY", "JUN", "JUL", "AUG", "SEP", "OCT", "NOV", "DEC"];
 
   function resolveSymbol(symbol: string): string {
@@ -588,15 +641,39 @@ export default function TradeHistoryPanel({
 
             {/* Action buttons */}
             <div className="flex gap-1.5">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => setShowConnectDialog(true)}
-                className="h-7 px-2 text-xs"
-                data-testid="button-connect"
-              >
-                Connect
-              </Button>
+              {isDemoMode ? (
+                /* Guest mode: show fake connected broker buttons */
+                <>
+                  <button
+                    onClick={() => openDemoOrders("zerodha")}
+                    className="h-7 px-2 flex items-center gap-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    title="Zerodha — Demo Connected"
+                    data-testid="button-demo-zerodha"
+                  >
+                    <img src="https://zerodha.com/static/images/products/kite-logo.svg" alt="Zerodha" className="h-4 w-4" />
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Connected</span>
+                  </button>
+                  <button
+                    onClick={() => openDemoOrders("upstox")}
+                    className="h-7 px-2 flex items-center gap-1.5 rounded-md bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                    title="Upstox — Demo Connected"
+                    data-testid="button-demo-upstox"
+                  >
+                    <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-4 w-4" />
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Connected</span>
+                  </button>
+                </>
+              ) : (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowConnectDialog(true)}
+                  className="h-7 px-2 text-xs"
+                  data-testid="button-connect"
+                >
+                  Connect
+                </Button>
+              )}
               {zerodhaIsConnected && (
                 <Button
                   variant="ghost"

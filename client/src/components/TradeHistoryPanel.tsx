@@ -9,6 +9,21 @@ import {
   Trophy,
 } from "lucide-react";
 
+// ─── Broker logo preloader ────────────────────────────────────────────────────
+// Kick off image fetches immediately at module load time so icons are already
+// in the browser cache by the time the component renders.
+const BROKER_LOGO_URLS = [
+  "https://zerodha.com/static/images/products/kite-logo.svg",
+  "https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png",
+  "https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701",
+  "https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701",
+  "https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw",
+  "https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw",
+  "https://play-lh.googleusercontent.com/LHjOai6kf1IsstKNWO9jbMxD-ix_FVYaJSLodKCqYQdoFVzQBuV9z5txxzcTagQcyX8=s48-rw",
+];
+if (typeof window !== "undefined") {
+  BROKER_LOGO_URLS.forEach((src) => { const img = new Image(); img.src = src; });
+}
 
 // ─── Helper functions ────────────────────────────────────────────────────────
 

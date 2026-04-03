@@ -5348,6 +5348,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           coverPicUrl: userData.coverPicUrl,
           certifiedRole: userData.certifiedRole || null,
           certificationImageUrl: userData.certificationImageUrl || null,
+          certVerificationStatus: userData.certVerificationStatus || null,
+          certExtractedData: userData.certExtractedData ? (typeof userData.certExtractedData === 'string' ? JSON.parse(userData.certExtractedData) : userData.certExtractedData) : null,
           verified: userData.verified || false,
           location: userData.location || null,
           performancePublic: userData.performancePublic !== undefined ? userData.performancePublic : true,
@@ -5800,6 +5802,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      const { certVerificationStatus, certExtractedData } = req.body;
+      if (certVerificationStatus !== undefined) {
+        if (certVerificationStatus) {
+          updateExpression += ', certVerificationStatus = :certVerificationStatus';
+          expressionAttributeValues[':certVerificationStatus'] = certVerificationStatus;
+        } else {
+          removeAttrs.push('certVerificationStatus');
+        }
+      }
+      if (certExtractedData !== undefined) {
+        if (certExtractedData) {
+          updateExpression += ', certExtractedData = :certExtractedData';
+          expressionAttributeValues[':certExtractedData'] = typeof certExtractedData === 'string' ? certExtractedData : JSON.stringify(certExtractedData);
+        } else {
+          removeAttrs.push('certExtractedData');
+        }
+      }
+
       const { performancePublic } = req.body;
       if (performancePublic !== undefined) {
         updateExpression += ', performancePublic = :performancePublic';
@@ -5913,6 +5933,116 @@ export async function registerRoutes(app: Express): Promise<Server> {
         success: false, 
         message: error.message || 'Failed to update profile' 
       });
+    }
+  });
+
+  // ──────────────────────────────────────────────
+  // NISM/SEBI Certificate AI Verification (Gemini Vision OCR)
+  // ──────────────────────────────────────────────
+  app.post('/api/neofeed/verify-certificate', async (req: any, res: any) => {
+    try {
+      const { imageUrl, userDisplayName, userName } = req.body;
+      if (!imageUrl) return res.status(400).json({ error: 'imageUrl is required' });
+
+      const geminiKey = process.env.GEMINI_API_KEY;
+      if (!geminiKey) return res.status(500).json({ error: 'AI service not configured' });
+
+      // Fetch the certificate image and convert to base64
+      const imgResponse = await fetch(imageUrl);
+      if (!imgResponse.ok) throw new Error('Could not fetch certificate image');
+      const imgBuffer = await imgResponse.arrayBuffer();
+      const base64Data = Buffer.from(imgBuffer).toString('base64');
+      const mimeType = imgResponse.headers.get('content-type') || 'image/jpeg';
+
+      const { GoogleGenAI } = await import('@google/genai');
+      const ai = new GoogleGenAI({ apiKey: geminiKey });
+
+      const prompt = `You are an expert at reading Indian NISM/SEBI/NSE/BSE financial certification documents.
+Carefully extract all text from this certificate image and return a JSON object with these exact fields:
+{
+  "candidateName": "Full name of the candidate printed on the certificate",
+  "enrollmentNo": "Enrollment number or registration number",
+  "certId": "Certificate ID or certificate number",
+  "examName": "Full name of the exam or certification title",
+  "examCode": "Exam code if visible (e.g. NISM-Series-VIII)",
+  "score": "Score percentage or marks obtained",
+  "passingDate": "Date of passing or date of issue (DD/MM/YYYY or similar)",
+  "validUntil": "Certificate validity expiry date if present",
+  "issuingOrg": "Issuing organization name (NISM, SEBI, NSE Academy, BSE Institute, etc.)",
+  "status": "PASS or FAIL if visible",
+  "allText": "All readable text from the certificate concatenated"
+}
+If any field is not present or not readable, use null for that field.
+Return ONLY valid JSON with no markdown or explanation.`;
+
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.0-flash-exp',
+        contents: [{
+          parts: [
+            { text: prompt },
+            { inlineData: { mimeType, data: base64Data } }
+          ]
+        }],
+        config: { responseMimeType: 'application/json', temperature: 0.1 }
+      });
+
+      const rawText = response.text || '{}';
+      let extracted: Record<string, any> = {};
+      try {
+        extracted = JSON.parse(rawText);
+      } catch {
+        const m = rawText.match(/\{[\s\S]*\}/);
+        extracted = m ? JSON.parse(m[0]) : {};
+      }
+
+      // Name matching — fuzzy check between cert name and profile names
+      const normalize = (s: string | null | undefined) =>
+        (s || '').toLowerCase().replace(/[^a-z\s]/g, '').replace(/\s+/g, ' ').trim();
+
+      const certName = normalize(extracted.candidateName);
+      const dispName = normalize(userDisplayName);
+      const uName = normalize(userName);
+
+      const namesMatch = (a: string, b: string): boolean => {
+        if (!a || !b) return false;
+        if (a === b) return true;
+        // Check word overlap: at least 2 words match OR one fully contains the other
+        const aWords = a.split(' ');
+        const bWords = b.split(' ');
+        const overlap = aWords.filter(w => w.length > 2 && bWords.includes(w)).length;
+        return overlap >= Math.min(2, Math.min(aWords.length, bWords.length)) ||
+          a.includes(b) || b.includes(a);
+      };
+
+      const matchVsDisplay = namesMatch(certName, dispName);
+      const matchVsUsername = namesMatch(certName, uName);
+      const nameMatch = matchVsDisplay || matchVsUsername;
+
+      // Confidence scoring
+      let confidence: 'high' | 'medium' | 'low' = 'low';
+      if (nameMatch && certName) {
+        const base = dispName || uName;
+        if (base) {
+          const shorter = Math.min(certName.length, base.length);
+          const longer = Math.max(certName.length, base.length);
+          const ratio = shorter / longer;
+          confidence = ratio >= 0.7 ? 'high' : ratio >= 0.4 ? 'medium' : 'low';
+        }
+      }
+
+      const hasCertData = !!(extracted.candidateName || extracted.certId || extracted.enrollmentNo);
+
+      return res.json({
+        success: true,
+        extracted,
+        nameMatch,
+        confidence,
+        canVerify: nameMatch && hasCertData,
+        matchedWith: matchVsDisplay ? 'displayName' : matchVsUsername ? 'username' : null
+      });
+    } catch (err: any) {
+      console.error('❌ Certificate verification error:', err);
+      return res.status(500).json({ error: 'Certificate verification failed', details: err.message });
     }
   });
 

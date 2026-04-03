@@ -3176,6 +3176,21 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
   const certSectionRef = useRef<HTMLDivElement>(null);
   const fieldsScrollRef = useRef<HTMLDivElement>(null);
 
+  // Certificate verification state
+  const [certVerifying, setCertVerifying] = useState(false);
+  const [certVerifyResult, setCertVerifyResult] = useState<{
+    extracted: Record<string, string | null>;
+    nameMatch: boolean;
+    confidence: 'high' | 'medium' | 'low';
+    canVerify: boolean;
+  } | null>(profileData?.certExtractedData ? {
+    extracted: profileData.certExtractedData,
+    nameMatch: profileData.certVerificationStatus === 'verified',
+    confidence: profileData.certVerificationStatus === 'verified' ? 'high' : 'medium',
+    canVerify: profileData.certVerificationStatus === 'verified',
+  } : null);
+  const [certVerificationStatus, setCertVerificationStatus] = useState<string>(profileData?.certVerificationStatus || '');
+
   // Filtered certs for searchable dropdown
   const filteredCerts = NISM_CERTIFICATES.filter(c =>
     c.label.toLowerCase().includes(certSearchQuery.toLowerCase()) ||
@@ -3198,8 +3213,84 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
       setCertificationImageUrl(profileData.certificationImageUrl || '');
       setCertImagePreview(profileData.certificationImageUrl || '');
       setCertImageFile(null);
+      setCertVerificationStatus(profileData.certVerificationStatus || '');
+      setCertVerifyResult(profileData.certExtractedData ? {
+        extracted: profileData.certExtractedData,
+        nameMatch: profileData.certVerificationStatus === 'verified',
+        confidence: profileData.certVerificationStatus === 'verified' ? 'high' : 'medium',
+        canVerify: profileData.certVerificationStatus === 'verified',
+      } : null);
     }
   }, [profileData]);
+
+  // Verify certificate by calling Gemini Vision OCR
+  const verifyCertificate = async () => {
+    const idToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    if (!idToken) { toast({ description: 'Please sign in to verify', variant: 'destructive' }); return; }
+
+    // Need an uploaded image URL first — upload if only local preview exists
+    let imageUrlToVerify = certificationImageUrl;
+    if (!imageUrlToVerify && certImageFile) {
+      setCertVerifying(true);
+      try {
+        const formData = new FormData();
+        formData.append('file', certImageFile);
+        formData.append('type', 'cert');
+        const uploadRes = await fetch('/api/upload/profile-image', {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${idToken}` },
+          body: formData,
+        });
+        if (uploadRes.ok) {
+          const data = await uploadRes.json();
+          if (data.url) { imageUrlToVerify = data.url; setCertificationImageUrl(data.url); }
+        }
+      } catch (_) {}
+    }
+
+    if (!imageUrlToVerify) {
+      toast({ description: 'Please upload a certificate image first', variant: 'destructive' });
+      setCertVerifying(false);
+      return;
+    }
+
+    setCertVerifying(true);
+    try {
+      const res = await fetch('/api/neofeed/verify-certificate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
+        body: JSON.stringify({
+          imageUrl: imageUrlToVerify,
+          userDisplayName: displayName,
+          userName: username,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Verification failed');
+      setCertVerifyResult({
+        extracted: data.extracted,
+        nameMatch: data.nameMatch,
+        confidence: data.confidence,
+        canVerify: data.canVerify,
+      });
+      if (data.canVerify) {
+        setCertVerificationStatus('verified');
+        toast({ description: 'Certificate verified successfully!' });
+      } else {
+        setCertVerificationStatus('failed');
+        toast({
+          description: data.nameMatch === false && data.extracted?.candidateName
+            ? `Name on certificate "${data.extracted.candidateName}" doesn't match your profile name`
+            : 'Could not extract certificate details. Please upload a clearer image.',
+          variant: 'destructive',
+        });
+      }
+    } catch (err: any) {
+      toast({ description: err.message || 'Verification failed', variant: 'destructive' });
+    } finally {
+      setCertVerifying(false);
+    }
+  };
 
   // Check username availability when username changes (with debounce)
   useEffect(() => {
@@ -3308,6 +3399,8 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
           bio: bio || undefined,
           certifiedRole: certifiedRole || null,
           certificationImageUrl: finalCertImageUrl || null,
+          certVerificationStatus: certVerificationStatus || null,
+          certExtractedData: certVerifyResult?.extracted ? JSON.stringify(certVerifyResult.extracted) : null,
         })
       });
 
@@ -3533,20 +3626,69 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
 
             {/* Certificate image upload - shown when a cert is selected */}
             {certifiedRole && (
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Certificate Image</label>
+              <div className="space-y-2">
+                <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Certificate Image &amp; Verification</label>
                 <input
                   ref={certInputRef}
                   type="file"
                   accept="image/*"
                   className="hidden"
-                  onChange={handleCertImageSelect}
+                  onChange={(e) => { handleCertImageSelect(e); setCertVerifyResult(null); setCertVerificationStatus(''); }}
                   data-testid="input-cert-image"
                 />
                 {certImagePreview ? (
-                  <div className="relative rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/50 bg-amber-50 dark:bg-amber-900/10">
-                    <img src={certImagePreview} alt="Certificate preview" className="w-full object-contain max-h-32" />
-                    <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                  <div className="space-y-2">
+                    {/* Blurred marksheet display — cert image blurred behind, extracted data as frosted table overlay */}
+                    <div className="relative rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/50" style={{ minHeight: 140 }}>
+                      {/* Blurred background image */}
+                      <img
+                        src={certImagePreview}
+                        alt="Certificate"
+                        className="w-full object-cover"
+                        style={{ filter: certVerifyResult ? 'blur(6px) brightness(0.45)' : 'none', maxHeight: 160 }}
+                      />
+                      {/* Frosted data overlay shown after verification */}
+                      {certVerifyResult && (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center px-3 py-2">
+                          {/* Status badge */}
+                          <div className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide mb-2 ${
+                            certVerificationStatus === 'verified'
+                              ? 'bg-green-500/90 text-white'
+                              : 'bg-red-500/80 text-white'
+                          }`}>
+                            {certVerificationStatus === 'verified' ? (
+                              <>
+                                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" fill="currentColor" fillOpacity="0.3"/><path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
+                                NISM VERIFIED
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" fill="currentColor" fillOpacity="0.3"/><path d="M4 4l4 4M8 4l-4 4" stroke="white" strokeWidth="1.4" strokeLinecap="round"/></svg>
+                                {certVerifyResult.extracted?.candidateName ? 'NAME MISMATCH' : 'UNREADABLE'}
+                              </>
+                            )}
+                          </div>
+                          {/* Extracted data table — white semi-transparent text */}
+                          <div className="w-full rounded-lg overflow-hidden border border-white/20 backdrop-blur-sm bg-black/40">
+                            {[
+                              { label: 'Candidate', value: certVerifyResult.extracted?.candidateName },
+                              { label: 'Exam', value: certVerifyResult.extracted?.examName || certVerifyResult.extracted?.examCode },
+                              { label: 'Cert ID', value: certVerifyResult.extracted?.certId || certVerifyResult.extracted?.enrollmentNo },
+                              { label: 'Score', value: certVerifyResult.extracted?.score },
+                              { label: 'Date', value: certVerifyResult.extracted?.passingDate },
+                              { label: 'Valid Until', value: certVerifyResult.extracted?.validUntil },
+                            ].filter(r => r.value).map((row, i) => (
+                              <div key={i} className={`flex items-start gap-1.5 px-2.5 py-1 ${i % 2 === 0 ? 'bg-white/5' : 'bg-transparent'}`}>
+                                <span className="text-[9px] font-semibold uppercase tracking-wider text-white/50 w-16 flex-shrink-0 pt-px">{row.label}</span>
+                                <span className="text-[10px] font-medium text-white/90 leading-tight">{row.value}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {/* Change/Remove hover overlay (only when NOT showing extracted data) */}
+                      {!certVerifyResult && (
+                      <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
                       <button
                         type="button"
                         onClick={() => certInputRef.current?.click()}
@@ -3557,7 +3699,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
                       </button>
                       <button
                         type="button"
-                        onClick={() => { setCertImagePreview(''); setCertificationImageUrl(''); setCertImageFile(null); }}
+                        onClick={() => { setCertImagePreview(''); setCertificationImageUrl(''); setCertImageFile(null); setCertVerifyResult(null); setCertVerificationStatus(''); }}
                         className="px-2.5 py-1 bg-red-500 text-white text-xs font-semibold rounded-lg"
                         data-testid="button-remove-cert-image"
                       >

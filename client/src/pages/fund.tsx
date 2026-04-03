@@ -110,9 +110,29 @@ export function FundsAnalysis({
     }
   }, [journalWalletUserId, currentUserName, currentUserEmail]);
 
+  const refreshWalletBalance = useCallback(async () => {
+    if (!journalWalletUserId) return;
+    try {
+      const res = await fetch(`/api/journal-wallet/${encodeURIComponent(journalWalletUserId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.wallet) setJournalFundBase(data.wallet.balance ?? journalFundBase);
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not refresh wallet balance');
+    }
+  }, [journalWalletUserId, journalFundBase, setJournalFundBase]);
+
   useEffect(() => {
     if (journalWalletUserId) loadReferralProfile();
   }, [journalWalletUserId, loadReferralProfile]);
+
+  useEffect(() => {
+    if (showReferDialog && journalWalletUserId) {
+      loadReferralProfile();
+      refreshWalletBalance();
+    }
+  }, [showReferDialog, journalWalletUserId, loadReferralProfile, refreshWalletBalance]);
 
   const handleAddFund = async () => {
     const amount = parseFloat(addFundAmount);
@@ -1115,7 +1135,7 @@ export function FundsAnalysis({
       </Dialog>
 
       {/* Refer Dialog */}
-      <Dialog open={showReferDialog} onOpenChange={(open) => { setShowReferDialog(open); if (!open) setShowReferredList(false); }}>
+      <Dialog open={showReferDialog} onOpenChange={(open) => { setShowReferDialog(open); if (!open) { setShowReferredList(false); refreshWalletBalance(); } }}>
         <DialogContent className="w-[95vw] max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0 overflow-hidden">
           {/* Header actions */}
           <div className="absolute top-3 right-3 z-10 flex items-center gap-1.5">

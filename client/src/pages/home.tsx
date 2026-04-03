@@ -2771,14 +2771,23 @@ export default function Home() {
   const [showAddAdminAccessDialog, setShowAddAdminAccessDialog] = useState(false);
   const [adminAccessEmail, setAdminAccessEmail] = useState("");
   const [adminAccessRole, setAdminAccessRole] = useState<"developer" | "admin">("developer");
-  const [journalFundBase, setJournalFundBase] = useState<number>(() => {
-    const saved = localStorage.getItem('journalFundBase');
-    return saved ? parseFloat(saved) : 1000;
-  });
-  const [journalLastDeducted, setJournalLastDeducted] = useState<number>(() => {
-    const saved = localStorage.getItem('journalLastDeducted');
-    return saved ? parseFloat(saved) : 0;
-  });
+  const [journalFundBase, setJournalFundBase] = useState<number>(1000);
+  const [journalLastDeducted, setJournalLastDeducted] = useState<number>(0);
+
+  // Load wallet from server for the current user
+  const loadWallet = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/journal-wallet/${encodeURIComponent(userId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.wallet) {
+          setJournalFundBase(data.wallet.balance ?? 1000);
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not load journal wallet from server, using default');
+    }
+  };
   const [adminBugReports, setAdminBugReports] = useState<Array<{ bugId: string; title: string; reportDate: string; bugLocate: string; status: string; username: string; }>>([]); 
   const [loadingBugReports, setLoadingBugReports] = useState(false);
   const [expandedBugId, setExpandedBugId] = useState<string | null>(null);
@@ -7497,6 +7506,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     return null;
   };
 
+  // Load journal wallet from server when user is identified
+  useEffect(() => {
+    const userId = currentUser?.userId;
+    if (userId) {
+      loadWallet(userId);
+    }
+  }, [currentUser?.userId]);
+
   // Load all heatmap data on startup and when userId or tab changes - ALWAYS from userId, never demo
   useEffect(() => {
     const loadAllHeatmapData = async () => {
@@ -10071,12 +10088,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           if (safeTradeHistory.length > 0) {
             const charge = parseFloat((safeTradeHistory.length * 2 * 1.18).toFixed(2));
             setJournalLastDeducted(charge);
-            localStorage.setItem('journalLastDeducted', String(charge));
-            setJournalFundBase(prev => {
-              const newBalance = parseFloat((prev - charge).toFixed(2));
-              localStorage.setItem('journalFundBase', String(newBalance));
-              return newBalance;
-            });
+            setJournalFundBase(prev => parseFloat((prev - charge).toFixed(2)));
+            // Persist deduction to server
+            const userId = currentUser?.userId;
+            if (userId) {
+              fetch(`/api/journal-wallet/${encodeURIComponent(userId)}/deduct`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ amount: charge, note: `Journal save — ${safeTradeHistory.length} trade(s)` })
+              }).then(r => r.json()).then(data => {
+                if (data.success && data.wallet) {
+                  setJournalFundBase(data.wallet.balance);
+                }
+              }).catch(err => console.warn('⚠️ Wallet deduct API failed:', err));
+            }
           }
 
           setSaveConfirmationData({
@@ -14749,6 +14774,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 allBrokerFunds={allBrokerFunds}
                 journalFundBase={journalFundBase}
                 setJournalFundBase={setJournalFundBase}
+                journalWalletUserId={currentUser?.userId ?? null}
                 activeBroker={activeBroker}
                 getBrokerDisplayName={getBrokerDisplayName}
                 brokerIconMap={brokerIconMap}

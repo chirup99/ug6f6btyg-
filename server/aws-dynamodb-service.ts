@@ -452,6 +452,42 @@ class AWSDynamoDBService {
       return false;
     }
   }
+
+  // ── Journal Wallet ───────────────────────────────────────────────────────
+
+  async getWallet(userId: string): Promise<any | null> {
+    if (!this.isConnected()) return null;
+    try {
+      const command = new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { dateKey: `wallet#${userId}` }
+      });
+      const response = await this.docClient!.send(command);
+      return response.Item?.data ?? null;
+    } catch (error) {
+      console.error(`❌ AWS: Failed to get wallet for ${userId}:`, error);
+      return null;
+    }
+  }
+
+  async saveWallet(userId: string, walletData: any): Promise<boolean> {
+    if (!this.isConnected()) return false;
+    try {
+      const command = new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+          dateKey: `wallet#${userId}`,
+          data: { ...walletData, updatedAt: new Date().toISOString() },
+          updatedAt: new Date().toISOString()
+        }
+      });
+      await this.docClient!.send(command);
+      return true;
+    } catch (error) {
+      console.error(`❌ AWS: Failed to save wallet for ${userId}:`, error);
+      return false;
+    }
+  }
 }
 
 export const awsDynamoDBService = new AWSDynamoDBService();

@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { Wallet, Banknote, Receipt, Activity, Info, UserPlus, X, Copy, CheckCircle } from 'lucide-react';
+import { Wallet, Banknote, Receipt, Activity, Info, UserPlus, X, Copy, CheckCircle, Plus } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -31,6 +31,7 @@ interface FundsAnalysisProps {
   allBrokerFunds: Record<string, number>;
   journalFundBase: number;
   setJournalFundBase: React.Dispatch<React.SetStateAction<number>>;
+  journalWalletUserId?: string | null;
   tradeHistoryData: any[];
   tradingDataByDate: Record<string, any>;
   activeBroker: string;
@@ -47,6 +48,7 @@ export function FundsAnalysis({
   allBrokerFunds,
   journalFundBase,
   setJournalFundBase,
+  journalWalletUserId,
   tradeHistoryData,
   tradingDataByDate,
   activeBroker,
@@ -61,10 +63,46 @@ export function FundsAnalysis({
   const [showJournalChargesDialog, setShowJournalChargesDialog] = useState(false);
   const [showBrokerageChargesDialog, setShowBrokerageChargesDialog] = useState(false);
   const [showReferDialog, setShowReferDialog] = useState(false);
+  const [showAddFundDialog, setShowAddFundDialog] = useState(false);
+  const [addFundAmount, setAddFundAmount] = useState('');
+  const [addFundLoading, setAddFundLoading] = useState(false);
   const [referralCodeInput, setReferralCodeInput] = useState('');
   const [referralApplied, setReferralApplied] = useState<boolean>(() => {
     return localStorage.getItem('journalReferralApplied') === 'true';
   });
+
+  const handleAddFund = async () => {
+    const amount = parseFloat(addFundAmount);
+    if (!amount || amount <= 0) {
+      toast({ title: 'Invalid amount', description: 'Please enter a valid amount greater than 0.', variant: 'destructive' });
+      return;
+    }
+    if (!journalWalletUserId) {
+      toast({ title: 'Not logged in', description: 'Please log in to add funds.', variant: 'destructive' });
+      return;
+    }
+    setAddFundLoading(true);
+    try {
+      const res = await fetch(`/api/journal-wallet/${encodeURIComponent(journalWalletUserId)}/topup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, note: 'Manual top-up' })
+      });
+      const data = await res.json();
+      if (data.success && data.wallet) {
+        setJournalFundBase(data.wallet.balance);
+        setAddFundAmount('');
+        setShowAddFundDialog(false);
+        toast({ title: '✅ Funds added!', description: `₹${amount.toLocaleString('en-IN')} added to your Journal Fund. New balance: ₹${data.wallet.balance.toFixed(2)}` });
+      } else {
+        throw new Error(data.error || 'Unknown error');
+      }
+    } catch (err: any) {
+      toast({ title: 'Failed to add funds', description: err.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setAddFundLoading(false);
+    }
+  };
 
   const myReferralCode = useMemo(() => {
     let code = localStorage.getItem('myReferralCode');
@@ -223,12 +261,12 @@ export function FundsAnalysis({
                         </div>
                         <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
                           <button
-                            className="flex-1 py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 text-[11px] font-bold pointer-events-none select-none cursor-default opacity-60"
-                            tabIndex={-1}
-                            aria-disabled="true"
+                            onClick={() => setShowAddFundDialog(true)}
+                            className="flex-1 py-1.5 px-3 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
                             data-testid="button-add-fund"
                           >
-                            + Add Fund
+                            <Plus className="w-3 h-3" />
+                            Add Fund
                           </button>
                           <button
                             onClick={() => setShowReferDialog(true)}
@@ -930,6 +968,69 @@ export function FundsAnalysis({
         </DialogContent>
       </Dialog>
 
+      {/* Add Fund Dialog */}
+      <Dialog open={showAddFundDialog} onOpenChange={setShowAddFundDialog}>
+        <DialogContent className="w-[95vw] max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0 overflow-hidden">
+          <button
+            onClick={() => setShowAddFundDialog(false)}
+            className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
+            data-testid="close-add-fund-dialog"
+          >
+            <X className="w-4 h-4" />
+          </button>
+          <div className="bg-gradient-to-br from-indigo-500 to-violet-600 p-6 text-white text-center">
+            <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center mx-auto mb-3">
+              <Wallet className="w-6 h-6" />
+            </div>
+            <h3 className="text-lg font-black">Add Journal Fund</h3>
+            <p className="text-sm text-indigo-100 mt-1">Current balance: <span className="font-black text-white">₹{Math.max(0, journalFundBase).toFixed(2)}</span></p>
+          </div>
+          <div className="p-5 space-y-4">
+            <div>
+              <label className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-1.5 block">Amount (₹)</label>
+              <input
+                type="number"
+                min="1"
+                step="any"
+                value={addFundAmount}
+                onChange={e => setAddFundAmount(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAddFund()}
+                placeholder="Enter amount"
+                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500/40"
+                data-testid="input-add-fund-amount"
+                autoFocus
+              />
+            </div>
+            <div className="flex gap-2 flex-wrap">
+              {[500, 1000, 2000, 5000].map(preset => (
+                <button
+                  key={preset}
+                  onClick={() => setAddFundAmount(String(preset))}
+                  className="px-3 py-1.5 text-[11px] font-bold rounded-lg bg-indigo-50 dark:bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-500/20 transition-colors border border-indigo-200/50 dark:border-indigo-500/20"
+                  data-testid={`button-preset-${preset}`}
+                >
+                  +₹{preset.toLocaleString('en-IN')}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={handleAddFund}
+              disabled={addFundLoading || !addFundAmount || parseFloat(addFundAmount) <= 0}
+              className="w-full py-2.5 rounded-xl bg-gradient-to-r from-indigo-500 to-violet-600 text-white font-bold text-sm flex items-center justify-center gap-2 hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
+              data-testid="button-confirm-add-fund"
+            >
+              {addFundLoading ? (
+                <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+              ) : (
+                <Plus className="w-4 h-4" />
+              )}
+              {addFundLoading ? 'Adding...' : 'Add Fund'}
+            </button>
+            <p className="text-[10px] text-center text-slate-400 dark:text-slate-500">Journal Fund is used for saving trades and accessing premium journal features.</p>
+          </div>
+        </DialogContent>
+      </Dialog>
+
       {/* Refer Dialog */}
       <Dialog open={showReferDialog} onOpenChange={setShowReferDialog}>
         <DialogContent className="w-[95vw] max-w-sm rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-0 overflow-hidden">
@@ -982,17 +1083,33 @@ export function FundsAnalysis({
                     data-testid="input-referral-code"
                   />
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       if (!referralCodeInput.trim()) {
                         toast({ title: "Enter a code", description: "Please enter a referral code", variant: "destructive" });
                         return;
                       }
-                      const newBase = journalFundBase + 200;
-                      setJournalFundBase(newBase);
-                      localStorage.setItem('journalFundBase', String(newBase));
                       setReferralApplied(true);
                       localStorage.setItem('journalReferralApplied', 'true');
                       setReferralCodeInput('');
+                      if (journalWalletUserId) {
+                        try {
+                          const res = await fetch(`/api/journal-wallet/${encodeURIComponent(journalWalletUserId)}/topup`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ amount: 200, note: '🎁 Referral bonus' })
+                          });
+                          const data = await res.json();
+                          if (data.success && data.wallet) {
+                            setJournalFundBase(data.wallet.balance);
+                          } else {
+                            setJournalFundBase(prev => prev + 200);
+                          }
+                        } catch {
+                          setJournalFundBase(prev => prev + 200);
+                        }
+                      } else {
+                        setJournalFundBase(prev => prev + 200);
+                      }
                       toast({ title: "₹200 Added!", description: "Referral bonus applied to your journal fund!" });
                     }}
                     className="px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-bold rounded-xl transition-colors"

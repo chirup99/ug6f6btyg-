@@ -342,6 +342,7 @@ export interface JournalTabContentProps {
   allBrokerFunds: any;
   journalFundBase: any;
   setJournalFundBase: any;
+  journalWalletUserId?: string | null;
   activeBroker: any;
   getBrokerDisplayName: any;
   brokerIconMap: any;
@@ -696,6 +697,7 @@ export function JournalTabContent({
   allBrokerFunds,
   journalFundBase,
   setJournalFundBase,
+  journalWalletUserId,
   activeBroker,
   getBrokerDisplayName,
   brokerIconMap,
@@ -1872,6 +1874,7 @@ export function JournalTabContent({
                           allBrokerFunds={allBrokerFunds}
                           journalFundBase={journalFundBase}
                           setJournalFundBase={setJournalFundBase}
+                          journalWalletUserId={journalWalletUserId}
                           tradeHistoryData={tradeHistoryData}
                           tradingDataByDate={tradingDataByDate}
                           activeBroker={activeBroker}

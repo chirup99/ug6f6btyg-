@@ -7094,6 +7094,115 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ==========================================
+  // JOURNAL WALLET ROUTES (AWS DynamoDB)
+  // Per-user wallet: top-up, deduct, get balance
+  // ==========================================
+
+  const WALLET_JOINING_BONUS = 1000; // ₹1,000 joining bonus for new users
+
+  // GET /api/journal-wallet/:userId — fetch wallet (create with joining bonus if new)
+  app.get('/api/journal-wallet/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+
+      let wallet = await awsDynamoDBService.getWallet(userId);
+
+      if (!wallet) {
+        // First time — create wallet with ₹1,000 joining bonus
+        wallet = {
+          balance: WALLET_JOINING_BONUS,
+          totalTopUp: WALLET_JOINING_BONUS,
+          totalDeducted: 0,
+          transactions: [{
+            type: 'credit',
+            amount: WALLET_JOINING_BONUS,
+            note: '🎁 Joining bonus',
+            at: new Date().toISOString()
+          }],
+          createdAt: new Date().toISOString()
+        };
+        await awsDynamoDBService.saveWallet(userId, wallet);
+      }
+
+      res.json({ success: true, wallet });
+    } catch (error) {
+      console.error('❌ Error fetching journal wallet:', error);
+      res.status(500).json({ error: 'Failed to fetch wallet' });
+    }
+  });
+
+  // POST /api/journal-wallet/:userId/topup — add funds
+  app.post('/api/journal-wallet/:userId/topup', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { amount, note } = req.body;
+
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      if (!amount || typeof amount !== 'number' || amount <= 0) {
+        return res.status(400).json({ error: 'Valid positive amount required' });
+      }
+
+      let wallet = await awsDynamoDBService.getWallet(userId);
+      if (!wallet) {
+        wallet = { balance: 0, totalTopUp: 0, totalDeducted: 0, transactions: [], createdAt: new Date().toISOString() };
+      }
+
+      const newBalance = parseFloat(((wallet.balance || 0) + amount).toFixed(2));
+      const updatedWallet = {
+        ...wallet,
+        balance: newBalance,
+        totalTopUp: parseFloat(((wallet.totalTopUp || 0) + amount).toFixed(2)),
+        transactions: [
+          { type: 'credit', amount, note: note || 'Top-up', at: new Date().toISOString() },
+          ...(wallet.transactions || [])
+        ].slice(0, 100) // keep last 100 transactions
+      };
+
+      await awsDynamoDBService.saveWallet(userId, updatedWallet);
+      res.json({ success: true, wallet: updatedWallet });
+    } catch (error) {
+      console.error('❌ Error topping up wallet:', error);
+      res.status(500).json({ error: 'Failed to top up wallet' });
+    }
+  });
+
+  // POST /api/journal-wallet/:userId/deduct — deduct charges
+  app.post('/api/journal-wallet/:userId/deduct', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      const { amount, note } = req.body;
+
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      if (!amount || typeof amount !== 'number' || amount <= 0) {
+        return res.status(400).json({ error: 'Valid positive amount required' });
+      }
+
+      let wallet = await awsDynamoDBService.getWallet(userId);
+      if (!wallet) {
+        wallet = { balance: WALLET_JOINING_BONUS, totalTopUp: WALLET_JOINING_BONUS, totalDeducted: 0, transactions: [], createdAt: new Date().toISOString() };
+      }
+
+      const newBalance = parseFloat(((wallet.balance || 0) - amount).toFixed(2));
+      const updatedWallet = {
+        ...wallet,
+        balance: newBalance,
+        totalDeducted: parseFloat(((wallet.totalDeducted || 0) + amount).toFixed(2)),
+        transactions: [
+          { type: 'debit', amount, note: note || 'Journal charges', at: new Date().toISOString() },
+          ...(wallet.transactions || [])
+        ].slice(0, 100)
+      };
+
+      await awsDynamoDBService.saveWallet(userId, updatedWallet);
+      res.json({ success: true, wallet: updatedWallet });
+    } catch (error) {
+      console.error('❌ Error deducting from wallet:', error);
+      res.status(500).json({ error: 'Failed to deduct from wallet' });
+    }
+  });
+
+  // ==========================================
   // TRADING CHALLENGE ROUTES (AWS DynamoDB)
   // With Zod validation and Cognito authentication
   // ==========================================

@@ -15,6 +15,7 @@ A full-stack trading platform built with React (frontend) and Express.js (backen
 - Social trading feed (posts, likes, comments, follows)
 - Multi-broker support: Angel One, Dhan, Upstox, Fyers, Zerodha
 - Trading journal and heatmaps (stored in AWS DynamoDB)
+- Per-user Journal Fund wallet (stored in DynamoDB under key `wallet#<userId>`, supports top-up and deduction via API)
 - AI-powered trading NLP agent
 - Option chain viewer
 - Trade challenge system

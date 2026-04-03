@@ -1197,7 +1197,7 @@ export function TradingNotesWindow({
               ) : (
                 <>
                   {notesContent ? (
-                    <pre className="font-sans text-xs overflow-y-auto flex-1 whitespace-pre">
+                    <pre className="font-sans text-xs overflow-y-auto flex-1 whitespace-pre-wrap break-words">
                       {notesContent}
                     </pre>
                   ) : (

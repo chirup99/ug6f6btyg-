@@ -308,6 +308,9 @@ function SwipeableCardStack({
   const newsTextCacheRef = React.useRef<Map<string, string>>(new Map());
   // Track in-progress news fetches to avoid duplicate requests
   const newsFetchingRef = React.useRef<Map<string, Promise<string>>>(new Map());
+  // Monotonic counter — incremented on every fetchAndPlayContent call.
+  // Lets the async callback detect if a newer swipe superseded it and skip playback.
+  const fetchRequestIdRef = React.useRef(0);
 
   const [cards, setCards] = useState([
     {
@@ -618,11 +621,18 @@ function SwipeableCardStack({
     globalStopAudio();
     setCurrentContent("");
 
+    // Claim a unique ID for this invocation. Any older async fetch that finishes
+    // later will see its ID is stale and will NOT play — fixing the alternating bug
+    // where a previous slow fetch would play over the card the user actually swiped to.
+    const myId = ++fetchRequestIdRef.current;
+    const isStale = () => fetchRequestIdRef.current !== myId;
+
     const cacheKey = getCacheKey(sector);
 
     // ── 1. Cache hit: play instantly ───────────────────────────────────────
     const cachedUrl = audioCacheRef.current.get(cacheKey);
     if (cachedUrl) {
+      if (isStale()) return;
       console.log(`[CACHE HIT] ✅ Instant play for ${sector}`);
       playBlobUrl(cachedUrl);
       return;
@@ -643,6 +653,7 @@ function SwipeableCardStack({
         setTimeout(() => { clearInterval(poll); resolve(); }, 15000);
       });
       setIsLoading(false);
+      if (isStale()) return;
       const readyUrl = audioCacheRef.current.get(cacheKey);
       if (readyUrl) {
         console.log(`[PRELOAD WAIT] ✅ Preload finished, playing for ${sector}`);
@@ -656,13 +667,15 @@ function SwipeableCardStack({
     try {
       setIsLoading(true);
       const content = await buildNewsText(sector);
+      if (isStale()) { setIsLoading(false); return; }
       setCurrentContent(content);
       setIsLoading(false);
 
       const url = await buildAudioUrl(content);
+      if (isStale()) return;
       if (url) {
         audioCacheRef.current.set(cacheKey, url);
-        if (currentAudioRef.current === null) playBlobUrl(url);
+        playBlobUrl(url);
       } else {
         setIsPlaying(false);
       }

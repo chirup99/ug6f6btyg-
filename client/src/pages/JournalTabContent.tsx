@@ -1920,13 +1920,22 @@ export function JournalTabContent({
                             const secondHalfAvg = half > 0 ? dayMetrics.slice(half).reduce((s, d) => s + d.netPnL, 0) / (dayMetrics.length - half) : 0;
                             const capitalTrend = totalDays < 2 ? 'no data' : secondHalfAvg > firstHalfAvg * 1.1 ? 'increasing' : secondHalfAvg < firstHalfAvg * 0.9 ? 'declining' : 'consistent';
 
-                            // Chart data
-                            const chartData = dayMetrics.map((d, i) => ({
-                              day: d.date.slice(5),
+                            // Chart data - last 30 trading days
+                            const recentDayMetrics = dayMetrics.slice(-30);
+                            const formatDateLabel = (dateStr: string) => {
+                              const parts = dateStr.split('-').map(Number);
+                              const month = parts[1];
+                              const day = parts[2];
+                              const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+                              return `${months[month - 1]} ${day}`;
+                            };
+                            const chartData = recentDayMetrics.map(d => ({
+                              day: formatDateLabel(d.date),
                               pnl: d.netPnL,
                               target: targetReward,
                               risk: -riskCapital,
                             }));
+                            const xAxisInterval = Math.max(0, Math.ceil(chartData.length / 6) - 1);
 
                             return (
                               <div className="space-y-6">
@@ -2017,7 +2026,7 @@ export function JournalTabContent({
                                     <ResponsiveContainer width="100%" height={180}>
                                       <ComposedChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 5 }}>
                                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
-                                        <XAxis dataKey="day" tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.6)' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                                        <XAxis dataKey="day" tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.6)' }} tickLine={false} axisLine={false} interval={xAxisInterval} />
                                         <YAxis tick={{ fontSize: 9, fill: 'rgba(255,255,255,0.6)' }} tickLine={false} axisLine={false} width={40} tickFormatter={v => `${v >= 0 ? '' : '-'}${(Math.abs(v) / 1000).toFixed(0)}K`} />
                                         <Tooltip
                                           contentStyle={{ background: '#1e3a5f', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '10px', color: '#e2e8f0', fontSize: '11px' }}

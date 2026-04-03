@@ -5937,25 +5937,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // ──────────────────────────────────────────────
-  // NISM/SEBI Certificate AI Verification (Gemini Vision OCR)
+  // NISM/SEBI Certificate AI Verification (OpenAI Vision OCR)
   // ──────────────────────────────────────────────
   app.post('/api/neofeed/verify-certificate', async (req: any, res: any) => {
     try {
-      const { imageUrl, userDisplayName, userName } = req.body;
-      if (!imageUrl) return res.status(400).json({ error: 'imageUrl is required' });
+      const { imageUrl, imageBase64, userDisplayName, userName } = req.body;
+      if (!imageUrl && !imageBase64) return res.status(400).json({ error: 'imageUrl or imageBase64 is required' });
 
-      const geminiKey = process.env.GEMINI_API_KEY;
-      if (!geminiKey) return res.status(500).json({ error: 'AI service not configured' });
+      const openaiKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY || process.env.OPENAI_API_KEY;
+      if (!openaiKey) return res.status(500).json({ error: 'AI service not configured' });
 
-      // Fetch the certificate image and convert to base64
-      const imgResponse = await fetch(imageUrl);
-      if (!imgResponse.ok) throw new Error('Could not fetch certificate image');
-      const imgBuffer = await imgResponse.arrayBuffer();
-      const base64Data = Buffer.from(imgBuffer).toString('base64');
-      const mimeType = imgResponse.headers.get('content-type') || 'image/jpeg';
+      let dataUrl: string;
+      if (imageBase64) {
+        // Already a base64 data URL from the frontend
+        dataUrl = imageBase64;
+      } else {
+        // Fetch from remote URL and convert to base64 data URL
+        const imgResponse = await fetch(imageUrl);
+        if (!imgResponse.ok) throw new Error('Could not fetch certificate image');
+        const imgBuffer = await imgResponse.arrayBuffer();
+        const base64Data = Buffer.from(imgBuffer).toString('base64');
+        const mimeType = imgResponse.headers.get('content-type') || 'image/jpeg';
+        dataUrl = `data:${mimeType};base64,${base64Data}`;
+      }
 
-      const { GoogleGenAI } = await import('@google/genai');
-      const ai = new GoogleGenAI({ apiKey: geminiKey });
+      const { default: OpenAI } = await import('openai');
+      const openai = new OpenAI({
+        apiKey: openaiKey,
+        ...(process.env.AI_INTEGRATIONS_OPENAI_BASE_URL ? { baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL } : {}),
+      });
 
       const prompt = `You are an expert at reading Indian NISM/SEBI/NSE/BSE financial certification documents.
 Carefully extract all text from this certificate image and return a JSON object with these exact fields:
@@ -5975,18 +5985,19 @@ Carefully extract all text from this certificate image and return a JSON object 
 If any field is not present or not readable, use null for that field.
 Return ONLY valid JSON with no markdown or explanation.`;
 
-      const response = await ai.models.generateContent({
-        model: 'gemini-2.0-flash-exp',
-        contents: [{
-          parts: [
-            { text: prompt },
-            { inlineData: { mimeType, data: base64Data } }
+      const response = await openai.chat.completions.create({
+        model: 'gpt-4o',
+        temperature: 0.1,
+        messages: [{
+          role: 'user',
+          content: [
+            { type: 'text', text: prompt },
+            { type: 'image_url', image_url: { url: dataUrl, detail: 'high' } }
           ]
         }],
-        config: { responseMimeType: 'application/json', temperature: 0.1 }
       });
 
-      const rawText = response.text || '{}';
+      const rawText = response.choices[0]?.message?.content || '{}';
       let extracted: Record<string, any> = {};
       try {
         extracted = JSON.parse(rawText);

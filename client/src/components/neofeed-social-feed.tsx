@@ -3272,34 +3272,17 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
     }
   }, [profileData]);
 
-  // Verify certificate by calling Gemini Vision OCR
+  // Verify certificate using OpenAI Vision OCR
   const verifyCertificate = async () => {
     const idToken = await getCognitoToken();
     if (!idToken) { toast({ description: 'Please sign in to verify', variant: 'destructive' }); return; }
 
-    // Need an uploaded image URL first — upload if only local preview exists
-    let imageUrlToVerify = certificationImageUrl;
-    if (!imageUrlToVerify && certImageFile) {
-      setCertVerifying(true);
-      try {
-        const formData = new FormData();
-        formData.append('file', certImageFile);
-        formData.append('type', 'cert');
-        const uploadRes = await fetch('/api/upload/profile-image', {
-          method: 'POST',
-          headers: { 'Authorization': `Bearer ${idToken}` },
-          body: formData,
-        });
-        if (uploadRes.ok) {
-          const data = await uploadRes.json();
-          if (data.url) { imageUrlToVerify = data.url; setCertificationImageUrl(data.url); }
-        }
-      } catch (_) {}
-    }
+    // Determine what to send: prefer base64 preview (works instantly), fall back to remote URL
+    const imageBase64 = certImagePreview?.startsWith('data:') ? certImagePreview : null;
+    const imageUrl = !imageBase64 ? (certificationImageUrl || null) : null;
 
-    if (!imageUrlToVerify) {
+    if (!imageBase64 && !imageUrl) {
       toast({ description: 'Please upload a certificate image first', variant: 'destructive' });
-      setCertVerifying(false);
       return;
     }
 
@@ -3309,7 +3292,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${idToken}` },
         body: JSON.stringify({
-          imageUrl: imageUrlToVerify,
+          ...(imageBase64 ? { imageBase64 } : { imageUrl }),
           userDisplayName: displayName,
           userName: username,
         }),

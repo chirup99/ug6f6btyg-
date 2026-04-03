@@ -604,6 +604,7 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionResults, setMentionResults] = useState<{ username: string; displayName: string; avatar: string | null }[]>([]);
   const [mentionLoading, setMentionLoading] = useState(false);
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -718,9 +719,30 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
     }
   });
 
+  const startReply = (username: string) => {
+    setReplyingTo(username);
+    setComment(`@${username} `);
+    setMentionQuery(null);
+    setMentionResults([]);
+    setTimeout(() => {
+      inputRef.current?.focus();
+      const len = username.length + 2;
+      inputRef.current?.setSelectionRange(len, len);
+    }, 0);
+  };
+
+  const cancelReply = () => {
+    setReplyingTo(null);
+    if (comment.startsWith(`@${replyingTo} `)) setComment('');
+    inputRef.current?.focus();
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (comment.trim()) commentMutation.mutate(comment.trim());
+    if (comment.trim()) {
+      commentMutation.mutate(comment.trim());
+      setReplyingTo(null);
+    }
   };
 
   if (!isVisible) return null;
@@ -757,7 +779,17 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
                     </span>
                     <span className="text-[11px] text-gray-700 dark:text-gray-300 break-words">{c.content}</span>
                   </div>
-                  <span className="text-[10px] text-gray-400 dark:text-gray-500 ml-2">{formatCommentTimestamp(c.createdAt)}</span>
+                  <div className="flex items-center gap-2 ml-2 mt-0.5">
+                    <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatCommentTimestamp(c.createdAt)}</span>
+                    <button
+                      type="button"
+                      onClick={() => startReply(c.authorUsername)}
+                      className="text-[10px] font-semibold text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                      data-testid={`button-reply-comment-${commentId}`}
+                    >
+                      Reply
+                    </button>
+                  </div>
                 </div>
                 {isOwn && (
                   <button
@@ -810,10 +842,26 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
           </div>
         )}
 
+        {/* Replying-to chip */}
+        {replyingTo && (
+          <div className="flex items-center gap-1.5 px-1 mb-1">
+            <span className="text-[10px] text-gray-400 dark:text-gray-500">Replying to</span>
+            <span className="text-[10px] font-semibold text-blue-500 dark:text-blue-400">@{replyingTo}</span>
+            <button
+              type="button"
+              onClick={cancelReply}
+              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+              data-testid="button-cancel-reply"
+            >
+              <X className="w-3 h-3" />
+            </button>
+          </div>
+        )}
+
         <div className="flex items-center gap-1.5 px-1">
           <input
             ref={inputRef}
-            placeholder="Add a comment… type @ to tag"
+            placeholder={replyingTo ? `Reply to @${replyingTo}…` : "Add a comment… type @ to tag"}
             value={comment}
             onChange={handleCommentChange}
             onKeyDown={handleKeyDown}

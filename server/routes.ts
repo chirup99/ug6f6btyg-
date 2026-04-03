@@ -7265,6 +7265,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/influencer/list-all — list all influencer periods (admin only)
+  app.get('/api/influencer/list-all', async (req, res) => {
+    try {
+      const periods = await awsDynamoDBService.listAllInfluencerPeriods();
+      res.json({ success: true, periods });
+    } catch (error) {
+      console.error('❌ Error listing all influencer periods:', error);
+      res.status(500).json({ error: 'Failed to list influencer periods' });
+    }
+  });
+
+  // POST /api/influencer/revoke/:userId — revoke influencer period (admin only)
+  app.post('/api/influencer/revoke/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const ok = await awsDynamoDBService.revokeInfluencerPeriod(userId);
+      res.json({ success: ok });
+    } catch (error) {
+      console.error('❌ Error revoking influencer period:', error);
+      res.status(500).json({ error: 'Failed to revoke influencer period' });
+    }
+  });
+
   // GET /api/influencer/period/:userId — get influencer period for a user
   app.get('/api/influencer/period/:userId', async (req, res) => {
     try {

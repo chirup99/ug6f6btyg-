@@ -2783,6 +2783,11 @@ export default function Home() {
   const [influencerActivating, setInfluencerActivating] = useState(false);
   const [influencerActivated, setInfluencerActivated] = useState<{ userId: string; email: string; days: number; expiryDate: string } | null>(null);
   const [influencerShowSearch, setInfluencerShowSearch] = useState(false);
+  const [influencerList, setInfluencerList] = useState<Array<{ userId: string; userEmail: string; displayName: string; days: number; startDate: string; expiryDate: string; grantedBy: string; active: boolean }>>([]);
+  const [influencerListLoading, setInfluencerListLoading] = useState(false);
+  const [influencerListSearch, setInfluencerListSearch] = useState("");
+  const [influencerRevoking, setInfluencerRevoking] = useState<string | null>(null);
+  const [showAddInfluencerDialog, setShowAddInfluencerDialog] = useState(false);
 
   // Load wallet from server for the current user
   const loadWallet = async (userId: string) => {
@@ -2813,6 +2818,22 @@ export default function Home() {
       }
     } catch (e) {
       console.warn('⚠️ Could not load influencer period');
+    }
+  };
+
+  // Load all active influencer periods (admin only)
+  const loadInfluencerList = async () => {
+    setInfluencerListLoading(true);
+    try {
+      const res = await fetch('/api/influencer/list-all');
+      if (res.ok) {
+        const data = await res.json();
+        setInfluencerList(data.periods || []);
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not load influencer list');
+    } finally {
+      setInfluencerListLoading(false);
     }
   };
   const [adminBugReports, setAdminBugReports] = useState<Array<{ bugId: string; title: string; reportDate: string; bugLocate: string; status: string; username: string; }>>([]); 
@@ -13774,7 +13795,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   )}
                 </button>
                 <button
-                  onClick={() => setAdminTab("influencer")}
+                  onClick={() => { setAdminTab("influencer"); loadInfluencerList(); }}
                   className={`relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all ${ adminTab === "influencer" ? "text-blue-400" : "text-slate-400 hover:text-slate-300" }`}
                   data-testid="button-admin-tab-influencer"
                 >
@@ -14095,220 +14116,97 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   )}
                 </div>
               ) : adminTab === "influencer" ? (
-                <div className="p-3 space-y-3 pl-[10px] pr-[10px]">
-                  {/* Top bar: + button + inline search */}
-                  {!influencerSelectedUser && !influencerActivated && (
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setInfluencerShowSearch(v => !v);
-                          if (influencerShowSearch) { setInfluencerEmailSearch(""); setInfluencerSearchResults([]); }
-                        }}
-                        className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm transition-all"
-                        data-testid="button-influencer-toggle-search"
-                      >
-                        <Plus className={`h-4 w-4 text-white transition-transform duration-200 ${influencerShowSearch ? 'rotate-45' : ''}`} />
-                      </button>
-                      {influencerShowSearch && (
-                        <div className="relative flex-1 animate-in slide-in-from-left-2 duration-150">
-                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
-                          <input
-                            autoFocus
-                            type="email"
-                            placeholder="Search email to add..."
-                            value={influencerEmailSearch}
-                            onChange={async (e) => {
-                              const val = e.target.value;
-                              setInfluencerEmailSearch(val);
-                              setInfluencerSelectedUser(null);
-                              if (val.trim().length < 3) { setInfluencerSearchResults([]); return; }
-                              setInfluencerSearchLoading(true);
-                              try {
-                                const res = await fetch(`/api/influencer/search-user?email=${encodeURIComponent(val.trim())}`);
-                                const data = await res.json();
-                                setInfluencerSearchResults(data.users || []);
-                              } catch (e) {
-                                setInfluencerSearchResults([]);
-                              } finally {
-                                setInfluencerSearchLoading(false);
-                              }
-                            }}
-                            className="w-full pl-8 pr-8 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-400/40 focus:border-pink-400 transition-all"
-                            data-testid="input-influencer-email-search"
+                <div className="relative h-full p-6 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 pt-[0px] pb-[0px] pl-[10px] pr-[10px]">
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between gap-4 px-1 w-full pt-[1px] pb-[1px]">
+                      <h4 className="text-[10px] font-bold text-slate-500 uppercase tracking-widest whitespace-nowrap">Active Influencers</h4>
+                      <div className="flex-1">
+                        <div className="relative group w-full">
+                          <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-slate-400 group-focus-within:text-pink-500 transition-colors" />
+                          <Input
+                            placeholder="Search influencers..."
+                            value={influencerListSearch}
+                            onChange={(e) => setInfluencerListSearch(e.target.value)}
+                            className="h-7 w-full pl-7 bg-slate-50/50 dark:bg-slate-800/50 border border-slate-200/50 dark:border-slate-700/50 rounded-lg text-[11px] focus-visible:ring-1 focus-visible:ring-pink-500/30 transition-all"
+                            data-testid="input-influencer-list-search"
                           />
-                          {influencerSearchLoading && (
-                            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Search results list — scrollable, max 7 visible */}
-                  {!influencerSelectedUser && !influencerActivated && influencerSearchResults.length > 0 && (
-                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800 max-h-[336px] overflow-y-auto custom-thin-scrollbar">
-                      {influencerSearchResults.map((user, idx) => (
-                        <button
-                          key={user.userId}
-                          onClick={() => { setInfluencerSelectedUser(user); setInfluencerSearchResults([]); setInfluencerShowSearch(false); setInfluencerEmailSearch(""); }}
-                          className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800/40 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors text-left"
-                          data-testid={`button-influencer-select-user-${idx}`}
-                        >
-                          <div className="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
-                            <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{(user.displayName || user.email).substring(0,2).toUpperCase()}</span>
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p className="text-[12px] font-semibold text-slate-800 dark:text-white truncate">{user.displayName || user.email}</p>
-                            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
-                          </div>
-                          <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {!influencerSelectedUser && !influencerActivated && influencerShowSearch && influencerEmailSearch.trim().length >= 3 && !influencerSearchLoading && influencerSearchResults.length === 0 && (
-                    <div className="text-center py-4 text-slate-400 dark:text-slate-500 text-sm">No users found matching that email.</div>
-                  )}
-
-                  {!influencerSelectedUser && !influencerActivated && !influencerShowSearch && (
-                    <div className="rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-4 text-center space-y-1">
-                      <TrendingUp className="h-6 w-6 text-pink-400 mx-auto mb-2 opacity-70" />
-                      <p className="text-[12px] font-medium text-slate-600 dark:text-slate-300">Grant influencers free journal access</p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500">Tap + to search by email, set the duration, and activate.</p>
-                    </div>
-                  )}
-
-                  {/* Success state */}
-                  {influencerActivated && (
-                    <div className="rounded-2xl border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-4 space-y-3 animate-in fade-in duration-300">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
-                          <CheckCircle className="h-5 w-5 text-white" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-green-700 dark:text-green-300">Free Period Activated!</p>
-                          <p className="text-[11px] text-green-600 dark:text-green-400">{influencerActivated.email}</p>
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-2 text-[11px]">
-                        <div className="bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 text-center">
-                          <p className="text-green-600 dark:text-green-400 font-bold text-base">{influencerActivated.days}</p>
-                          <p className="text-slate-500 dark:text-slate-400">Days granted</p>
-                        </div>
-                        <div className="bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 text-center">
-                          <p className="text-green-600 dark:text-green-400 font-bold text-xs">{new Date(influencerActivated.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
-                          <p className="text-slate-500 dark:text-slate-400">Expires on</p>
-                        </div>
-                      </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        className="w-full text-green-600 border-green-300 dark:border-green-700 hover:bg-green-50"
-                        onClick={() => { setInfluencerActivated(null); setInfluencerSelectedUser(null); setInfluencerEmailSearch(""); setInfluencerSearchResults([]); setInfluencerDays(90); setInfluencerShowSearch(false); }}
-                        data-testid="button-influencer-grant-another"
-                      >
-                        Grant Another
-                      </Button>
+                      <Badge variant="outline" className="text-[9px] h-4 px-2 border-slate-200 dark:border-slate-800 whitespace-nowrap bg-slate-50/50 dark:bg-slate-800/50">
+                        {influencerList.filter(p => (p.userEmail || '').toLowerCase().includes(influencerListSearch.toLowerCase()) || (p.displayName || '').toLowerCase().includes(influencerListSearch.toLowerCase())).length} Total
+                      </Badge>
                     </div>
-                  )}
-
-                  {/* User selected — duration picker */}
-                  {influencerSelectedUser && !influencerActivated && (
-                    <div className="space-y-4 animate-in fade-in duration-200">
-                      <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-                        <div className="w-9 h-9 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
-                          <span className="text-xs font-bold text-pink-600 dark:text-pink-400">{(influencerSelectedUser.displayName || influencerSelectedUser.email).substring(0,2).toUpperCase()}</span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[12px] font-semibold text-slate-800 dark:text-white truncate">{influencerSelectedUser.displayName || influencerSelectedUser.email}</p>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{influencerSelectedUser.email}</p>
-                        </div>
-                        <button onClick={() => { setInfluencerSelectedUser(null); setInfluencerSearchResults([]); }} className="text-slate-400 hover:text-red-400 transition-colors" data-testid="button-influencer-deselect">
-                          <X className="h-4 w-4" />
-                        </button>
+                  </div>
+                  <div className="mt-4 space-y-2">
+                    {influencerListLoading ? (
+                      <div className="flex items-center justify-center py-8">
+                        <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-300 dark:border-slate-600 border-t-pink-500" />
                       </div>
-
-                      <div className="space-y-2">
-                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Free Period Duration</label>
-                        <div className="flex gap-1.5 flex-wrap">
-                          {[30, 60, 90, 180, 365].map(d => (
-                            <button
-                              key={d}
-                              onClick={() => setInfluencerDays(d)}
-                              className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${influencerDays === d ? 'bg-pink-500 text-white border-pink-500 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-pink-400'}`}
-                              data-testid={`button-influencer-preset-${d}`}
-                            >
-                              {d === 30 ? '1 Month' : d === 60 ? '2 Months' : d === 90 ? '3 Months' : d === 180 ? '6 Months' : '1 Year'}
-                            </button>
-                          ))}
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <div className="flex items-center justify-between">
-                            <span className="text-[10px] text-slate-500 dark:text-slate-400">Custom days</span>
-                            <span className="text-[12px] font-bold text-pink-600 dark:text-pink-400">{influencerDays} days</span>
-                          </div>
-                          <input
-                            type="range"
-                            min={7}
-                            max={365}
-                            step={1}
-                            value={influencerDays}
-                            onChange={(e) => setInfluencerDays(Number(e.target.value))}
-                            className="w-full h-2 rounded-full accent-pink-500"
-                            data-testid="slider-influencer-days"
-                          />
-                          <div className="flex justify-between text-[9px] text-slate-400">
-                            <span>7 days</span>
-                            <span>365 days</span>
-                          </div>
-                        </div>
-
-                        <div className="rounded-xl bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 p-3 text-[11px] space-y-1">
-                          <div className="flex justify-between">
-                            <span className="text-slate-500 dark:text-slate-400">Starts</span>
-                            <span className="font-semibold text-slate-700 dark:text-slate-200">{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-slate-500 dark:text-slate-400">Expires</span>
-                            <span className="font-semibold text-pink-600 dark:text-pink-400">{new Date(Date.now() + influencerDays * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                          </div>
-                          <div className="flex justify-between pt-1 border-t border-pink-200 dark:border-pink-800">
-                            <span className="text-slate-500 dark:text-slate-400">Savings (est.)</span>
-                            <span className="font-bold text-green-600 dark:text-green-400">₹0 journal charges</span>
-                          </div>
-                        </div>
+                    ) : influencerList.filter(p => (p.userEmail || '').toLowerCase().includes(influencerListSearch.toLowerCase()) || (p.displayName || '').toLowerCase().includes(influencerListSearch.toLowerCase())).length === 0 ? (
+                      <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">
+                        {influencerListSearch ? 'No influencers match your search.' : 'No active influencers yet. Tap + to add one.'}
                       </div>
-
-                      <Button
-                        onClick={async () => {
-                          if (!influencerSelectedUser) return;
-                          setInfluencerActivating(true);
-                          try {
-                            const res = await fetch('/api/influencer/set-period', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({ userId: influencerSelectedUser.userId, days: influencerDays, userEmail: influencerSelectedUser.email, displayName: influencerSelectedUser.displayName, grantedBy: currentUser?.email || 'admin' })
-                            });
-                            const data = await res.json();
-                            if (data.success) {
-                              setInfluencerActivated({ userId: influencerSelectedUser.userId, email: influencerSelectedUser.email, days: influencerDays, expiryDate: data.period.expiryDate });
-                            }
-                          } catch (e) {
-                            console.warn('Failed to set influencer period', e);
-                          } finally {
-                            setInfluencerActivating(false);
-                          }
-                        }}
-                        disabled={influencerActivating}
-                        className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl"
-                        data-testid="button-influencer-activate"
-                      >
-                        {influencerActivating ? 'Activating...' : `Activate ${influencerDays}-Day Free Period`}
-                      </Button>
-                    </div>
-                  )}
+                    ) : (
+                      influencerList
+                        .filter(p => (p.userEmail || '').toLowerCase().includes(influencerListSearch.toLowerCase()) || (p.displayName || '').toLowerCase().includes(influencerListSearch.toLowerCase()))
+                        .map((p, index) => {
+                          const initials = (p.userEmail || '').substring(0, 2).toUpperCase();
+                          const expiry = new Date(p.expiryDate);
+                          const isExpired = expiry < new Date();
+                          const daysLeft = Math.max(0, Math.ceil((expiry.getTime() - Date.now()) / 86400000));
+                          return (
+                            <div key={p.userId} className="flex items-center justify-between p-3 bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-700/50 rounded-xl hover:border-pink-500/30 transition-all duration-300" data-testid={`influencer-row-${index}`}>
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center border border-pink-500/20">
+                                  <span className="text-[10px] font-bold text-pink-500">{initials}</span>
+                                </div>
+                                <div className="flex flex-col">
+                                  <span className="text-[11px] font-medium text-slate-700 dark:text-slate-200">{p.userEmail}</span>
+                                  <span className={`text-[9px] font-medium ${isExpired ? 'text-red-500' : 'text-pink-500'}`}>
+                                    {isExpired ? 'Expired' : `${daysLeft}d left · Exp ${expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                <Badge variant="outline" className={`text-[8px] h-5 px-2 ${isExpired ? 'border-red-300 text-red-500 bg-red-50 dark:bg-red-900/20' : 'border-pink-300 text-pink-500 bg-pink-50 dark:bg-pink-900/20'}`}>
+                                  {p.days}d
+                                </Badge>
+                                <Button
+                                  size="icon"
+                                  variant="ghost"
+                                  disabled={influencerRevoking === p.userId}
+                                  onClick={async () => {
+                                    setInfluencerRevoking(p.userId);
+                                    try {
+                                      const res = await fetch(`/api/influencer/revoke/${encodeURIComponent(p.userId)}`, { method: 'POST' });
+                                      if (res.ok) {
+                                        setInfluencerList(prev => prev.filter(x => x.userId !== p.userId));
+                                      }
+                                    } catch (e) {
+                                      console.warn('Failed to revoke influencer', e);
+                                    } finally {
+                                      setInfluencerRevoking(null);
+                                    }
+                                  }}
+                                  className="h-6 w-6 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                  data-testid={`button-revoke-influencer-${index}`}
+                                >
+                                  {influencerRevoking === p.userId ? <div className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin" /> : <X className="h-3 w-3" />}
+                                </Button>
+                              </div>
+                            </div>
+                          );
+                        })
+                    )}
+                  </div>
+                  <Button
+                    size="icon"
+                    onClick={() => { setShowAddInfluencerDialog(true); setInfluencerSelectedUser(null); setInfluencerEmailSearch(""); setInfluencerSearchResults([]); setInfluencerDays(90); setInfluencerActivated(null); }}
+                    className="absolute bottom-4 right-4 w-12 h-12 rounded-full bg-pink-500 hover:bg-pink-600 text-white shadow-lg shadow-pink-500/30 transition-all duration-300 hover:shadow-pink-500/50 hover:scale-105"
+                    data-testid="button-add-influencer"
+                  >
+                    <Plus className="h-6 w-6" />
+                  </Button>
                 </div>
               ) : (
                 <div className="px-8 pb-8 text-center space-y-4 pt-12">
@@ -14549,6 +14447,176 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             </div>
           </DialogContent>
         </Dialog>
+        {/* Add Influencer Dialog */}
+        <Dialog open={showAddInfluencerDialog} onOpenChange={(open) => { setShowAddInfluencerDialog(open); if (!open) { setInfluencerSelectedUser(null); setInfluencerEmailSearch(""); setInfluencerSearchResults([]); setInfluencerDays(90); setInfluencerActivated(null); } }}>
+          <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 shadow-2xl rounded-2xl p-0 overflow-hidden">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+              <DialogTitle className="text-xl font-bold text-slate-900 dark:text-white">
+                Add Influencer Access
+              </DialogTitle>
+            </div>
+
+            {influencerActivated ? (
+              <div className="p-6 space-y-4 animate-in fade-in duration-300">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                    <CheckCircle className="h-5 w-5 text-white" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-green-700 dark:text-green-300">Free Period Activated!</p>
+                    <p className="text-[11px] text-green-600 dark:text-green-400">{influencerActivated.email}</p>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-2 text-[11px]">
+                  <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-2.5 text-center border border-slate-200 dark:border-slate-700">
+                    <p className="text-green-600 dark:text-green-400 font-bold text-base">{influencerActivated.days}</p>
+                    <p className="text-slate-500 dark:text-slate-400">Days granted</p>
+                  </div>
+                  <div className="bg-slate-50 dark:bg-slate-800/60 rounded-xl p-2.5 text-center border border-slate-200 dark:border-slate-700">
+                    <p className="text-green-600 dark:text-green-400 font-bold text-xs">{new Date(influencerActivated.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    <p className="text-slate-500 dark:text-slate-400">Expires on</p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button variant="outline" className="flex-1" onClick={() => { setInfluencerActivated(null); setInfluencerSelectedUser(null); setInfluencerEmailSearch(""); setInfluencerSearchResults([]); setInfluencerDays(90); }} data-testid="button-influencer-grant-another">
+                    Grant Another
+                  </Button>
+                  <Button className="flex-1 bg-pink-500 hover:bg-pink-600" onClick={() => { setShowAddInfluencerDialog(false); setInfluencerActivated(null); setInfluencerSelectedUser(null); setInfluencerEmailSearch(""); setInfluencerDays(90); loadInfluencerList(); }} data-testid="button-influencer-done">
+                    Done
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 space-y-5">
+                <div className="space-y-2">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Email Address</label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                    <Input
+                      type="email"
+                      placeholder="Search by email..."
+                      value={influencerEmailSearch}
+                      autoFocus
+                      onChange={async (e) => {
+                        const val = e.target.value;
+                        setInfluencerEmailSearch(val);
+                        setInfluencerSelectedUser(null);
+                        if (val.trim().length < 3) { setInfluencerSearchResults([]); return; }
+                        setInfluencerSearchLoading(true);
+                        try {
+                          const res = await fetch(`/api/influencer/search-user?email=${encodeURIComponent(val.trim())}`);
+                          const data = await res.json();
+                          setInfluencerSearchResults(data.users || []);
+                        } catch (e) { setInfluencerSearchResults([]); }
+                        finally { setInfluencerSearchLoading(false); }
+                      }}
+                      className="w-full pl-10 pr-8 bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700 rounded-xl"
+                      data-testid="input-influencer-email-search"
+                    />
+                    {influencerSearchLoading && <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />}
+                  </div>
+
+                  {/* Search results dropdown */}
+                  {!influencerSelectedUser && influencerSearchResults.length > 0 && (
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800 max-h-[180px] overflow-y-auto custom-thin-scrollbar">
+                      {influencerSearchResults.map((user, idx) => (
+                        <button
+                          key={user.userId}
+                          onClick={() => { setInfluencerSelectedUser(user); setInfluencerSearchResults([]); setInfluencerEmailSearch(user.email); }}
+                          className="w-full flex items-center gap-3 px-4 py-2.5 bg-white dark:bg-slate-800/40 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors text-left"
+                          data-testid={`button-influencer-select-user-${idx}`}
+                        >
+                          <div className="w-7 h-7 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[9px] font-bold text-pink-600 dark:text-pink-400">{(user.displayName || user.email).substring(0,2).toUpperCase()}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[11px] font-semibold text-slate-800 dark:text-white truncate">{user.displayName || user.email}</p>
+                            <p className="text-[9px] text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                          </div>
+                          <ChevronRight className="h-3.5 w-3.5 text-slate-400 flex-shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {influencerSelectedUser && (
+                    <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800">
+                      <div className="w-6 h-6 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+                        <span className="text-[8px] font-bold text-pink-600 dark:text-pink-400">{(influencerSelectedUser.displayName || influencerSelectedUser.email).substring(0,2).toUpperCase()}</span>
+                      </div>
+                      <span className="flex-1 text-[11px] font-medium text-pink-700 dark:text-pink-300 truncate">{influencerSelectedUser.email}</span>
+                      <button onClick={() => { setInfluencerSelectedUser(null); setInfluencerEmailSearch(""); }} className="text-pink-400 hover:text-red-400" data-testid="button-influencer-deselect"><X className="h-3.5 w-3.5" /></button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-3">
+                  <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Free Period Duration</label>
+                  <div className="flex gap-2 flex-wrap">
+                    {[30, 60, 90, 180, 365].map(d => (
+                      <button
+                        key={d}
+                        onClick={() => setInfluencerDays(d)}
+                        className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${influencerDays === d ? 'bg-pink-500 text-white border-pink-500 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-pink-400'}`}
+                        data-testid={`button-influencer-preset-${d}`}
+                      >
+                        {d === 30 ? '1 Mo' : d === 60 ? '2 Mo' : d === 90 ? '3 Mo' : d === 180 ? '6 Mo' : '1 Yr'}
+                      </button>
+                    ))}
+                  </div>
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] text-slate-500 dark:text-slate-400">Custom</span>
+                      <span className="text-[12px] font-bold text-pink-600 dark:text-pink-400">{influencerDays} days</span>
+                    </div>
+                    <input type="range" min={7} max={365} step={1} value={influencerDays} onChange={(e) => setInfluencerDays(Number(e.target.value))} className="w-full h-2 rounded-full accent-pink-500" data-testid="slider-influencer-days" />
+                    <div className="flex justify-between text-[9px] text-slate-400"><span>7d</span><span>365d</span></div>
+                  </div>
+                  <div className="rounded-xl bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 p-3 text-[11px] flex justify-between">
+                    <div className="space-y-1">
+                      <p className="text-slate-500 dark:text-slate-400">Starts</p>
+                      <p className="font-semibold text-slate-700 dark:text-slate-200">{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}</p>
+                    </div>
+                    <div className="space-y-1 text-right">
+                      <p className="text-slate-500 dark:text-slate-400">Expires</p>
+                      <p className="font-semibold text-pink-600 dark:text-pink-400">{new Date(Date.now() + influencerDays * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {!influencerActivated && (
+              <div className="flex justify-end gap-3 p-4 border-t border-gray-200 dark:border-gray-700">
+                <Button variant="outline" onClick={() => setShowAddInfluencerDialog(false)} className="px-6" data-testid="button-cancel-influencer">Cancel</Button>
+                <Button
+                  onClick={async () => {
+                    if (!influencerSelectedUser) return;
+                    setInfluencerActivating(true);
+                    try {
+                      const res = await fetch('/api/influencer/set-period', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: influencerSelectedUser.userId, days: influencerDays, userEmail: influencerSelectedUser.email, displayName: influencerSelectedUser.displayName, grantedBy: currentUser?.email || 'admin' })
+                      });
+                      const data = await res.json();
+                      if (data.success) {
+                        setInfluencerActivated({ userId: influencerSelectedUser.userId, email: influencerSelectedUser.email, days: influencerDays, expiryDate: data.period.expiryDate });
+                      }
+                    } catch (e) { console.warn('Failed to set influencer period', e); }
+                    finally { setInfluencerActivating(false); }
+                  }}
+                  disabled={!influencerSelectedUser || influencerActivating}
+                  className="px-6 bg-pink-500 hover:bg-pink-600"
+                  data-testid="button-influencer-activate"
+                >
+                  {influencerActivating ? 'Activating...' : 'Activate'}
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
+
         {/* Add Admin Access Dialog */}
         <Dialog open={showAddAdminAccessDialog} onOpenChange={setShowAddAdminAccessDialog}>
           <DialogContent className="w-[95vw] sm:max-w-md bg-white dark:bg-slate-900 border border-gray-200 dark:border-gray-700 shadow-2xl rounded-2xl p-0 overflow-hidden">

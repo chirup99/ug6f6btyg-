@@ -594,6 +594,39 @@ class AWSDynamoDBService {
       return false;
     }
   }
+
+  async listAllInfluencerPeriods(): Promise<any[]> {
+    if (!this.isConnected()) return [];
+    try {
+      const command = new ScanCommand({
+        TableName: TABLE_NAME,
+        FilterExpression: 'begins_with(dateKey, :prefix)',
+        ExpressionAttributeValues: { ':prefix': 'influencer#' }
+      });
+      const response = await this.docClient!.send(command);
+      return (response.Items || [])
+        .map((item: any) => item.data)
+        .filter(Boolean);
+    } catch (error) {
+      console.error('❌ AWS: Failed to list all influencer periods:', error);
+      return [];
+    }
+  }
+
+  async revokeInfluencerPeriod(userId: string): Promise<boolean> {
+    if (!this.isConnected()) return false;
+    try {
+      const command = new DeleteCommand({
+        TableName: TABLE_NAME,
+        Key: { dateKey: `influencer#${userId}` }
+      });
+      await this.docClient!.send(command);
+      return true;
+    } catch (error) {
+      console.error(`❌ AWS: Failed to revoke influencer period for ${userId}:`, error);
+      return false;
+    }
+  }
 }
 
 

@@ -253,7 +253,7 @@ export function TradeBook({
                                     </motion.div>
                                     </div>
                                   </div>
-                                  <div className="w-full md:w-1/2 flex flex-col bg-white dark:bg-slate-900 min-h-0">
+                                  <div className="w-full md:w-1/2 flex flex-col bg-white dark:bg-slate-900 min-h-0 overflow-hidden">
                                     {/* Header: always visible */}
                                     <div className="flex-shrink-0 py-2 px-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                                       <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] opacity-50">Play</div>
@@ -342,7 +342,7 @@ export function TradeBook({
                                         </div>
                                       ) : (
                                         /* ── PLAYLIST MODE: combined meditation + psychology, scrollable ── */
-                                        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1">
+                                        <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-3 space-y-1 w-full">
                                           {/* Meditation tracks */}
                                           {meditationTracks.length > 0 && (
                                             <div className="mb-1">
@@ -351,12 +351,12 @@ export function TradeBook({
                                                 <span className="text-[9px] font-bold text-violet-500 uppercase tracking-widest">Meditation</span>
                                               </div>
                                               {meditationTracks.map(track => (
-                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors min-w-0 overflow-hidden">
                                                   <div className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-500 transition-colors flex-shrink-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
                                                     <Play className="w-2.5 h-2.5 text-violet-500 group-hover:text-white" />
                                                   </div>
                                                   <span className="flex-1 min-w-0 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>{track.title}</span>
-                                                  <span className="text-[9px] font-mono text-slate-400 flex-shrink-0">{track.duration}</span>
+                                                  <span className="text-[9px] font-mono text-slate-400 flex-shrink-0 whitespace-nowrap">{track.duration}</span>
                                                   <button onClick={() => removeTrack("meditation", track.id)} className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0" data-testid={`button-remove-meditation-${track.id}`}>
                                                     <X className="w-2.5 h-2.5" />
                                                   </button>
@@ -372,12 +372,12 @@ export function TradeBook({
                                                 <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Psychology</span>
                                               </div>
                                               {psychologyTracks.map(track => (
-                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors min-w-0 overflow-hidden">
                                                   <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-500 transition-colors flex-shrink-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
                                                     <Play className="w-2.5 h-2.5 text-blue-500 group-hover:text-white" />
                                                   </div>
                                                   <span className="flex-1 min-w-0 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>{track.title}</span>
-                                                  <span className="text-[9px] font-mono text-slate-400 flex-shrink-0">{track.duration}</span>
+                                                  <span className="text-[9px] font-mono text-slate-400 flex-shrink-0 whitespace-nowrap">{track.duration}</span>
                                                   <button onClick={() => removeTrack("psychology", track.id)} className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0" data-testid={`button-remove-psychology-${track.id}`}>
                                                     <X className="w-2.5 h-2.5" />
                                                   </button>

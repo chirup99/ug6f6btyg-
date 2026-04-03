@@ -2476,6 +2476,7 @@ export default function Home() {
     if (saved && saved !== voiceLanguage) setVoiceLanguage(saved); 
   }, []);
 
+  const voiceUserNameRef = React.useRef('');
   const prefetchVoiceAudio = async (lang: string, silent = false) => {
     const DURATION = 600;
 
@@ -2499,16 +2500,18 @@ export default function Home() {
     }
 
     // Pre-warm greeting audio for all voice profiles in the new language (fire-and-forget)
+    // Pre-warm greeting audio for all voice profiles in the new language (fire-and-forget)
+    const u = voiceUserNameRef.current;
     const greetingsByLang: { [key: string]: (p: string) => string } = {
-      en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
-      hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
-      bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
-      ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
-      te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
-      mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
-      gu: (p) => `નમસ્તે! હું ${p} છું. પేరలામাં तमारू સ્વাگت છे!`,
-      kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
-      ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
+      en: (p) => u ? `Hello ${u}! I am ${p}. Welcome to Perala! How is your day?` : `Hello! I am ${p}. Welcome to Perala! How is your day?`,
+      hi: (p) => u ? `नमस्ते ${u}! मैं ${p} हूँ। पेरला में आपका स्वागत है! आपका दिन कैसा है?` : `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है! आपका दिन कैसा है?`,
+      bn: (p) => u ? `নমস্কার ${u}! আমি ${p}। পেরলায় আপনাকে স্বাগত! আপনার দিন কেমন যাচ্ছে?` : `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত! আপনার দিন কেমন যাচ্ছে?`,
+      ta: (p) => u ? `வணக்கம் ${u}! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்! உங்கள் நாள் எப்படி இருக்கிறது?` : `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்! உங்கள் நாள் எப்படி இருக்கிறது?`,
+      te: (p) => u ? `నమస్కారం ${u}! నేను ${p}. పెరలాలో మీకు స్వాగతం! మీ రోజు ఎలా ఉంది?` : `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం! మీ రోజు ఎలా ఉంది?`,
+      mr: (p) => u ? `नमस्कार ${u}! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे! तुमचा दिवस कसा आहे?` : `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे! तुमचा दिवस कसा आहे?`,
+      gu: (p) => u ? `નમસ્તે ${u}! હું ${p} છું. પेरलामां आपनुं स्वागत छे! तमारो दिवस केवो छे?` : `નમસ્તે! હું ${p} છું. પेरलामां आपनुं स्वागत छे! तमारो दिवस केवो छे?`,
+      kn: (p) => u ? `ನಮಸ್ಕಾರ ${u}! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ! ನಿಮ್ಮ ದಿನ ಹೇಗಿದೆ?` : `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ! ನಿಮ್ಮ ದಿನ ಹೇಗಿದೆ?`,
+      ml: (p) => u ? `നമസ്കാരം ${u}! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം! നിങ്ങളുടെ ദിവസം എങ്ങനെയുണ്ട്?` : `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം! നിങ്ങളുടെ ദിവസം എങ്ങനെയുണ്ട്?`,
     };
     const profilesByLang: { [key: string]: Array<{id: string, name: string}> } = {
       en: [{ id: 'en-IN-PrabhatNeural', name: 'Prabhat' }, { id: 'en-IN-NeerjaNeural', name: 'Neerja' }],
@@ -3180,6 +3183,29 @@ export default function Home() {
   // Get current user data from AWS DynamoDB
   const { currentUser } = useCurrentUser();
 
+  // Keep voiceUserNameRef in sync with currentUser and re-prefetch greeting audio
+  // so voice profiles play instantly (cache is warm with the correct personalised greeting)
+  React.useEffect(() => {
+    const name = currentUser?.displayName || currentUser?.name || currentUser?.username || '';
+    if (name !== voiceUserNameRef.current) {
+      voiceUserNameRef.current = name;
+      // Clear stale cached audio so the re-prefetch stores personalised greetings
+      const lang = localStorage.getItem('voiceLanguage') || 'en';
+      const profileIds = [
+        'en-IN-PrabhatNeural','en-IN-NeerjaNeural',
+        'hi-IN-MadhurNeural','hi-IN-SwaraNeural',
+        'bn-IN-BashkarNeural','bn-IN-TanishaaNeural',
+        'ta-IN-ValluvarNeural','ta-IN-PallaviNeural',
+        'te-IN-MohanNeural','te-IN-ShrutiNeural',
+        'mr-IN-ManoharNeural','mr-IN-AarohiNeural',
+        'gu-IN-NiranjanNeural','gu-IN-DhwaniNeural',
+        'kn-IN-GaganNeural','kn-IN-SapnaNeural',
+        'ml-IN-MidhunNeural','ml-IN-SobhanaNeural',
+      ];
+      profileIds.forEach(id => { delete voiceAudioCacheRef.current[`${id}_${lang}`]; });
+      prefetchVoiceAudio(lang, true);
+    }
+  }, [currentUser]); // eslint-disable-line react-hooks/exhaustive-deps
   // Mirror the same ['my-profile'] query used by the social feed so the sidebar avatar
   // stays in sync without a page refresh whenever the user updates their profile picture.
   const { data: sidebarProfile } = useQuery({

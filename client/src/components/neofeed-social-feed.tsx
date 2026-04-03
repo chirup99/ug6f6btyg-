@@ -601,6 +601,10 @@ function CommentContent({ content }: { content: string }) {
 // Inline Comment Section Component - compact with comments list and delete
 function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onCommentDeleted }: { post: FeedPost; isVisible: boolean; onClose: () => void; onCommentAdded?: () => void; onCommentDeleted?: () => void }) {
   const [comment, setComment] = useState('');
+  const [mentionQuery, setMentionQuery] = useState<string | null>(null);
+  const [mentionResults, setMentionResults] = useState<{ username: string; displayName: string; avatar: string | null }[]>([]);
+  const [mentionLoading, setMentionLoading] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { getUsername, getUserDisplayName } = useCurrentUser();
@@ -615,12 +619,53 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
     staleTime: 30000,
   });
 
-  const handleCommentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setComment(e.target.value);
+  // Detect @mention as user types
+  const handleCommentChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setComment(val);
+    const cursor = e.target.selectionStart ?? val.length;
+    const textUpToCursor = val.slice(0, cursor);
+    const match = textUpToCursor.match(/@(\w*)$/);
+    if (match) {
+      setMentionQuery(match[1]);
+    } else {
+      setMentionQuery(null);
+      setMentionResults([]);
+    }
+  };
+
+  // Fetch mention suggestions
+  useEffect(() => {
+    if (mentionQuery === null) { setMentionResults([]); return; }
+    if (mentionQuery.length === 0) { setMentionResults([]); return; }
+    const t = setTimeout(async () => {
+      setMentionLoading(true);
+      try {
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(mentionQuery)}&limit=6`);
+        if (res.ok) { const d = await res.json(); setMentionResults(d.users || d || []); }
+      } catch { setMentionResults([]); }
+      finally { setMentionLoading(false); }
+    }, 180);
+    return () => clearTimeout(t);
+  }, [mentionQuery]);
+
+  // Insert selected @mention into comment
+  const insertMention = (username: string) => {
+    const cursor = inputRef.current?.selectionStart ?? comment.length;
+    const before = comment.slice(0, cursor).replace(/@\w*$/, `@${username} `);
+    const after = comment.slice(cursor);
+    const newVal = before + after;
+    setComment(newVal);
+    setMentionQuery(null);
+    setMentionResults([]);
+    setTimeout(() => { inputRef.current?.focus(); inputRef.current?.setSelectionRange(before.length, before.length); }, 0);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (mentionResults.length > 0 && (e.key === 'Escape')) {
+      setMentionQuery(null); setMentionResults([]); return;
+    }
+    if (e.key === 'Enter' && !e.shiftKey && mentionResults.length === 0) {
       e.preventDefault();
       if (comment.trim()) commentMutation.mutate(comment.trim());
     }
@@ -682,9 +727,9 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 pt-2 overflow-x-hidden" data-testid={`comment-section-${post.id}`}>
-      {/* Comments list */}
+      {/* Comments list — taller, scrollable */}
       {comments.length > 0 && (
-        <div className="mb-2 space-y-1.5 max-h-48 overflow-y-auto">
+        <div className="mb-2 space-y-1.5 overflow-y-auto" style={{ maxHeight: '220px' }}>
           {comments.map((c: any) => {
             const commentId = c.id || c.commentId;
             const isOwn = currentUsername && c.authorUsername === currentUsername;
@@ -728,13 +773,48 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
         </div>
       )}
 
-      {/* Add comment form - single-line compact input */}
+      {/* Add comment form with @mention dropdown */}
       <form onSubmit={handleSubmit} className="relative">
+        {/* @mention suggestions dropdown */}
+        {(mentionResults.length > 0 || mentionLoading) && (
+          <div className="absolute bottom-full mb-1 left-1 right-1 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 overflow-hidden">
+            {mentionLoading ? (
+              <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
+                <div className="w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                Searching...
+              </div>
+            ) : (
+              mentionResults.map((u) => (
+                <button
+                  key={u.username}
+                  type="button"
+                  onMouseDown={(e) => { e.preventDefault(); insertMention(u.username); }}
+                  className="w-full flex items-center gap-2 px-3 py-1.5 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+                  data-testid={`mention-suggestion-${u.username}`}
+                >
+                  <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                    {u.avatar ? (
+                      <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-[9px] font-bold text-gray-500 uppercase">{(u.displayName || u.username)[0]}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{u.displayName || u.username}</p>
+                    <p className="text-[10px] text-gray-400 truncate">@{u.username}</p>
+                  </div>
+                </button>
+              ))
+            )}
+          </div>
+        )}
+
         <div className="flex items-center gap-1.5 px-1">
           <input
-            placeholder="Add a comment..."
+            ref={inputRef}
+            placeholder="Add a comment… type @ to tag"
             value={comment}
-            onChange={(e) => setComment(e.target.value)}
+            onChange={handleCommentChange}
             onKeyDown={handleKeyDown}
             className="flex-1 h-7 text-xs bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-3 outline-none focus:border-blue-400 dark:focus:border-blue-500 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
             disabled={commentMutation.isPending}

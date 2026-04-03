@@ -1189,30 +1189,24 @@ export function FundsAnalysis({
                   <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-0.5">Share your code to earn ₹200 per friend</p>
                 </div>
               ) : (
-                <>
-                  <div className="flex items-center justify-between mb-1.5 px-0.5">
-                    <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Friends</span>
-                    <span className="text-[9px] font-black bg-violet-100 dark:bg-violet-500/20 text-violet-600 dark:text-violet-400 px-1.5 py-0.5 rounded-full">{referredUsers.length}</span>
-                  </div>
-                  <div className="space-y-1 overflow-y-auto" style={{ maxHeight: '155px' }}>
-                    {referredUsers.map((user, i) => (
-                      <div key={user.userId || i} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/70 rounded-lg px-2.5 py-1.5" data-testid={`referred-user-${i}`}>
-                        <div className="w-5 h-5 rounded-full bg-violet-500/20 dark:bg-violet-500/30 flex items-center justify-center flex-shrink-0">
-                          <span className="text-violet-600 dark:text-violet-400 text-[9px] font-black">
-                            {(user.name || user.email || '?').charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="text-[11px] font-bold text-slate-800 dark:text-white truncate leading-tight">{user.name || user.email || 'User'}</p>
-                          <p className="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">
-                            {new Date(user.joinedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
-                          </p>
-                        </div>
-                        <span className="text-[10px] font-black text-green-600 dark:text-green-400 flex-shrink-0">+₹200</span>
+                <div className="space-y-1 overflow-y-auto" style={{ maxHeight: '155px' }}>
+                  {referredUsers.map((user, i) => (
+                    <div key={user.userId || i} className="flex items-center gap-2 bg-slate-50 dark:bg-slate-800/70 rounded-lg px-2.5 py-1.5" data-testid={`referred-user-${i}`}>
+                      <div className="w-5 h-5 rounded-full bg-violet-500/20 dark:bg-violet-500/30 flex items-center justify-center flex-shrink-0">
+                        <span className="text-violet-600 dark:text-violet-400 text-[9px] font-black">
+                          {(user.name || user.email || '?').charAt(0).toUpperCase()}
+                        </span>
                       </div>
-                    ))}
-                  </div>
-                </>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] font-bold text-slate-800 dark:text-white truncate leading-tight">{user.name || user.email || 'User'}</p>
+                        <p className="text-[9px] text-slate-400 dark:text-slate-500 leading-tight">
+                          {new Date(user.joinedAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-black text-green-600 dark:text-green-400 flex-shrink-0">+₹200</span>
+                    </div>
+                  ))}
+                </div>
               )}
             </div>
           ) : (

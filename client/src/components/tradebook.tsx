@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,10 @@ import {
   Music2,
   Share2,
   MoreVertical,
+  Search,
+  X,
+  Plus,
+  Loader2,
 } from "lucide-react";
 import { DemoHeatmap } from "@/components/DemoHeatmap";
 import { PersonalHeatmap } from "@/components/PersonalHeatmap";
@@ -133,6 +137,71 @@ export function TradeBook({
   setTradeHistoryWindow,
   setTradingImages,
 }: TradeBookProps) {
+  type AudioTrack = { id: string; title: string; duration: string; youtubeId?: string };
+  type SearchResult = { videoId: string; title: string; thumbnail: string; duration: string };
+
+  const DEFAULT_MEDITATION: AudioTrack[] = [
+    { title: "Deep Relaxation Meditation", duration: "10:05", id: "m1", youtubeId: "B7nkVhC10Gw" },
+  ];
+  const DEFAULT_PSYCHOLOGY: AudioTrack[] = [
+    { title: 'Bruce Lee: "Your Greatest Enemy Is Within"', duration: "22:30", id: "p1", youtubeId: "KnppzfiZcgM" },
+  ];
+
+  const [meditationTracks, setMeditationTracks] = useState<AudioTrack[]>(DEFAULT_MEDITATION);
+  const [psychologyTracks, setPsychologyTracks] = useState<AudioTrack[]>(DEFAULT_PSYCHOLOGY);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchCategory, setSearchCategory] = useState<"meditation" | "psychology">("meditation");
+  const searchInputRef = useRef<HTMLInputElement>(null);
+  const searchDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const runSearch = useCallback(async (q: string) => {
+    if (!q.trim()) { setSearchResults([]); return; }
+    setIsSearching(true);
+    try {
+      const res = await fetch(`/api/youtube/search?q=${encodeURIComponent(q)}`);
+      const data = await res.json();
+      setSearchResults(data.results || []);
+    } catch {
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  }, []);
+
+  const handleSearchInput = (val: string) => {
+    setSearchQuery(val);
+    if (searchDebounceRef.current) clearTimeout(searchDebounceRef.current);
+    searchDebounceRef.current = setTimeout(() => runSearch(val), 500);
+  };
+
+  const addTrack = (result: SearchResult) => {
+    const newTrack: AudioTrack = {
+      id: `yt-${result.videoId}`,
+      title: result.title,
+      duration: result.duration,
+      youtubeId: result.videoId,
+    };
+    if (searchCategory === "meditation") {
+      setMeditationTracks(prev => prev.find(t => t.id === newTrack.id) || prev.length >= 4 ? prev : [...prev, newTrack]);
+    } else {
+      setPsychologyTracks(prev => prev.find(t => t.id === newTrack.id) || prev.length >= 4 ? prev : [...prev, newTrack]);
+    }
+  };
+
+  const removeTrack = (category: "meditation" | "psychology", id: string) => {
+    if (category === "meditation") setMeditationTracks(prev => prev.filter(t => t.id !== id));
+    else setPsychologyTracks(prev => prev.filter(t => t.id !== id));
+  };
+
+  const handleDone = () => {
+    setIsSearchOpen(false);
+    setSearchQuery("");
+    setSearchResults([]);
+  };
+
   return (
                     <div className="relative">
                     <Card className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
@@ -185,10 +254,97 @@ export function TradeBook({
                                     </div>
                                   </div>
                                   <div className="w-full md:w-1/2 flex flex-col bg-white dark:bg-slate-900">
-                                    <div className="py-4 pl-0 pr-4 border-b border-slate-100 dark:border-slate-800 hidden md:flex items-center justify-start relative">
-                                      <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] opacity-50"> Play</div>
+                                    {/* Header: title + search icon + done button */}
+                                    <div className="py-2 px-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                                      <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] opacity-50">Play</div>
+                                      <div className="flex items-center gap-1">
+                                        {isSearchOpen && (
+                                          <button
+                                            onClick={handleDone}
+                                            className="text-[9px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-wider px-2 py-0.5 rounded bg-violet-50 dark:bg-violet-900/30 hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors"
+                                            data-testid="button-miniplay-done"
+                                          >
+                                            Done
+                                          </button>
+                                        )}
+                                        <button
+                                          onClick={() => { setIsSearchOpen(v => !v); setTimeout(() => searchInputRef.current?.focus(), 50); }}
+                                          className={`w-6 h-6 rounded-full flex items-center justify-center transition-colors ${isSearchOpen ? 'bg-violet-500 text-white' : 'text-slate-400 hover:text-violet-500 hover:bg-violet-50 dark:hover:bg-violet-900/20'}`}
+                                          data-testid="button-miniplay-search"
+                                        >
+                                          <Search className="w-3 h-3" />
+                                        </button>
+                                      </div>
                                     </div>
-                                    
+
+                                    {/* Search Panel */}
+                                    {isSearchOpen && (
+                                      <div className="border-b border-slate-100 dark:border-slate-800 p-3 space-y-2">
+                                        {/* Category selector */}
+                                        <div className="flex gap-1">
+                                          {(["meditation", "psychology"] as const).map(cat => (
+                                            <button
+                                              key={cat}
+                                              onClick={() => setSearchCategory(cat)}
+                                              className={`flex-1 text-[9px] font-bold uppercase tracking-wider py-1 rounded transition-colors ${searchCategory === cat ? (cat === 'meditation' ? 'bg-violet-500 text-white' : 'bg-blue-500 text-white') : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                            >
+                                              {cat} {cat === 'meditation' ? `(${meditationTracks.length}/4)` : `(${psychologyTracks.length}/4)`}
+                                            </button>
+                                          ))}
+                                        </div>
+                                        {/* Search input */}
+                                        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg px-2 py-1.5">
+                                          <Search className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                          <input
+                                            ref={searchInputRef}
+                                            value={searchQuery}
+                                            onChange={e => handleSearchInput(e.target.value)}
+                                            placeholder={`Search YouTube for ${searchCategory}...`}
+                                            className="flex-1 bg-transparent text-[11px] text-slate-700 dark:text-slate-300 placeholder:text-slate-400 outline-none"
+                                            data-testid="input-miniplay-search"
+                                          />
+                                          {isSearching && <Loader2 className="w-3 h-3 text-slate-400 animate-spin flex-shrink-0" />}
+                                          {searchQuery && !isSearching && (
+                                            <button onClick={() => { setSearchQuery(""); setSearchResults([]); }} className="text-slate-400 hover:text-slate-600">
+                                              <X className="w-3 h-3" />
+                                            </button>
+                                          )}
+                                        </div>
+                                        {/* Search results */}
+                                        {searchResults.length > 0 && (
+                                          <div className="space-y-1 max-h-[160px] overflow-y-auto rounded-lg border border-slate-100 dark:border-slate-700">
+                                            {searchResults.map(result => {
+                                              const targetList = searchCategory === 'meditation' ? meditationTracks : psychologyTracks;
+                                              const alreadyAdded = targetList.some(t => t.id === `yt-${result.videoId}`);
+                                              const limitReached = targetList.length >= 4;
+                                              return (
+                                                <div key={result.videoId} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                                  <img
+                                                    src={result.thumbnail}
+                                                    alt={result.title}
+                                                    className="w-10 h-7 rounded object-cover flex-shrink-0 bg-slate-200"
+                                                  />
+                                                  <span className="flex-1 text-[10px] text-slate-700 dark:text-slate-300 leading-tight line-clamp-2 min-w-0">{result.title}</span>
+                                                  <button
+                                                    onClick={() => addTrack(result)}
+                                                    disabled={alreadyAdded || limitReached}
+                                                    className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${alreadyAdded ? 'bg-green-100 text-green-500 dark:bg-green-900/30' : limitReached ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-violet-100 dark:bg-violet-900/30 text-violet-500 hover:bg-violet-500 hover:text-white'}`}
+                                                    title={alreadyAdded ? 'Already added' : limitReached ? 'Max 4 tracks' : 'Add to playlist'}
+                                                    data-testid={`button-add-track-${result.videoId}`}
+                                                  >
+                                                    <Plus className="w-3 h-3" />
+                                                  </button>
+                                                </div>
+                                              );
+                                            })}
+                                          </div>
+                                        )}
+                                        {searchQuery && !isSearching && searchResults.length === 0 && (
+                                          <div className="text-[10px] text-slate-400 text-center py-2">No results found</div>
+                                        )}
+                                      </div>
+                                    )}
+
                                     <div className="flex-1 overflow-y-auto p-4 space-y-4">
                                       {/* Meditation Section */}
                                       <div>
@@ -197,19 +353,29 @@ export function TradeBook({
                                           Meditation
                                         </h4>
                                         <div className="space-y-1">
-                                          {[
-                                            { title: "Deep Relaxation Meditation", duration: "10:05", id: "m1", youtubeId: "B7nkVhC10Gw" }
-                                          ].map((track) => (
-                                            <div key={track.id} onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }} className="group flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white dark:bg-slate-800/50 cursor-pointer transition-colors">
-                                              <div className="flex items-center gap-3">
-                                                <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-500 transition-colors">
-                                                  <Play className="w-3 h-3 text-violet-500 group-hover:text-slate-900 dark:hover:text-white" />
+                                          {meditationTracks.map((track) => (
+                                            <div key={track.id} className="group flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                              <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
+                                                <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-500 transition-colors flex-shrink-0">
+                                                  <Play className="w-3 h-3 text-violet-500 group-hover:text-white" />
                                                 </div>
-                                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{track.title}</span>
+                                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{track.title}</span>
                                               </div>
-                                              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{track.duration}</span>
+                                              <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{track.duration}</span>
+                                                <button
+                                                  onClick={() => removeTrack("meditation", track.id)}
+                                                  className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all ml-1"
+                                                  data-testid={`button-remove-meditation-${track.id}`}
+                                                >
+                                                  <X className="w-2.5 h-2.5" />
+                                                </button>
+                                              </div>
                                             </div>
                                           ))}
+                                          {meditationTracks.length === 0 && (
+                                            <div className="text-[10px] text-slate-400 italic py-1 px-2">No tracks — search to add</div>
+                                          )}
                                         </div>
                                       </div>
 
@@ -220,19 +386,29 @@ export function TradeBook({
                                           Psychology
                                         </h4>
                                         <div className="space-y-1">
-                                          {[
-                                            { title: 'Bruce Lee: "Your Greatest Enemy Is Within"', duration: "22:30", id: "p1", youtubeId: "KnppzfiZcgM" }
-                                          ].map((track) => (
-                                            <div key={track.id} onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }} className="group flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-white dark:bg-slate-800/50 cursor-pointer transition-colors">
-                                              <div className="flex items-center gap-3">
-                                                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-500 transition-colors">
-                                                  <Play className="w-3 h-3 text-blue-500 group-hover:text-slate-900 dark:hover:text-white" />
+                                          {psychologyTracks.map((track) => (
+                                            <div key={track.id} className="group flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                              <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
+                                                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-500 transition-colors flex-shrink-0">
+                                                  <Play className="w-3 h-3 text-blue-500 group-hover:text-white" />
                                                 </div>
-                                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300">{track.title}</span>
+                                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{track.title}</span>
                                               </div>
-                                              <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{track.duration}</span>
+                                              <div className="flex items-center gap-1 flex-shrink-0 ml-1">
+                                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{track.duration}</span>
+                                                <button
+                                                  onClick={() => removeTrack("psychology", track.id)}
+                                                  className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all ml-1"
+                                                  data-testid={`button-remove-psychology-${track.id}`}
+                                                >
+                                                  <X className="w-2.5 h-2.5" />
+                                                </button>
+                                              </div>
                                             </div>
                                           ))}
+                                          {psychologyTracks.length === 0 && (
+                                            <div className="text-[10px] text-slate-400 italic py-1 px-2">No tracks — search to add</div>
+                                          )}
                                         </div>
                                       </div>
                                     </div>

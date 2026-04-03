@@ -7825,6 +7825,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // YouTube video search (no API key needed - scrapes search page)
+  app.get('/api/youtube/search', async (req: Request, res: Response) => {
+    const q = ((req.query.q as string) || '').trim();
+    if (!q) return res.json({ results: [] });
+    try {
+      const searchUrl = `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}&hl=en`;
+      const ytRes = await fetch(searchUrl, {
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+        signal: AbortSignal.timeout(10000),
+      });
+      const html = await ytRes.text();
+      // Extract ytInitialData JSON embedded in the page
+      const dataMatch = html.match(/var ytInitialData\s*=\s*(\{.+?\});\s*(?:var |<\/script>)/s);
+      if (!dataMatch) return res.json({ results: [] });
+      let data: any;
+      try { data = JSON.parse(dataMatch[1]); } catch { return res.json({ results: [] }); }
+      // Navigate to video results
+      const contents: any[] =
+        data?.contents?.twoColumnSearchResultsRenderer?.primaryContents
+          ?.sectionListRenderer?.contents?.[0]?.itemSectionRenderer?.contents || [];
+      const results: { videoId: string; title: string; thumbnail: string; duration: string }[] = [];
+      for (const item of contents) {
+        if (results.length >= 8) break;
+        const vr = item?.videoRenderer;
+        if (!vr?.videoId) continue;
+        const videoId = vr.videoId;
+        const title = vr.title?.runs?.[0]?.text || '';
+        const thumbnail = `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`;
+        const duration = vr.lengthText?.simpleText || '';
+        results.push({ videoId, title, thumbnail, duration });
+      }
+      return res.json({ results });
+    } catch (err) {
+      console.warn('[YOUTUBE-SEARCH] error:', err);
+      return res.json({ results: [] });
+    }
+  });
+
   app.get('/api/stock-news/:symbol', async (req, res) => {
     const { symbol } = req.params;
 

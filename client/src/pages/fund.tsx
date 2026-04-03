@@ -699,12 +699,14 @@ export function FundsAnalysis({
             const gstAmount = parseFloat((baseCharge * 0.18).toFixed(2));
             const totalCharge = parseFloat((baseCharge + gstAmount).toFixed(2));
 
+            const MONTH_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
             const fomoTrendData = Object.keys(tradingDataByDate).sort().map(dateKey => {
               const dayData = tradingDataByDate[dateKey];
               const dayTrades = (dayData?.tradeHistory || []).length || (dayData?.tradingData?.performanceMetrics?.totalTrades || dayData?.performanceMetrics?.totalTrades || 0);
-              const label = dateKey.slice(5);
+              const [, mm, dd] = dateKey.split('-');
+              const label = `${MONTH_ABBR[parseInt(mm, 10) - 1]} ${parseInt(dd, 10)}`;
               return { date: label, fullDate: dateKey, trades: dayTrades };
-            }).filter(d => d.trades > 0);
+            }).filter(d => d.trades > 0).slice(-30);
 
             const avgDailyTrades = fomoTrendData.length > 0
               ? fomoTrendData.reduce((s, d) => s + d.trades, 0) / fomoTrendData.length
@@ -836,12 +838,13 @@ export function FundsAnalysis({
 
                 {/* Plans Section */}
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                  <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                     <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Choose Your Plan</h4>
+                    <span className="text-[9px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 px-2 py-0.5 rounded-full">Pro Active</span>
                   </div>
                   <div className="p-3 grid grid-cols-2 gap-3">
-                    {/* Basic Plan */}
-                    <div className="rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col overflow-hidden">
+                    {/* Basic Plan — disabled, Pro is active */}
+                    <div className="rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col overflow-hidden opacity-60">
                       <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 text-center">
                         <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Basic</p>
                         <p className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-0.5">₹2<span className="text-xs font-normal text-slate-400">/trade</span></p>
@@ -857,16 +860,17 @@ export function FundsAnalysis({
                       </div>
                       <div className="p-3 pt-0">
                         <button
-                          className="w-full py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-colors"
+                          disabled
+                          className="w-full py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 text-xs font-bold cursor-not-allowed"
                           data-testid="activate-basic-plan"
                         >
-                          Activate Basic
+                          Not Available
                         </button>
                       </div>
                     </div>
 
-                    {/* Pro Plan */}
-                    <div className="rounded-xl border-2 border-violet-400 dark:border-violet-500 bg-white dark:bg-slate-900 flex flex-col overflow-hidden relative">
+                    {/* Pro Plan — active by default */}
+                    <div className="rounded-xl border-2 border-violet-500 dark:border-violet-400 bg-white dark:bg-slate-900 flex flex-col overflow-hidden relative ring-2 ring-violet-400/30 shadow-lg shadow-violet-500/10">
                       <div className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse">60% OFF</div>
                       <div className="bg-violet-600 px-3 py-2 text-center">
                         <p className="text-[10px] font-bold text-violet-200 uppercase tracking-widest">Pro</p>
@@ -890,12 +894,12 @@ export function FundsAnalysis({
                         <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Time duration analysis</div>
                       </div>
                       <div className="p-3 pt-0">
-                        <button
-                          className="w-full py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white text-xs font-bold transition-colors shadow-sm"
-                          data-testid="activate-pro-plan"
+                        <div
+                          className="w-full py-1.5 rounded-lg bg-violet-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-default"
+                          data-testid="pro-plan-active"
                         >
-                          Activate Pro — ₹2/trade
-                        </button>
+                          <span className="text-[11px]">✓</span> Pro Active — ₹2/trade
+                        </div>
                       </div>
                     </div>
                   </div>

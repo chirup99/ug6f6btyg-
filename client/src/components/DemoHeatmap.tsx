@@ -98,8 +98,8 @@ const DEMO_CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
 export function DemoHeatmap({ onDateSelect, selectedDate, onDataUpdate, onRangeChange, highlightedDates, isPublicView, disableAutoScroll, tradingDataByDate, onSelectDateForHeatmap, refreshTrigger = 0, hideNavigation = false, hideLegend = false, initialDate, onFeedPost }: DemoHeatmapProps) {
   const { currentUser } = useCurrentUser();
-  // Use initialDate if provided, otherwise default to December of last year
-  const [currentDate, setCurrentDate] = useState(initialDate || new Date(new Date().getFullYear() - 1, 11, 1));
+  // Use initialDate if provided, otherwise default to November of last year (Nov 2025 has demo data)
+  const [currentDate, setCurrentDate] = useState(initialDate || new Date(new Date().getFullYear() - 1, 10, 1));
   const [selectedRange, setSelectedRange] = useState<{ from: Date; to: Date } | null>(null);
   const [heatmapData, setHeatmapData] = useState<Record<string, any>>(
     () => _demoHeatmapCache && !isPublicView ? _demoHeatmapCache : {}

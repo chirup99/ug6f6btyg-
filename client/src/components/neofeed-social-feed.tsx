@@ -729,7 +729,7 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
     <div className="border-t border-gray-200 dark:border-gray-700 pt-2 overflow-x-hidden" data-testid={`comment-section-${post.id}`}>
       {/* Comments list — taller, scrollable */}
       {comments.length > 0 && (
-        <div className="mb-2 space-y-1.5 overflow-y-auto" style={{ maxHeight: '220px' }}>
+        <div className="mb-2 space-y-1.5 overflow-y-auto" style={{ maxHeight: '420px' }}>
           {comments.map((c: any) => {
             const commentId = c.id || c.commentId;
             const isOwn = currentUsername && c.authorUsername === currentUsername;

@@ -399,18 +399,18 @@ export function TradeBook({
 
                                     {/* Footer / Now Playing — always visible, never shrinks */}
                                     <div className="flex-shrink-0 w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                                      <div className="flex items-center gap-2 w-full overflow-hidden">
-                                        <div className="flex items-center gap-2 flex-1 min-w-0 overflow-hidden">
+                                      <div className="flex items-center gap-2 w-full">
+                                        <div className="flex items-center gap-2 flex-1 w-0 min-w-0">
                                           <div className={`w-8 h-8 rounded bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg flex-shrink-0 ${selectedAudioTrack ? "animate-none" : "animate-pulse"}`}>
                                             <Music2 className="w-4 h-4 text-white" />
                                           </div>
-                                          <div className="min-w-0 flex-1 overflow-hidden">
-                                            <div className="text-[10px] font-bold text-slate-900 dark:text-slate-100 truncate">
+                                          <div className="w-0 flex-1 overflow-hidden">
+                                            <p className="text-[10px] font-bold text-slate-900 dark:text-slate-100 truncate">
                                               {selectedAudioTrack ? selectedAudioTrack.title : "Select a session"}
-                                            </div>
-                                            <div className="text-[9px] text-slate-500 uppercase tracking-tighter truncate">
+                                            </p>
+                                            <p className="text-[9px] text-slate-500 uppercase tracking-tighter truncate">
                                               {selectedAudioTrack ? `${isAudioPlaying ? 'Playing' : 'Paused'} • ${selectedAudioTrack.duration}` : "Ready to play"}
-                                            </div>
+                                            </p>
                                           </div>
                                         </div>
                                         

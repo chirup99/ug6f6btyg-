@@ -216,7 +216,7 @@ export function TradeBook({
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="w-[95vw] max-w-[700px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-none rounded-xl shadow-2xl [&>button]:hidden">
-                                <div className="flex flex-col md:flex-row h-[540px] md:h-[460px]">
+                                <div className="flex flex-col md:flex-row h-[420px] md:h-[460px]">
                                   {/* Left Side: Thumbnail — compact on mobile, full on desktop */}
                                   <div className="w-full md:w-1/2 relative flex flex-col bg-slate-100 dark:bg-slate-800 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 h-40 md:h-auto">
                                     {/* Mobile-only: MINI PLAY label centered at top of thumbnail */}
@@ -281,9 +281,9 @@ export function TradeBook({
                                     <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
                                       {isSearchOpen ? (
                                         /* ── SEARCH MODE: category tabs + input + results fill this area ── */
-                                        <div className="flex flex-col h-full p-3 gap-2">
+                                        <div className="flex flex-col h-full p-3 gap-2 w-full overflow-hidden">
                                           {/* Category tabs */}
-                                          <div className="flex gap-1 flex-shrink-0">
+                                          <div className="flex gap-1 flex-shrink-0 w-full">
                                             {(["meditation", "psychology"] as const).map(cat => (
                                               <button
                                                 key={cat}
@@ -312,15 +312,15 @@ export function TradeBook({
                                               </button>
                                             )}
                                           </div>
-                                          {/* Search results — scrollable, fills remaining space */}
-                                          <div className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-slate-100 dark:border-slate-700">
+                                          {/* Search results — scrollable, fills remaining space, width-clamped */}
+                                          <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden rounded-lg border border-slate-100 dark:border-slate-700 w-full">
                                             {searchResults.length > 0 ? searchResults.map(result => {
                                               const targetList = searchCategory === 'meditation' ? meditationTracks : psychologyTracks;
                                               const alreadyAdded = targetList.some(t => t.id === `yt-${result.videoId}`);
                                               const limitReached = targetList.length >= 4;
                                               return (
-                                                <div key={result.videoId} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                                  <img src={result.thumbnail} alt="" className="w-10 h-7 rounded object-cover flex-shrink-0 bg-slate-200" />
+                                                <div key={result.videoId} className="flex items-center gap-2 p-1.5 min-w-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                                  <img src={result.thumbnail} alt="" className="w-9 h-6 rounded object-cover flex-shrink-0 bg-slate-200" />
                                                   <span className="flex-1 min-w-0 text-[10px] text-slate-700 dark:text-slate-300 leading-tight truncate">{result.title}</span>
                                                   <button
                                                     onClick={() => addTrack(result)}

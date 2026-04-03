@@ -1796,33 +1796,40 @@ export function JournalTabContent({
                               ),
                             );
 
+                            const fmtCompact = (n: number) => {
+                              const abs = Math.abs(n);
+                              const sign = n < 0 ? '-' : '';
+                              if (abs >= 10_000_000) return `${sign}${(abs / 10_000_000).toFixed(2)}Cr`;
+                              if (abs >= 100_000)    return `${sign}${(abs / 100_000).toFixed(2)}L`;
+                              if (abs >= 1_000)      return `${sign}${(abs / 1_000).toFixed(2)}K`;
+                              return `${sign}${abs.toFixed(2)}`;
+                            };
+
                             const metrics = [
                               {
                                 label: "Trading Days",
-                                value: totalDays,
+                                value: String(totalDays),
                                 icon: Calendar,
                                 color: "from-blue-500 to-indigo-600",
                                 textColor: "text-blue-600",
                               },
                               {
                                 label: "Best Day",
-                                value: <div className="flex justify-between w-full"><span>₹</span><span>{maxProfit.toLocaleString()}</span></div>,
+                                value: `₹${fmtCompact(maxProfit)}`,
                                 icon: TrendingUp,
                                 color: "from-emerald-500 to-green-600",
                                 textColor: "text-emerald-600",
                               },
                               {
                                 label: "Profitable Days",
-                                value: profitableDays,
+                                value: String(profitableDays),
                                 icon: Target,
                                 color: "from-violet-500 to-purple-600",
                                 textColor: "text-violet-600",
                               },
                               {
                                 label: "Avg Daily P&L",
-                                value: `₹${Math.abs(
-                                  avgDailyPnL,
-                                ).toLocaleString()}`,
+                                value: `${avgDailyPnL < 0 ? '-' : ''}₹${fmtCompact(Math.abs(avgDailyPnL))}`,
                                 icon: BarChart3,
                                 color:
                                   avgDailyPnL >= 0
@@ -1840,19 +1847,19 @@ export function JournalTabContent({
                                 key={metric.label}
                                 className="bg-white dark:bg-slate-800 rounded-2xl p-3 md:p-6 shadow-lg border border-slate-200 dark:border-slate-700 hover:shadow-xl transition-all duration-300"
                               >
-                                <div className="flex md:flex-col items-center md:items-start gap-3 md:gap-0">
+                                <div className="flex md:flex-col items-center md:items-start gap-2 md:gap-0">
                                   <div
-                                    className={`w-10 h-10 md:w-12 md:h-12 bg-gradient-to-br ${metric.color} rounded-xl flex items-center justify-center md:mb-4 shadow-lg flex-shrink-0`}
+                                    className={`w-9 h-9 md:w-12 md:h-12 bg-gradient-to-br ${metric.color} rounded-xl flex items-center justify-center md:mb-4 shadow-lg flex-shrink-0`}
                                   >
-                                    <metric.icon className="w-5 h-5 md:w-6 md:h-6 text-white" />
+                                    <metric.icon className="w-4 h-4 md:w-6 md:h-6 text-white" />
                                   </div>
-                                  <div className="flex-1 md:space-y-1">
+                                  <div className="flex-1 min-w-0 md:space-y-1">
                                     <div
-                                      className={`text-xl md:text-2xl font-bold ${metric.textColor}`}
+                                      className={`text-sm md:text-2xl font-bold ${metric.textColor} truncate`}
                                     >
-                                      <div className="flex justify-between w-full">{metric.value}</div>
+                                      {metric.value}
                                     </div>
-                                    <div className="text-xs md:text-sm text-slate-600 dark:text-slate-400">
+                                    <div className="text-[10px] md:text-sm text-slate-600 dark:text-slate-400 leading-tight">
                                       {metric.label}
                                     </div>
                                   </div>
@@ -1887,7 +1894,7 @@ export function JournalTabContent({
                         />
 
                         {/* Risk Management Analysis Window */}
-                        <div className="col-span-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-8 text-white shadow-2xl mt-6">
+                        <div className="col-span-12 bg-gradient-to-br from-blue-600 to-indigo-700 rounded-3xl p-4 md:p-8 text-white shadow-2xl mt-6">
                           <div className="flex items-center gap-4 mb-6">
                             <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
                               <ShieldCheck className="w-6 h-6" />
@@ -1989,26 +1996,26 @@ export function JournalTabContent({
 
                                 {/* Stats Grid */}
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                                    <div className="text-2xl font-bold">{totalDays > 0 ? `${daysMetRR}/${totalDays}` : '—'}</div>
-                                    <div className="text-sm opacity-80 mt-1">Days Met R:R</div>
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
+                                    <div className="text-lg md:text-2xl font-bold truncate">{totalDays > 0 ? `${daysMetRR}/${totalDays}` : '—'}</div>
+                                    <div className="text-xs md:text-sm opacity-80 mt-1">Days Met R:R</div>
                                     <div className="text-[10px] opacity-60 mt-0.5">{totalDays > 0 ? `${((daysMetRR / totalDays) * 100).toFixed(0)}% success` : 'No data'}</div>
                                   </div>
-                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                                    <div className="text-2xl font-bold text-red-300">{daysBreachedRisk}</div>
-                                    <div className="text-sm opacity-80 mt-1">Risk Breached</div>
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
+                                    <div className="text-lg md:text-2xl font-bold text-red-300">{daysBreachedRisk}</div>
+                                    <div className="text-xs md:text-sm opacity-80 mt-1">Risk Breached</div>
                                     <div className="text-[10px] opacity-60 mt-0.5">{totalDays > 0 ? `${((daysBreachedRisk / totalDays) * 100).toFixed(0)}% of days` : 'No data'}</div>
                                   </div>
-                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                                    <div className={`text-2xl font-bold ${capitalTrend === 'increasing' ? 'text-emerald-300' : capitalTrend === 'declining' ? 'text-red-300' : 'text-white'}`}>
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
+                                    <div className={`text-lg md:text-2xl font-bold ${capitalTrend === 'increasing' ? 'text-emerald-300' : capitalTrend === 'declining' ? 'text-red-300' : 'text-white'}`}>
                                       {capitalTrend === 'no data' ? '—' : capitalTrend === 'increasing' ? '↑' : capitalTrend === 'declining' ? '↓' : '→'}
                                     </div>
-                                    <div className="text-sm opacity-80 mt-1">Capital Trend</div>
+                                    <div className="text-xs md:text-sm opacity-80 mt-1">Capital Trend</div>
                                     <div className="text-[10px] opacity-60 mt-0.5 capitalize">{capitalTrend}</div>
                                   </div>
-                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                                    <div className="text-2xl font-bold text-emerald-300">{daysProfitable}</div>
-                                    <div className="text-sm opacity-80 mt-1">Profitable Days</div>
+                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4">
+                                    <div className="text-lg md:text-2xl font-bold text-emerald-300">{daysProfitable}</div>
+                                    <div className="text-xs md:text-sm opacity-80 mt-1">Profitable Days</div>
                                     <div className="text-[10px] opacity-60 mt-0.5">{totalDays > 0 ? `${((daysProfitable / totalDays) * 100).toFixed(0)}% win rate` : 'No data'}</div>
                                   </div>
                                 </div>

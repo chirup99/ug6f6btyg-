@@ -443,18 +443,19 @@ export function SidebarNavMenu({
                             return;
                           }
                           // Greetings match prefetch format exactly so server cache is warm on first click
-                          const voiceGreetings: { [key: string]: (p: string) => string } = {
-                                en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
-                                hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
-                                bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
-                                ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
-                                te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
-                                mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
-                                gu: (p) => `નમસ્તે! હું ${p} છું. પేरలామాం తమారూ స్వాగత ছে!`,
-                                kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
-                                ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
+                          const userName = currentUser?.displayName || currentUser?.name || currentUser?.username || '';
+                          const voiceGreetings: { [key: string]: (p: string, u: string) => string } = {
+                                en: (p, u) => u ? `Hello ${u}! I am ${p}. Welcome to Perala!` : `Hello! I am ${p}. Welcome to Perala!`,
+                                hi: (p, u) => u ? `नमस्ते ${u}! मैं ${p} हूँ। पेरला में आपका स्वागत है!` : `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
+                                bn: (p, u) => u ? `নমস্কার ${u}! আমি ${p}। পেরলায় আপনাকে স্বাগত!` : `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
+                                ta: (p, u) => u ? `வணக்கம் ${u}! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!` : `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
+                                te: (p, u) => u ? `నమస్కారం ${u}! నేను ${p}. పెరలాలో మీకు స్వాగతం!` : `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
+                                mr: (p, u) => u ? `नमस्कार ${u}! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!` : `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत आहे!`,
+                                gu: (p, u) => u ? `નમસ્તે ${u}! હું ${p} છું. પેরлामां তমারূ স্বাগত ছে!` : `નમસ્તે! હું ${p} છું. પేरलामाং తమారూ స్వాగత ছে!`,
+                                kn: (p, u) => u ? `ನಮಸ್ಕಾರ ${u}! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!` : `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+                                ml: (p, u) => u ? `നമസ്കാരം ${u}! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!` : `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
                           };
-                          const baseText = voiceGreetings[voiceLanguage] ? voiceGreetings[voiceLanguage](profile.name) : `Hello! I am ${profile.name}. Welcome to Perala!`;
+                          const baseText = voiceGreetings[voiceLanguage] ? voiceGreetings[voiceLanguage](profile.name, userName) : `Hello${userName ? ` ${userName}` : ''}! I am ${profile.name}. Welcome to Perala!`;
                           
                           // Use Microsoft Edge TTS (backend only)
                           try {

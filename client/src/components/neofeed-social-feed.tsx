@@ -3688,23 +3688,25 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
                       )}
                       {/* Change/Remove hover overlay (only when NOT showing extracted data) */}
                       {!certVerifyResult && (
-                      <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
-                      <button
-                        type="button"
-                        onClick={() => certInputRef.current?.click()}
-                        className="px-2.5 py-1 bg-white text-gray-800 text-xs font-semibold rounded-lg"
-                        data-testid="button-change-cert-image"
-                      >
-                        Change
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => { setCertImagePreview(''); setCertificationImageUrl(''); setCertImageFile(null); setCertVerifyResult(null); setCertVerificationStatus(''); }}
-                        className="px-2.5 py-1 bg-red-500 text-white text-xs font-semibold rounded-lg"
-                        data-testid="button-remove-cert-image"
-                      >
-                        Remove
-                      </button>
+                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
+                          <button
+                            type="button"
+                            onClick={() => certInputRef.current?.click()}
+                            className="px-2.5 py-1 bg-white text-gray-800 text-xs font-semibold rounded-lg"
+                            data-testid="button-change-cert-image"
+                          >
+                            Change
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setCertImagePreview(''); setCertificationImageUrl(''); setCertImageFile(null); setCertVerifyResult(null); setCertVerificationStatus(''); }}
+                            className="px-2.5 py-1 bg-red-500 text-white text-xs font-semibold rounded-lg"
+                            data-testid="button-remove-cert-image"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      )}
                     </div>
                     <p className="text-[10px] text-center text-amber-600 dark:text-amber-400 py-1">Certificate image</p>
                   </div>

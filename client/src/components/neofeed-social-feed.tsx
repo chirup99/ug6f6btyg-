@@ -516,19 +516,12 @@ function CertificationDialog({ username, certId, certImageUrl, isOpen, onClose, 
               {/* Top header: NISM badge + candidate name */}
               <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800/40">
                 <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 12 12" fill="none">
-                  <circle cx="6" cy="6" r="5.5" fill={verified ? '#22C55E' : '#F59E0B'} />
-                  {verified
-                    ? <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                    : <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
-                  }
+                  <circle cx="6" cy="6" r="5.5" fill="#F59E0B" />
+                  <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
                 </svg>
                 <div className="flex-1 min-w-0">
-                  {dataRows.find(r => r.label === 'Candidate')?.value ? (
-                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{dataRows.find(r => r.label === 'Candidate')?.value}</p>
-                  ) : (
-                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">{verified ? 'NISM Verified' : cert?.label || certId}</p>
-                  )}
-                  <p className="text-[10px] text-amber-600 dark:text-amber-400">{verified ? 'NISM / SEBI Certified' : 'Pending Verification'}</p>
+                  <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">{cert?.label || certId}</p>
+                  <p className="text-[10px] text-amber-600 dark:text-amber-400">NISM / SEBI Certified</p>
                 </div>
               </div>
 
@@ -3431,8 +3424,6 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
           bio: bio || undefined,
           certifiedRole: certifiedRole || null,
           certificationImageUrl: finalCertImageUrl || null,
-          certVerificationStatus: certVerificationStatus || null,
-          certExtractedData: certVerifyResult?.extracted ? JSON.stringify(certVerifyResult.extracted) : null,
         })
       });
 

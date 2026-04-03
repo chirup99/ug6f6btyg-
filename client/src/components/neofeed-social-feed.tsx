@@ -3306,7 +3306,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-sm p-0 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col max-h-[90vh]">
+      <DialogContent className="max-w-sm p-0 rounded-2xl border border-gray-200 dark:border-gray-700 shadow-xl overflow-hidden flex flex-col max-h-[85dvh]">
         {/* Header */}
         <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-gray-100 dark:border-gray-800">
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 text-sm transition-colors" data-testid="button-cancel-profile">
@@ -3324,7 +3324,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
         </div>
 
         {/* Fields */}
-        <div className="px-5 py-4 space-y-5 overflow-y-auto flex-1">
+        <div className="px-5 py-4 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* Display Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Name</label>

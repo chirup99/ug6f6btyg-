@@ -2782,6 +2782,7 @@ export default function Home() {
   const [influencerDays, setInfluencerDays] = useState<number>(90);
   const [influencerActivating, setInfluencerActivating] = useState(false);
   const [influencerActivated, setInfluencerActivated] = useState<{ userId: string; email: string; days: number; expiryDate: string } | null>(null);
+  const [influencerShowSearch, setInfluencerShowSearch] = useState(false);
 
   // Load wallet from server for the current user
   const loadWallet = async (userId: string) => {
@@ -14094,16 +14095,92 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   )}
                 </div>
               ) : adminTab === "influencer" ? (
-                <div className="p-4 space-y-4 pl-[10px] pr-[10px] max-h-[450px] overflow-y-auto custom-thin-scrollbar">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="p-1.5 bg-pink-500/10 rounded-lg"><TrendingUp className="h-4 w-4 text-pink-500" /></div>
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-800 dark:text-white">Influencer Free Subscription</h3>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Grant influencers a free journal period</p>
+                <div className="p-3 space-y-3 pl-[10px] pr-[10px]">
+                  {/* Top bar: + button + inline search */}
+                  {!influencerSelectedUser && !influencerActivated && (
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setInfluencerShowSearch(v => !v);
+                          if (influencerShowSearch) { setInfluencerEmailSearch(""); setInfluencerSearchResults([]); }
+                        }}
+                        className="w-8 h-8 rounded-full bg-pink-500 hover:bg-pink-600 flex items-center justify-center flex-shrink-0 shadow-sm transition-all"
+                        data-testid="button-influencer-toggle-search"
+                      >
+                        <Plus className={`h-4 w-4 text-white transition-transform duration-200 ${influencerShowSearch ? 'rotate-45' : ''}`} />
+                      </button>
+                      {influencerShowSearch && (
+                        <div className="relative flex-1 animate-in slide-in-from-left-2 duration-150">
+                          <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                          <input
+                            autoFocus
+                            type="email"
+                            placeholder="Search email to add..."
+                            value={influencerEmailSearch}
+                            onChange={async (e) => {
+                              const val = e.target.value;
+                              setInfluencerEmailSearch(val);
+                              setInfluencerSelectedUser(null);
+                              if (val.trim().length < 3) { setInfluencerSearchResults([]); return; }
+                              setInfluencerSearchLoading(true);
+                              try {
+                                const res = await fetch(`/api/influencer/search-user?email=${encodeURIComponent(val.trim())}`);
+                                const data = await res.json();
+                                setInfluencerSearchResults(data.users || []);
+                              } catch (e) {
+                                setInfluencerSearchResults([]);
+                              } finally {
+                                setInfluencerSearchLoading(false);
+                              }
+                            }}
+                            className="w-full pl-8 pr-8 py-2 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-400/40 focus:border-pink-400 transition-all"
+                            data-testid="input-influencer-email-search"
+                          />
+                          {influencerSearchLoading && (
+                            <div className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
+                          )}
+                        </div>
+                      )}
                     </div>
-                  </div>
+                  )}
 
-                  {influencerActivated ? (
+                  {/* Search results list — scrollable, max 7 visible */}
+                  {!influencerSelectedUser && !influencerActivated && influencerSearchResults.length > 0 && (
+                    <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800 max-h-[336px] overflow-y-auto custom-thin-scrollbar">
+                      {influencerSearchResults.map((user, idx) => (
+                        <button
+                          key={user.userId}
+                          onClick={() => { setInfluencerSelectedUser(user); setInfluencerSearchResults([]); setInfluencerShowSearch(false); setInfluencerEmailSearch(""); }}
+                          className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800/40 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors text-left"
+                          data-testid={`button-influencer-select-user-${idx}`}
+                        >
+                          <div className="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+                            <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{(user.displayName || user.email).substring(0,2).toUpperCase()}</span>
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-[12px] font-semibold text-slate-800 dark:text-white truncate">{user.displayName || user.email}</p>
+                            <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {!influencerSelectedUser && !influencerActivated && influencerShowSearch && influencerEmailSearch.trim().length >= 3 && !influencerSearchLoading && influencerSearchResults.length === 0 && (
+                    <div className="text-center py-4 text-slate-400 dark:text-slate-500 text-sm">No users found matching that email.</div>
+                  )}
+
+                  {!influencerSelectedUser && !influencerActivated && !influencerShowSearch && (
+                    <div className="rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-4 text-center space-y-1">
+                      <TrendingUp className="h-6 w-6 text-pink-400 mx-auto mb-2 opacity-70" />
+                      <p className="text-[12px] font-medium text-slate-600 dark:text-slate-300">Grant influencers free journal access</p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500">Tap + to search by email, set the duration, and activate.</p>
+                    </div>
+                  )}
+
+                  {/* Success state */}
+                  {influencerActivated && (
                     <div className="rounded-2xl border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-4 space-y-3 animate-in fade-in duration-300">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
@@ -14128,13 +14205,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         size="sm"
                         variant="outline"
                         className="w-full text-green-600 border-green-300 dark:border-green-700 hover:bg-green-50"
-                        onClick={() => { setInfluencerActivated(null); setInfluencerSelectedUser(null); setInfluencerEmailSearch(""); setInfluencerSearchResults([]); setInfluencerDays(90); }}
+                        onClick={() => { setInfluencerActivated(null); setInfluencerSelectedUser(null); setInfluencerEmailSearch(""); setInfluencerSearchResults([]); setInfluencerDays(90); setInfluencerShowSearch(false); }}
                         data-testid="button-influencer-grant-another"
                       >
                         Grant Another
                       </Button>
                     </div>
-                  ) : influencerSelectedUser ? (
+                  )}
+
+                  {/* User selected — duration picker */}
+                  {influencerSelectedUser && !influencerActivated && (
                     <div className="space-y-4 animate-in fade-in duration-200">
                       <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
                         <div className="w-9 h-9 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
@@ -14227,72 +14307,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       >
                         {influencerActivating ? 'Activating...' : `Activate ${influencerDays}-Day Free Period`}
                       </Button>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="relative">
-                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
-                        <input
-                          type="email"
-                          placeholder="Search user by email..."
-                          value={influencerEmailSearch}
-                          onChange={async (e) => {
-                            const val = e.target.value;
-                            setInfluencerEmailSearch(val);
-                            setInfluencerSelectedUser(null);
-                            if (val.trim().length < 3) { setInfluencerSearchResults([]); return; }
-                            setInfluencerSearchLoading(true);
-                            try {
-                              const res = await fetch(`/api/influencer/search-user?email=${encodeURIComponent(val.trim())}`);
-                              const data = await res.json();
-                              setInfluencerSearchResults(data.users || []);
-                            } catch (e) {
-                              setInfluencerSearchResults([]);
-                            } finally {
-                              setInfluencerSearchLoading(false);
-                            }
-                          }}
-                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-400/40 focus:border-pink-400 transition-all"
-                          data-testid="input-influencer-email-search"
-                        />
-                        {influencerSearchLoading && (
-                          <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
-                        )}
-                      </div>
-
-                      {influencerSearchResults.length > 0 && (
-                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
-                          {influencerSearchResults.map((user, idx) => (
-                            <button
-                              key={user.userId}
-                              onClick={() => { setInfluencerSelectedUser(user); setInfluencerSearchResults([]); }}
-                              className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800/40 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors text-left"
-                              data-testid={`button-influencer-select-user-${idx}`}
-                            >
-                              <div className="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
-                                <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{(user.displayName || user.email).substring(0,2).toUpperCase()}</span>
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p className="text-[12px] font-semibold text-slate-800 dark:text-white truncate">{user.displayName || user.email}</p>
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
-                              </div>
-                              <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
-                            </button>
-                          ))}
-                        </div>
-                      )}
-
-                      {influencerEmailSearch.trim().length >= 3 && !influencerSearchLoading && influencerSearchResults.length === 0 && (
-                        <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-sm">No users found matching that email.</div>
-                      )}
-
-                      {influencerEmailSearch.trim().length < 3 && (
-                        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-4 text-center space-y-1">
-                          <TrendingUp className="h-6 w-6 text-pink-400 mx-auto mb-2 opacity-70" />
-                          <p className="text-[12px] font-medium text-slate-600 dark:text-slate-300">Grant influencers free journal access</p>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500">Search by email, set the duration, and activate — no charges will apply during the period.</p>
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

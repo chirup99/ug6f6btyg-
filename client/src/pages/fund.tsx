@@ -81,7 +81,14 @@ export function FundsAnalysis({
 
   const [showBrokerBreakupDialog, setShowBrokerBreakupDialog] = useState(false);
   const [showJournalChargesDialog, setShowJournalChargesDialog] = useState(false);
-  const [influencerHideUI, setInfluencerHideUI] = useState(false);
+  const [influencerHideUI, setInfluencerHideUI] = useState<boolean>(() => {
+    try { return localStorage.getItem('influencerHideUI') === 'true'; } catch { return false; }
+  });
+  const toggleInfluencerHideUI = () => setInfluencerHideUI(v => {
+    const next = !v;
+    try { localStorage.setItem('influencerHideUI', String(next)); } catch {}
+    return next;
+  });
   const [showBrokerageChargesDialog, setShowBrokerageChargesDialog] = useState(false);
   const [showReferDialog, setShowReferDialog] = useState(false);
   const [showReferredList, setShowReferredList] = useState(false);
@@ -345,7 +352,7 @@ export function FundsAnalysis({
                       <div className={`bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 relative ${isFree ? 'border-pink-300/60 dark:border-pink-700/40' : 'border-white/40 dark:border-white/10'}`}>
                         {hasInfluencer && (
                           <button
-                            onClick={() => setInfluencerHideUI(v => !v)}
+                            onClick={toggleInfluencerHideUI}
                             className="absolute top-3 right-3 p-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors z-10"
                             title={influencerHideUI ? "Show influencer view" : "Hide influencer tag"}
                             data-testid="button-influencer-hide-toggle"
@@ -388,8 +395,9 @@ export function FundsAnalysis({
                         </div>
                         <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
                           <button
-                            onClick={() => setShowAddFundDialog(true)}
-                            className="flex-1 py-1.5 px-3 rounded-lg bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-400 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
+                            disabled
+                            title="Payment gateway not integrated yet"
+                            className="flex-1 py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 text-[11px] font-bold flex items-center justify-center gap-1 cursor-not-allowed opacity-50"
                             data-testid="button-add-fund"
                           >
                             <Plus className="w-3 h-3" />
@@ -439,27 +447,17 @@ export function FundsAnalysis({
                     return (
                       <div
                         className={`bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer relative ${isFree ? 'border-pink-300/60 dark:border-pink-700/40' : 'border-white/40 dark:border-white/10'}`}
-                        onClick={(e) => { if ((e.target as HTMLElement).closest('[data-testid="button-influencer-hide-toggle-charges"]')) return; !isFree && setShowJournalChargesDialog(true); }}
+                        onClick={() => { if (!isFree) setShowJournalChargesDialog(true); }}
                         data-testid="journal-charges-card"
                       >
-                        {hasInfluencer && (
-                          <button
-                            onClick={(e) => { e.stopPropagation(); setInfluencerHideUI(v => !v); }}
-                            className="absolute top-3 right-3 p-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors z-10"
-                            title={influencerHideUI ? "Show influencer view" : "Hide influencer tag"}
-                            data-testid="button-influencer-hide-toggle-charges"
-                          >
-                            {influencerHideUI ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
-                          </button>
-                        )}
                         <div className="flex items-center justify-between mb-4">
                           <div className={`p-2 rounded-lg ${isFree ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400' : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'}`}>
                             {isFree ? <Gift className="w-5 h-5" /> : <Receipt className="w-5 h-5" />}
                           </div>
                           {isFree ? (
-                            <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20 text-[10px] mr-6">No Charges</Badge>
+                            <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20 text-[10px]">No Charges</Badge>
                           ) : (
-                            <Badge variant="outline" className={`bg-violet-500/5 text-violet-600 border-violet-500/20 text-[10px] ${hasInfluencer ? 'mr-6' : ''}`}>Today's Fee</Badge>
+                            <Badge variant="outline" className="bg-violet-500/5 text-violet-600 border-violet-500/20 text-[10px]">Today's Fee</Badge>
                           )}
                         </div>
                         {isFree ? (

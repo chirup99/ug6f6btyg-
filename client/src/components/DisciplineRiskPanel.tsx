@@ -263,10 +263,6 @@ export function DisciplineRiskPanel({
             <div className="text-lg md:text-2xl font-bold text-green-400">{maxWinStreak}</div>
             <div className="text-xs md:text-sm opacity-80">Max Win Streak</div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 text-center border border-white/5">
-            <div className="text-lg md:text-2xl font-bold text-blue-400">{last7DaysTrades}</div>
-            <div className="text-xs md:text-sm opacity-80">Trades (7D)</div>
-          </div>
         </div>
 
         {/* Performance Insights + Tips */}

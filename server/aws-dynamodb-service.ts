@@ -558,6 +558,43 @@ class AWSDynamoDBService {
       return false;
     }
   }
+
+  // ── Influencer Free Period ─────────────────────────────────────────────────
+
+  async getInfluencerPeriod(userId: string): Promise<any | null> {
+    if (!this.isConnected()) return null;
+    try {
+      const command = new GetCommand({
+        TableName: TABLE_NAME,
+        Key: { dateKey: `influencer#${userId}` }
+      });
+      const response = await this.docClient!.send(command);
+      return response.Item?.data ?? null;
+    } catch (error) {
+      console.error(`❌ AWS: Failed to get influencer period for ${userId}:`, error);
+      return null;
+    }
+  }
+
+  async saveInfluencerPeriod(userId: string, data: any): Promise<boolean> {
+    if (!this.isConnected()) return false;
+    try {
+      const command = new PutCommand({
+        TableName: TABLE_NAME,
+        Item: {
+          dateKey: `influencer#${userId}`,
+          data: { ...data, updatedAt: new Date().toISOString() },
+          updatedAt: new Date().toISOString()
+        }
+      });
+      await this.docClient!.send(command);
+      return true;
+    } catch (error) {
+      console.error(`❌ AWS: Failed to save influencer period for ${userId}:`, error);
+      return false;
+    }
+  }
 }
+
 
 export const awsDynamoDBService = new AWSDynamoDBService();

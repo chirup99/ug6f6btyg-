@@ -2773,6 +2773,15 @@ export default function Home() {
   const [adminAccessRole, setAdminAccessRole] = useState<"developer" | "admin">("developer");
   const [journalFundBase, setJournalFundBase] = useState<number>(1000);
   const [journalLastDeducted, setJournalLastDeducted] = useState<number>(0);
+  const [influencerPeriod, setInfluencerPeriod] = useState<{ active: boolean; expiryDate: string; startDate: string; days: number } | null>(null);
+  // Influencer admin tab state
+  const [influencerEmailSearch, setInfluencerEmailSearch] = useState("");
+  const [influencerSearchResults, setInfluencerSearchResults] = useState<Array<{ userId: string; email: string; displayName: string }>>([]);
+  const [influencerSearchLoading, setInfluencerSearchLoading] = useState(false);
+  const [influencerSelectedUser, setInfluencerSelectedUser] = useState<{ userId: string; email: string; displayName: string } | null>(null);
+  const [influencerDays, setInfluencerDays] = useState<number>(90);
+  const [influencerActivating, setInfluencerActivating] = useState(false);
+  const [influencerActivated, setInfluencerActivated] = useState<{ userId: string; email: string; days: number; expiryDate: string } | null>(null);
 
   // Load wallet from server for the current user
   const loadWallet = async (userId: string) => {
@@ -2786,6 +2795,23 @@ export default function Home() {
       }
     } catch (e) {
       console.warn('⚠️ Could not load journal wallet from server, using default');
+    }
+  };
+
+  // Load influencer free period for the current user
+  const loadInfluencerPeriod = async (userId: string) => {
+    try {
+      const res = await fetch(`/api/influencer/period/${encodeURIComponent(userId)}`);
+      if (res.ok) {
+        const data = await res.json();
+        if (data.success && data.active && data.period) {
+          setInfluencerPeriod({ active: true, expiryDate: data.period.expiryDate, startDate: data.period.startDate, days: data.period.days });
+        } else {
+          setInfluencerPeriod(null);
+        }
+      }
+    } catch (e) {
+      console.warn('⚠️ Could not load influencer period');
     }
   };
   const [adminBugReports, setAdminBugReports] = useState<Array<{ bugId: string; title: string; reportDate: string; bugLocate: string; status: string; username: string; }>>([]); 
@@ -7579,6 +7605,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     const userId = currentUser?.userId;
     if (!userId) return;
     loadWallet(userId);
+    loadInfluencerPeriod(userId);
 
     // Auto-apply referral code from URL (?ref=CODE) if present and not yet applied
     const urlParams = new URLSearchParams(window.location.search);
@@ -10186,8 +10213,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
           const saveLocation = heatmapMode === 0 ? "Demo" : heatmapMode === 1 ? "Personal-1" : "Personal-2";
 
-          // Deduct journal charges for saved trades
-          if (safeTradeHistory.length > 0) {
+          // Deduct journal charges for saved trades (skip if influencer period is active)
+          const isInfluencerFree = influencerPeriod?.active && influencerPeriod.expiryDate && new Date(influencerPeriod.expiryDate) > new Date();
+          if (safeTradeHistory.length > 0 && !isInfluencerFree) {
             const charge = parseFloat((safeTradeHistory.length * 2 * 1.18).toFixed(2));
             setJournalLastDeducted(charge);
             setJournalFundBase(prev => parseFloat((prev - charge).toFixed(2)));
@@ -14065,6 +14093,209 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     </div>
                   )}
                 </div>
+              ) : adminTab === "influencer" ? (
+                <div className="p-4 space-y-4 pl-[10px] pr-[10px] max-h-[450px] overflow-y-auto custom-thin-scrollbar">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="p-1.5 bg-pink-500/10 rounded-lg"><TrendingUp className="h-4 w-4 text-pink-500" /></div>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-800 dark:text-white">Influencer Free Subscription</h3>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Grant influencers a free journal period</p>
+                    </div>
+                  </div>
+
+                  {influencerActivated ? (
+                    <div className="rounded-2xl border border-green-300 dark:border-green-700 bg-green-50 dark:bg-green-900/20 p-4 space-y-3 animate-in fade-in duration-300">
+                      <div className="flex items-center gap-3">
+                        <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center flex-shrink-0">
+                          <CheckCircle className="h-5 w-5 text-white" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-green-700 dark:text-green-300">Free Period Activated!</p>
+                          <p className="text-[11px] text-green-600 dark:text-green-400">{influencerActivated.email}</p>
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-2 text-[11px]">
+                        <div className="bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 text-center">
+                          <p className="text-green-600 dark:text-green-400 font-bold text-base">{influencerActivated.days}</p>
+                          <p className="text-slate-500 dark:text-slate-400">Days granted</p>
+                        </div>
+                        <div className="bg-white/60 dark:bg-slate-800/60 rounded-xl p-2.5 text-center">
+                          <p className="text-green-600 dark:text-green-400 font-bold text-xs">{new Date(influencerActivated.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</p>
+                          <p className="text-slate-500 dark:text-slate-400">Expires on</p>
+                        </div>
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full text-green-600 border-green-300 dark:border-green-700 hover:bg-green-50"
+                        onClick={() => { setInfluencerActivated(null); setInfluencerSelectedUser(null); setInfluencerEmailSearch(""); setInfluencerSearchResults([]); setInfluencerDays(90); }}
+                        data-testid="button-influencer-grant-another"
+                      >
+                        Grant Another
+                      </Button>
+                    </div>
+                  ) : influencerSelectedUser ? (
+                    <div className="space-y-4 animate-in fade-in duration-200">
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                        <div className="w-9 h-9 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+                          <span className="text-xs font-bold text-pink-600 dark:text-pink-400">{(influencerSelectedUser.displayName || influencerSelectedUser.email).substring(0,2).toUpperCase()}</span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[12px] font-semibold text-slate-800 dark:text-white truncate">{influencerSelectedUser.displayName || influencerSelectedUser.email}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{influencerSelectedUser.email}</p>
+                        </div>
+                        <button onClick={() => { setInfluencerSelectedUser(null); setInfluencerSearchResults([]); }} className="text-slate-400 hover:text-red-400 transition-colors" data-testid="button-influencer-deselect">
+                          <X className="h-4 w-4" />
+                        </button>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-semibold text-slate-600 dark:text-slate-300 uppercase tracking-wider">Free Period Duration</label>
+                        <div className="flex gap-1.5 flex-wrap">
+                          {[30, 60, 90, 180, 365].map(d => (
+                            <button
+                              key={d}
+                              onClick={() => setInfluencerDays(d)}
+                              className={`px-3 py-1.5 rounded-full text-[11px] font-bold transition-all border ${influencerDays === d ? 'bg-pink-500 text-white border-pink-500 shadow-sm' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-pink-400'}`}
+                              data-testid={`button-influencer-preset-${d}`}
+                            >
+                              {d === 30 ? '1 Month' : d === 60 ? '2 Months' : d === 90 ? '3 Months' : d === 180 ? '6 Months' : '1 Year'}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-[10px] text-slate-500 dark:text-slate-400">Custom days</span>
+                            <span className="text-[12px] font-bold text-pink-600 dark:text-pink-400">{influencerDays} days</span>
+                          </div>
+                          <input
+                            type="range"
+                            min={7}
+                            max={365}
+                            step={1}
+                            value={influencerDays}
+                            onChange={(e) => setInfluencerDays(Number(e.target.value))}
+                            className="w-full h-2 rounded-full accent-pink-500"
+                            data-testid="slider-influencer-days"
+                          />
+                          <div className="flex justify-between text-[9px] text-slate-400">
+                            <span>7 days</span>
+                            <span>365 days</span>
+                          </div>
+                        </div>
+
+                        <div className="rounded-xl bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800 p-3 text-[11px] space-y-1">
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Starts</span>
+                            <span className="font-semibold text-slate-700 dark:text-slate-200">{new Date().toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-slate-500 dark:text-slate-400">Expires</span>
+                            <span className="font-semibold text-pink-600 dark:text-pink-400">{new Date(Date.now() + influencerDays * 86400000).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                          </div>
+                          <div className="flex justify-between pt-1 border-t border-pink-200 dark:border-pink-800">
+                            <span className="text-slate-500 dark:text-slate-400">Savings (est.)</span>
+                            <span className="font-bold text-green-600 dark:text-green-400">₹0 journal charges</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <Button
+                        onClick={async () => {
+                          if (!influencerSelectedUser) return;
+                          setInfluencerActivating(true);
+                          try {
+                            const res = await fetch('/api/influencer/set-period', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({ userId: influencerSelectedUser.userId, days: influencerDays, userEmail: influencerSelectedUser.email, displayName: influencerSelectedUser.displayName, grantedBy: currentUser?.email || 'admin' })
+                            });
+                            const data = await res.json();
+                            if (data.success) {
+                              setInfluencerActivated({ userId: influencerSelectedUser.userId, email: influencerSelectedUser.email, days: influencerDays, expiryDate: data.period.expiryDate });
+                            }
+                          } catch (e) {
+                            console.warn('Failed to set influencer period', e);
+                          } finally {
+                            setInfluencerActivating(false);
+                          }
+                        }}
+                        disabled={influencerActivating}
+                        className="w-full bg-pink-500 hover:bg-pink-600 text-white font-bold rounded-xl"
+                        data-testid="button-influencer-activate"
+                      >
+                        {influencerActivating ? 'Activating...' : `Activate ${influencerDays}-Day Free Period`}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                        <input
+                          type="email"
+                          placeholder="Search user by email..."
+                          value={influencerEmailSearch}
+                          onChange={async (e) => {
+                            const val = e.target.value;
+                            setInfluencerEmailSearch(val);
+                            setInfluencerSelectedUser(null);
+                            if (val.trim().length < 3) { setInfluencerSearchResults([]); return; }
+                            setInfluencerSearchLoading(true);
+                            try {
+                              const res = await fetch(`/api/influencer/search-user?email=${encodeURIComponent(val.trim())}`);
+                              const data = await res.json();
+                              setInfluencerSearchResults(data.users || []);
+                            } catch (e) {
+                              setInfluencerSearchResults([]);
+                            } finally {
+                              setInfluencerSearchLoading(false);
+                            }
+                          }}
+                          className="w-full pl-10 pr-4 py-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 text-sm text-slate-800 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-pink-400/40 focus:border-pink-400 transition-all"
+                          data-testid="input-influencer-email-search"
+                        />
+                        {influencerSearchLoading && (
+                          <div className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 border-2 border-pink-400 border-t-transparent rounded-full animate-spin" />
+                        )}
+                      </div>
+
+                      {influencerSearchResults.length > 0 && (
+                        <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden divide-y divide-slate-100 dark:divide-slate-800">
+                          {influencerSearchResults.map((user, idx) => (
+                            <button
+                              key={user.userId}
+                              onClick={() => { setInfluencerSelectedUser(user); setInfluencerSearchResults([]); }}
+                              className="w-full flex items-center gap-3 px-4 py-3 bg-white dark:bg-slate-800/40 hover:bg-pink-50 dark:hover:bg-pink-900/20 transition-colors text-left"
+                              data-testid={`button-influencer-select-user-${idx}`}
+                            >
+                              <div className="w-8 h-8 rounded-full bg-pink-500/20 flex items-center justify-center flex-shrink-0">
+                                <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{(user.displayName || user.email).substring(0,2).toUpperCase()}</span>
+                              </div>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-[12px] font-semibold text-slate-800 dark:text-white truncate">{user.displayName || user.email}</p>
+                                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">{user.email}</p>
+                              </div>
+                              <ChevronRight className="h-4 w-4 text-slate-400 flex-shrink-0" />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+
+                      {influencerEmailSearch.trim().length >= 3 && !influencerSearchLoading && influencerSearchResults.length === 0 && (
+                        <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-sm">No users found matching that email.</div>
+                      )}
+
+                      {influencerEmailSearch.trim().length < 3 && (
+                        <div className="rounded-xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700 p-4 text-center space-y-1">
+                          <TrendingUp className="h-6 w-6 text-pink-400 mx-auto mb-2 opacity-70" />
+                          <p className="text-[12px] font-medium text-slate-600 dark:text-slate-300">Grant influencers free journal access</p>
+                          <p className="text-[10px] text-slate-400 dark:text-slate-500">Search by email, set the duration, and activate — no charges will apply during the period.</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               ) : (
                 <div className="px-8 pb-8 text-center space-y-4 pt-12">
                   <div className="mx-auto w-16 h-16 rounded-full bg-slate-50 dark:bg-slate-800/50 flex items-center justify-center mb-2"><Activity className="h-6 w-6 text-slate-400 dark:text-slate-500" /></div>
@@ -14877,6 +15108,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 journalFundBase={journalFundBase}
                 setJournalFundBase={setJournalFundBase}
                 journalWalletUserId={currentUser?.userId ?? null}
+                influencerPeriod={influencerPeriod}
                 currentUserName={currentUser?.displayName || currentUser?.username || ''}
                 currentUserEmail={currentUser?.email || ''}
                 activeBroker={activeBroker}

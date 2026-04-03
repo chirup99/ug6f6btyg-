@@ -347,6 +347,7 @@ export interface JournalTabContentProps {
   activeBroker: any;
   getBrokerDisplayName: any;
   brokerIconMap: any;
+  influencerPeriod?: { active: boolean; expiryDate: string; startDate: string; days: number } | null;
 
   // LossMakingAnalysisPanel
   formatDuration: any;
@@ -702,6 +703,7 @@ export function JournalTabContent({
   activeBroker,
   getBrokerDisplayName,
   brokerIconMap,
+  influencerPeriod,
   formatDuration,
   isNavVisible,
   navSparklineData,
@@ -1885,6 +1887,7 @@ export function JournalTabContent({
                           setShowConnectDialog={setShowConnectDialog}
                           getBrokerDisplayName={getBrokerDisplayName}
                           brokerIconMap={brokerIconMap}
+                          influencerPeriod={influencerPeriod}
                         />
 
                         {/* Trade Duration Analysis */}

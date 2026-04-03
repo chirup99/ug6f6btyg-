@@ -7167,7 +7167,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // POST /api/journal-wallet/:userId/deduct — deduct charges
+  // POST /api/journal-wallet/:userId/deduct — deduct charges (skipped during active influencer period)
   app.post('/api/journal-wallet/:userId/deduct', async (req, res) => {
     try {
       const { userId } = req.params;
@@ -7176,6 +7176,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!userId) return res.status(400).json({ error: 'userId required' });
       if (!amount || typeof amount !== 'number' || amount <= 0) {
         return res.status(400).json({ error: 'Valid positive amount required' });
+      }
+
+      // Check influencer free period — skip deduction if active
+      const influencerPeriod = await awsDynamoDBService.getInfluencerPeriod(userId);
+      if (influencerPeriod && influencerPeriod.active) {
+        const expiry = new Date(influencerPeriod.expiryDate);
+        if (expiry > new Date()) {
+          let wallet = await awsDynamoDBService.getWallet(userId);
+          if (!wallet) wallet = { balance: WALLET_JOINING_BONUS, totalTopUp: WALLET_JOINING_BONUS, totalDeducted: 0, transactions: [], createdAt: new Date().toISOString() };
+          return res.json({ success: true, skipped: true, reason: 'influencer_period', wallet });
+        }
       }
 
       let wallet = await awsDynamoDBService.getWallet(userId);
@@ -7199,6 +7210,75 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error('❌ Error deducting from wallet:', error);
       res.status(500).json({ error: 'Failed to deduct from wallet' });
+    }
+  });
+
+  // ==========================================
+  // INFLUENCER FREE PERIOD ROUTES
+  // ==========================================
+
+  // GET /api/influencer/search-user?email= — search user by email for admin
+  app.get('/api/influencer/search-user', async (req, res) => {
+    try {
+      const { email } = req.query as { email?: string };
+      if (!email || email.trim().length < 3) {
+        return res.json({ success: true, users: [] });
+      }
+      const { DynamoDBClient, ScanCommand } = await import('@aws-sdk/client-dynamodb');
+      const scanClient = new DynamoDBClient({ region: process.env.AWS_REGION || 'ap-south-1', credentials: { accessKeyId: process.env.AWS_ACCESS_KEY_ID || '', secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY || '' } });
+      const searchLower = email.toLowerCase().trim();
+      const scanResult = await scanClient.send(new ScanCommand({
+        TableName: 'neofeed-user-profiles',
+        FilterExpression: 'sk = :sk AND contains(#em, :email)',
+        ExpressionAttributeNames: { '#em': 'email' },
+        ExpressionAttributeValues: { ':sk': { S: 'PROFILE' }, ':email': { S: searchLower } },
+        ProjectionExpression: 'pk, #em, displayName, username',
+        Limit: 20
+      }));
+      const users = (scanResult.Items || []).map((item: any) => ({
+        userId: (item.pk?.S || '').replace('USER#', ''),
+        email: item.email?.S || '',
+        displayName: item.displayName?.S || item.username?.S || ''
+      })).filter((u: any) => u.userId && u.email);
+      res.json({ success: true, users });
+    } catch (error) {
+      console.error('❌ Error searching users by email:', error);
+      res.status(500).json({ error: 'Failed to search users' });
+    }
+  });
+
+  // POST /api/influencer/set-period — set influencer free period for a user (admin only)
+  app.post('/api/influencer/set-period', async (req, res) => {
+    try {
+      const { userId, days, grantedBy, userEmail, displayName } = req.body;
+      if (!userId || !days || typeof days !== 'number' || days <= 0) {
+        return res.status(400).json({ error: 'userId and valid days required' });
+      }
+      const startDate = new Date().toISOString();
+      const expiryDate = new Date(Date.now() + days * 24 * 60 * 60 * 1000).toISOString();
+      const periodData = { userId, userEmail: userEmail || '', displayName: displayName || '', days, startDate, expiryDate, grantedBy: grantedBy || 'admin', active: true };
+      await awsDynamoDBService.saveInfluencerPeriod(userId, periodData);
+      res.json({ success: true, period: periodData });
+    } catch (error) {
+      console.error('❌ Error setting influencer period:', error);
+      res.status(500).json({ error: 'Failed to set influencer period' });
+    }
+  });
+
+  // GET /api/influencer/period/:userId — get influencer period for a user
+  app.get('/api/influencer/period/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      if (!userId) return res.status(400).json({ error: 'userId required' });
+      const period = await awsDynamoDBService.getInfluencerPeriod(userId);
+      if (!period) return res.json({ success: true, period: null, active: false });
+      const now = new Date();
+      const expiry = new Date(period.expiryDate);
+      const active = period.active && expiry > now;
+      res.json({ success: true, period, active });
+    } catch (error) {
+      console.error('❌ Error fetching influencer period:', error);
+      res.status(500).json({ error: 'Failed to fetch influencer period' });
     }
   });
 

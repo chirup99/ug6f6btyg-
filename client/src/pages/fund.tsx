@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Wallet, Banknote, Receipt, Activity, Info, UserPlus, X, Copy, CheckCircle, Plus, Users, Link2, ExternalLink, Share2 } from 'lucide-react';
+import { Wallet, Banknote, Receipt, Activity, Info, UserPlus, X, Copy, CheckCircle, Plus, Users, Link2, ExternalLink, Share2, Gift, Clock } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -41,6 +41,7 @@ interface FundsAnalysisProps {
   setShowConnectDialog: (v: boolean) => void;
   getBrokerDisplayName: (id: string) => string;
   brokerIconMap: Record<string, string>;
+  influencerPeriod?: { active: boolean; expiryDate: string; startDate: string; days: number } | null;
 }
 
 interface ReferralProfile {
@@ -71,6 +72,7 @@ export function FundsAnalysis({
   setShowConnectDialog,
   getBrokerDisplayName,
   brokerIconMap,
+  influencerPeriod,
 }: FundsAnalysisProps) {
   const { toast } = useToast();
 
@@ -335,29 +337,42 @@ export function FundsAnalysis({
                   {/* Journal Fund Card */}
                   {(() => {
                     const isLow = journalFundBase < 100;
+                    const isFree = influencerPeriod?.active && influencerPeriod.expiryDate && new Date(influencerPeriod.expiryDate) > new Date();
+                    const daysLeft = isFree ? Math.ceil((new Date(influencerPeriod!.expiryDate).getTime() - Date.now()) / 86400000) : 0;
                     return (
-                      <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                      <div className={`bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 ${isFree ? 'border-pink-300/60 dark:border-pink-700/40' : 'border-white/40 dark:border-white/10'}`}>
                         <div className="flex items-center justify-between mb-4">
-                          <div className="p-2 bg-green-500/10 rounded-lg text-green-600 dark:text-green-400">
-                            <Wallet className="w-5 h-5" />
+                          <div className={`p-2 rounded-lg ${isFree ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400' : 'bg-green-500/10 text-green-600 dark:text-green-400'}`}>
+                            {isFree ? <Gift className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
                           </div>
-                          <Badge variant="outline" className="bg-green-500/5 text-green-600 border-green-500/20 text-[10px]">Journal Fund</Badge>
+                          {isFree ? (
+                            <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20 text-[10px]">Influencer Free</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-green-500/5 text-green-600 border-green-500/20 text-[10px]">Journal Fund</Badge>
+                          )}
                         </div>
                         <div className="space-y-1">
                           <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Available Balance</p>
                           <h4 className={`text-2xl font-black flex items-baseline gap-1 ${journalFundBase < 0 ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-900 dark:text-white'}`}>
                             ₹{Math.max(0, journalFundBase).toFixed(2)}
                           </h4>
-                          <button
-                            onClick={() => setShowJournalChargesDialog(true)}
-                            className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-colors mt-1"
-                            data-testid="button-journal-charges-info"
-                          >
-                            <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-tight">
-                              {tradeHistoryData.length} trades × ₹2 + 18% GST
-                            </span>
-                            <Info className="w-3 h-3 text-violet-400 dark:text-violet-500 flex-shrink-0" />
-                          </button>
+                          {isFree ? (
+                            <div className="flex items-center gap-1.5 mt-1">
+                              <Clock className="w-3 h-3 text-pink-500" />
+                              <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{daysLeft} days free left • Expires {new Date(influencerPeriod!.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setShowJournalChargesDialog(true)}
+                              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-colors mt-1"
+                              data-testid="button-journal-charges-info"
+                            >
+                              <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-tight">
+                                {tradeHistoryData.length} trades × ₹2 + 18% GST
+                              </span>
+                              <Info className="w-3 h-3 text-violet-400 dark:text-violet-500 flex-shrink-0" />
+                            </button>
+                          )}
                         </div>
                         <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
                           <button
@@ -377,7 +392,11 @@ export function FundsAnalysis({
                             Refer
                           </button>
                         </div>
-                        <p className="text-[9px] text-green-600 dark:text-green-400 font-medium mt-2">🎁 ₹1,000 joining offer applied</p>
+                        {isFree ? (
+                          <p className="text-[9px] text-pink-600 dark:text-pink-400 font-medium mt-2">🎁 Influencer offer — no journal charges during free period</p>
+                        ) : (
+                          <p className="text-[9px] text-green-600 dark:text-green-400 font-medium mt-2">🎁 ₹1,000 joining offer applied</p>
+                        )}
                       </div>
                     );
                   })()}
@@ -388,6 +407,8 @@ export function FundsAnalysis({
                     const baseCharge = tradeCount * 2;
                     const gstAmount = baseCharge * 0.18;
                     const totalCharge = baseCharge + gstAmount;
+                    const isFree = influencerPeriod?.active && influencerPeriod.expiryDate && new Date(influencerPeriod.expiryDate) > new Date();
+                    const daysLeft = isFree ? Math.ceil((new Date(influencerPeriod!.expiryDate).getTime() - Date.now()) / 86400000) : 0;
 
                     const chargeTrendData = Object.keys(tradingDataByDate).sort().map(dateKey => {
                       const dayData = tradingDataByDate[dateKey];
@@ -400,38 +421,62 @@ export function FundsAnalysis({
                     const avgDailyTrades = chargeTrendData.length > 0
                       ? chargeTrendData.reduce((s, d) => s + d.trades, 0) / chargeTrendData.length
                       : 0;
-                    const isOverTrading = tradeCount > avgDailyTrades * 1.5 && avgDailyTrades > 0;
+                    const isOverTrading = !isFree && tradeCount > avgDailyTrades * 1.5 && avgDailyTrades > 0;
 
                     return (
                       <div
-                        className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer"
-                        onClick={() => setShowJournalChargesDialog(true)}
+                        className={`bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer ${isFree ? 'border-pink-300/60 dark:border-pink-700/40' : 'border-white/40 dark:border-white/10'}`}
+                        onClick={() => !isFree && setShowJournalChargesDialog(true)}
                         data-testid="journal-charges-card"
                       >
                         <div className="flex items-center justify-between mb-4">
-                          <div className="p-2 bg-violet-500/10 rounded-lg text-violet-600 dark:text-violet-400">
-                            <Receipt className="w-5 h-5" />
+                          <div className={`p-2 rounded-lg ${isFree ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400' : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'}`}>
+                            {isFree ? <Gift className="w-5 h-5" /> : <Receipt className="w-5 h-5" />}
                           </div>
-                          <Badge variant="outline" className="bg-violet-500/5 text-violet-600 border-violet-500/20 text-[10px]">Today's Fee</Badge>
+                          {isFree ? (
+                            <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20 text-[10px]">No Charges</Badge>
+                          ) : (
+                            <Badge variant="outline" className="bg-violet-500/5 text-violet-600 border-violet-500/20 text-[10px]">Today's Fee</Badge>
+                          )}
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Journal Charges</p>
-                          <h4 className="text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1">
-                            ₹{totalCharge.toFixed(2)}
-                          </h4>
-                          <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                            {tradeCount} trade{tradeCount !== 1 ? 's' : ''} × ₹2 + 18% GST
-                          </p>
-                        </div>
+                        {isFree ? (
+                          <div className="space-y-2">
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Journal Charges</p>
+                            <h4 className="text-2xl font-black text-pink-600 dark:text-pink-400 flex items-baseline gap-1 line-through decoration-1 opacity-50">
+                              ₹{totalCharge.toFixed(2)}
+                            </h4>
+                            <div className="flex items-center gap-1.5">
+                              <Gift className="w-3.5 h-3.5 text-pink-500" />
+                              <span className="text-sm font-black text-green-600 dark:text-green-400">₹0.00 — Free!</span>
+                            </div>
+                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800">
+                              <Clock className="w-3 h-3 text-pink-500 flex-shrink-0" />
+                              <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{daysLeft} days remaining in free period</span>
+                            </div>
+                            <p className="text-[10px] text-pink-500 dark:text-pink-400">
+                              Expires {new Date(influencerPeriod!.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Journal Charges</p>
+                            <h4 className="text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1">
+                              ₹{totalCharge.toFixed(2)}
+                            </h4>
+                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
+                              {tradeCount} trade{tradeCount !== 1 ? 's' : ''} × ₹2 + 18% GST
+                            </p>
+                          </div>
+                        )}
                         <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           <span className="flex items-center gap-1">
                             {isOverTrading && <span className="text-orange-500">⚠</span>}
-                            {isOverTrading ? 'Over-Trading' : 'Current Day'}
+                            {isFree ? 'Influencer Offer' : isOverTrading ? 'Over-Trading' : 'Current Day'}
                           </span>
                           <div className="flex gap-1">
-                            <div className="w-1 h-1 rounded-full bg-violet-500" />
-                            <div className="w-1 h-1 rounded-full bg-violet-500/40" />
-                            <div className="w-1 h-1 rounded-full bg-violet-500/20" />
+                            <div className={`w-1 h-1 rounded-full ${isFree ? 'bg-pink-500' : 'bg-violet-500'}`} />
+                            <div className={`w-1 h-1 rounded-full ${isFree ? 'bg-pink-500/40' : 'bg-violet-500/40'}`} />
+                            <div className={`w-1 h-1 rounded-full ${isFree ? 'bg-pink-500/20' : 'bg-violet-500/20'}`} />
                           </div>
                         </div>
                       </div>

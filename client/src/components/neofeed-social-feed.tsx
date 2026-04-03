@@ -599,7 +599,7 @@ function CommentContent({ content }: { content: string }) {
 }
 
 // Inline Comment Section Component - compact with comments list and delete
-function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onCommentDeleted, minListHeight = 220 }: { post: FeedPost; isVisible: boolean; onClose: () => void; onCommentAdded?: () => void; onCommentDeleted?: () => void; minListHeight?: number }) {
+function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onCommentDeleted }: { post: FeedPost; isVisible: boolean; onClose: () => void; onCommentAdded?: () => void; onCommentDeleted?: () => void }) {
   const [comment, setComment] = useState('');
   const [mentionQuery, setMentionQuery] = useState<string | null>(null);
   const [mentionResults, setMentionResults] = useState<{ username: string; displayName: string; avatar: string | null }[]>([]);
@@ -727,12 +727,10 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 pt-2 overflow-x-hidden" data-testid={`comment-section-${post.id}`}>
-      {/* Comments list — same height as post, scrollable */}
-      <div className="mb-2 space-y-1.5 overflow-y-auto" style={{ minHeight: `${minListHeight}px`, maxHeight: `${minListHeight}px` }}>
-        {comments.length === 0 && (
-          <div className="flex items-center justify-center h-full text-xs text-gray-400 dark:text-gray-500">No comments yet. Be the first!</div>
-        )}
-        {comments.length > 0 && comments.map((c: any) => {
+      {/* Comments list — compact, scrollable */}
+      {comments.length > 0 && (
+      <div className="mb-2 space-y-1.5 overflow-y-auto" style={{ maxHeight: '200px' }}>
+        {comments.map((c: any) => {
             const commentId = c.id || c.commentId;
             const isOwn = currentUsername && c.authorUsername === currentUsername;
             return (
@@ -773,6 +771,7 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
             );
           })}
         </div>
+      )}
 
       {/* Add comment form with @mention dropdown */}
       <form onSubmit={handleSubmit} className="relative">
@@ -4760,8 +4759,6 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
   const [isFollowing, setIsFollowing] = useState(false);
   const [showVoteBar, setShowVoteBar] = useState(false);
   const voteBarRef = useRef<HTMLDivElement>(null);
-  const postBodyRef = useRef<HTMLDivElement>(null);
-  const [commentListHeight, setCommentListHeight] = useState(0);
   
   // Real-time count state - initialize from post data (uptrends = likes, downtrends = new)
   const [likeCount, setLikeCount] = useState(post.metrics?.likes || post.likes || 0);
@@ -5458,8 +5455,6 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
     <Card className="bg-card border border-border shadow-none mb-2 rounded-xl transition-none">
       
       <CardContent className="p-2.5 xl:p-4 transition-none">
-        {/* Measured post body — height captured for comment list sizing */}
-        <div ref={postBodyRef}>
         {/* User Header - For reposts, shows the reposter (current user) as the main author */}
         <div className="flex items-start justify-between mb-2 xl:mb-3">
           <div className="flex items-center gap-2 xl:gap-3">
@@ -5795,19 +5790,13 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           </div>
         </div>
 
-        </div>{/* end postBodyRef */}
-
         {/* Action Buttons */}
         <div className="flex items-center justify-between pt-2 border-t border-border py-1.5 xl:py-2">
           <div className="flex items-center gap-3 xl:gap-8">
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => {
-                const h = postBodyRef.current?.offsetHeight ?? 0;
-                if (h > 0) setCommentListHeight(h);
-                setShowCommentSection(!showCommentSection);
-              }}
+              onClick={() => setShowCommentSection(!showCommentSection)}
               className={`flex items-center gap-1 xl:gap-2 px-1.5 xl:px-3 py-1 xl:py-2 h-auto rounded-lg transition-colors ${
                 showCommentSection ? 'text-blue-500 dark:text-blue-400' : 'text-muted-foreground hover:text-foreground hover:bg-muted'
               }`}
@@ -5941,7 +5930,6 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           onClose={() => setShowCommentSection(false)}
           onCommentAdded={() => setCommentCount(prev => prev + 1)}
           onCommentDeleted={() => setCommentCount(prev => Math.max(0, prev - 1))}
-          minListHeight={commentListHeight}
         />
 
         {/* Share Modal */}

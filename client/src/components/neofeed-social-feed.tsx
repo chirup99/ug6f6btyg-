@@ -510,48 +510,50 @@ function CertificationDialog({ username, certId, certImageUrl, isOpen, onClose, 
             </div>
           </div>
 
-          {/* Certificate image — blurred marksheet with frosted data overlay */}
+          {/* Certificate — header + clear image + data table below */}
           {certImageUrl ? (
-            <div className="relative rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/50" style={{ minHeight: 160 }}>
-              {/* Blurred background image */}
+            <div className="rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/50">
+              {/* Top header: NISM badge + candidate name */}
+              <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800/40">
+                <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 12 12" fill="none">
+                  <circle cx="6" cy="6" r="5.5" fill={verified ? '#22C55E' : '#F59E0B'} />
+                  {verified
+                    ? <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                    : <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.2" strokeLinecap="round" strokeLinejoin="round"/>
+                  }
+                </svg>
+                <div className="flex-1 min-w-0">
+                  {dataRows.find(r => r.label === 'Candidate')?.value ? (
+                    <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{dataRows.find(r => r.label === 'Candidate')?.value}</p>
+                  ) : (
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">{verified ? 'NISM Verified' : cert?.label || certId}</p>
+                  )}
+                  <p className="text-[10px] text-amber-600 dark:text-amber-400">{verified ? 'NISM / SEBI Certified' : 'Pending Verification'}</p>
+                </div>
+              </div>
+
+              {/* Certificate image — shown clearly */}
               <img
                 src={certImageUrl}
                 alt="Certificate"
-                className="w-full object-cover"
-                style={{ filter: 'blur(7px) brightness(0.4)', maxHeight: 200 }}
+                className="w-full object-contain bg-white dark:bg-gray-900"
+                style={{ maxHeight: 180 }}
                 loading="eager"
                 decoding="async"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
-              {/* Frosted overlay — centered content */}
-              <div className="absolute inset-0 flex flex-col items-center justify-center px-4 py-3 gap-2">
-                {/* Verified badge */}
-                {verified !== false && (
-                  <div className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-amber-500/90 text-white text-[10px] font-bold tracking-wide mb-1">
-                    <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none">
-                      <circle cx="6" cy="6" r="5.5" fill="currentColor" fillOpacity="0.3"/>
-                      <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
-                    </svg>
-                    NISM VERIFIED
-                  </div>
-                )}
-                {/* Data table */}
-                {dataRows.length > 0 ? (
-                  <div className="w-full rounded-lg overflow-hidden border border-white/20 backdrop-blur-sm bg-black/50">
-                    {dataRows.map((row, i) => (
-                      <div key={i} className={`flex items-start gap-2 px-3 py-1.5 ${i % 2 === 0 ? 'bg-white/5' : 'bg-transparent'}`}>
-                        <span className="text-[9px] font-semibold uppercase tracking-wider text-white/50 w-16 flex-shrink-0 pt-px">{row.label}</span>
-                        <span className="text-[10px] font-medium text-white leading-tight">{row.value}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="rounded-lg border border-white/20 backdrop-blur-sm bg-black/50 px-4 py-3 text-center">
-                    <p className="text-white/80 text-xs font-medium">{cert?.label || certId}</p>
-                    <p className="text-white/50 text-[10px] mt-0.5">NISM / SEBI Certified</p>
-                  </div>
-                )}
-              </div>
+
+              {/* Data table — frosted dark bottom section */}
+              {dataRows.length > 0 && (
+                <div className="border-t border-amber-100 dark:border-amber-800/40 bg-gray-900/90 dark:bg-black/80">
+                  {dataRows.map((row, i) => (
+                    <div key={i} className={`flex items-start gap-2 px-3 py-1.5 ${i % 2 === 0 ? 'bg-white/5' : ''}`}>
+                      <span className="text-[9px] font-semibold uppercase tracking-wider text-white/40 w-16 flex-shrink-0 pt-px">{row.label}</span>
+                      <span className="text-[10px] font-medium text-white/90 leading-tight">{row.value}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           ) : (
             <div className="rounded-xl border border-dashed border-border bg-muted/20 flex items-center justify-center h-20">
@@ -3272,7 +3274,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
 
   // Verify certificate by calling Gemini Vision OCR
   const verifyCertificate = async () => {
-    const idToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+    const idToken = await getCognitoToken();
     if (!idToken) { toast({ description: 'Please sign in to verify', variant: 'destructive' }); return; }
 
     // Need an uploaded image URL first — upload if only local preview exists
@@ -3685,77 +3687,66 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
                 />
                 {certImagePreview ? (
                   <div className="space-y-2">
-                    {/* Blurred marksheet display — cert image blurred behind, extracted data as frosted table overlay */}
-                    <div className="relative rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/50" style={{ minHeight: 140 }}>
-                      {/* Blurred background image */}
+                    {/* Cert card: header + clear image + data table below */}
+                    <div className="rounded-xl overflow-hidden border border-amber-200 dark:border-amber-700/50 bg-gray-50 dark:bg-gray-800/60">
+
+                      {/* Top header row: status badge + candidate name */}
+                      <div className="flex items-center gap-2 px-3 py-2 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-100 dark:border-amber-800/40">
+                        <svg className="w-4 h-4 flex-shrink-0" viewBox="0 0 12 12" fill="none">
+                          <circle cx="6" cy="6" r="5.5" fill={certVerificationStatus === 'verified' ? '#22C55E' : certVerificationStatus === 'failed' ? '#EF4444' : '#F59E0B'} />
+                          {certVerificationStatus === 'verified'
+                            ? <path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+                            : certVerificationStatus === 'failed'
+                              ? <path d="M4 4l4 4M8 4l-4 4" stroke="white" strokeWidth="1.4" strokeLinecap="round"/>
+                              : <path d="M6 3v3.5l2 1.5" stroke="white" strokeWidth="1.2" strokeLinecap="round"/>
+                          }
+                        </svg>
+                        <div className="flex-1 min-w-0">
+                          {certVerifyResult?.extracted?.candidateName ? (
+                            <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{certVerifyResult.extracted.candidateName}</p>
+                          ) : (
+                            <p className="text-xs font-medium text-amber-700 dark:text-amber-300">
+                              {certVerificationStatus === 'verified' ? 'NISM Verified' : certVerificationStatus === 'failed' ? 'Verification Failed' : 'Certificate Uploaded'}
+                            </p>
+                          )}
+                          {certVerifyResult?.extracted?.examName && (
+                            <p className="text-[10px] text-amber-600 dark:text-amber-400 truncate">{certVerifyResult.extracted.examName}</p>
+                          )}
+                        </div>
+                        {/* Change / Remove buttons */}
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button type="button" onClick={() => certInputRef.current?.click()} className="text-[10px] px-2 py-0.5 rounded bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-50" data-testid="button-change-cert-image">Change</button>
+                          <button type="button" onClick={() => { setCertImagePreview(''); setCertificationImageUrl(''); setCertImageFile(null); setCertVerifyResult(null); setCertVerificationStatus(''); }} className="text-[10px] px-2 py-0.5 rounded bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700/50 text-red-600 dark:text-red-400 hover:bg-red-100" data-testid="button-remove-cert-image">Remove</button>
+                        </div>
+                      </div>
+
+                      {/* Certificate image — shown clearly */}
                       <img
                         src={certImagePreview}
                         alt="Certificate"
-                        className="w-full object-cover"
-                        style={{ filter: certVerifyResult ? 'blur(6px) brightness(0.45)' : 'none', maxHeight: 160 }}
+                        className="w-full object-contain bg-white dark:bg-gray-900"
+                        style={{ maxHeight: 160 }}
                       />
-                      {/* Frosted data overlay shown after verification */}
+
+                      {/* Data table — only after verification */}
                       {certVerifyResult && (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center px-3 py-2">
-                          {/* Status badge */}
-                          <div className={`flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold tracking-wide mb-2 ${
-                            certVerificationStatus === 'verified'
-                              ? 'bg-green-500/90 text-white'
-                              : 'bg-red-500/80 text-white'
-                          }`}>
-                            {certVerificationStatus === 'verified' ? (
-                              <>
-                                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" fill="currentColor" fillOpacity="0.3"/><path d="M3.5 6l2 2 3-3" stroke="white" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-                                NISM VERIFIED
-                              </>
-                            ) : (
-                              <>
-                                <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" fill="currentColor" fillOpacity="0.3"/><path d="M4 4l4 4M8 4l-4 4" stroke="white" strokeWidth="1.4" strokeLinecap="round"/></svg>
-                                {certVerifyResult.extracted?.candidateName ? 'NAME MISMATCH' : 'UNREADABLE'}
-                              </>
-                            )}
-                          </div>
-                          {/* Extracted data table — white semi-transparent text */}
-                          <div className="w-full rounded-lg overflow-hidden border border-white/20 backdrop-blur-sm bg-black/40">
-                            {[
-                              { label: 'Candidate', value: certVerifyResult.extracted?.candidateName },
-                              { label: 'Exam', value: certVerifyResult.extracted?.examName || certVerifyResult.extracted?.examCode },
-                              { label: 'Cert ID', value: certVerifyResult.extracted?.certId || certVerifyResult.extracted?.enrollmentNo },
-                              { label: 'Score', value: certVerifyResult.extracted?.score },
-                              { label: 'Date', value: certVerifyResult.extracted?.passingDate },
-                              { label: 'Valid Until', value: certVerifyResult.extracted?.validUntil },
-                            ].filter(r => r.value).map((row, i) => (
-                              <div key={i} className={`flex items-start gap-1.5 px-2.5 py-1 ${i % 2 === 0 ? 'bg-white/5' : 'bg-transparent'}`}>
-                                <span className="text-[9px] font-semibold uppercase tracking-wider text-white/50 w-16 flex-shrink-0 pt-px">{row.label}</span>
-                                <span className="text-[10px] font-medium text-white/90 leading-tight">{row.value}</span>
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      )}
-                      {/* Change/Remove hover overlay (only when NOT showing extracted data) */}
-                      {!certVerifyResult && (
-                        <div className="absolute inset-0 bg-black/40 opacity-0 hover:opacity-100 flex items-center justify-center gap-2 transition-opacity">
-                          <button
-                            type="button"
-                            onClick={() => certInputRef.current?.click()}
-                            className="px-2.5 py-1 bg-white text-gray-800 text-xs font-semibold rounded-lg"
-                            data-testid="button-change-cert-image"
-                          >
-                            Change
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => { setCertImagePreview(''); setCertificationImageUrl(''); setCertImageFile(null); setCertVerifyResult(null); setCertVerificationStatus(''); }}
-                            className="px-2.5 py-1 bg-red-500 text-white text-xs font-semibold rounded-lg"
-                            data-testid="button-remove-cert-image"
-                          >
-                            Remove
-                          </button>
+                        <div className="border-t border-amber-100 dark:border-amber-800/40 bg-gray-900/90 dark:bg-black/70">
+                          {[
+                            { label: 'Candidate', value: certVerifyResult.extracted?.candidateName },
+                            { label: 'Exam', value: certVerifyResult.extracted?.examName || certVerifyResult.extracted?.examCode },
+                            { label: 'Cert ID', value: certVerifyResult.extracted?.certId || certVerifyResult.extracted?.enrollmentNo },
+                            { label: 'Score', value: certVerifyResult.extracted?.score },
+                            { label: 'Date', value: certVerifyResult.extracted?.passingDate },
+                            { label: 'Valid Until', value: certVerifyResult.extracted?.validUntil },
+                          ].filter(r => r.value).map((row, i) => (
+                            <div key={i} className={`flex items-start gap-2 px-3 py-1 ${i % 2 === 0 ? 'bg-white/5' : ''}`}>
+                              <span className="text-[9px] font-semibold uppercase tracking-wider text-white/40 w-16 flex-shrink-0 pt-px">{row.label}</span>
+                              <span className="text-[10px] font-medium text-white/90 leading-tight">{row.value}</span>
+                            </div>
+                          ))}
                         </div>
                       )}
                     </div>
-                    <p className="text-[10px] text-center text-amber-600 dark:text-amber-400 py-1">Certificate image</p>
                   </div>
                 ) : (
                   <button

@@ -7314,7 +7314,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   });
 
   // Derived boolean for backward compatibility with existing code
-  const isDemoMode = heatmapMode === 0;
+  // Demo mode UI (demo broker dialogs, demo orders/positions) only applies to guest (non-authenticated) users.
+  // Authenticated users can toggle to demo heatmap data but always see real broker connections.
+  const isLoggedIn = !!(currentUser?.userId);
+  const isDemoMode = heatmapMode === 0 && !isLoggedIn;
   // setIsDemoMode kept for backward compat (true → Demo=0, false → Personal1=1)
   const setIsDemoMode = (val: boolean) => {
     const newMode = val ? 0 : 1;

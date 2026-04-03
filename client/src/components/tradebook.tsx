@@ -319,9 +319,9 @@ export function TradeBook({
                                               const alreadyAdded = targetList.some(t => t.id === `yt-${result.videoId}`);
                                               const limitReached = targetList.length >= 4;
                                               return (
-                                                <div key={result.videoId} className="flex items-center gap-2 p-1.5 min-w-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                                <div key={result.videoId} className="flex items-center gap-2 p-1.5 w-full min-w-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
                                                   <img src={result.thumbnail} alt="" className="w-9 h-6 rounded object-cover flex-shrink-0 bg-slate-200" />
-                                                  <span className="flex-1 min-w-0 text-[10px] text-slate-700 dark:text-slate-300 leading-tight truncate">{result.title}</span>
+                                                  <span className="flex-1 w-0 min-w-0 text-[10px] text-slate-700 dark:text-slate-300 leading-tight truncate">{result.title}</span>
                                                   <button
                                                     onClick={() => addTrack(result)}
                                                     disabled={alreadyAdded || limitReached}
@@ -351,11 +351,11 @@ export function TradeBook({
                                                 <span className="text-[9px] font-bold text-violet-500 uppercase tracking-widest">Meditation</span>
                                               </div>
                                               {meditationTracks.map(track => (
-                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors min-w-0 overflow-hidden">
+                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors w-full min-w-0 overflow-hidden">
                                                   <div className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-500 transition-colors flex-shrink-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
                                                     <Play className="w-2.5 h-2.5 text-violet-500 group-hover:text-white" />
                                                   </div>
-                                                  <span className="flex-1 min-w-0 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>{track.title}</span>
+                                                  <span className="flex-1 w-0 min-w-0 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>{track.title}</span>
                                                   <span className="text-[9px] font-mono text-slate-400 flex-shrink-0 whitespace-nowrap">{track.duration}</span>
                                                   <button onClick={() => removeTrack("meditation", track.id)} className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0" data-testid={`button-remove-meditation-${track.id}`}>
                                                     <X className="w-2.5 h-2.5" />
@@ -372,11 +372,11 @@ export function TradeBook({
                                                 <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Psychology</span>
                                               </div>
                                               {psychologyTracks.map(track => (
-                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors min-w-0 overflow-hidden">
+                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors w-full min-w-0 overflow-hidden">
                                                   <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-500 transition-colors flex-shrink-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
                                                     <Play className="w-2.5 h-2.5 text-blue-500 group-hover:text-white" />
                                                   </div>
-                                                  <span className="flex-1 min-w-0 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>{track.title}</span>
+                                                  <span className="flex-1 w-0 min-w-0 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>{track.title}</span>
                                                   <span className="text-[9px] font-mono text-slate-400 flex-shrink-0 whitespace-nowrap">{track.duration}</span>
                                                   <button onClick={() => removeTrack("psychology", track.id)} className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0" data-testid={`button-remove-psychology-${track.id}`}>
                                                     <X className="w-2.5 h-2.5" />

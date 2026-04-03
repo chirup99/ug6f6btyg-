@@ -305,7 +305,7 @@ export function DisciplineRiskPanel({
             <h4 className="text-base font-semibold mb-3 flex items-center gap-2">
               <Brain className="w-4 h-4" /> Discipline Tips
             </h4>
-            <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+            <div className="drp-tips-scroll space-y-2 max-h-72 overflow-y-auto pr-1">
               {tips.map((rec, idx) => (
                 <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
                   <div className="flex items-start gap-3">
@@ -339,6 +339,11 @@ export function DisciplineRiskPanel({
               0%, 100% { filter: drop-shadow(0 0 8px rgba(234,179,8,0.35)) brightness(1); transform: scale(1); }
               50% { filter: drop-shadow(0 0 18px rgba(234,179,8,0.7)) brightness(1.08); transform: scale(1.04); }
             }
+            .drp-tips-scroll::-webkit-scrollbar { width: 3px; }
+            .drp-tips-scroll::-webkit-scrollbar-track { background: transparent; }
+            .drp-tips-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.25); border-radius: 99px; }
+            .drp-tips-scroll::-webkit-scrollbar-button { display: none; }
+            .drp-tips-scroll { scrollbar-width: thin; scrollbar-color: rgba(255,255,255,0.25) transparent; }
           `}</style>
           {/* Stacked card effect */}
           <div className="relative h-[106px]">

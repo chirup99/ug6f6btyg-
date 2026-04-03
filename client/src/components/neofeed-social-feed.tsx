@@ -1320,11 +1320,15 @@ function SearchOverlay({
   posts,
   onClose,
   onViewProfile,
+  onApplySearch,
+  onApplyFilter,
 }: {
   query: string;
   posts: FeedPost[];
   onClose: () => void;
   onViewProfile: (username: string) => void;
+  onApplySearch: (query: string) => void;
+  onApplyFilter: (filter: string) => void;
 }) {
   const [category, setCategory] = useState<SearchCategory>('all');
   const [recentSearches, setRecentSearches] = useState<string[]>(() => {
@@ -1504,7 +1508,7 @@ function SearchOverlay({
                     <div
                       key={p.id}
                       className="flex items-center gap-3 p-3 rounded-xl bg-muted/50 hover:bg-muted transition-colors cursor-pointer"
-                      onClick={() => { saveSearch('#tradebook'); onClose(); }}
+                      onClick={() => { saveSearch('#tradebook'); onApplyFilter('Tradebook'); onClose(); }}
                       data-testid={`tradebook-post-${p.id}`}
                     >
                       <Avatar className="w-9 h-9 shrink-0">
@@ -1577,7 +1581,7 @@ function SearchOverlay({
               {filteredTags.map(({ tag, count }) => (
                 <button
                   key={tag}
-                  onClick={() => saveSearch('#' + tag)}
+                  onClick={() => { saveSearch('#' + tag); onApplySearch(tag); onClose(); }}
                   data-testid={`search-tag-${tag}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 text-xs font-medium hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                 >
@@ -1597,7 +1601,7 @@ function SearchOverlay({
               {filteredStocks.map(({ stock, count }) => (
                 <button
                   key={stock}
-                  onClick={() => saveSearch('$' + stock)}
+                  onClick={() => { saveSearch('$' + stock); onApplySearch(stock); onClose(); }}
                   data-testid={`search-stock-${stock}`}
                   className="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400 text-xs font-medium hover:bg-emerald-100 dark:hover:bg-emerald-900/30 transition-colors"
                 >
@@ -1630,7 +1634,7 @@ function SearchOverlay({
                 return (
                   <div
                     key={p.id}
-                    onClick={() => { if (q) saveSearch(q); onClose(); }}
+                    onClick={() => { if (query) { saveSearch(query); onApplySearch(q); } onClose(); }}
                     className="p-3 rounded-xl bg-muted/40 hover:bg-muted transition-colors cursor-pointer"
                     data-testid={`search-post-${p.id}`}
                   >
@@ -1690,6 +1694,7 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
 
   const handleSearchCancel = () => {
     setIsSearchOpen(false);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
@@ -1736,6 +1741,8 @@ function FeedHeader({ onAllClick, isRefreshing, selectedFilter, onFilterChange, 
             posts={posts}
             onClose={handleSearchCancel}
             onViewProfile={(username) => { onViewProfile?.(username); handleSearchCancel(); }}
+            onApplySearch={(q) => { setSearchQuery(q); }}
+            onApplyFilter={(filter) => { onFilterChange(filter); setSearchQuery(''); }}
           />
         </div>
       )}

@@ -248,12 +248,6 @@ export function FundsAnalysis({
                   </CardDescription>
                 </div>
               </div>
-              {isConnected && (
-                <div className="px-3 py-1 bg-green-500/10 border border-green-500/20 rounded-full flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-                  <span className="text-[10px] font-bold text-green-600 dark:text-green-400 uppercase tracking-wider">Broker Live</span>
-                </div>
-              )}
             </div>
           </CardHeader>
 

@@ -1860,12 +1860,6 @@ export function JournalTabContent({
                           })()}
                         </div>
 
-                        {/* Trade Duration Analysis */}
-                        <TradeDurationAnalysis
-                          filteredHeatmapData={filteredHeatmapData}
-                          theme={theme}
-                        />
-
                         {/* Full Width Funds Analysis */}
                         <FundsAnalysis
                           isConnected={isConnected}
@@ -1882,6 +1876,12 @@ export function JournalTabContent({
                           setShowConnectDialog={setShowConnectDialog}
                           getBrokerDisplayName={getBrokerDisplayName}
                           brokerIconMap={brokerIconMap}
+                        />
+
+                        {/* Trade Duration Analysis */}
+                        <TradeDurationAnalysis
+                          filteredHeatmapData={filteredHeatmapData}
+                          theme={theme}
                         />
 
                         {/* Risk Management Analysis Window */}

@@ -727,9 +727,11 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
 
   return (
     <div className="border-t border-gray-200 dark:border-gray-700 pt-2 overflow-x-hidden" data-testid={`comment-section-${post.id}`}>
-      {/* Comments list — compact, scrollable */}
-      {comments.length > 0 && (
-      <div className="mb-2 space-y-1.5 overflow-y-auto" style={{ maxHeight: '200px' }}>
+      {/* Comments list — compact, scrollable, always visible with min height */}
+      <div className="mb-2 space-y-1.5 overflow-y-auto" style={{ minHeight: '80px', maxHeight: '200px' }}>
+        {comments.length === 0 && (
+          <div className="flex items-center justify-center h-20 text-xs text-gray-400 dark:text-gray-500">No comments yet. Be the first!</div>
+        )}
         {comments.map((c: any) => {
             const commentId = c.id || c.commentId;
             const isOwn = currentUsername && c.authorUsername === currentUsername;
@@ -771,7 +773,6 @@ function InlineCommentSection({ post, isVisible, onClose, onCommentAdded, onComm
             );
           })}
         </div>
-      )}
 
       {/* Add comment form with @mention dropdown */}
       <form onSubmit={handleSubmit} className="relative">

@@ -1565,8 +1565,7 @@ export function useJournalChartLogic(config: JournalChartConfig) {
               return `${day}/${month} ${hours}:${minutes} IST`;
             },
           },
-          width: containerWidth,
-          height: containerHeight,
+          autoSize: true,
         });
 
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
@@ -1732,15 +1731,7 @@ export function useJournalChartLogic(config: JournalChartConfig) {
           }
         }, 100);
 
-        const handleResize = () => {
-          if (journalChartContainerRef.current && journalChartRef.current) {
-            journalChartRef.current.applyOptions({
-              width: journalChartContainerRef.current.clientWidth,
-            });
-          }
-        };
-
-        window.addEventListener("resize", handleResize);
+        // autoSize: true handles all resize events via ResizeObserver
       } catch (error) {
         console.error("❌ Error rendering journal chart:", error instanceof Error ? error.message : String(error));
         if (error instanceof Error) console.error("Stack:", error.stack);
@@ -1760,7 +1751,6 @@ export function useJournalChartLogic(config: JournalChartConfig) {
         cancelAnimationFrame(journalRafRef.current);
         journalRafRef.current = null;
       }
-      window.removeEventListener("resize", () => {});
     };
   }, [activeTab, selectedJournalSymbol, journalChartTimeframe, journalChartData]);
 
@@ -1860,8 +1850,7 @@ export function useJournalChartLogic(config: JournalChartConfig) {
               return `${day}/${month} ${hours}:${minutes} IST`;
             },
           },
-          width: containerWidth,
-          height: containerHeight,
+          autoSize: true,
         });
 
         const candlestickSeries = chart.addSeries(CandlestickSeries, {
@@ -2071,15 +2060,7 @@ export function useJournalChartLogic(config: JournalChartConfig) {
           }
         }, 100);
 
-        const handleResize = () => {
-          if (heatmapChartContainerRef.current && heatmapChartRef.current) {
-            heatmapChartRef.current.applyOptions({
-              width: heatmapChartContainerRef.current.clientWidth,
-            });
-          }
-        };
-
-        window.addEventListener("resize", handleResize);
+        // autoSize: true handles all resize events via ResizeObserver
 
         console.log("🗓️ [HEATMAP CHART] Successfully rendered");
       } catch (error) {
@@ -2089,9 +2070,6 @@ export function useJournalChartLogic(config: JournalChartConfig) {
 
     return () => {
       clearTimeout(timer);
-      if (heatmapChartContainerRef.current && heatmapChartRef.current) {
-        window.removeEventListener("resize", () => {});
-      }
     };
   }, [activeTab, heatmapChartData, heatmapTradeHistory, heatmapSelectedDate]);
 

@@ -3027,62 +3027,118 @@ function ImageCropModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-xs p-4 overflow-hidden">
-        <DialogHeader className="pb-2">
-          <DialogTitle className="text-sm font-semibold text-foreground">
+      <DialogContent className="max-w-xs p-5 rounded-2xl overflow-hidden bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 shadow-xl">
+        <DialogHeader className="pb-1">
+          <DialogTitle className="text-base font-semibold text-gray-900 dark:text-white">
             Adjust {imageType === 'profile' ? 'Profile' : 'Cover'} Photo
           </DialogTitle>
+          <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
+            {imageType === 'profile' ? 'Move the photo to fit inside the circle' : 'Move the photo to fit the cover area'}
+          </p>
         </DialogHeader>
-        
-        <div className="flex flex-col items-center gap-3">
-          <div 
-            ref={containerRef}
-            className={`relative overflow-hidden bg-muted ${containerClass} cursor-move`}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-          >
-            <img 
-              src={imageSrc} 
-              alt="Preview"
-              className="select-none pointer-events-none"
-              style={{
-                position: 'absolute',
-                top: '50%',
-                left: '50%',
-                transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${scale})`,
-                minWidth: '100%',
-                minHeight: '100%',
-                width: 'auto',
-                height: 'auto',
-                maxWidth: 'none',
-                maxHeight: 'none',
-              }}
-              draggable={false}
-            />
-          </div>
-          <p className="text-[11px] text-muted-foreground">Drag to reposition</p>
+
+        <div className="flex flex-col items-center gap-3 mt-2">
+          {imageType === 'profile' ? (
+            /* Profile: square container + SVG circle overlay so user sees what's being cropped */
+            <div className="relative" style={{ width: 220, height: 220 }}>
+              <div
+                ref={containerRef}
+                className="absolute inset-0 overflow-hidden cursor-move bg-black"
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+              >
+                <img
+                  src={imageSrc}
+                  alt="Preview"
+                  className="select-none pointer-events-none"
+                  style={{
+                    position: 'absolute',
+                    top: '50%',
+                    left: '50%',
+                    transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${scale})`,
+                    minWidth: '100%',
+                    minHeight: '100%',
+                    width: 'auto',
+                    height: 'auto',
+                    maxWidth: 'none',
+                    maxHeight: 'none',
+                  }}
+                  draggable={false}
+                />
+              </div>
+              {/* Dark vignette overlay — transparent circle in the middle shows crop area */}
+              <div className="absolute inset-0 pointer-events-none" style={{ zIndex: 10 }}>
+                <svg width="220" height="220" viewBox="0 0 220 220">
+                  <defs>
+                    <mask id="circle-cut-profile">
+                      <rect width="220" height="220" fill="white" />
+                      <circle cx="110" cy="110" r="105" fill="black" />
+                    </mask>
+                  </defs>
+                  <rect width="220" height="220" fill="rgba(0,0,0,0.6)" mask="url(#circle-cut-profile)" />
+                  <circle cx="110" cy="110" r="105" fill="none" stroke="rgba(255,255,255,0.85)" strokeWidth="1.5" />
+                </svg>
+              </div>
+            </div>
+          ) : (
+            /* Cover: regular rectangle crop */
+            <div
+              ref={containerRef}
+              className="relative overflow-hidden cursor-move bg-black rounded-lg w-full h-[140px]"
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+              onTouchStart={handleTouchStart}
+              onTouchMove={handleTouchMove}
+              onTouchEnd={handleTouchEnd}
+            >
+              <img
+                src={imageSrc}
+                alt="Preview"
+                className="select-none pointer-events-none"
+                style={{
+                  position: 'absolute',
+                  top: '50%',
+                  left: '50%',
+                  transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${scale})`,
+                  minWidth: '100%',
+                  minHeight: '100%',
+                  width: 'auto',
+                  height: 'auto',
+                  maxWidth: 'none',
+                  maxHeight: 'none',
+                }}
+                draggable={false}
+              />
+            </div>
+          )}
+          <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
+            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
+            </svg>
+            Drag to move · Pinch to zoom
+          </p>
         </div>
 
         <canvas ref={canvasRef} className="hidden" />
 
-        <div className="flex gap-2 justify-end pt-2">
-          <Button variant="outline" size="sm" onClick={onClose} disabled={uploading} data-testid="button-cancel-crop" className="h-7 px-3 text-xs">
+        <div className="flex gap-2 mt-4">
+          <Button variant="outline" className="flex-1 h-9 rounded-xl text-sm" onClick={onClose} disabled={uploading} data-testid="button-cancel-crop">
             Cancel
           </Button>
-          <Button size="sm" onClick={handleSave} disabled={uploading} data-testid="button-apply-crop" className="h-7 px-3 text-xs">
+          <Button className="flex-1 h-9 rounded-xl text-sm bg-blue-600 hover:bg-blue-700 text-white" onClick={handleSave} disabled={uploading} data-testid="button-apply-crop">
             {uploading ? (
               <>
-                <Loader2 className="w-3 h-3 mr-1.5 animate-spin" />
-                Saving...
+                <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" />
+                Saving…
               </>
-            ) : (
-              'Apply'
-            )}
+            ) : 'Apply'}
           </Button>
         </div>
       </DialogContent>
@@ -3117,6 +3173,8 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
   const [certImageFile, setCertImageFile] = useState<File | null>(null);
   const [uploadingCert, setUploadingCert] = useState(false);
   const certInputRef = useRef<HTMLInputElement>(null);
+  const certSectionRef = useRef<HTMLDivElement>(null);
+  const fieldsScrollRef = useRef<HTMLDivElement>(null);
 
   // Filtered certs for searchable dropdown
   const filteredCerts = NISM_CERTIFICATES.filter(c =>
@@ -3324,7 +3382,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
         </div>
 
         {/* Fields */}
-        <div className="px-5 py-4 space-y-5 overflow-y-auto flex-1 min-h-0">
+        <div ref={fieldsScrollRef} className="px-5 py-4 space-y-5 overflow-y-auto flex-1 min-h-0">
           {/* Display Name */}
           <div className="space-y-1.5">
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">Name</label>
@@ -3375,7 +3433,7 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
           </div>
 
           {/* NISM / SEBI Certification */}
-          <div className="space-y-2">
+          <div ref={certSectionRef} className="space-y-2">
             <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">NISM / SEBI Certification</label>
 
             {/* Selected badge preview */}
@@ -3403,7 +3461,19 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
             {/* Dropdown toggle */}
             <button
               type="button"
-              onClick={() => { setCertDropdownOpen(v => !v); setCertSearchQuery(''); }}
+              onClick={() => {
+                const opening = !certDropdownOpen;
+                setCertDropdownOpen(opening);
+                setCertSearchQuery('');
+                if (opening) {
+                  setTimeout(() => {
+                    if (certSectionRef.current && fieldsScrollRef.current) {
+                      const sectionTop = certSectionRef.current.offsetTop;
+                      fieldsScrollRef.current.scrollTo({ top: sectionTop - 12, behavior: 'smooth' });
+                    }
+                  }, 40);
+                }
+              }}
               className="w-full flex items-center justify-between px-3 py-2 text-sm border border-gray-200 dark:border-gray-700 rounded-lg bg-gray-50 dark:bg-gray-800 hover:border-amber-400 transition-colors text-left"
               data-testid="button-cert-dropdown"
             >

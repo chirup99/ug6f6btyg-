@@ -3239,8 +3239,6 @@ function ImageCropModal({
                     top: '50%',
                     left: '50%',
                     transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${scale})`,
-                    minWidth: '100%',
-                    minHeight: '100%',
                     width: 'auto',
                     height: 'auto',
                     maxWidth: 'none',
@@ -3285,8 +3283,6 @@ function ImageCropModal({
                   top: '50%',
                   left: '50%',
                   transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${scale})`,
-                  minWidth: '100%',
-                  minHeight: '100%',
                   width: 'auto',
                   height: 'auto',
                   maxWidth: 'none',
@@ -3296,12 +3292,20 @@ function ImageCropModal({
               />
             </div>
           )}
-          <p className="text-xs text-gray-400 dark:text-gray-500 flex items-center gap-1.5">
-            <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 9l4-4 4 4m0 6l-4 4-4-4" />
-            </svg>
-            Drag to move · Pinch to zoom
-          </p>
+          <div className="flex items-center gap-2 px-1">
+            <svg className="w-3.5 h-3.5 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="8" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M8 11h6"/></svg>
+            <input
+              type="range"
+              min={0.5}
+              max={3}
+              step={0.01}
+              value={scale}
+              onChange={(e) => setScale(parseFloat(e.target.value))}
+              className="flex-1 h-1.5 rounded-full accent-blue-500 cursor-pointer"
+              data-testid="slider-crop-zoom"
+            />
+            <svg className="w-4 h-4 flex-shrink-0 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><circle cx="11" cy="11" r="8" strokeWidth="2"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-4.35-4.35M11 8v6M8 11h6"/></svg>
+          </div>
         </div>
 
         <canvas ref={canvasRef} className="hidden" />

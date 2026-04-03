@@ -3191,8 +3191,6 @@ export default function Home() {
             setIsAudioPlaying(true);
           } else if (event.data === YTState.PLAYING) {
             setIsAudioPlaying(true);
-          } else if (event.data === YTState.PAUSED) {
-            setIsAudioPlaying(false);
           }
         },
       }

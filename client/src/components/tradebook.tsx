@@ -318,12 +318,17 @@ export function TradeBook({
                                               const targetList = searchCategory === 'meditation' ? meditationTracks : psychologyTracks;
                                               const alreadyAdded = targetList.some(t => t.id === `yt-${result.videoId}`);
                                               const limitReached = targetList.length >= 4;
+                                              const canAdd = !alreadyAdded && !limitReached;
                                               return (
-                                                <div key={result.videoId} className="flex items-center gap-2 p-1.5 w-full min-w-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                                                <div
+                                                  key={result.videoId}
+                                                  className={`flex items-center gap-2 p-1.5 w-full min-w-0 overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors ${canAdd ? 'cursor-pointer' : ''}`}
+                                                  onClick={() => { if (canAdd) addTrack(result); }}
+                                                >
                                                   <img src={result.thumbnail} alt="" className="w-9 h-6 rounded object-cover flex-shrink-0 bg-slate-200" />
                                                   <span className="flex-1 w-0 min-w-0 text-[10px] text-slate-700 dark:text-slate-300 leading-tight truncate">{result.title}</span>
                                                   <button
-                                                    onClick={() => addTrack(result)}
+                                                    onClick={(e) => { e.stopPropagation(); if (canAdd) addTrack(result); }}
                                                     disabled={alreadyAdded || limitReached}
                                                     className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${alreadyAdded ? 'bg-green-100 text-green-500 dark:bg-green-900/30' : limitReached ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-violet-100 dark:bg-violet-900/30 text-violet-500 hover:bg-violet-500 hover:text-white'}`}
                                                     title={alreadyAdded ? 'Added' : limitReached ? 'Max 4' : 'Add'}
@@ -394,23 +399,23 @@ export function TradeBook({
 
                                     {/* Footer / Now Playing — always visible, never shrinks */}
                                     <div className="flex-shrink-0 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                                      <div className="flex items-center justify-start gap-3">
-                                        <div className="flex items-center gap-3 flex-1 min-w-0">
-                                          <div className={`w-8 h-8 rounded bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg ${selectedAudioTrack ? "animate-none" : "animate-pulse"}`}>
+                                      <div className="flex items-center justify-start gap-3 overflow-hidden">
+                                        <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
+                                          <div className={`w-8 h-8 rounded bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg flex-shrink-0 ${selectedAudioTrack ? "animate-none" : "animate-pulse"}`}>
                                             <Music2 className="w-4 h-4 text-white" />
                                           </div>
-                                          <div className="flex-1 min-w-0">
+                                          <div className="flex-1 min-w-0 overflow-hidden">
                                             <div className="text-[10px] font-bold text-slate-900 dark:text-slate-100 truncate">
                                               {selectedAudioTrack ? selectedAudioTrack.title : "Select a session"}
                                             </div>
-                                            <div className="text-[9px] text-slate-500 uppercase tracking-tighter">
+                                            <div className="text-[9px] text-slate-500 uppercase tracking-tighter truncate whitespace-nowrap">
                                               {selectedAudioTrack ? `${isAudioPlaying ? 'Playing' : 'Paused'} • ${selectedAudioTrack.duration}` : "Ready to play"}
                                             </div>
                                           </div>
                                         </div>
                                         
                                         {/* Audio Controls */}
-                                        <div className="flex items-center gap-1">
+                                        <div className="flex items-center gap-1 flex-shrink-0">
                                           <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100" onClick={() => {
                                             const currentIdx = allAudioTracks.findIndex(t => t.id === selectedAudioTrack?.id);
                                             const prevTrack = allAudioTracks[(currentIdx - 1 + allAudioTracks.length) % allAudioTracks.length];

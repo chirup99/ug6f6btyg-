@@ -3084,6 +3084,8 @@ export default function Home() {
   const [isYTReady, setIsYTReady] = useState(false);
   const youtubePlayerRef = useRef<any>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const isAudioPlayingRef = useRef(false);
+  useEffect(() => { isAudioPlayingRef.current = isAudioPlaying; }, [isAudioPlaying]);
 
   useEffect(() => {
     // Create the persistent player container outside React's render tree
@@ -3131,7 +3133,7 @@ export default function Home() {
     const playerContainer = document.getElementById("youtube-audio-player");
     if (!playerContainer) return;
 
-    const shouldAutoPlay = isAudioPlaying;
+    const shouldAutoPlay = isAudioPlayingRef.current;
     youtubePlayerRef.current = new (window as any).YT.Player("youtube-audio-player", {
       height: "0",
       width: "0",

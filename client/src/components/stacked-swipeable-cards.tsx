@@ -114,8 +114,13 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
     const timers: ReturnType<typeof setTimeout>[] = [];
     const topCard = cards[0];
     const pendingCard = pendingAutoPlayRef.current;
+    // Check shouldAutoPlay but do NOT clear the ref yet — the ref is cleared only
+    // after the fetch succeeds and we are about to play. This prevents the race where:
+    // 1) effect runs → shouldAutoPlay=true → ref cleared
+    // 2) async fetch in progress (800ms)
+    // 3) cards change (news refresh etc.) → cleanup runs → effect re-runs
+    // 4) ref is null → shouldAutoPlay=false → no auto-play
     const shouldAutoPlay = pendingCard !== null && pendingCard.id === topCard.id;
-    if (shouldAutoPlay) pendingAutoPlayRef.current = null;
 
     const cacheKey = `${topCard.id}::${localStorage.getItem('voiceLanguage') || 'en'}::${localStorage.getItem('activeVoiceProfileId') || 'en-IN-NeerjaNeural'}`;
     const alreadyCached = audioCacheRef.current.has(cacheKey);
@@ -127,6 +132,9 @@ export function StackedSwipeableCards({ snippets, onRemove }: StackedSwipeableCa
       setIsPreloading(false);
 
       if (shouldAutoPlay && audioUrl) {
+        // Clear the ref HERE — only when we are certain we are going to play,
+        // so if we were cancelled mid-flight the next effect run still sees the ref.
+        pendingAutoPlayRef.current = null;
         if (currentAudioRef.current) currentAudioRef.current.pause();
         const audio = new Audio(audioUrl);
         currentAudioRef.current = audio;

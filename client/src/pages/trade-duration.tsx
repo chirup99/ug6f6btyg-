@@ -42,7 +42,7 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
   };
   const fmtDurMin = (ms: number): number => ms > 0 ? Math.round(ms/60000*10)/10 : 0;
 
-  interface DTrade { date:string; pnl:number; durationMs:number; durationLabel:string; symbol?:string; }
+  interface DTrade { date:string; pnl:number; durationMs:number; durationLabel:string; symbol?:string; entryHour?:number; }
   interface DSum { date:string; label:string; avgLossDurMs:number; avgProfitDurMs:number; totalPnL:number; lossCount:number; profitCount:number; totalDurMs:number; efficiencyRpM:number; }
   const allTrades: DTrade[] = [];
   const sums: DSum[] = [];
@@ -65,7 +65,9 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
       let pnl = typeof t.pnl==='number' ? t.pnl : parseFloat((t.pnl||'0').replace(/[₹,+\s]/g,''))||0;
       const dMs = parseDurMs(t.duration||'');
       dayPnL+=pnl; if(dMs>0) totalDMs+=dMs;
-      allTrades.push({date:dateStr,pnl,durationMs:dMs,durationLabel:t.duration||'-',symbol:t.symbol||t.stock||''});
+      const rawTime = t.entryTime || t.time || t.entry || t.buyTime || '';
+      const entryHour = rawTime && typeof rawTime === 'string' ? parseInt(rawTime.split(':')[0]) : -1;
+      allTrades.push({date:dateStr,pnl,durationMs:dMs,durationLabel:t.duration||'-',symbol:t.symbol||t.stock||'',entryHour:entryHour>=0&&entryHour<=23?entryHour:undefined});
       if(pnl<0&&dMs>0){lossDMs+=dMs;lossN++;}
       if(pnl>0&&dMs>0){profDMs+=dMs;profN++;}
       if(dMs>0){const bk=bucketKey(dMs);if(pnl>0)buckets[bk].wins++;else if(pnl<0)buckets[bk].losses++;buckets[bk].pnl+=pnl;}
@@ -88,16 +90,60 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
   const gradeColor = grade==='A'?'text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30':grade==='B'?'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30':grade==='C'?'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30':'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30';
   const hasDur = withDur.length>0;
 
-  // Line chart data — daily trend
-  const lineData = sums.map(d=>({
+  // Line/bar chart data — last 30 trading days only
+  const recentSums = sums.slice(-30);
+  const lineData = recentSums.map(d=>({
     date: d.label,
     lossDurMin: fmtDurMin(d.avgLossDurMs),
     profDurMin: fmtDurMin(d.avgProfitDurMs),
     pnl: Math.round(d.totalPnL),
     effRpM: Math.round(d.efficiencyRpM),
   }));
-  // Bar chart data same as lineData (reuse for bar view)
   const barData = lineData;
+  const chartXInterval = Math.max(0, Math.ceil(lineData.length / 6) - 1);
+
+  // Day-of-week pattern analysis (using all sums, not just recent 30)
+  const dayNames = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  const dowStats: Record<number,{wins:number;losses:number;pnl:number;name:string}> = {};
+  sums.forEach(d => {
+    const dow = new Date(d.date).getDay();
+    if(!dowStats[dow]) dowStats[dow]={wins:0,losses:0,pnl:0,name:dayNames[dow]};
+    if(d.totalPnL>0) dowStats[dow].wins++;
+    else if(d.totalPnL<0) dowStats[dow].losses++;
+    dowStats[dow].pnl+=d.totalPnL;
+  });
+  const riskDays = Object.values(dowStats).filter(d=>{
+    const total=d.wins+d.losses;
+    return total>=2 && d.losses/total>0.55 && d.pnl<0;
+  }).sort((a,b)=>(b.losses/(b.wins+b.losses))-(a.losses/(a.wins+a.losses)));
+  const strongDays = Object.values(dowStats).filter(d=>{
+    const total=d.wins+d.losses;
+    return total>=2 && d.wins/total>=0.6 && d.pnl>0;
+  }).sort((a,b)=>(b.wins/(b.wins+b.losses))-(a.wins/(a.wins+a.losses)));
+
+  // Time-of-day pattern analysis
+  const hourSlots: Record<number,{wins:number;losses:number;pnl:number}> = {};
+  allTrades.filter(t=>t.entryHour!==undefined).forEach(t=>{
+    const h=t.entryHour!;
+    if(!hourSlots[h]) hourSlots[h]={wins:0,losses:0,pnl:0};
+    if(t.pnl>0) hourSlots[h].wins++;
+    else if(t.pnl<0) hourSlots[h].losses++;
+    hourSlots[h].pnl+=t.pnl;
+  });
+  const hasTimeData = Object.keys(hourSlots).length > 0;
+  const fmtHour = (h:number) => h===0?'12 AM':h<12?`${h} AM`:h===12?'12 PM':`${h-12} PM`;
+  const avoidSlots = Object.entries(hourSlots).filter(([,d])=>{
+    const total=d.wins+d.losses;
+    return total>=2 && d.losses/total>0.55 && d.pnl<0;
+  }).map(([h,d])=>({hour:parseInt(h),label:`${fmtHour(parseInt(h))}–${fmtHour(parseInt(h)+1)}`,lossRate:d.losses/(d.wins+d.losses),pnl:d.pnl,total:d.wins+d.losses}))
+    .sort((a,b)=>b.lossRate-a.lossRate);
+  const bestSlots = Object.entries(hourSlots).filter(([,d])=>{
+    const total=d.wins+d.losses;
+    return total>=2 && d.wins/total>=0.6 && d.pnl>0;
+  }).map(([h,d])=>({hour:parseInt(h),label:`${fmtHour(parseInt(h))}–${fmtHour(parseInt(h)+1)}`,winRate:d.wins/(d.wins+d.losses),pnl:d.pnl,total:d.wins+d.losses}))
+    .sort((a,b)=>b.winRate-a.winRate);
+
+  const hasPatternInsights = riskDays.length>0 || strongDays.length>0 || (hasTimeData && (avoidSlots.length>0 || bestSlots.length>0));
 
   // Best duration bucket
   const bestBucket = Object.entries(buckets).reduce((best,[k,v])=>{
@@ -185,7 +231,7 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={lineData} margin={{top:4,right:8,left:-14,bottom:0}}>
                         <CartesianGrid strokeDasharray="3 3" stroke={theme==='dark'?'#1e293b':'#f1f5f9'} />
-                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#94a3b8',fontWeight:600}} />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#94a3b8',fontWeight:600}} interval={chartXInterval} />
                         <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#94a3b8'}} tickFormatter={v=>`${v}m`} />
                         <Tooltip
                           contentStyle={{background:theme==='dark'?'#1e293b':'#fff',border:`1px solid ${theme==='dark'?'#334155':'#e2e8f0'}`,borderRadius:'10px',fontSize:'11px'}}
@@ -219,7 +265,7 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={barData} margin={{top:4,right:8,left:-14,bottom:0}} barGap={2}>
                         <CartesianGrid strokeDasharray="3 3" stroke={theme==='dark'?'#1e293b':'#f1f5f9'} />
-                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#94a3b8',fontWeight:600}} />
+                        <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#94a3b8',fontWeight:600}} interval={chartXInterval} />
                         <YAxis axisLine={false} tickLine={false} tick={{fontSize:10,fill:'#94a3b8'}} tickFormatter={v=>`${v}m`} />
                         <Tooltip
                           contentStyle={{background:theme==='dark'?'#1e293b':'#fff',border:`1px solid ${theme==='dark'?'#334155':'#e2e8f0'}`,borderRadius:'10px',fontSize:'11px'}}
@@ -431,6 +477,72 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 </div>
               );
             })()}
+
+            {/* Smart Pattern Alerts — time-of-day & day-of-week */}
+            {hasPatternInsights && (
+              <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/5 overflow-hidden">
+                <div className="px-5 py-3 border-b border-amber-200 dark:border-amber-500/20 flex items-center gap-2">
+                  <span className="text-lg">🧠</span>
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Best Time to Trade — Pattern Alerts from Your Data</h4>
+                </div>
+                <div className="p-4 grid sm:grid-cols-2 gap-3">
+                  {/* Avoid time slots */}
+                  {avoidSlots.slice(0,3).map(slot=>(
+                    <div key={slot.hour} className="flex gap-3 items-start rounded-xl p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30">
+                      <span className="text-xl mt-0.5">🚫</span>
+                      <div>
+                        <p className="text-xs font-bold text-red-700 dark:text-red-400">Avoid {slot.label}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          {Math.round(slot.lossRate*100)}% loss rate across {slot.total} trades in this window. Avg loss: ₹{Math.abs(Math.round(slot.pnl/slot.total)).toLocaleString('en-IN')} per trade.
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {/* Best time slots */}
+                  {bestSlots.slice(0,2).map(slot=>(
+                    <div key={slot.hour} className="flex gap-3 items-start rounded-xl p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30">
+                      <span className="text-xl mt-0.5">✅</span>
+                      <div>
+                        <p className="text-xs font-bold text-green-700 dark:text-green-400">Best window: {slot.label}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          {Math.round(slot.winRate*100)}% win rate in this hour across {slot.total} trades. Focus entries here.
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {/* Risk days of week */}
+                  {riskDays.map(d=>(
+                    <div key={d.name} className="flex gap-3 items-start rounded-xl p-3 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30">
+                      <span className="text-xl mt-0.5">⚠️</span>
+                      <div>
+                        <p className="text-xs font-bold text-orange-700 dark:text-orange-400">Be careful on {d.name}s</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          {d.losses} loss day{d.losses>1?'s':''} vs {d.wins} profit day{d.wins!==1?'s':''} on {d.name}. Net P&L: {d.pnl<0?'-':''}₹{Math.abs(Math.round(d.pnl)).toLocaleString('en-IN')}. Trade smaller or skip.
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {/* Strong days of week */}
+                  {strongDays.slice(0,2).map(d=>(
+                    <div key={d.name} className="flex gap-3 items-start rounded-xl p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30">
+                      <span className="text-xl mt-0.5">💪</span>
+                      <div>
+                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{d.name} is your strong day</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          {d.wins} profit day{d.wins!==1?'s':''} vs {d.losses} loss on {d.name}. Net: +₹{Math.round(d.pnl).toLocaleString('en-IN')}. Consider higher size on {d.name}.
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {/* Fallback if only no-time-data day insights */}
+                  {!hasTimeData && riskDays.length===0 && strongDays.length===0 && (
+                    <div className="col-span-2 text-center text-xs text-slate-400 py-4">
+                      Add entry time to your trades to unlock time-of-day pattern analysis.
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Insight cards — 5 cards */}
             <div className="grid md:grid-cols-3 gap-4">

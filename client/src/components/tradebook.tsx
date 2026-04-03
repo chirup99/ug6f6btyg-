@@ -216,7 +216,7 @@ export function TradeBook({
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="w-[95vw] max-w-[700px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-none rounded-xl shadow-2xl [&>button]:hidden">
-                                <div className="flex flex-col md:flex-row h-full md:min-h-[350px]">
+                                <div className="flex flex-col md:flex-row h-[540px] md:h-[460px]">
                                   {/* Left Side: Thumbnail — compact on mobile, full on desktop */}
                                   <div className="w-full md:w-1/2 relative flex flex-col bg-slate-100 dark:bg-slate-800 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 h-40 md:h-auto">
                                     {/* Mobile-only: MINI PLAY label centered at top of thumbnail */}
@@ -253,9 +253,9 @@ export function TradeBook({
                                     </motion.div>
                                     </div>
                                   </div>
-                                  <div className="w-full md:w-1/2 flex flex-col bg-white dark:bg-slate-900">
-                                    {/* Header: title + search icon + done button */}
-                                    <div className="py-2 px-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
+                                  <div className="w-full md:w-1/2 flex flex-col bg-white dark:bg-slate-900 min-h-0">
+                                    {/* Header: always visible */}
+                                    <div className="flex-shrink-0 py-2 px-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
                                       <div className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-[0.3em] opacity-50">Play</div>
                                       <div className="flex items-center gap-1">
                                         {isSearchOpen && (
@@ -277,144 +277,123 @@ export function TradeBook({
                                       </div>
                                     </div>
 
-                                    {/* Search Panel */}
-                                    {isSearchOpen && (
-                                      <div className="border-b border-slate-100 dark:border-slate-800 p-3 space-y-2">
-                                        {/* Category selector */}
-                                        <div className="flex gap-1">
-                                          {(["meditation", "psychology"] as const).map(cat => (
-                                            <button
-                                              key={cat}
-                                              onClick={() => setSearchCategory(cat)}
-                                              className={`flex-1 text-[9px] font-bold uppercase tracking-wider py-1 rounded transition-colors ${searchCategory === cat ? (cat === 'meditation' ? 'bg-violet-500 text-white' : 'bg-blue-500 text-white') : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
-                                            >
-                                              {cat} {cat === 'meditation' ? `(${meditationTracks.length}/4)` : `(${psychologyTracks.length}/4)`}
-                                            </button>
-                                          ))}
-                                        </div>
-                                        {/* Search input */}
-                                        <div className="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg px-2 py-1.5">
-                                          <Search className="w-3 h-3 text-slate-400 flex-shrink-0" />
-                                          <input
-                                            ref={searchInputRef}
-                                            value={searchQuery}
-                                            onChange={e => handleSearchInput(e.target.value)}
-                                            placeholder={`Search YouTube for ${searchCategory}...`}
-                                            className="flex-1 bg-transparent text-[11px] text-slate-700 dark:text-slate-300 placeholder:text-slate-400 outline-none"
-                                            data-testid="input-miniplay-search"
-                                          />
-                                          {isSearching && <Loader2 className="w-3 h-3 text-slate-400 animate-spin flex-shrink-0" />}
-                                          {searchQuery && !isSearching && (
-                                            <button onClick={() => { setSearchQuery(""); setSearchResults([]); }} className="text-slate-400 hover:text-slate-600">
-                                              <X className="w-3 h-3" />
-                                            </button>
-                                          )}
-                                        </div>
-                                        {/* Search results */}
-                                        {searchResults.length > 0 && (
-                                          <div className="space-y-1 max-h-[160px] overflow-y-auto rounded-lg border border-slate-100 dark:border-slate-700">
-                                            {searchResults.map(result => {
+                                    {/* Content area: search mode OR playlist mode — fills remaining height */}
+                                    <div className="flex-1 min-h-0 flex flex-col overflow-hidden">
+                                      {isSearchOpen ? (
+                                        /* ── SEARCH MODE: category tabs + input + results fill this area ── */
+                                        <div className="flex flex-col h-full p-3 gap-2">
+                                          {/* Category tabs */}
+                                          <div className="flex gap-1 flex-shrink-0">
+                                            {(["meditation", "psychology"] as const).map(cat => (
+                                              <button
+                                                key={cat}
+                                                onClick={() => setSearchCategory(cat)}
+                                                className={`flex-1 text-[9px] font-bold uppercase tracking-wider py-1 rounded transition-colors ${searchCategory === cat ? (cat === 'meditation' ? 'bg-violet-500 text-white' : 'bg-blue-500 text-white') : 'bg-slate-100 dark:bg-slate-800 text-slate-500 hover:bg-slate-200 dark:hover:bg-slate-700'}`}
+                                              >
+                                                {cat} ({(cat === 'meditation' ? meditationTracks : psychologyTracks).length}/4)
+                                              </button>
+                                            ))}
+                                          </div>
+                                          {/* Search input */}
+                                          <div className="flex-shrink-0 flex items-center gap-2 bg-slate-100 dark:bg-slate-800 rounded-lg px-2 py-1.5">
+                                            <Search className="w-3 h-3 text-slate-400 flex-shrink-0" />
+                                            <input
+                                              ref={searchInputRef}
+                                              value={searchQuery}
+                                              onChange={e => handleSearchInput(e.target.value)}
+                                              placeholder="Search..."
+                                              className="flex-1 min-w-0 bg-transparent text-[11px] text-slate-700 dark:text-slate-300 placeholder:text-slate-400 outline-none"
+                                              data-testid="input-miniplay-search"
+                                            />
+                                            {isSearching && <Loader2 className="w-3 h-3 text-slate-400 animate-spin flex-shrink-0" />}
+                                            {searchQuery && !isSearching && (
+                                              <button onClick={() => { setSearchQuery(""); setSearchResults([]); }} className="text-slate-400 hover:text-slate-600 flex-shrink-0">
+                                                <X className="w-3 h-3" />
+                                              </button>
+                                            )}
+                                          </div>
+                                          {/* Search results — scrollable, fills remaining space */}
+                                          <div className="flex-1 min-h-0 overflow-y-auto rounded-lg border border-slate-100 dark:border-slate-700">
+                                            {searchResults.length > 0 ? searchResults.map(result => {
                                               const targetList = searchCategory === 'meditation' ? meditationTracks : psychologyTracks;
                                               const alreadyAdded = targetList.some(t => t.id === `yt-${result.videoId}`);
                                               const limitReached = targetList.length >= 4;
                                               return (
                                                 <div key={result.videoId} className="flex items-center gap-2 p-1.5 hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                                  <img
-                                                    src={result.thumbnail}
-                                                    alt={result.title}
-                                                    className="w-10 h-7 rounded object-cover flex-shrink-0 bg-slate-200"
-                                                  />
-                                                  <span className="flex-1 text-[10px] text-slate-700 dark:text-slate-300 leading-tight line-clamp-2 min-w-0">{result.title}</span>
+                                                  <img src={result.thumbnail} alt="" className="w-10 h-7 rounded object-cover flex-shrink-0 bg-slate-200" />
+                                                  <span className="flex-1 min-w-0 text-[10px] text-slate-700 dark:text-slate-300 leading-tight truncate">{result.title}</span>
                                                   <button
                                                     onClick={() => addTrack(result)}
                                                     disabled={alreadyAdded || limitReached}
                                                     className={`flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center transition-colors ${alreadyAdded ? 'bg-green-100 text-green-500 dark:bg-green-900/30' : limitReached ? 'bg-slate-100 text-slate-300 cursor-not-allowed' : 'bg-violet-100 dark:bg-violet-900/30 text-violet-500 hover:bg-violet-500 hover:text-white'}`}
-                                                    title={alreadyAdded ? 'Already added' : limitReached ? 'Max 4 tracks' : 'Add to playlist'}
+                                                    title={alreadyAdded ? 'Added' : limitReached ? 'Max 4' : 'Add'}
                                                     data-testid={`button-add-track-${result.videoId}`}
                                                   >
                                                     <Plus className="w-3 h-3" />
                                                   </button>
                                                 </div>
                                               );
-                                            })}
+                                            }) : (
+                                              <div className="flex items-center justify-center h-full text-[10px] text-slate-400 py-4">
+                                                {searchQuery && !isSearching ? 'No results found' : 'Type to search tracks'}
+                                              </div>
+                                            )}
                                           </div>
-                                        )}
-                                        {searchQuery && !isSearching && searchResults.length === 0 && (
-                                          <div className="text-[10px] text-slate-400 text-center py-2">No results found</div>
-                                        )}
-                                      </div>
-                                    )}
-
-                                    <div className="flex-1 overflow-y-auto p-4 space-y-4">
-                                      {/* Meditation Section */}
-                                      <div>
-                                        <h4 className="text-[10px] font-bold text-violet-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                          <span className="w-1 h-1 rounded-full bg-violet-500"></span>
-                                          Meditation
-                                        </h4>
-                                        <div className="space-y-1">
-                                          {meditationTracks.map((track) => (
-                                            <div key={track.id} className="group flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                              <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
-                                                <div className="w-6 h-6 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-500 transition-colors flex-shrink-0">
-                                                  <Play className="w-3 h-3 text-violet-500 group-hover:text-white" />
+                                        </div>
+                                      ) : (
+                                        /* ── PLAYLIST MODE: combined meditation + psychology, scrollable ── */
+                                        <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-1">
+                                          {/* Meditation tracks */}
+                                          {meditationTracks.length > 0 && (
+                                            <div className="mb-1">
+                                              <div className="flex items-center gap-1.5 px-1 mb-1">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-violet-500 flex-shrink-0"></span>
+                                                <span className="text-[9px] font-bold text-violet-500 uppercase tracking-widest">Meditation</span>
+                                              </div>
+                                              {meditationTracks.map(track => (
+                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                  <div className="w-5 h-5 rounded-full bg-violet-100 dark:bg-violet-900/30 flex items-center justify-center group-hover:bg-violet-500 transition-colors flex-shrink-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
+                                                    <Play className="w-2.5 h-2.5 text-violet-500 group-hover:text-white" />
+                                                  </div>
+                                                  <span className="flex-1 min-w-0 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>{track.title}</span>
+                                                  <span className="text-[9px] font-mono text-slate-400 flex-shrink-0">{track.duration}</span>
+                                                  <button onClick={() => removeTrack("meditation", track.id)} className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0" data-testid={`button-remove-meditation-${track.id}`}>
+                                                    <X className="w-2.5 h-2.5" />
+                                                  </button>
                                                 </div>
-                                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{track.title}</span>
-                                              </div>
-                                              <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-                                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{track.duration}</span>
-                                                <button
-                                                  onClick={() => removeTrack("meditation", track.id)}
-                                                  className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all ml-1"
-                                                  data-testid={`button-remove-meditation-${track.id}`}
-                                                >
-                                                  <X className="w-2.5 h-2.5" />
-                                                </button>
-                                              </div>
+                                              ))}
                                             </div>
-                                          ))}
-                                          {meditationTracks.length === 0 && (
-                                            <div className="text-[10px] text-slate-400 italic py-1 px-2">No tracks — search to add</div>
+                                          )}
+                                          {/* Psychology tracks */}
+                                          {psychologyTracks.length > 0 && (
+                                            <div>
+                                              <div className="flex items-center gap-1.5 px-1 mb-1">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0"></span>
+                                                <span className="text-[9px] font-bold text-blue-500 uppercase tracking-widest">Psychology</span>
+                                              </div>
+                                              {psychologyTracks.map(track => (
+                                                <div key={track.id} className="group flex items-center gap-2 px-1 py-1.5 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+                                                  <div className="w-5 h-5 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-500 transition-colors flex-shrink-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
+                                                    <Play className="w-2.5 h-2.5 text-blue-500 group-hover:text-white" />
+                                                  </div>
+                                                  <span className="flex-1 min-w-0 text-[11px] font-medium text-slate-700 dark:text-slate-300 truncate cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>{track.title}</span>
+                                                  <span className="text-[9px] font-mono text-slate-400 flex-shrink-0">{track.duration}</span>
+                                                  <button onClick={() => removeTrack("psychology", track.id)} className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all flex-shrink-0" data-testid={`button-remove-psychology-${track.id}`}>
+                                                    <X className="w-2.5 h-2.5" />
+                                                  </button>
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
+                                          {meditationTracks.length === 0 && psychologyTracks.length === 0 && (
+                                            <div className="flex items-center justify-center h-full text-[10px] text-slate-400 italic">Tap search to add tracks</div>
                                           )}
                                         </div>
-                                      </div>
-
-                                      {/* Psychology Section */}
-                                      <div>
-                                        <h4 className="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-2 flex items-center gap-2">
-                                          <span className="w-1 h-1 rounded-full bg-blue-500"></span>
-                                          Psychology
-                                        </h4>
-                                        <div className="space-y-1">
-                                          {psychologyTracks.map((track) => (
-                                            <div key={track.id} className="group flex items-center justify-between p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
-                                              <div className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer" onClick={() => { setSelectedAudioTrack(track); setIsAudioPlaying(true); }}>
-                                                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center group-hover:bg-blue-500 transition-colors flex-shrink-0">
-                                                  <Play className="w-3 h-3 text-blue-500 group-hover:text-white" />
-                                                </div>
-                                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 truncate">{track.title}</span>
-                                              </div>
-                                              <div className="flex items-center gap-1 flex-shrink-0 ml-1">
-                                                <span className="text-[10px] font-mono text-slate-500 dark:text-slate-400">{track.duration}</span>
-                                                <button
-                                                  onClick={() => removeTrack("psychology", track.id)}
-                                                  className="opacity-0 group-hover:opacity-100 w-4 h-4 rounded-full flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all ml-1"
-                                                  data-testid={`button-remove-psychology-${track.id}`}
-                                                >
-                                                  <X className="w-2.5 h-2.5" />
-                                                </button>
-                                              </div>
-                                            </div>
-                                          ))}
-                                          {psychologyTracks.length === 0 && (
-                                            <div className="text-[10px] text-slate-400 italic py-1 px-2">No tracks — search to add</div>
-                                          )}
-                                        </div>
-                                      </div>
+                                      )}
                                     </div>
 
-                                                                        {/* Footer / Now Playing Stub */}
-                                    <div className="p-4 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 space-y-3">
+                                    {/* Footer / Now Playing — always visible, never shrinks */}
+                                    <div className="flex-shrink-0 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 space-y-2">
                                       <div className="flex items-center justify-start gap-3">
                                         <div className="flex items-center gap-3 flex-1 min-w-0">
                                           <div className={`w-8 h-8 rounded bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg ${selectedAudioTrack ? "animate-none" : "animate-pulse"}`}>

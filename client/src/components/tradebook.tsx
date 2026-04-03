@@ -216,7 +216,7 @@ export function TradeBook({
                                 </Button>
                               </DialogTrigger>
                               <DialogContent className="w-[95vw] max-w-[700px] p-0 overflow-hidden bg-white dark:bg-slate-900 border-none rounded-xl shadow-2xl [&>button]:hidden">
-                                <div className="flex flex-col md:flex-row h-[420px] md:h-[460px]">
+                                <div className="flex flex-col md:flex-row h-[420px] md:h-[340px]">
                                   {/* Left Side: Thumbnail — compact on mobile, full on desktop */}
                                   <div className="w-full md:w-1/2 relative flex flex-col bg-slate-100 dark:bg-slate-800 overflow-hidden border-b md:border-b-0 md:border-r border-slate-200 dark:border-slate-700 h-40 md:h-auto">
                                     {/* Mobile-only: MINI PLAY label centered at top of thumbnail */}

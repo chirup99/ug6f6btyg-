@@ -148,9 +148,8 @@ export default function JournalScreenTime({ tradingDataByDate = {} }: Props) {
       if (window.innerWidth >= 768) return;
       const target = e.target as HTMLElement;
       const currentY = target.scrollTop ?? 0;
-      const delta = currentY - lastScrollY.current;
-      if (Math.abs(delta) < 4) return; // ignore tiny jitter
-      setBtnVisible(delta < 0 || currentY < 60); // hide on down, show on up or near top
+      // Only visible when at the very top of the screen (within 60px)
+      setBtnVisible(currentY < 60);
       lastScrollY.current = currentY;
     };
 

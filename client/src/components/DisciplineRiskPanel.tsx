@@ -323,8 +323,7 @@ export function DisciplineRiskPanel({
 
         {/* Bruce Lee — Trading Mindset / Enemy Within — neofeed card style */}
         <div>
-          <div className="flex items-center justify-between mb-2">
-            <h4 className="text-sm font-bold flex items-center gap-2">🥋 Trading Mindset · Be Like Water</h4>
+          <div className="flex justify-end mb-2">
             <div className="flex gap-1.5">
               {BRUCE_LEE_QUOTES.map((_, i) => (
                 <button

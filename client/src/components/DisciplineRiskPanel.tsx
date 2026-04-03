@@ -8,24 +8,44 @@ interface DisciplineRiskPanelProps {
 
 const BRUCE_LEE_QUOTES = [
   {
-    quote: "Be like water making its way through cracks. Do not be assertive, but adjust to the object, and you shall find a way round or through it.",
-    mindset: "The market is like water — it flows where it flows. Don't fight it, adapt to it. Rigid traders break. Flexible traders profit.",
+    label: "Trader's Mindset",
+    quote: "Be like water — adapt to what the market gives you. Never force a trade.",
+    mindset: "The market flows where it flows. Don't fight it, adapt to it. Rigid traders break. Flexible traders profit.",
+    showImage: true,
+    image: '/bruce-lee-card.webp',
+    bg: 'from-gray-950 via-[#1a1200] to-gray-900',
   },
   {
+    label: "Your Greatest Enemy Is Within",
+    quote: "Fear, greed, and ego destroy more traders than any bad setup ever will.",
+    mindset: "The real battle isn't against the market — it's against yourself. Master your emotions and your results change overnight.",
+    showImage: true,
+    image: '/bruce-lee-enemy-within.webp',
+    bg: 'from-[#0d0500] via-[#2a1400] to-[#0d0800]',
+  },
+  {
+    label: "Empty Your Mind",
     quote: "Empty your mind, be formless, shapeless — like water. You put water into a cup, it becomes the cup.",
-    mindset: "Enter each trade with no bias. A bull or bear? Whatever the market is — become it. Your opinion is irrelevant; price action is truth.",
+    mindset: "Enter each trade with no bias. Bull or bear? Whatever the market is — become it. Your opinion is irrelevant; price action is truth.",
+    showImage: true,
+    image: '/bruce-lee-card.webp',
+    bg: 'from-gray-950 via-[#001520] to-[#0a0a1a]',
   },
   {
+    label: "Loss Psychology",
+    quote: "A loss is tuition — pay it and move on. Revenge trading is the real enemy.",
+    mindset: "Every loss is data. Accept it, learn from it, and come back sharper. The trader who refuses to lose small will eventually lose everything.",
+    showImage: false,
+    image: '',
+    bg: 'from-rose-700 to-red-800',
+  },
+  {
+    label: "Laser-Like Focus",
     quote: "The successful warrior is the average man, with laser-like focus.",
     mindset: "You don't need to catch every move. One perfect setup, full focus, clean execution — that beats 10 impulsive trades every time.",
-  },
-  {
-    quote: "Notice that the stiffest tree is most easily cracked, while the bamboo or willow survives by bending with the wind.",
-    mindset: "A trader who clings to a losing position because he 'knows' he's right will break. The one who accepts the market and adapts will survive.",
-  },
-  {
-    quote: "Knowing is not enough, we must apply. Willing is not enough, we must do.",
-    mindset: "You've read all the books. You know the rules. But do you follow your stop-loss when the trade goes against you? Execution is everything.",
+    showImage: false,
+    image: '',
+    bg: 'from-violet-700 to-indigo-800',
   },
 ];
 
@@ -301,34 +321,74 @@ export function DisciplineRiskPanel({
           </div>
         </div>
 
-        {/* Bruce Lee — Trading Mindset / Enemy Within */}
-        <div className="bg-black/20 backdrop-blur-sm border border-white/10 rounded-2xl p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <span className="text-xl">🥋</span>
-            <div>
-              <h4 className="text-sm font-bold">Bruce Lee · Trading Mindset</h4>
-              <p className="text-[10px] opacity-60 uppercase tracking-wider">Be Like Water · The Enemy Within</p>
-            </div>
-            <div className="ml-auto flex gap-1">
+        {/* Bruce Lee — Trading Mindset / Enemy Within — neofeed card style */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <h4 className="text-sm font-bold flex items-center gap-2">🥋 Trading Mindset · Be Like Water</h4>
+            <div className="flex gap-1.5">
               {BRUCE_LEE_QUOTES.map((_, i) => (
                 <button
                   key={i}
                   onClick={() => setQuoteIndex(i)}
-                  className={`w-1.5 h-1.5 rounded-full transition-all ${i === quoteIndex ? 'bg-white' : 'bg-white/30'}`}
+                  className={`transition-all rounded-full ${i === quoteIndex ? 'w-4 h-1.5 bg-white' : 'w-1.5 h-1.5 bg-white/35 hover:bg-white/60'}`}
                 />
               ))}
             </div>
           </div>
-          <blockquote className="border-l-2 border-white/40 pl-4 mb-3">
-            <p className="text-sm italic opacity-90 leading-relaxed">"{currentQuote.quote}"</p>
-            <footer className="text-[10px] opacity-50 mt-1">— Bruce Lee</footer>
-          </blockquote>
-          <div className="bg-white/10 rounded-xl p-3">
-            <p className="text-[11px] opacity-90 leading-snug">
-              <span className="font-bold text-amber-300">⚔️ Enemy Within: </span>
-              {currentQuote.mindset}
-            </p>
+          <style>{`
+            @keyframes blPulseDRP {
+              0%, 100% { filter: drop-shadow(0 0 8px rgba(234,179,8,0.35)) brightness(1); transform: scale(1); }
+              50% { filter: drop-shadow(0 0 18px rgba(234,179,8,0.7)) brightness(1.08); transform: scale(1.04); }
+            }
+          `}</style>
+          {/* Stacked card effect */}
+          <div className="relative h-[106px]">
+            {[2, 1].map((offset) => {
+              const card = BRUCE_LEE_QUOTES[(quoteIndex + offset) % BRUCE_LEE_QUOTES.length];
+              return (
+                <div
+                  key={offset}
+                  className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${card.bg}`}
+                  style={{
+                    opacity: offset === 2 ? 0.32 : 0.6,
+                    transform: `translateY(${offset === 2 ? '-7px' : '-3.5px'}) scaleX(${offset === 2 ? 0.95 : 0.98})`,
+                    zIndex: offset === 2 ? 1 : 2,
+                  }}
+                />
+              );
+            })}
+            {/* Active card */}
+            <div
+              className={`absolute inset-0 rounded-2xl bg-gradient-to-r ${currentQuote.bg} shadow-lg overflow-hidden z-10 cursor-pointer select-none`}
+              onClick={() => setQuoteIndex(i => (i + 1) % BRUCE_LEE_QUOTES.length)}
+            >
+              {/* Bruce Lee image */}
+              {currentQuote.showImage && (
+                <>
+                  <div className="absolute right-0 top-0 bottom-0 w-[100px] bg-gradient-to-l from-yellow-500/25 via-yellow-400/10 to-transparent pointer-events-none" />
+                  <div className="absolute right-0 top-0 bottom-0 w-[90px] overflow-hidden pointer-events-none">
+                    <img
+                      src={currentQuote.image}
+                      alt=""
+                      loading="eager"
+                      className="absolute inset-0 w-full h-full object-contain object-bottom"
+                      style={{ animation: 'blPulseDRP 3s ease-in-out infinite' }}
+                    />
+                  </div>
+                  <div className="absolute right-[52px] top-0 bottom-0 w-8 bg-gradient-to-r from-transparent to-black/15 pointer-events-none" />
+                </>
+              )}
+              {/* Text content */}
+              <div className={`flex flex-col justify-center h-full px-4 gap-1 ${currentQuote.showImage ? 'pr-[96px]' : 'pr-4'}`}>
+                <p className="text-[8px] uppercase tracking-widest font-bold text-yellow-400/80">{currentQuote.label}</p>
+                <p className="text-[11px] font-semibold leading-snug text-white">&ldquo;{currentQuote.quote}&rdquo;</p>
+                <p className="text-[9px] text-white/60 leading-snug mt-0.5">
+                  <span className="text-amber-300 font-bold">⚔️ </span>{currentQuote.mindset}
+                </p>
+              </div>
+            </div>
           </div>
+          <p className="text-[9px] opacity-40 text-center mt-2">Tap card to cycle · — Bruce Lee</p>
         </div>
       </div>
     );

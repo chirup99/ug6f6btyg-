@@ -75,6 +75,11 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
   const [stockSearchQuery, setStockSearchQuery] = useState('');
   const [showStockDropdown, setShowStockDropdown] = useState(false);
   const stockSearchRef = useRef<HTMLDivElement>(null);
+
+  // @user mention state
+  const [userMentionQuery, setUserMentionQuery] = useState<string | null>(null);
+  const [userMentionResults, setUserMentionResults] = useState<{ username: string; displayName: string; avatar: string | null }[]>([]);
+  const [userMentionLoading, setUserMentionLoading] = useState(false);
   
   // New state for view switching
   const [viewMode, setViewMode] = useState<'post' | 'message' | 'audio'>(initialViewMode);
@@ -220,9 +225,47 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
     return mentions;
   }, [stockMentions]);
 
+  // Fetch @user mention suggestions
+  useEffect(() => {
+    if (userMentionQuery === null || userMentionQuery.length === 0) { setUserMentionResults([]); return; }
+    const t = setTimeout(async () => {
+      setUserMentionLoading(true);
+      try {
+        const res = await fetch(`/api/users/search?q=${encodeURIComponent(userMentionQuery)}&limit=6`);
+        if (res.ok) { const d = await res.json(); setUserMentionResults(d.users || d || []); }
+      } catch { setUserMentionResults([]); }
+      finally { setUserMentionLoading(false); }
+    }, 180);
+    return () => clearTimeout(t);
+  }, [userMentionQuery]);
+
+  const insertUserMention = (username: string) => {
+    const ta = textareaRef.current;
+    if (!ta) return;
+    const cursor = ta.selectionStart ?? content.length;
+    const before = content.slice(0, cursor).replace(/@\w*$/, `@${username} `);
+    const after = content.slice(cursor);
+    const newVal = before + after;
+    setContent(newVal);
+    setUserMentionQuery(null);
+    setUserMentionResults([]);
+    setTimeout(() => { ta.focus(); ta.setSelectionRange(before.length, before.length); }, 0);
+  };
+
   const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = e.target.value;
     setContent(newContent);
+
+    // Detect @user mention at cursor
+    const cursor = e.target.selectionStart ?? newContent.length;
+    const textUpToCursor = newContent.slice(0, cursor);
+    const mentionMatch = textUpToCursor.match(/@(\w*)$/);
+    if (mentionMatch) {
+      setUserMentionQuery(mentionMatch[1]);
+    } else {
+      setUserMentionQuery(null);
+      setUserMentionResults([]);
+    }
 
     const newMentions = detectStockMentions(newContent);
     if (newMentions.length > 0) {
@@ -521,16 +564,52 @@ export function PostCreationPanel({ hideAudioMode = false, initialViewMode = 'po
           {/* Content Input */}
           <div className="space-y-2">
             <Label htmlFor="content" className="text-sm font-medium text-foreground">What's on your mind?</Label>
-            <Textarea
-              id="content"
-              ref={textareaRef}
-              value={content}
-              onChange={handleContentChange}
-              placeholder="Share your trading insights..."
-              maxLength={500}
-              className="min-h-[100px] resize-none bg-gray-50 dark:bg-gray-800 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
-              data-testid="textarea-post-content"
-            />
+            <div className="relative">
+              {/* @user mention dropdown */}
+              {(userMentionResults.length > 0 || userMentionLoading) && (
+                <div className="absolute bottom-full mb-1 left-0 right-0 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-xl shadow-lg z-50 overflow-hidden">
+                  {userMentionLoading ? (
+                    <div className="flex items-center gap-2 px-3 py-2 text-xs text-gray-400">
+                      <div className="w-3 h-3 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                      Searching…
+                    </div>
+                  ) : userMentionResults.map((u) => (
+                    <button
+                      key={u.username}
+                      type="button"
+                      onMouseDown={(e) => { e.preventDefault(); insertUserMention(u.username); }}
+                      className="w-full flex items-center gap-2 px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors text-left"
+                      data-testid={`mention-option-${u.username}`}
+                    >
+                      <div className="w-7 h-7 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                        {u.avatar ? (
+                          <img src={u.avatar} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-[9px] font-bold text-gray-500 uppercase">{(u.displayName || u.username)[0]}</span>
+                        )}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-semibold text-gray-800 dark:text-gray-100 truncate">{u.displayName || u.username}</p>
+                        <p className="text-[10px] text-gray-400 truncate">@{u.username}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <Textarea
+                id="content"
+                ref={textareaRef}
+                value={content}
+                onChange={handleContentChange}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') { setUserMentionQuery(null); setUserMentionResults([]); }
+                }}
+                placeholder="Share your trading insights… type @ to tag someone"
+                maxLength={500}
+                className="min-h-[100px] resize-none bg-gray-50 dark:bg-gray-800 border-border text-foreground placeholder:text-muted-foreground focus:border-primary focus:ring-primary"
+                data-testid="textarea-post-content"
+              />
+            </div>
             <div className="text-xs text-gray-600 dark:text-gray-400 text-right">
               {content.length}/500 characters
             </div>

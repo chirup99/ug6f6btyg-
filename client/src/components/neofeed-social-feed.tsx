@@ -3366,9 +3366,32 @@ function EditProfileDialog({ isOpen, onClose, profileData, onSuccess }: {
   const handleCertImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    setCertImageFile(file);
     const reader = new FileReader();
-    reader.onloadend = () => setCertImagePreview(reader.result as string);
+    reader.onloadend = () => {
+      const img = new Image();
+      img.onload = () => {
+        const MAX_DIM = 1200;
+        const QUALITY = 0.72;
+        let { width, height } = img;
+        if (width > MAX_DIM || height > MAX_DIM) {
+          if (width > height) { height = Math.round(height * MAX_DIM / width); width = MAX_DIM; }
+          else { width = Math.round(width * MAX_DIM / height); height = MAX_DIM; }
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (!ctx) { setCertImageFile(file); setCertImagePreview(reader.result as string); return; }
+        ctx.drawImage(img, 0, 0, width, height);
+        canvas.toBlob((blob) => {
+          if (!blob) { setCertImageFile(file); setCertImagePreview(reader.result as string); return; }
+          const compressed = new File([blob], 'certificate.jpg', { type: 'image/jpeg' });
+          setCertImageFile(compressed);
+          setCertImagePreview(canvas.toDataURL('image/jpeg', QUALITY));
+        }, 'image/jpeg', QUALITY);
+      };
+      img.src = reader.result as string;
+    };
     reader.readAsDataURL(file);
   };
 

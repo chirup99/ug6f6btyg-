@@ -398,24 +398,24 @@ export function TradeBook({
                                     </div>
 
                                     {/* Footer / Now Playing — always visible, never shrinks */}
-                                    <div className="flex-shrink-0 px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 space-y-2">
-                                      <div className="flex items-center justify-start gap-3 overflow-hidden">
-                                        <div className="flex items-center gap-3 flex-1 min-w-0 overflow-hidden">
+                                    <div className="flex-shrink-0 w-full px-3 py-2.5 bg-slate-50 dark:bg-slate-800 border-t border-slate-100 dark:border-slate-800 space-y-2">
+                                      <div className="flex items-center gap-2 w-full">
+                                        <div className="flex items-center gap-2 flex-1 min-w-0">
                                           <div className={`w-8 h-8 rounded bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg flex-shrink-0 ${selectedAudioTrack ? "animate-none" : "animate-pulse"}`}>
                                             <Music2 className="w-4 h-4 text-white" />
                                           </div>
-                                          <div className="flex-1 min-w-0 overflow-hidden">
+                                          <div className="min-w-0 flex-1">
                                             <div className="text-[10px] font-bold text-slate-900 dark:text-slate-100 truncate">
                                               {selectedAudioTrack ? selectedAudioTrack.title : "Select a session"}
                                             </div>
-                                            <div className="text-[9px] text-slate-500 uppercase tracking-tighter truncate whitespace-nowrap">
+                                            <div className="text-[9px] text-slate-500 uppercase tracking-tighter truncate">
                                               {selectedAudioTrack ? `${isAudioPlaying ? 'Playing' : 'Paused'} • ${selectedAudioTrack.duration}` : "Ready to play"}
                                             </div>
                                           </div>
                                         </div>
                                         
                                         {/* Audio Controls */}
-                                        <div className="flex items-center gap-1 flex-shrink-0">
+                                        <div className="flex items-center gap-0.5 flex-shrink-0">
                                           <Button size="icon" variant="ghost" className="h-6 w-6 text-slate-500 hover:text-slate-900 dark:hover:text-slate-100" onClick={() => {
                                             const currentIdx = allAudioTracks.findIndex(t => t.id === selectedAudioTrack?.id);
                                             const prevTrack = allAudioTracks[(currentIdx - 1 + allAudioTracks.length) % allAudioTracks.length];

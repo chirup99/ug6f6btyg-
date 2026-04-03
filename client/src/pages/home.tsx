@@ -3085,7 +3085,9 @@ export default function Home() {
   const youtubePlayerRef = useRef<any>(null);
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isAudioPlayingRef = useRef(false);
+  const selectedAudioTrackRef = useRef<any>(null);
   useEffect(() => { isAudioPlayingRef.current = isAudioPlaying; }, [isAudioPlaying]);
+  useEffect(() => { selectedAudioTrackRef.current = selectedAudioTrack; }, [selectedAudioTrack]);
 
   useEffect(() => {
     // Create the persistent player container outside React's render tree
@@ -3118,18 +3120,38 @@ export default function Home() {
   useEffect(() => {
     if (!isYTReady || !selectedAudioTrack?.youtubeId) return;
 
-    if (youtubePlayerRef.current) {
-      try { youtubePlayerRef.current.destroy(); } catch {}
-      youtubePlayerRef.current = null;
-    }
-    if (progressIntervalRef.current) {
-      clearInterval(progressIntervalRef.current);
-      progressIntervalRef.current = null;
-    }
     setCurrentTime(0);
     setAudioProgress(0);
     setDuration(0);
 
+    const startProgressInterval = () => {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      progressIntervalRef.current = setInterval(() => {
+        if (youtubePlayerRef.current && youtubePlayerRef.current.getCurrentTime) {
+          const time = youtubePlayerRef.current.getCurrentTime();
+          setCurrentTime(time);
+          const d = youtubePlayerRef.current.getDuration?.() || 0;
+          if (d > 0) {
+            setDuration(d);
+            setAudioProgress((time / d) * 100);
+          }
+        }
+      }, 500);
+    };
+
+    // If player already exists, load new video into it (preserves mobile gesture context)
+    // onStateChange uses selectedAudioTrackRef so it's always current — no need to re-register
+    if (youtubePlayerRef.current && typeof youtubePlayerRef.current.loadVideoById === "function") {
+      if (isAudioPlayingRef.current) {
+        youtubePlayerRef.current.loadVideoById(selectedAudioTrack.youtubeId);
+      } else {
+        youtubePlayerRef.current.cueVideoById(selectedAudioTrack.youtubeId);
+      }
+      startProgressInterval();
+      return;
+    }
+
+    // First time: create the player
     const playerContainer = document.getElementById("youtube-audio-player");
     if (!playerContainer) return;
 
@@ -3154,17 +3176,7 @@ export default function Home() {
         onReady: (event: any) => {
           const dur = event.target.getDuration();
           if (dur > 0) setDuration(dur);
-          progressIntervalRef.current = setInterval(() => {
-            if (youtubePlayerRef.current && youtubePlayerRef.current.getCurrentTime) {
-              const time = youtubePlayerRef.current.getCurrentTime();
-              setCurrentTime(time);
-              const d = youtubePlayerRef.current.getDuration?.() || 0;
-              if (d > 0) {
-                setDuration(d);
-                setAudioProgress((time / d) * 100);
-              }
-            }
-          }, 500);
+          startProgressInterval();
           console.log("🎵 YouTube Audio Ready");
           if (shouldAutoPlay) event.target.playVideo();
         },
@@ -3172,7 +3184,8 @@ export default function Home() {
           const YTState = (window as any).YT?.PlayerState;
           if (!YTState) return;
           if (event.data === YTState.ENDED) {
-            const currentIdx = allAudioTracks.findIndex(t => t.id === selectedAudioTrack?.id);
+            const current = selectedAudioTrackRef.current;
+            const currentIdx = allAudioTracks.findIndex(t => t.id === current?.id);
             const nextTrack = allAudioTracks[(currentIdx + 1) % allAudioTracks.length];
             setSelectedAudioTrack(nextTrack);
             setIsAudioPlaying(true);
@@ -3181,7 +3194,7 @@ export default function Home() {
           } else if (event.data === YTState.PAUSED) {
             setIsAudioPlaying(false);
           }
-        }
+        },
       }
     });
   }, [selectedAudioTrack, isYTReady]);

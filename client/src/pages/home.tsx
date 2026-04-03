@@ -2788,6 +2788,7 @@ export default function Home() {
   const [influencerListSearch, setInfluencerListSearch] = useState("");
   const [influencerRevoking, setInfluencerRevoking] = useState<string | null>(null);
   const [showAddInfluencerDialog, setShowAddInfluencerDialog] = useState(false);
+  const [influencerSortMode, setInfluencerSortMode] = useState<'all' | 'expiring' | 'longest' | 'active' | 'expired'>('all');
 
   // Load wallet from server for the current user
   const loadWallet = async (userId: string) => {
@@ -14137,67 +14138,113 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       </Badge>
                     </div>
                   </div>
-                  <div className="mt-4 space-y-2">
+                  {/* Filter pills */}
+                  <div className="flex gap-1.5 flex-wrap px-1 pt-1">
+                    {([
+                      { key: 'all', label: 'All' },
+                      { key: 'active', label: 'Active' },
+                      { key: 'expiring', label: 'Expiring Soon' },
+                      { key: 'longest', label: 'Longest Period' },
+                      { key: 'expired', label: 'Expired' },
+                    ] as const).map(f => (
+                      <button
+                        key={f.key}
+                        onClick={() => setInfluencerSortMode(f.key)}
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-semibold transition-all border ${
+                          influencerSortMode === f.key
+                            ? f.key === 'expired' ? 'bg-red-500 text-white border-red-500 shadow-sm'
+                              : f.key === 'expiring' ? 'bg-orange-500 text-white border-orange-500 shadow-sm'
+                              : 'bg-pink-500 text-white border-pink-500 shadow-sm'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:border-pink-400 hover:text-pink-500'
+                        }`}
+                        data-testid={`filter-influencer-${f.key}`}
+                      >
+                        {f.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="mt-2 max-h-[270px] overflow-y-auto custom-thin-scrollbar space-y-2 pr-0.5">
                     {influencerListLoading ? (
                       <div className="flex items-center justify-center py-8">
                         <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-300 dark:border-slate-600 border-t-pink-500" />
                       </div>
-                    ) : influencerList.filter(p => (p.userEmail || '').toLowerCase().includes(influencerListSearch.toLowerCase()) || (p.displayName || '').toLowerCase().includes(influencerListSearch.toLowerCase())).length === 0 ? (
-                      <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">
-                        {influencerListSearch ? 'No influencers match your search.' : 'No active influencers yet. Tap + to add one.'}
-                      </div>
-                    ) : (
-                      influencerList
-                        .filter(p => (p.userEmail || '').toLowerCase().includes(influencerListSearch.toLowerCase()) || (p.displayName || '').toLowerCase().includes(influencerListSearch.toLowerCase()))
-                        .map((p, index) => {
-                          const initials = (p.userEmail || '').substring(0, 2).toUpperCase();
-                          const expiry = new Date(p.expiryDate);
-                          const isExpired = expiry < new Date();
-                          const daysLeft = Math.max(0, Math.ceil((expiry.getTime() - Date.now()) / 86400000));
-                          return (
-                            <div key={p.userId} className="flex items-center justify-between p-3 bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-700/50 rounded-xl hover:border-pink-500/30 transition-all duration-300" data-testid={`influencer-row-${index}`}>
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-lg bg-pink-500/10 flex items-center justify-center border border-pink-500/20">
-                                  <span className="text-[10px] font-bold text-pink-500">{initials}</span>
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-[11px] font-medium text-slate-700 dark:text-slate-200">{p.userEmail}</span>
-                                  <span className={`text-[9px] font-medium ${isExpired ? 'text-red-500' : 'text-pink-500'}`}>
-                                    {isExpired ? 'Expired' : `${daysLeft}d left · Exp ${expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
-                                  </span>
-                                </div>
+                    ) : (() => {
+                      const now = Date.now();
+                      const filtered = influencerList
+                        .filter(p => {
+                          const matchSearch = (p.userEmail || '').toLowerCase().includes(influencerListSearch.toLowerCase()) || (p.displayName || '').toLowerCase().includes(influencerListSearch.toLowerCase());
+                          if (!matchSearch) return false;
+                          const expiry = new Date(p.expiryDate).getTime();
+                          if (influencerSortMode === 'active') return expiry > now;
+                          if (influencerSortMode === 'expired') return expiry <= now;
+                          if (influencerSortMode === 'expiring') return expiry > now;
+                          return true;
+                        })
+                        .sort((a, b) => {
+                          if (influencerSortMode === 'expiring') return new Date(a.expiryDate).getTime() - new Date(b.expiryDate).getTime();
+                          if (influencerSortMode === 'longest') return b.days - a.days;
+                          return 0;
+                        });
+
+                      if (filtered.length === 0) {
+                        return (
+                          <div className="text-center py-8 text-slate-400 dark:text-slate-500 text-xs">
+                            {influencerListSearch ? 'No influencers match your search.' : influencerSortMode !== 'all' ? `No ${influencerSortMode} influencers.` : 'No active influencers yet. Tap + to add one.'}
+                          </div>
+                        );
+                      }
+
+                      return filtered.map((p, index) => {
+                        const initials = (p.userEmail || '').substring(0, 2).toUpperCase();
+                        const expiry = new Date(p.expiryDate);
+                        const isExpired = expiry.getTime() < now;
+                        const daysLeft = Math.max(0, Math.ceil((expiry.getTime() - now) / 86400000));
+                        const isExpiringSoon = !isExpired && daysLeft <= 14;
+                        return (
+                          <div key={p.userId} className="flex items-center justify-between p-3 bg-slate-50/50 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-700/50 rounded-xl hover:border-pink-500/30 transition-all duration-300" data-testid={`influencer-row-${index}`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 rounded-lg flex items-center justify-center border ${isExpired ? 'bg-red-500/10 border-red-500/20' : isExpiringSoon ? 'bg-orange-500/10 border-orange-500/20' : 'bg-pink-500/10 border-pink-500/20'}`}>
+                                <span className={`text-[10px] font-bold ${isExpired ? 'text-red-500' : isExpiringSoon ? 'text-orange-500' : 'text-pink-500'}`}>{initials}</span>
                               </div>
-                              <div className="flex items-center gap-2">
-                                <Badge variant="outline" className={`text-[8px] h-5 px-2 ${isExpired ? 'border-red-300 text-red-500 bg-red-50 dark:bg-red-900/20' : 'border-pink-300 text-pink-500 bg-pink-50 dark:bg-pink-900/20'}`}>
-                                  {p.days}d
-                                </Badge>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  disabled={influencerRevoking === p.userId}
-                                  onClick={async () => {
-                                    setInfluencerRevoking(p.userId);
-                                    try {
-                                      const res = await fetch(`/api/influencer/revoke/${encodeURIComponent(p.userId)}`, { method: 'POST' });
-                                      if (res.ok) {
-                                        setInfluencerList(prev => prev.filter(x => x.userId !== p.userId));
-                                      }
-                                    } catch (e) {
-                                      console.warn('Failed to revoke influencer', e);
-                                    } finally {
-                                      setInfluencerRevoking(null);
-                                    }
-                                  }}
-                                  className="h-6 w-6 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
-                                  data-testid={`button-revoke-influencer-${index}`}
-                                >
-                                  {influencerRevoking === p.userId ? <div className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin" /> : <X className="h-3 w-3" />}
-                                </Button>
+                              <div className="flex flex-col">
+                                <span className="text-[11px] font-medium text-slate-700 dark:text-slate-200">{p.userEmail}</span>
+                                <span className={`text-[9px] font-medium ${isExpired ? 'text-red-500' : isExpiringSoon ? 'text-orange-500' : 'text-pink-500'}`}>
+                                  {isExpired ? `Expired ${expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}` : `${daysLeft}d left · Exp ${expiry.toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}`}
+                                </span>
                               </div>
                             </div>
-                          );
-                        })
-                    )}
+                            <div className="flex items-center gap-2">
+                              <Badge variant="outline" className={`text-[8px] h-5 px-2 ${isExpired ? 'border-red-300 text-red-500 bg-red-50 dark:bg-red-900/20' : isExpiringSoon ? 'border-orange-300 text-orange-500 bg-orange-50 dark:bg-orange-900/20' : 'border-pink-300 text-pink-500 bg-pink-50 dark:bg-pink-900/20'}`}>
+                                {p.days}d
+                              </Badge>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                disabled={influencerRevoking === p.userId}
+                                onClick={async () => {
+                                  setInfluencerRevoking(p.userId);
+                                  try {
+                                    const res = await fetch(`/api/influencer/revoke/${encodeURIComponent(p.userId)}`, { method: 'POST' });
+                                    if (res.ok) {
+                                      setInfluencerList(prev => prev.filter(x => x.userId !== p.userId));
+                                    }
+                                  } catch (e) {
+                                    console.warn('Failed to revoke influencer', e);
+                                  } finally {
+                                    setInfluencerRevoking(null);
+                                  }
+                                }}
+                                className="h-6 w-6 text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+                                data-testid={`button-revoke-influencer-${index}`}
+                              >
+                                {influencerRevoking === p.userId ? <div className="w-3 h-3 border border-red-400 border-t-transparent rounded-full animate-spin" /> : <X className="h-3 w-3" />}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      });
+                    })()}
                   </div>
                   <Button
                     size="icon"

@@ -5949,6 +5949,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (imageBase64) {
         const base64Only = imageBase64.replace(/^data:[^;]+;base64,/, '');
         imgBuffer = Buffer.from(base64Only, 'base64');
+      } else if (imageUrl.startsWith('/')) {
+        // Local file path (e.g. /uploads/profiles/...) — read directly from disk
+        const { readFile } = await import('fs/promises');
+        const path = await import('path');
+        const localPath = path.join(process.cwd(), imageUrl);
+        imgBuffer = await readFile(localPath);
       } else {
         const imgResponse = await fetch(imageUrl);
         if (!imgResponse.ok) throw new Error('Could not fetch certificate image');

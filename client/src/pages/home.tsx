@@ -39,12 +39,12 @@ import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
 // import { ErrorPanel } from "@/components/error-panel";
 
 
-const AdvancedCandlestickChart = lazy(() => import("@/components/advanced-candlestick-chart").then(m => ({ default: m.AdvancedCandlestickChart })));
-const IndicatorCrossingsDisplay = lazy(() => import("@/components/indicator-crossings-display").then(m => ({ default: m.IndicatorCrossingsDisplay })));
+import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-chart";
+import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
 import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
-const TradingMaster = lazy(() => import("@/components/trading-master").then(m => ({ default: m.TradingMaster })));
+import { TradingMaster } from "@/components/trading-master";
 const MiniCastTab = lazy(() => import("@/components/MiniCastTab").then(m => ({ default: m.MiniCastTab })));
-const TradingDashboardTab = lazy(() => import("@/components/TradingDashboardTab").then(m => ({ default: m.TradingDashboardTab })));
+import { TradingDashboardTab } from "@/components/TradingDashboardTab";
 
 import {
 
@@ -11986,9 +11986,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             {/* Render content based on active tab */}
 
             {activeTab === 'dashboard' && localStorage.getItem('currentUserEmail') === 'chiranjeevi.perala99@gmail.com' && (
-              <Suspense fallback={<div className="flex items-center justify-center h-full py-20"><div className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
-                <TradingDashboardTab setActiveTab={setActiveTab} />
-              </Suspense>
+              <TradingDashboardTab setActiveTab={setActiveTab} />
             )}
 
             {activeTab === "trading-home" && (
@@ -13300,7 +13298,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       // Handle Watchlist view
                                       if (searchResults.includes("[CHART:WATCHLIST]")) {
                                         return (
-                                          <Suspense fallback={<div className="flex items-center justify-center py-20"><div className="w-8 h-8 border-2 border-cyan-500 border-t-transparent rounded-full animate-spin" /></div>}>
                                           <WatchlistResultTab
                                             watchlistSymbols={watchlistSymbols}
                                             selectedWatchlistSymbol={selectedWatchlistSymbol}
@@ -13355,7 +13352,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             handleCompareAnalysis={handleCompareAnalysis}
                                             getWatchlistNewsRelativeTime={getWatchlistNewsRelativeTime}
                                           />
-                                          </Suspense>
                                         );
                                       }
 
@@ -15900,9 +15896,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="w-10 h-10 border-2 border-blue-500 border-t-transparent rounded-full animate-spin" /></div>}>
-                  <TradingMaster />
-                </Suspense>
+                <TradingMaster />
               </div>
             )}
 
@@ -15918,10 +15912,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <Suspense fallback={<div className="flex items-center justify-center h-screen"><div className="w-10 h-10 border-2 border-green-500 border-t-transparent rounded-full animate-spin" /></div>}>
-                  <AdvancedCandlestickChart />
-                  <IndicatorCrossingsDisplay />
-                </Suspense>
+                <AdvancedCandlestickChart />
+                <IndicatorCrossingsDisplay />
               </div>
             )}
 

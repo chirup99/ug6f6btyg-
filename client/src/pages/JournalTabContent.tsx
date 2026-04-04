@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from "react";
+import { useState, useRef, useCallback, useMemo } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -858,6 +858,236 @@ export function JournalTabContent({
     setSearchResults([]);
   };
   // ── End TradeBook inlined state ──
+
+  // ─────────────────────────────────────────────────────────────────
+  // PERFORMANCE: All heavy O(n) computations memoized here so they
+  // only re-run when their data dependencies actually change, NOT
+  // on every render (which was the root cause of Journal tab lag).
+  // ─────────────────────────────────────────────────────────────────
+
+  const filteredHeatmapData = useMemo(
+    () => getFilteredHeatmapData(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [tradingDataByDate, selectedDateRange]
+  );
+
+  // Memoize Quick Stats Banner computation (previously an IIFE on every render)
+  const quickStatsData = useMemo(() => {
+    const dates = Object.keys(filteredHeatmapData);
+    let totalPnL = 0;
+    let totalTrades = 0;
+    let winningTrades = 0;
+    let fomoTrades = 0;
+    let consecutiveWins = 0;
+    let maxWinStreak = 0;
+    const trendData: number[] = [];
+    const fomoDates: string[] = [];
+    const overTradingDates: string[] = [];
+    const plannedDates: string[] = [];
+    let plannedCount = 0;
+    const tagStats: Record<string, any> = {};
+    const tagDates: Record<string, string[]> = {};
+    let overTradingCount = 0;
+
+    dates.sort().forEach(dateKey => {
+      const dayData = filteredHeatmapData[dateKey];
+      const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+      const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
+
+      if (metrics) {
+        const netPnL = metrics.netPnL || 0;
+        totalPnL += netPnL;
+        totalTrades += metrics.totalTrades || 0;
+        winningTrades += metrics.winningTrades || 0;
+        trendData.push(netPnL);
+
+        if ((metrics.totalTrades || 0) > 10) {
+          overTradingCount++;
+          overTradingDates.push(dateKey);
+        }
+
+        if (Array.isArray(tags) && tags.length > 0) {
+          const normalizedTags = tags.map((t: string) => t.trim().toLowerCase());
+          if (normalizedTags.includes('overtrading')) {
+            if (!overTradingDates.includes(dateKey)) {
+              overTradingCount++;
+              overTradingDates.push(dateKey);
+            }
+          }
+          if (normalizedTags.includes('fomo')) { fomoTrades++; fomoDates.push(dateKey); }
+          if (normalizedTags.includes('planned')) { plannedCount++; plannedDates.push(dateKey); }
+          normalizedTags.forEach(tag => {
+            tagStats[tag] = (tagStats[tag] || 0) + 1;
+            if (!tagDates[tag]) tagDates[tag] = [];
+            tagDates[tag].push(dateKey);
+          });
+        }
+
+        if (netPnL > 0) { consecutiveWins++; maxWinStreak = Math.max(maxWinStreak, consecutiveWins); }
+        else if (netPnL < 0) { consecutiveWins = 0; }
+      }
+    });
+
+    const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+    const isProfitable = totalPnL >= 0;
+    const topTags = Object.entries(tagStats)
+      .sort(([, a], [, b]) => (b as number) - (a as number))
+      .slice(0, 3)
+      .map(([tag, count]) => ({ tag, count }));
+
+    const createSparkline = (data: number[]) => {
+      if (data.length === 0) return '';
+      const max = Math.max(...data);
+      const min = Math.min(...data);
+      const range = max - min || 1;
+      const width = 40;
+      const height = 16;
+      const points = data.map((val, i) => {
+        const x = (i / (data.length - 1 || 1)) * width;
+        const y = height - ((val - min) / range) * height;
+        return `${x},${y}`;
+      }).join(' ');
+      return `M ${points.split(' ').join(' L ')}`;
+    };
+
+    return { totalPnL, totalTrades, winningTrades, fomoTrades, maxWinStreak, trendData, fomoDates, overTradingDates, plannedDates, plannedCount, tagDates, winRate, isProfitable, topTags, createSparkline, overTradingCount };
+  }, [filteredHeatmapData]);
+
+  // Memoize trading insights (previously calculateTradingInsights IIFE — O(n*tags) per render)
+  const tradingInsightsData = useMemo(() => {
+    const allData = Object.values(filteredHeatmapData).filter((data: any) => {
+      const d = data?.tradingData || data;
+      return d && d.tradeHistory && Array.isArray(d.tradeHistory) && d.tradeHistory.length > 0;
+    });
+
+    if (allData.length === 0) {
+      return { tagAnalysis: [], overallStats: { totalTrades: 0, winRate: 0, totalPnL: 0 }, topPerformers: [], worstPerformers: [], tradingDayAnalysis: [] };
+    }
+
+    const tagStats: any = {};
+    const dailyStats: any[] = [];
+
+    allData.forEach((data: any, index: number) => {
+      const dayData = data?.tradingData || data;
+      const trades = dayData.tradeHistory || [];
+      const tags = dayData.tradingTags || [];
+      const metrics = dayData.performanceMetrics;
+
+      if (metrics) {
+        dailyStats.push({ day: index + 1, trades: metrics.totalTrades || trades.length, winRate: parseFloat(metrics.winRate) || 0, netPnL: metrics.netPnL || 0, tags });
+      }
+
+      tags.forEach((tag: string) => {
+        if (!tagStats[tag]) {
+          tagStats[tag] = { tag, tradingDays: 0, totalTrades: 0, wins: 0, losses: 0, totalPnL: 0, winRate: 0, avgPnL: 0, bestDay: 0, worstDay: 0, totalDuration: 0, durations: [] };
+        }
+        const stats = tagStats[tag];
+        stats.tradingDays++;
+        if (metrics) {
+          const dayTrades = metrics.totalTrades || 1;
+          stats.totalTrades += dayTrades;
+          stats.wins += metrics.winningTrades || 0;
+          stats.losses += metrics.losingTrades || 0;
+          stats.totalPnL += metrics.netPnL || 0;
+          const duration = metrics.avgDuration || metrics.duration || 0;
+          if (duration > 0) { stats.totalDuration += (duration * dayTrades); stats.durations.push(duration); }
+          stats.bestDay = Math.max(stats.bestDay, metrics.netPnL || 0);
+          stats.worstDay = Math.min(stats.worstDay, metrics.netPnL || 0);
+        }
+      });
+    });
+
+    Object.values(tagStats).forEach((stats: any) => {
+      stats.winRate = stats.totalTrades > 0 ? (stats.wins / stats.totalTrades) * 100 : 0;
+      stats.avgPnL = stats.tradingDays > 0 ? stats.totalPnL / stats.tradingDays : 0;
+      stats.avgDuration = stats.totalTrades > 0 ? (stats.totalDuration / stats.totalTrades) : 0;
+      if (stats.avgDuration === 0) stats.tradingStyle = "Inconsistent";
+      else if (stats.avgDuration < 15) stats.tradingStyle = "Scalper";
+      else if (stats.avgDuration < 60) stats.tradingStyle = "Intraday";
+      else if (stats.avgDuration < 1440) stats.tradingStyle = "Swing Trade";
+      else stats.tradingStyle = "Holding";
+      if (stats.totalPnL < 0 && stats.avgDuration > 30) stats.tradingStyle = "Emotional Panic Exit";
+      if (stats.durations.length > 2) {
+        const min = Math.min(...stats.durations);
+        const max = Math.max(...stats.durations);
+        if (max > min * 5) stats.tradingStyle = "Inconsistent Duration";
+      }
+    });
+
+    const tagAnalysis = Object.values(tagStats).sort((a: any, b: any) => b.totalPnL - a.totalPnL);
+    const totalTrades = tagAnalysis.reduce((sum: number, tag: any) => sum + tag.totalTrades, 0);
+    const totalPnL = tagAnalysis.reduce((sum: number, tag: any) => sum + tag.totalPnL, 0);
+    const totalWins = tagAnalysis.reduce((sum: number, tag: any) => sum + tag.wins, 0);
+    const overallWinRate = totalTrades > 0 ? (totalWins / totalTrades) * 100 : 0;
+
+    return {
+      tagAnalysis,
+      overallStats: { totalTrades, winRate: overallWinRate, totalPnL },
+      topPerformers: tagAnalysis.slice(0, 5),
+      worstPerformers: tagAnalysis.slice(-3).reverse(),
+      tradingDayAnalysis: dailyStats,
+    };
+  }, [filteredHeatmapData]);
+
+  // Memoize heatmap metrics aggregation (previously calculateHeatmapMetrics IIFE)
+  const heatmapMetricsData = useMemo(() => {
+    const dates = Object.keys(filteredHeatmapData);
+    let totalPnL = 0;
+    let totalTrades = 0;
+    let winningTrades = 0;
+    let datesWithTrading = 0;
+    dates.forEach(dateKey => {
+      const dayData = filteredHeatmapData[dateKey];
+      const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+      if (metrics) {
+        const netPnL = metrics.netPnL || 0;
+        if (netPnL !== 0) {
+          totalPnL += netPnL;
+          totalTrades += metrics.totalTrades || 0;
+          winningTrades += metrics.winningTrades || 0;
+          datesWithTrading++;
+        }
+      }
+    });
+    const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
+    return { totalPnL, totalTrades, winRate, datesCount: datesWithTrading };
+  }, [filteredHeatmapData]);
+
+  // Memoize strategy summary cards computation
+  const strategyMetrics = useMemo(() => {
+    const allData = Object.values(filteredHeatmapData).filter(
+      (data: any) => data && data.performanceMetrics && data.performanceMetrics.netPnL !== 0,
+    );
+    if (allData.length === 0) return null;
+    const totalDays = allData.length;
+    const profitableDays = allData.filter((d: any) => d.performanceMetrics.netPnL > 0).length;
+    const avgDailyPnL = allData.reduce((sum: number, d: any) => sum + d.performanceMetrics.netPnL, 0) / totalDays;
+    const maxProfit = Math.max(...allData.map((d: any) => d.performanceMetrics.netPnL));
+    return { totalDays, profitableDays, avgDailyPnL, maxProfit };
+  }, [filteredHeatmapData]);
+
+  // Memoize risk management analysis computation
+  const riskMetrics = useMemo(() => {
+    const allDates = Object.keys(filteredHeatmapData).sort();
+    const dayMetrics = allDates.map(dateStr => {
+      const d = filteredHeatmapData[dateStr];
+      const metrics = d?.tradingData?.performanceMetrics || d?.performanceMetrics;
+      const trades: any[] = d?.tradingData?.tradeHistory || d?.tradeHistory || d?.trades || [];
+      const netPnL = metrics?.netPnL ?? trades.reduce((s: number, t: any) => s + (typeof t.pnl === 'number' ? t.pnl : parseFloat((t.pnl || '0').replace(/[₹,+\s]/g, '')) || 0), 0);
+      const totalTrades = metrics?.totalTrades || trades.length;
+      return { date: dateStr, netPnL, totalTrades };
+    }).filter(d => d.totalTrades > 0);
+
+    const formatDateLabel = (dateStr: string) => {
+      const parts = dateStr.split('-').map(Number);
+      const month = parts[1];
+      const day = parts[2];
+      const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+      return `${months[month - 1]} ${day}`;
+    };
+
+    return { dayMetrics, formatDateLabel };
+  }, [filteredHeatmapData]);
 
   return (
     <>
@@ -2690,102 +2920,7 @@ export function JournalTabContent({
                         {/* Quick Stats Banner */}
                         <div className="mt-2 mb-20 md:mb-2 bg-gradient-to-r from-violet-500 to-purple-600 rounded-md px-2 py-1.5 relative" data-testid="banner-quick-stats">
                           {(() => {
-                            // Calculate metrics from heatmap data and build tag-to-dates mapping
-                            const filteredData = getFilteredHeatmapData();
-                            const dates = Object.keys(filteredData);
-                            let totalPnL = 0;
-                            let totalTrades = 0;
-                            let winningTrades = 0;
-                            let fomoTrades = 0;
-                            let consecutiveWins = 0;
-                            let maxWinStreak = 0;
-                            const trendData: number[] = [];
-                            const fomoDates: string[] = [];
-                            const overTradingDates: string[] = [];
-                            const plannedDates: string[] = [];
-                            let plannedCount = 0;
-                            const tagStats: Record<string, any> = {};
-                            const tagDates: Record<string, string[]> = {};
-                            let overTradingCount = 0;
-
-                            dates.sort().forEach(dateKey => {
-                              const dayData = filteredData[dateKey];
-                              const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-                              const tags = dayData?.tradingData?.tradingTags || dayData?.tradingTags || [];
-
-                              if (metrics) {
-                                const netPnL = metrics.netPnL || 0;
-                                totalPnL += netPnL;
-                                totalTrades += metrics.totalTrades || 0;
-                                winningTrades += metrics.winningTrades || 0;
-                                trendData.push(netPnL);
-
-                                // Track overtrading - check for tag or high trade count
-                                if ((metrics.totalTrades || 0) > 10) {
-                                  overTradingCount++;
-                                  overTradingDates.push(dateKey);
-                                }
-
-                                // Also track if overtrading tag exists
-                                if (Array.isArray(tags) && tags.length > 0) {
-                                  const normalizedTags = tags.map((t: string) => t.trim().toLowerCase());
-                                  if (normalizedTags.includes('overtrading')) {
-                                    if (!overTradingDates.includes(dateKey)) {
-                                      overTradingCount++;
-                                      overTradingDates.push(dateKey);
-                                    }
-                                  }
-                                }
-
-                                if (Array.isArray(tags) && tags.length > 0) {
-                                  const normalizedTags = tags.map((t: string) => t.trim().toLowerCase());
-                                  if (normalizedTags.includes('fomo')) {
-                                    fomoTrades++;
-                                    fomoDates.push(dateKey);
-                                  }
-                                  if (normalizedTags.includes('planned')) {
-                                    plannedCount++;
-                                    plannedDates.push(dateKey);
-                                  }
-                                  // Track all tags with their dates
-                                  normalizedTags.forEach(tag => {
-                                    tagStats[tag] = (tagStats[tag] || 0) + 1;
-                                    if (!tagDates[tag]) tagDates[tag] = [];
-                                    tagDates[tag].push(dateKey);
-                                  });
-                                }
-
-                                if (netPnL > 0) {
-                                  consecutiveWins++;
-                                  maxWinStreak = Math.max(maxWinStreak, consecutiveWins);
-                                } else if (netPnL < 0) {
-                                  consecutiveWins = 0;
-                                }
-                              }
-                            });
-
-                            const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-                            const isProfitable = totalPnL >= 0;
-                            const topTags = Object.entries(tagStats)
-                              .sort(([,a], [,b]) => (b as number) - (a as number))
-                              .slice(0, 3)
-                              .map(([tag, count]) => ({ tag, count }));
-
-                            const createSparkline = (data: number[]) => {
-                              if (data.length === 0) return '';
-                              const max = Math.max(...data);
-                              const min = Math.min(...data);
-                              const range = max - min || 1;
-                              const width = 40;
-                              const height = 16;
-                              const points = data.map((val, i) => {
-                                const x = (i / (data.length - 1 || 1)) * width;
-                                const y = height - ((val - min) / range) * height;
-                                return `${x},${y}`;
-                              }).join(' ');
-                              return `M ${points.split(' ').join(' L ')}`;
-                            };
-
+                            const { totalPnL, totalTrades, fomoTrades, maxWinStreak, trendData, fomoDates, overTradingDates, plannedDates, plannedCount, tagDates, winRate, isProfitable, topTags, createSparkline, overTradingCount } = quickStatsData;
                             return (
                               <div className="space-y-2">
                                 {/* Header row with stats and menu */}
@@ -3022,216 +3157,10 @@ export function JournalTabContent({
                   className={`mt-8 space-y-6 ${mobileBottomTab !== "insight" ? "hidden md:block" : "block"}`}
                 >
                   {(() => {
-                    // Calculate comprehensive insights from all trading data
-                    const calculateTradingInsights = (data = tradingDataByDate) => {
-                      const allData = Object.values(data).filter(
-                        (data: any) => {
-                          const d = data?.tradingData || data;
-                          return d &&
-                                 d.tradeHistory &&
-                                 Array.isArray(d.tradeHistory) &&
-                                 d.tradeHistory.length > 0;
-                        }
-                      );
-
-                      if (allData.length === 0) {
-                        return {
-                          tagAnalysis: [],
-                          overallStats: {
-                            totalTrades: 0,
-                            winRate: 0,
-                            totalPnL: 0,
-                          },
-                          topPerformers: [],
-                          worstPerformers: [],
-                          tradingDayAnalysis: [],
-                        };
-                      }
-
-                      // Tag-based performance analysis
-                      const tagStats: any = {};
-                      const dailyStats: any[] = [];
-
-                      allData.forEach((data: any, index: number) => {
-                        const dayData = data?.tradingData || data;
-                        const trades = dayData.tradeHistory || [];
-                        const tags = dayData.tradingTags || [];
-                        const metrics = dayData.performanceMetrics;
-
-                        // Calculate day statistics
-                        if (metrics) {
-                          dailyStats.push({
-                            day: index + 1,
-                            trades: metrics.totalTrades || trades.length,
-                            winRate: parseFloat(metrics.winRate) || 0,
-                            netPnL: metrics.netPnL || 0,
-                            tags: tags,
-                          });
-                        }
-
-                        // Analyze each tag's performance
-                        tags.forEach((tag: string) => {
-                          if (!tagStats[tag]) {
-                            tagStats[tag] = {
-                              tag,
-                              tradingDays: 0,
-                              totalTrades: 0,
-                              wins: 0,
-                              losses: 0,
-                              totalPnL: 0,
-                              winRate: 0,
-                              avgPnL: 0,
-                              bestDay: 0,
-                              worstDay: 0,
-                              totalDuration: 0,
-                              durations: [],
-                            };
-                          }
-
-                          const stats = tagStats[tag];
-                          stats.tradingDays++;
-
-                          if (metrics) {
-                            const dayTrades = metrics.totalTrades || 1;
-                            stats.totalTrades += dayTrades;
-                            stats.wins += metrics.winningTrades || 0;
-                            stats.losses += metrics.losingTrades || 0;
-                            stats.totalPnL += metrics.netPnL || 0;
-                            
-                            // Track duration if available (assuming duration in minutes)
-                            const duration = metrics.avgDuration || metrics.duration || 0;
-                            if (duration > 0) {
-                              stats.totalDuration += (duration * dayTrades);
-                              stats.durations.push(duration);
-                            }
-                            stats.bestDay = Math.max(
-                              stats.bestDay,
-                              metrics.netPnL || 0,
-                            );
-                            stats.worstDay = Math.min(
-                              stats.worstDay,
-                              metrics.netPnL || 0,
-                            );
-                          }
-                        });
-                      });
-
-                      // Calculate final stats for each tag
-                      Object.values(tagStats).forEach((stats: any) => {
-                        stats.winRate =
-                          stats.totalTrades > 0
-                            ? (stats.wins / stats.totalTrades) * 100
-                            : 0;
-                        stats.avgPnL =
-                          stats.tradingDays > 0
-                            ? stats.totalPnL / stats.tradingDays
-                            : 0;
-                        
-                        stats.avgDuration = stats.totalTrades > 0 ? (stats.totalDuration / stats.totalTrades) : 0;
-                        
-                        // Determine trading style
-                        if (stats.avgDuration === 0) {
-                          stats.tradingStyle = "Inconsistent";
-                        } else if (stats.avgDuration < 15) {
-                          stats.tradingStyle = "Scalper";
-                        } else if (stats.avgDuration < 60) {
-                          stats.tradingStyle = "Intraday";
-                        } else if (stats.avgDuration < 1440) {
-                          stats.tradingStyle = "Swing Trade";
-                        } else {
-                          stats.tradingStyle = "Holding";
-                        }
-                        
-                        // Override for emotional exit if loss making with high duration
-                        if (stats.totalPnL < 0 && stats.avgDuration > 30) {
-                          stats.tradingStyle = "Emotional Panic Exit";
-                        }
-                        
-                        // Check for inconsistency in durations
-                        if (stats.durations.length > 2) {
-                           const min = Math.min(...stats.durations);
-                           const max = Math.max(...stats.durations);
-                           if (max > min * 5) {
-                             stats.tradingStyle = "Inconsistent Duration";
-                           }
-                        }
-                      });
-
-                      const tagAnalysis = Object.values(tagStats).sort(
-                        (a: any, b: any) => b.totalPnL - a.totalPnL,
-                      );
-
-                      // Overall statistics
-                      const totalTrades = tagAnalysis.reduce(
-                        (sum: number, tag: any) => sum + tag.totalTrades,
-                        0,
-                      );
-                      const totalPnL = tagAnalysis.reduce(
-                        (sum: number, tag: any) => sum + tag.totalPnL,
-                        0,
-                      );
-                      const totalWins = tagAnalysis.reduce(
-                        (sum: number, tag: any) => sum + tag.wins,
-                        0,
-                      );
-                      const overallWinRate =
-                        totalTrades > 0 ? (totalWins / totalTrades) * 100 : 0;
-
-                      const overallStats = {
-                        totalTrades,
-                        winRate: overallWinRate,
-                        totalPnL,
-                      };
-                      const topPerformers = tagAnalysis.slice(0, 5);
-                      const worstPerformers = tagAnalysis.slice(-3).reverse();
-
-                      return {
-                        tagAnalysis,
-                        overallStats,
-                        topPerformers,
-                        worstPerformers,
-                        tradingDayAnalysis: dailyStats,
-                      };
-                    };
-
-                    // ✅ NEW: Use filtered heatmap data directly instead of complex insights
-                    const filteredHeatmapData = getFilteredHeatmapData();
-                    const insights = calculateTradingInsights(filteredHeatmapData);
-                    const calculateHeatmapMetrics = () => {
-                      const dates = Object.keys(filteredHeatmapData);
-                      let totalPnL = 0;
-                      let totalTrades = 0;
-                      let winningTrades = 0;
-                      let datesWithTrading = 0;
-                      dates.forEach(dateKey => {
-                        const dayData = filteredHeatmapData[dateKey];
-
-                        // Handle both wrapped (AWS) and unwrapped formats
-                        const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
-
-                        if (metrics) {
-                          const netPnL = metrics.netPnL || 0;
-
-                          // Only include dates with actual trading activity (non-zero P&L)
-                          if (netPnL !== 0) {
-                            totalPnL += netPnL;
-                            totalTrades += metrics.totalTrades || 0;
-                            winningTrades += metrics.winningTrades || 0;
-                            datesWithTrading++;
-                          }
-                        }
-                      });
-
-                      const winRate = totalTrades > 0 ? (winningTrades / totalTrades) * 100 : 0;
-
-                      return { totalPnL, totalTrades, winRate, datesCount: datesWithTrading };
-                    };
-
-                    const heatmapMetrics = calculateHeatmapMetrics();
+                    const insights = tradingInsightsData;
+                    const heatmapMetrics = heatmapMetricsData;
                     const totalPnL = heatmapMetrics.totalPnL;
                     const isProfitable = totalPnL >= 0;
-
-                    console.log(`📊 Performance Trend using ${selectedDateRange ? 'FILTERED' : 'ALL'} heatmap data: ${heatmapMetrics.datesCount} dates, Total P&L: ₹${totalPnL.toFixed(2)}`);
 
                     return (
                       <div className="space-y-6">
@@ -3551,30 +3480,8 @@ export function JournalTabContent({
                         {/* Strategy Summary Cards */}
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           {(() => {
-                            // Filter to only include dates with actual trading activity (non-zero P&L)
-                            const allData = Object.values(
-                              filteredHeatmapData,
-                            ).filter(
-                              (data: any) => data && data.performanceMetrics && data.performanceMetrics.netPnL !== 0,
-                            );
-
-                            if (allData.length === 0) return null;
-
-                            const totalDays = allData.length;
-                            const profitableDays = allData.filter(
-                              (d: any) => d.performanceMetrics.netPnL > 0,
-                            ).length;
-                            const avgDailyPnL =
-                              allData.reduce(
-                                (sum: number, d: any) =>
-                                  sum + d.performanceMetrics.netPnL,
-                                0,
-                              ) / totalDays;
-                            const maxProfit = Math.max(
-                              ...allData.map(
-                                (d: any) => d.performanceMetrics.netPnL,
-                              ),
-                            );
+                            if (!strategyMetrics) return null;
+                            const { totalDays, profitableDays, avgDailyPnL, maxProfit } = strategyMetrics;
 
                             const fmtCompact = (n: number) => {
                               const abs = Math.abs(n);
@@ -3687,38 +3594,20 @@ export function JournalTabContent({
                           </div>
 
                           {(() => {
-                            const allDates = Object.keys(filteredHeatmapData).sort();
-                            const dayMetrics = allDates.map(dateStr => {
-                              const d = filteredHeatmapData[dateStr];
-                              const metrics = d?.tradingData?.performanceMetrics || d?.performanceMetrics;
-                              const trades: any[] = d?.tradingData?.tradeHistory || d?.tradeHistory || d?.trades || [];
-                              const netPnL = metrics?.netPnL ?? trades.reduce((s: number, t: any) => s + (typeof t.pnl === 'number' ? t.pnl : parseFloat((t.pnl || '0').replace(/[₹,+\s]/g, '')) || 0), 0);
-                              const totalTrades = metrics?.totalTrades || trades.length;
-                              return { date: dateStr, netPnL, totalTrades };
-                            }).filter(d => d.totalTrades > 0);
-
+                            const { dayMetrics, formatDateLabel } = riskMetrics;
                             const totalDays = dayMetrics.length;
                             const targetReward = riskCapital * riskRewardRatio;
-                            const daysMetRR = dayMetrics.filter(d => d.netPnL >= targetReward).length;
-                            const daysBreachedRisk = dayMetrics.filter(d => d.netPnL <= -riskCapital).length;
-                            const daysProfitable = dayMetrics.filter(d => d.netPnL > 0).length;
+                            const daysMetRR = dayMetrics.filter((d: any) => d.netPnL >= targetReward).length;
+                            const daysBreachedRisk = dayMetrics.filter((d: any) => d.netPnL <= -riskCapital).length;
+                            const daysProfitable = dayMetrics.filter((d: any) => d.netPnL > 0).length;
 
-                            // Capital consistency: compare avg P&L of first half vs second half
                             const half = Math.floor(dayMetrics.length / 2);
-                            const firstHalfAvg = half > 0 ? dayMetrics.slice(0, half).reduce((s, d) => s + d.netPnL, 0) / half : 0;
-                            const secondHalfAvg = half > 0 ? dayMetrics.slice(half).reduce((s, d) => s + d.netPnL, 0) / (dayMetrics.length - half) : 0;
+                            const firstHalfAvg = half > 0 ? dayMetrics.slice(0, half).reduce((s: number, d: any) => s + d.netPnL, 0) / half : 0;
+                            const secondHalfAvg = half > 0 ? dayMetrics.slice(half).reduce((s: number, d: any) => s + d.netPnL, 0) / (dayMetrics.length - half) : 0;
                             const capitalTrend = totalDays < 2 ? 'no data' : secondHalfAvg > firstHalfAvg * 1.1 ? 'increasing' : secondHalfAvg < firstHalfAvg * 0.9 ? 'declining' : 'consistent';
 
-                            // Chart data - last 30 trading days
                             const recentDayMetrics = dayMetrics.slice(-30);
-                            const formatDateLabel = (dateStr: string) => {
-                              const parts = dateStr.split('-').map(Number);
-                              const month = parts[1];
-                              const day = parts[2];
-                              const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-                              return `${months[month - 1]} ${day}`;
-                            };
-                            const chartData = recentDayMetrics.map(d => ({
+                            const chartData = recentDayMetrics.map((d: any) => ({
                               day: formatDateLabel(d.date),
                               pnl: d.netPnL,
                               target: targetReward,

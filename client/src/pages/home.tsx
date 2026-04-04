@@ -13893,7 +13893,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         </div>
                         {/* Trading Tools Grid - Desktop: 4 columns centered, Mobile: 3 horizontal cards + swipeable below */}
                         {!searchResults && (
-                        <div className="mx-auto max-w-6xl hidden md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-3 md:px-4 md:items-start">
+                        <div className="mx-auto max-w-6xl hidden md:grid md:grid-cols-2 lg:grid-cols-4 md:gap-3 md:px-4 md:items-start">
                           {/* Social Feed Card */}
                           <div
                             className="bg-blue-500 rounded-2xl overflow-hidden h-28 w-full relative cursor-pointer hover:scale-105 transition-transform"
@@ -13907,6 +13907,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             <div className="absolute bottom-2 right-2">
                               <div className="w-9 h-9 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                                 <MessageCircle className="h-4 w-4 text-white" />
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Trading Master Card */}
+                          <div
+                            className="bg-indigo-500 rounded-2xl overflow-hidden h-28 w-full relative cursor-pointer hover:scale-105 transition-transform"
+                            onClick={handleTradingMasterAccess}
+                          >
+                            <div className="absolute top-2 left-2">
+                              <span className="bg-white bg-opacity-90 text-indigo-600 px-2 py-0.5 rounded-full text-xs font-medium">
+                                Trading Master
+                              </span>
+                            </div>
+                            <div className="absolute bottom-2 right-2">
+                              <div className="w-9 h-9 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <Activity className="h-4 w-4 text-white" />
                               </div>
                             </div>
                           </div>
@@ -13943,8 +13960,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         {/* Mobile Layout: 3 horizontal cards + swipeable below */}
                         {!searchResults && (
                         <div className="md:hidden mt-2">
-                          {/* Two cards in a row */}
-                          <div className="grid grid-cols-2 gap-3 mb-3">
+                          {/* Three cards in a row */}
+                          <div className="grid grid-cols-3 gap-3 mb-3">
                             {/* Social Feed Card */}
                             <div
                               className="bg-blue-500 rounded-xl overflow-hidden h-20 relative cursor-pointer active:scale-95 transition-transform"
@@ -13958,6 +13975,23 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               <div className="absolute bottom-2 right-2">
                                 <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
                                   <MessageCircle className="h-5 w-5 text-white" />
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Trading Master Card */}
+                            <div
+                              className="bg-purple-500 rounded-xl overflow-hidden h-20 relative cursor-pointer active:scale-95 transition-transform"
+                              onClick={handleTradingMasterAccess}
+                            >
+                              <div className="absolute top-2 left-2">
+                                <span className="bg-white bg-opacity-90 text-purple-600 px-2 py-0.5 rounded-full text-[10px] font-medium">
+                                  Trading Master
+                                </span>
+                              </div>
+                              <div className="absolute bottom-2 right-2">
+                                <div className="w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                  <Activity className="h-5 w-5 text-white" />
                                 </div>
                               </div>
                             </div>

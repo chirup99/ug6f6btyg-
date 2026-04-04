@@ -11968,7 +11968,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     setIsFeedbackSubmitting(true);
                     try {
                       const authToken = localStorage.getItem("cognitoAccessToken") || localStorage.getItem("angelOneJwt") || "";
-                      await fetch("/api/feedback", {
+                      const res = await fetch("/api/feedback", {
                         method: "POST",
                         headers: {
                           "Content-Type": "application/json",
@@ -11976,15 +11976,30 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         },
                         body: JSON.stringify({ type: feedbackType, text: feedbackText, rating })
                       });
+                      if (!res.ok) {
+                        const err = await res.json().catch(() => ({}));
+                        throw new Error(err.error || "Submission failed");
+                      }
                       setFeedbackSubmitSuccess(true);
                       setFeedbackText("");
                       setRating(0);
+                      toast({
+                        title: feedbackType === "feedback" ? "Feedback received!" : "Feature request sent!",
+                        description: feedbackType === "feedback"
+                          ? "Thank you for your feedback. We'll review it soon."
+                          : "Your feature request has been noted. We'll look into it!",
+                      });
                       setTimeout(() => {
                         setFeedbackSubmitSuccess(false);
                         setIsFeedbackDialogOpen(false);
                       }, 1500);
-                    } catch (err) {
+                    } catch (err: any) {
                       console.error("Error submitting feedback:", err);
+                      toast({
+                        variant: "destructive",
+                        title: "Failed to submit",
+                        description: err?.message || "Something went wrong. Please try again.",
+                      });
                     } finally {
                       setIsFeedbackSubmitting(false);
                     }

@@ -6213,6 +6213,8 @@ function FinanceNewsBotProfile({ onBack, currentUserUsername }: { onBack: () => 
       if (response.ok) {
         const data = await response.json();
         setIsFollowing(data.following);
+        queryClient.invalidateQueries({ queryKey: ['follow-status', 'finance_news'] });
+        queryClient.invalidateQueries({ queryKey: ['profile-stats', 'finance_news'] });
         queryClient.invalidateQueries({ queryKey: ['/api/users/finance_news/followers-count'] });
         toast({ description: data.following ? 'Following Finance News!' : 'Unfollowed' });
       }
@@ -6651,7 +6653,13 @@ function ViewUserProfile({
       if (response.ok) {
         const data = await response.json();
         setIsFollowing(data.following);
+        queryClient.invalidateQueries({ queryKey: ['follow-status', username] });
+        queryClient.invalidateQueries({ queryKey: ['profile-stats', username] });
         queryClient.invalidateQueries({ queryKey: [`/api/users/${username}/followers-count`] });
+        queryClient.invalidateQueries({ queryKey: ['followers-list', username] });
+        if (currentUserUsername) {
+          queryClient.invalidateQueries({ queryKey: ['profile-stats', currentUserUsername] });
+        }
         toast({ description: data.following ? 'Following!' : 'Unfollowed' });
       }
     } catch (error) {
@@ -7424,14 +7432,14 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
     if (!loaderRef.current) return;
     
     const observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && !isLoading && !isFetching && posts.length > 0) {
+      if (entries[0].isIntersecting && !isLoading && !isFetching && posts.length > 0 && hasMorePosts) {
         setPageNumber(prev => prev + 1);
       }
     }, { threshold: 0.1 });
     
     observer.observe(loaderRef.current);
     return () => observer.disconnect();
-  }, [isLoading, isFetching, posts.length]);
+  }, [isLoading, isFetching, posts.length, hasMorePosts]);
 
 
   // Check if user has profile (username) when component mounts and fetch real username
@@ -7643,6 +7651,8 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
       })()
     : searchFilteredData.filter(post => post.tags?.some(tag => tag.toLowerCase().includes(selectedFilter.toLowerCase())));
 
+  const POSTS_PER_PAGE = 15;
+
   // Sort posts - memoized to prevent re-sorting on every render
   const feedData: FeedPost[] = useMemo(() => {
     return filteredData.sort((a, b) => {
@@ -7661,6 +7671,9 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
       return bDate - aDate;
     });
   }, [filteredData]);
+
+  const displayedPosts = feedData.slice(0, pageNumber * POSTS_PER_PAGE);
+  const hasMorePosts = displayedPosts.length < feedData.length;
 
   function formatTimestamp(dateStr: string | Date): string {
     const date = new Date(dateStr);
@@ -7805,7 +7818,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
         {/* Social Feed Posts - Left column */}
         <div className="flex-[3] min-w-0">
           <div className="space-y-2 xl:space-y-3">
-            {feedData.map((post) => (
+            {displayedPosts.map((post) => (
               <PostCard key={post.id} post={post} currentUserUsername={currentUserUsername} onViewUserProfile={setViewingUserProfile} />
             ))}
             
@@ -7815,7 +7828,7 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
               className="flex justify-center py-8"
               data-testid="loader-infinite-scroll"
             >
-              {(isFetching || (isLoading && posts.length > 0)) && (
+              {(isFetching || (isLoading && posts.length > 0) || hasMorePosts) && (
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
               )}
             </div>

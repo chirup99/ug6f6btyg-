@@ -1515,31 +1515,38 @@ export function useJournalChartLogic(config: JournalChartConfig) {
 
         console.log("📊 Chart container dimensions:", { containerWidth, containerHeight });
 
+        const isDark = document.documentElement.classList.contains("dark");
+        const chartBg = isDark ? "#111827" : "#ffffff";
+        const chartText = isDark ? "#d1d5db" : "#1f2937";
+        const chartGrid = isDark ? "#1f2937" : "#f3f4f6";
+        const chartCross = isDark ? "#4b5563" : "#9ca3af";
+        const chartLabel = isDark ? "#1f2937" : "#f3f4f6";
+
         const chart = createChart(journalChartContainerRef.current, {
           layout: {
-            background: { type: ColorType.Solid, color: "#ffffff" },
-            textColor: "#1f2937",
+            background: { type: ColorType.Solid, color: chartBg },
+            textColor: chartText,
           },
           grid: {
-            vertLines: { color: "#f3f4f6", style: 1 },
-            horzLines: { color: "#f3f4f6", style: 1 },
+            vertLines: { color: chartGrid, style: 1 },
+            horzLines: { color: chartGrid, style: 1 },
           },
           crosshair: {
             mode: 1,
-            vertLine: { color: "#9ca3af", width: 1, style: 2, labelBackgroundColor: "#f3f4f6" },
-            horzLine: { color: "#9ca3af", width: 1, style: 2, labelBackgroundColor: "#f3f4f6" },
+            vertLine: { color: chartCross, width: 1, style: 2, labelBackgroundColor: chartLabel },
+            horzLine: { color: chartCross, width: 1, style: 2, labelBackgroundColor: chartLabel },
           },
           rightPriceScale: {
             visible: true,
             borderVisible: true,
-            borderColor: "#e5e7eb",
+            borderColor: isDark ? "#374151" : "#e5e7eb",
             scaleMargins: { top: 0.1, bottom: 0.25 },
             autoScale: true,
           },
           timeScale: {
             visible: true,
             borderVisible: true,
-            borderColor: "#e5e7eb",
+            borderColor: isDark ? "#374151" : "#e5e7eb",
             timeVisible: true,
             secondsVisible: false,
             barSpacing: 12,
@@ -1803,31 +1810,38 @@ export function useJournalChartLogic(config: JournalChartConfig) {
           console.warn("🗓️ [HEATMAP CHART] Container height is 0, chart might not be visible");
         }
 
+        const isDark = document.documentElement.classList.contains("dark");
+        const chartBg = isDark ? "#111827" : "#ffffff";
+        const chartText = isDark ? "#d1d5db" : "#1f2937";
+        const chartGrid = isDark ? "#1f2937" : "#f3f4f6";
+        const chartCross = isDark ? "#4b5563" : "#9ca3af";
+        const chartLabel = isDark ? "#1f2937" : "#f3f4f6";
+
         const chart = createChart(heatmapChartContainerRef.current, {
           layout: {
-            background: { type: ColorType.Solid, color: "#ffffff" },
-            textColor: "#1f2937",
+            background: { type: ColorType.Solid, color: chartBg },
+            textColor: chartText,
           },
           grid: {
-            vertLines: { color: "#f3f4f6", style: 1 },
-            horzLines: { color: "#f3f4f6", style: 1 },
+            vertLines: { color: chartGrid, style: 1 },
+            horzLines: { color: chartGrid, style: 1 },
           },
           crosshair: {
             mode: 1,
-            vertLine: { color: "#9ca3af", width: 1, style: 2, labelBackgroundColor: "#f3f4f6" },
-            horzLine: { color: "#9ca3af", width: 1, style: 2, labelBackgroundColor: "#f3f4f6" },
+            vertLine: { color: chartCross, width: 1, style: 2, labelBackgroundColor: chartLabel },
+            horzLine: { color: chartCross, width: 1, style: 2, labelBackgroundColor: chartLabel },
           },
           rightPriceScale: {
             visible: true,
             borderVisible: true,
-            borderColor: "#e5e7eb",
+            borderColor: isDark ? "#374151" : "#e5e7eb",
             scaleMargins: { top: 0.1, bottom: 0.25 },
             autoScale: true,
           },
           timeScale: {
             visible: true,
             borderVisible: true,
-            borderColor: "#e5e7eb",
+            borderColor: isDark ? "#374151" : "#e5e7eb",
             timeVisible: true,
             secondsVisible: false,
             barSpacing: 12,

@@ -9,6 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { useQueryClient } from "@tanstack/react-query";
 import { DemoHeatmap } from "@/components/DemoHeatmap";
 
 interface NeoFeedPostDialogProps {
@@ -49,6 +50,7 @@ export function NeoFeedPostDialog({
   isDemoMode,
 }: NeoFeedPostDialogProps) {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const [rangePostTagHighlight, setRangePostTagHighlight] = useState<{ tag: string; dates: string[] } | null>(null);
   const rangePostFomoButtonRef = useRef<HTMLButtonElement>(null);
@@ -196,6 +198,9 @@ export function NeoFeedPostDialog({
       if (!response.ok) throw new Error('Failed to post');
 
       toast({ title: 'Posted to NeoFeed!', description: 'Your trading report has been shared.' });
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts/news'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts/audio'] });
       onOpenChange(false);
       setReportPostDescription('');
       setReportPostMode(null);
@@ -240,7 +245,7 @@ export function NeoFeedPostDialog({
 
         <div className={reportPostMode === 'range' ? "flex-1 overflow-auto px-3 py-2 space-y-2" : "flex-1 overflow-auto"}>
           {/* Selected date display for Selected mode - only for range */}
-          {false && reportPostMode === 'selected' && (
+          {reportPostMode === 'selected' && (
             <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-violet-50 dark:bg-violet-900/20 border border-violet-100 dark:border-violet-800">
               <span className="text-sm">🗓️</span>
               <span className="text-xs font-semibold text-violet-700 dark:text-violet-300">

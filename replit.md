@@ -56,6 +56,13 @@ Root cause of Journal tab loading delays was identified and fixed in `client/src
 4. **`quickStatsData`** — Quick Stats Banner ran a 100-line computation loop on every render; now `useMemo`
 5. **`strategyMetrics`** — Strategy Summary Cards IIFE with expensive `Object.values` filter; now `useMemo`
 6. **`riskMetrics`** — Risk Management IIFE re-processed all day data every render; now `useMemo`
+## Tab Loading Performance Fixes (April 2026)
+Eliminated tab loading delays by inlining lazy-loaded components directly into `client/src/pages/home.tsx`:
+- **`MarketNewsResultTab`** — previously a separate `client/src/components/MarketNewsResultTab.tsx` loaded via `React.lazy()` + `<Suspense>`; now fully inlined into home.tsx, file deleted
+- **`WatchlistResultTab`** — previously a separate `client/src/components/WatchlistResultTab.tsx` (~2250 lines) loaded via `<Suspense>`; now fully inlined into home.tsx, file deleted
+- All interfaces prefixed with `_` to avoid naming conflicts with existing types in home.tsx
+- Result: zero spinner/loading delay when switching to Watchlist or Market News tabs
+
 ## Environment Variables
 Key secrets managed via Replit environment:
 - `ANGEL_ONE_CLIENT_CODE`, `ANGEL_ONE_PIN`, `ANGEL_ONE_API_KEY`, `ANGEL_ONE_TOTP_SECRET`

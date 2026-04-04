@@ -6072,7 +6072,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     setIsZerodhaDialogOpen(true);
   };
 
-  const submitZerodhaCredentials = async () => {
+  const submitZerodhaCredentials = () => {
     if (!zerodhaApiKeyInput || !zerodhaApiSecretInput) {
       toast({
         title: "Error",
@@ -6082,46 +6082,38 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       return;
     }
 
-    try {
-      localStorage.setItem("zerodha_api_key", zerodhaApiKeyInput);
-      localStorage.setItem("zerodha_api_secret", zerodhaApiSecretInput);
+    localStorage.setItem("zerodha_api_key", zerodhaApiKeyInput);
+    localStorage.setItem("zerodha_api_secret", zerodhaApiSecretInput);
 
-      const response = await fetch(`/api/zerodha/login-url?api_key=${encodeURIComponent(zerodhaApiKeyInput)}&api_secret=${encodeURIComponent(zerodhaApiSecretInput)}`);
-      const data = await response.json();
-      
-      if (data.loginUrl) {
-        setIsZerodhaDialogOpen(false);
+    // Build login URL directly — no backend round-trip needed, opens popup instantly
+    const loginUrl = `https://kite.zerodha.com/connect/login?v=3&api_key=${encodeURIComponent(zerodhaApiKeyInput)}`;
 
-        const popup = window.open(
-          data.loginUrl,
-          'zerodha_oauth',
-          'width=600,height=800,resizable=yes,scrollbars=yes'
-        );
+    setIsZerodhaDialogOpen(false);
 
-        if (!popup) {
-          toast({
-            title: "Popup Blocked",
-            description: "Please allow popups for this site and try again.",
-            variant: "destructive",
-          });
-          return;
-        }
+    const popup = window.open(
+      loginUrl,
+      'zerodha_oauth',
+      'width=600,height=800,resizable=yes,scrollbars=yes'
+    );
 
-        const monitorPopup = setInterval(() => {
-          if (popup.closed) {
-            clearInterval(monitorPopup);
-          }
-        }, 500);
-      } else {
-        throw new Error(data.message || "Failed to get login URL");
-      }
-    } catch (error) {
+    if (!popup) {
       toast({
-        title: "Connection Error",
-        description: error instanceof Error ? error.message : "Failed to initiate Zerodha connection",
+        title: "Popup Blocked",
+        description: "Please allow popups for this site and try again.",
         variant: "destructive",
       });
+      return;
     }
+
+    // Save credentials to server in background so the callback can exchange the token
+    fetch(`/api/zerodha/login-url?api_key=${encodeURIComponent(zerodhaApiKeyInput)}&api_secret=${encodeURIComponent(zerodhaApiSecretInput)}`)
+      .catch(() => {});
+
+    const monitorPopup = setInterval(() => {
+      if (popup.closed) {
+        clearInterval(monitorPopup);
+      }
+    }, 500);
   };
 
   const handleUpstoxConnect = async () => {

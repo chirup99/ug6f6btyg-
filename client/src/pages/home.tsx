@@ -47,8 +47,7 @@ const MiniCastTab = lazy(() => import("@/components/MiniCastTab").then(m => ({ d
 const TradingDashboardTab = lazy(() => import("@/components/TradingDashboardTab").then(m => ({ default: m.TradingDashboardTab })));
 
 import type { MultipleImageUploadRef } from "@/components/multiple-image-upload";
-
-const WorldMap = lazy(() => import("@/components/world-map").then(m => ({ default: m.WorldMap })));
+import { WorldMap } from "@/components/world-map";
 
 const NeoFeedPostDialog = lazy(() => import("@/components/NeoFeedPostDialog").then(m => ({ default: m.NeoFeedPostDialog })));
 const ShareReportTradebookDialog = lazy(() => import("@/components/ShareReportTradebookDialog").then(m => ({ default: m.ShareReportTradebookDialog })));

@@ -6086,12 +6086,32 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       localStorage.setItem("zerodha_api_key", zerodhaApiKeyInput);
       localStorage.setItem("zerodha_api_secret", zerodhaApiSecretInput);
 
-      // Fetch the login URL from backend passing the API key and secret
       const response = await fetch(`/api/zerodha/login-url?api_key=${encodeURIComponent(zerodhaApiKeyInput)}&api_secret=${encodeURIComponent(zerodhaApiSecretInput)}`);
       const data = await response.json();
       
       if (data.loginUrl) {
-        window.location.href = data.loginUrl;
+        setIsZerodhaDialogOpen(false);
+
+        const popup = window.open(
+          data.loginUrl,
+          'zerodha_oauth',
+          'width=600,height=800,resizable=yes,scrollbars=yes'
+        );
+
+        if (!popup) {
+          toast({
+            title: "Popup Blocked",
+            description: "Please allow popups for this site and try again.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        const monitorPopup = setInterval(() => {
+          if (popup.closed) {
+            clearInterval(monitorPopup);
+          }
+        }, 500);
       } else {
         throw new Error(data.message || "Failed to get login URL");
       }

@@ -8,6 +8,7 @@ import { registerRoutes } from "./routes";
 import { storage } from "./storage";
 import { liveWebSocketStreamer } from "./live-websocket-streamer";
 import { angelOneApi } from "./angel-one-api";
+import { applyPerformanceMiddleware, preloadHintsMiddleware, apiCache } from "./performance";
 
 // Simple logging function (inline to avoid vite dependency in production)
 function log(message: string, source = "express") {
@@ -41,12 +42,19 @@ async function serveStatic(app: express.Express) {
       setHeaders(res, filePath) {
         if (filePath.includes("/assets/")) {
           res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+          // Vary header for correct compression negotiation
+          res.setHeader("Vary", "Accept-Encoding");
         } else {
           res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
         }
       },
     },
   }));
+
+  // Attach preload Link headers when serving index.html
+  // This tells the browser to start fetching critical JS/CSS before parsing HTML
+  const cdnBase = process.env.VITE_CDN_URL ?? '';
+  app.use(preloadHintsMiddleware(distPath, cdnBase));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
@@ -57,6 +65,10 @@ async function serveStatic(app: express.Express) {
 
 
 const app = express();
+
+// Apply compression + performance headers before all routes
+// This compresses API JSON responses and sets keep-alive / perf headers
+applyPerformanceMiddleware(app);
 
 // Health check endpoint - MUST come first for Cloud Run
 app.get('/health', (_req, res) => {

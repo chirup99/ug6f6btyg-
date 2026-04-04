@@ -35,23 +35,14 @@ import {
   getFollowingList,
   getAllRepostsForFeed,
   createBugReport,
+  createFeedback,
+  getAllFeedback,
   upsertScreenTime,
   getUserScreenTimeHistory,
   getScreenTimeLeaderboard,
   TABLES 
 } from './neofeed-dynamodb-migration';
 
-// ─── In-memory feedback store (DynamoDB credentials not available in this env) ───
-interface FeedbackEntry {
-  id: string;
-  username: string;
-  type: 'feedback' | 'request';
-  text: string;
-  rating: number;
-  createdAt: string;
-  status: 'new' | 'reviewed' | 'done';
-}
-const _feedbackStore: FeedbackEntry[] = [];
 
 async function getAuthenticatedUser(req: any): Promise<{ userId: string; username: string; displayName: string } | null> {
   const authHeader = req.headers.authorization;
@@ -197,7 +188,7 @@ export function registerNeoFeedAwsRoutes(app: any) {
     }
   });
 
-  // Submit feedback or feature request (in-memory store)
+  // Submit feedback or feature request
   app.post('/api/feedback', async (req: any, res: any) => {
     try {
       const user = await getAuthenticatedUser(req);
@@ -208,27 +199,31 @@ export function registerNeoFeedAwsRoutes(app: any) {
       if (type !== 'feedback' && type !== 'request') {
         return res.status(400).json({ error: 'Invalid feedback type' });
       }
-      const entry: FeedbackEntry = {
-        id: nanoid(),
+      const feedbackData = {
         username: user?.username || 'anonymous',
-        type,
+        emailId: user?.username || 'anonymous',
+        type: type as 'feedback' | 'request',
         text: text.trim(),
-        rating: type === 'feedback' ? (Number(rating) || 0) : 0,
-        createdAt: new Date().toISOString(),
-        status: 'new'
+        rating: type === 'feedback' ? (Number(rating) || 0) : 0
       };
-      _feedbackStore.unshift(entry);
-      console.log(`✅ Feedback stored in-memory: id=${entry.id} type=${entry.type} user=${entry.username}`);
-      res.json(entry);
+      console.log('💬 [DEBUG] Submitting feedback:', feedbackData);
+      const result = await createFeedback(feedbackData);
+      res.json(result);
     } catch (error) {
       console.error('❌ Error submitting feedback:', error);
       res.status(500).json({ error: 'Failed to submit feedback' });
     }
   });
 
-  // Admin: get all feedback and feature requests (in-memory store)
+  // Admin: get all feedback and feature requests
   app.get('/api/admin/feedback', async (req: any, res: any) => {
-    res.json(_feedbackStore);
+    try {
+      const items = await getAllFeedback();
+      res.json(items);
+    } catch (error) {
+      console.error('❌ Error fetching feedback:', error);
+      res.status(500).json({ error: 'Failed to fetch feedback' });
+    }
   });
 
   // Admin endpoint to check and clean up duplicate likes (Twitter-style: 1 like per user per post)

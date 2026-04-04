@@ -7427,6 +7427,9 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
     });
   }, [posts]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const displayedPosts = feedData.slice(0, pageNumber * POSTS_PER_PAGE);
+  const hasMorePosts = displayedPosts.length < feedData.length;
+
   // Infinite scroll observer
   useEffect(() => {
     if (!loaderRef.current) return;
@@ -7671,9 +7674,6 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
       return bDate - aDate;
     });
   }, [filteredData]);
-
-  const displayedPosts = feedData.slice(0, pageNumber * POSTS_PER_PAGE);
-  const hasMorePosts = displayedPosts.length < feedData.length;
 
   function formatTimestamp(dateStr: string | Date): string {
     const date = new Date(dateStr);

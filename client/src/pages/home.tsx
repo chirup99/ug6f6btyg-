@@ -7489,7 +7489,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     paperTradeLotInput, setPaperTradeLotInput,
     paperTradeAction, setPaperTradeAction,
     paperTradeCurrentPrice, setPaperTradeCurrentPrice,
-    paperTradePriceLoading,
+    paperTradePriceLoading, setPaperTradePriceLoading,
     showPaperTradeSLDropdown, setShowPaperTradeSLDropdown,
     showMobilePaperTradeSLDropdown, setShowMobilePaperTradeSLDropdown,
     paperTradeSLPrice, setPaperTradeSLPrice,

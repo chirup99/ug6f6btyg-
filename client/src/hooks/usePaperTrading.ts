@@ -1456,7 +1456,7 @@ export function usePaperTrading(params: UsePaperTradingParams) {
     paperTradeLotInput, setPaperTradeLotInput,
     paperTradeAction, setPaperTradeAction,
     paperTradeCurrentPrice, setPaperTradeCurrentPrice,
-    paperTradePriceLoading,
+    paperTradePriceLoading, setPaperTradePriceLoading,
     // Stop Loss
     showPaperTradeSLDropdown, setShowPaperTradeSLDropdown,
     showMobilePaperTradeSLDropdown, setShowMobilePaperTradeSLDropdown,

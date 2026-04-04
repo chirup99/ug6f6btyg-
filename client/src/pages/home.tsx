@@ -479,21 +479,26 @@ function SwipeableCardStack({
     const useLang = lang || localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
     const useSpeaker = speaker || localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[useLang] || 'en-IN-NeerjaNeural';
 
-    const response = await fetch('/api/tts/generate', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text: cleanText, language: useLang, speaker: useSpeaker, speed: 1.0, pitch: 1.0 }),
-    });
-    if (!response.ok) return null;
-    const data = await response.json();
-    if (!data.audioBase64) return null;
+    try {
+      const response = await fetch('/api/tts/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: cleanText, language: useLang, speaker: useSpeaker, speed: 1.0, pitch: 1.0 }),
+      });
+      if (!response.ok) return null;
+      const data = await response.json();
+      if (!data.audioBase64) return null;
 
-    const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-    const binaryString = atob(base64Data);
-    const bytes = new Uint8Array(binaryString.length);
-    for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
-    const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
-    return URL.createObjectURL(audioBlob);
+      const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+      const binaryString = atob(base64Data);
+      const bytes = new Uint8Array(binaryString.length);
+      for (let i = 0; i < binaryString.length; i++) bytes[i] = binaryString.charCodeAt(i);
+      const audioBlob = new Blob([bytes], { type: 'audio/mpeg' });
+      return URL.createObjectURL(audioBlob);
+    } catch (err: any) {
+      if (err?.name !== 'AbortError') console.warn('[buildAudioUrl] TTS fetch error:', err?.message || err);
+      return null;
+    }
   };
 
   // Silently preload audio for a sector in a specific language

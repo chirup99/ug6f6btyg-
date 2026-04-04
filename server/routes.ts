@@ -20819,6 +20819,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // This cache holds non-greeting audio and may be evicted freely.
   const ttsServerCache = new Map<string, string>();
   const TTS_CACHE_MAX = 100;
+  // ── In-flight dedup map — prevents identical concurrent requests from hitting Edge TTS multiple times.
+  // Maps cacheKey → Promise<string|null>. All concurrent callers for the same key await the same promise.
+  const ttsInflightMap = new Map<string, Promise<string | null>>();
 
   // Natural voice TTS Endpoint - High-quality human-like voices from HuggingFace
   // OpenAI-Edge-TTS compatible endpoint with full voice quality support
@@ -20848,28 +20851,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return;
       }
 
-      // Skip translation if: English, already in native script (skipTranslation flag),
-      // or text contains non-Latin characters (already translated)
-      const hasNativeScript = /[^\u0000-\u007F]/.test(text);
-      const textToSpeak = (targetLanguage === 'en' || skipTranslation || hasNativeScript)
-        ? text
-        : await translateText(text, targetLanguage);
-
-      const result = await sarvamTTSService.generateSpeech({
-        text: textToSpeak,
-        language: targetLanguage,
-        speaker: speaker,
-        speed: speed || 1.0
-      });
-
-      if (result.error) {
-        res.status(500).json({ error: result.error });
+      // ── In-flight dedup: if an identical request is already being processed, wait for it ──
+      if (ttsInflightMap.has(cacheKey)) {
+        console.log(`⏳ [TTS INFLIGHT] Joining existing request for (${targetLanguage})`);
+        const audioBase64 = await ttsInflightMap.get(cacheKey)!;
+        if (audioBase64) {
+          res.json({ audioBase64 });
+        } else {
+          res.status(500).json({ error: 'TTS generation failed (joined request)' });
+        }
         return;
       }
 
-      // ── Store in rolling cache (greeting-shaped entries go to permanent cache) ──
-      if (result.audioBase64) {
-        // If this request matches a known greeting template, store it permanently
+      // ── Start new generation and register the promise for dedup ──────────
+      const generationPromise = (async (): Promise<string | null> => {
+        // Skip translation if: English, already in native script (skipTranslation flag),
+        // or text contains non-Latin characters (already translated)
+        const hasNativeScript = /[^\u0000-\u007F]/.test(text);
+        const textToSpeak = (targetLanguage === 'en' || skipTranslation || hasNativeScript)
+          ? text
+          : await translateText(text, targetLanguage);
+
+        const result = await sarvamTTSService.generateSpeech({
+          text: textToSpeak,
+          language: targetLanguage,
+          speaker: speaker,
+          speed: speed || 1.0
+        });
+
+        if (result.error || !result.audioBase64) return null;
+
+        // ── Store in rolling cache (greeting-shaped entries go to permanent cache) ──
         const langProfiles = GREETING_PROFILES[targetLanguage];
         const langTmpl = GREETING_TEMPLATES[targetLanguage];
         const isGreeting = langProfiles && langTmpl &&
@@ -20886,9 +20898,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           ttsServerCache.set(cacheKey, result.audioBase64);
           console.log(`💾 [TTS CACHE] Stored entry (${ttsServerCache.size}/${TTS_CACHE_MAX})`);
         }
+
+        return result.audioBase64;
+      })();
+
+      ttsInflightMap.set(cacheKey, generationPromise);
+
+      const audioBase64 = await generationPromise;
+
+      ttsInflightMap.delete(cacheKey);
+
+      if (!audioBase64) {
+        res.status(500).json({ error: 'TTS generation failed' });
+        return;
       }
 
-      res.json({ audioBase64: result.audioBase64 });
+      res.json({ audioBase64 });
     } catch (error: any) {
       console.error('🔴 [TTS] Error:', error.message);
       res.status(500).json({ error: 'TTS generation failed' });

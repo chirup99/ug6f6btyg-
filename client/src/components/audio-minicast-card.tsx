@@ -79,6 +79,8 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   const pendingAutoPlayRef = useRef<AudioCard | null>(null);
   // Cache of pre-generated audio URLs keyed by card id
   const audioCacheRef = useRef<Map<string, string>>(new Map());
+  // In-flight promise map — prevents duplicate TTS fetches for the same card/voice/lang combination
+  const audioInflightRef = useRef<Map<string, Promise<string | null>>>(new Map());
   // Root element ref — used by IntersectionObserver to pause when scrolled away
   const cardRef = useRef<HTMLDivElement>(null);
   const { toast } = useToast();
@@ -128,40 +130,53 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
 
     // Cache key includes voice + language so switching voice/language automatically gets new audio
     const cacheKey = `${card.id}::${voiceLanguage}::${savedVoiceProfileId}`;
+
+    // 1. Already cached → instant return
     const cached = audioCacheRef.current.get(cacheKey);
     if (cached) return cached;
+
+    // 2. Already in-flight → join the existing promise instead of firing a duplicate
+    const inflight = audioInflightRef.current.get(cacheKey);
+    if (inflight) return inflight;
 
     const textToSpeak = cleanTextForSpeech(card.content);
     if (!textToSpeak) return null;
 
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 20000);
+    const fetchPromise = (async (): Promise<string | null> => {
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20000);
 
-      const response = await fetch('/api/tts/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ text: textToSpeak, language: voiceLanguage, speaker: savedVoiceProfileId }),
-        signal: controller.signal,
-      });
-      clearTimeout(timeoutId);
+        const response = await fetch('/api/tts/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: textToSpeak, language: voiceLanguage, speaker: savedVoiceProfileId }),
+          signal: controller.signal,
+        });
+        clearTimeout(timeoutId);
 
-      if (!response.ok || cancelled.value) return null;
-      const data = await response.json();
-      if (cancelled.value || !data.audioBase64) return null;
+        if (!response.ok || cancelled.value) return null;
+        const data = await response.json();
+        if (cancelled.value || !data.audioBase64) return null;
 
-      const base64String = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-      const binary = atob(base64String);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-      const blob = new Blob([bytes], { type: 'audio/mpeg' });
-      const url = URL.createObjectURL(blob);
-      audioCacheRef.current.set(cacheKey, url);
-      return url;
-    } catch (err: any) {
-      if (err?.name !== 'AbortError') console.error('[AudioMinicast] TTS fetch error:', err?.message);
-      return null;
-    }
+        const base64String = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+        const binary = atob(base64String);
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const blob = new Blob([bytes], { type: 'audio/mpeg' });
+        const url = URL.createObjectURL(blob);
+        audioCacheRef.current.set(cacheKey, url);
+        return url;
+      } catch (err: any) {
+        if (err?.name !== 'AbortError') console.error('[AudioMinicast] TTS fetch error:', err?.message);
+        return null;
+      } finally {
+        audioInflightRef.current.delete(cacheKey);
+      }
+    })();
+
+    audioInflightRef.current.set(cacheKey, fetchPromise);
+    return fetchPromise;
   };
 
   // Track the last known voiceLanguage so we can detect changes
@@ -228,6 +243,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
 
       audioCacheRef.current.forEach(url => URL.revokeObjectURL(url));
       audioCacheRef.current.clear();
+      audioInflightRef.current.clear();
 
       const cancelled = { value: false };
       const postCards = cards.filter(c => c.type === 'post');
@@ -308,6 +324,7 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
       window.speechSynthesis.cancel();
       audioCacheRef.current.forEach(url => URL.revokeObjectURL(url));
       audioCacheRef.current.clear();
+      audioInflightRef.current.clear();
     };
   }, []);
 

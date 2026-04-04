@@ -244,7 +244,7 @@ export const sarvamTTSService = {
         console.log(`🎤 [TTS] Using speaker ID directly (language match): ${speakerId}`);
         return speakerId;
       }
-      console.log(`🎤 [TTS] Speaker ${speakerId} doesn't match language ${language}, using language-mapped voice`);
+      // Speaker language doesn't match content language — correctly falling back to language-mapped voice
     } else if (speakerId && speakerId.includes('-') && !speakerId.includes('Neural')) {
       console.log(`🎤 [TTS] Using speaker ID directly: ${speakerId}`);
       return speakerId;

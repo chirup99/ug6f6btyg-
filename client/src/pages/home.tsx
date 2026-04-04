@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthButtonAngelOne, AngelOneStatus, AngelOneApiStatistics, AngelOneSystemStatus, AngelOneLiveMarketPrices } from "@/components/auth-button-angelone";
 
 import { AuthButtonUpstox } from "@/components/auth-button-upstox";
-const TradingJournalModal = lazy(() => import("@/components/trading-journal-modal").then(m => ({ default: m.TradingJournalModal })));
+import { TradingJournalModal } from "@/components/trading-journal-modal";
 const PaperTradingModal = lazy(() => import("@/components/PaperTradingModal").then(m => ({ default: m.PaperTradingModal })));
 const PaperTradingMobileTab = lazy(() => import("@/components/PaperTradingMobileTab").then(m => ({ default: m.PaperTradingMobileTab })));
 

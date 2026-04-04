@@ -71,8 +71,16 @@ Key secrets managed via Replit environment:
   - Environment: `perala-prod`
   - Region: `ap-south-1`
   - URL: `perala-prod.eba-uhnreree.ap-south-1.elasticbeanstalk.com`
-  - Deploy script: `bash scripts/deploy-perala-eb.sh`
+  - Deploy script: `bash scripts/deploy-cloudfront.sh` (CloudFront + EB combined)
+  - EB-only script: `bash scripts/deploy-perala-eb.sh`
   - S3 bucket: `elasticbeanstalk-ap-south-1-323726447850`
+- **CDN**: AWS CloudFront (ap-south-1 / Mumbai edge)
+  - Static assets S3 bucket: `perala-static-assets`
+  - Distribution ID: stored in `CLOUDFRONT_DISTRIBUTION_ID` env var
+  - CDN URL: stored in `VITE_CDN_URL` env var (set to CloudFront domain)
+  - First-time setup: `npx tsx scripts/setup-cloudfront.ts`
+  - Cache: `/assets/*` → 1 year (content-hashed), `/api/*` → no cache
+  - Required env vars: `CLOUDFRONT_DISTRIBUTION_ID`, `VITE_CDN_URL`, `ASSETS_S3_BUCKET`
 - **Replit autoscale** (secondary): `npm run build` → `node ./dist/index.js`
-- **Procfile**: `web: npm start` (runs `node dist/index.js` in production)
+- **Procfile**: `web: NODE_ENV=production node dist/index.js` (runs in production)
 - Port defaults to `PORT` env var or 8080 in production

@@ -42,7 +42,7 @@ import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
 import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-chart";
 import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
 import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
-import { TradingMaster } from "@/components/trading-master";
+const TradingMaster = lazy(() => import("@/components/trading-master").then(m => ({ default: m.TradingMaster })));
 const MiniCastTab = lazy(() => import("@/components/MiniCastTab").then(m => ({ default: m.MiniCastTab })));
 import { TradingDashboardTab } from "@/components/TradingDashboardTab";
 
@@ -15884,7 +15884,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
 
 
-            {activeTab === "trading-master" && (
+            {activeTab === "trading-master" && currentUser?.email?.toLowerCase() === "chiranjeevi.perala99@gmail.com" && (
               <div className="h-full relative">
                 {/* Back Button - Mobile Only */}
                 <Button
@@ -15896,7 +15896,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <TradingMaster />
+                <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <TradingMaster />
+                </Suspense>
               </div>
             )}
 

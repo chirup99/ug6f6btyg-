@@ -97,6 +97,7 @@ export interface JournalTabContentProps {
   setTradingDataByDate: any;
   journalChartMode: any;
   setJournalChartMode: any;
+  handleCloseHeatmap: () => void;
   showJournalTimeframeDropdown: any;
   setShowJournalTimeframeDropdown: any;
   showHeatmapTimeframeDropdown: any;
@@ -467,6 +468,7 @@ export function JournalTabContent({
   setTradingDataByDate,
   journalChartMode,
   setJournalChartMode,
+  handleCloseHeatmap,
   showJournalTimeframeDropdown,
   setShowJournalTimeframeDropdown,
   showHeatmapTimeframeDropdown,
@@ -1723,7 +1725,7 @@ export function JournalTabContent({
                                       variant="ghost"
                                       size="sm"
                                       className="h-8 px-2 text-xs text-slate-700 dark:text-slate-300 hover:text-red-500"
-                                      onClick={() => setJournalChartMode("search")}
+                                      onClick={handleCloseHeatmap}
                                       title="Close heatmap"
                                       data-testid="button-close-heatmap"
                                     >

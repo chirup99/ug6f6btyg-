@@ -211,6 +211,7 @@ export function useJournalChartLogic(config: JournalChartConfig) {
   const journalChartDataRef = useRef<CandleBar[]>([]);
   const journalRafRef = useRef<number | null>(null);
   const journalFetchIdRef = useRef<number>(0);
+  const heatmapFetchIdRef = useRef<number>(0);
 
   // EMA values for display in header
   const [journalEmaValues, setJournalEmaValues] = useState<{ ema12: number | null; ema26: number | null }>({ ema12: null, ema26: null });
@@ -698,8 +699,9 @@ export function useJournalChartLogic(config: JournalChartConfig) {
 
   const fetchHeatmapChartData = useCallback(
     async (symbol: string, date: string) => {
+      const thisFetchId = ++heatmapFetchIdRef.current;
       try {
-        console.log(`🗓️ [HEATMAP FETCH] Starting fetch for ${symbol} on ${date}`);
+        console.log(`🗓️ [HEATMAP FETCH] Starting fetch for ${symbol} on ${date} (fetch #${thisFetchId})`);
 
         // STEP 1: Destroy old heatmap chart
         if (heatmapChartRef.current) {
@@ -934,6 +936,10 @@ export function useJournalChartLogic(config: JournalChartConfig) {
         }
 
         console.log(`✅ [HEATMAP FETCH] Chart ready: ${candleData.length} candles for ${cleanSymbol} on ${date}`);
+        if (thisFetchId !== heatmapFetchIdRef.current) {
+          console.log(`⚠️ [HEATMAP FETCH] Stale fetch #${thisFetchId} ignored (current: ${heatmapFetchIdRef.current})`);
+          return;
+        }
         setHeatmapChartData(candleData);
         // Switch to heatmap mode in the same sync block so React batches both state updates
         // into one render — container becomes visible at the same moment data is set,
@@ -982,8 +988,6 @@ export function useJournalChartLogic(config: JournalChartConfig) {
           setHeatmapTradeHistory([]);
         }
 
-        // Auto-switch to heatmap mode when data loads
-        setJournalChartMode("heatmap");
       } catch (error) {
         console.error("❌ [HEATMAP FETCH] Error:", error);
         setHeatmapChartData([]);
@@ -2278,6 +2282,12 @@ export function useJournalChartLogic(config: JournalChartConfig) {
     }
   }, [activeTab, journalChartData, tradeHistoryData, getTradeMarkersForChart, showTradeMarkers, selectedJournalSymbol]);
 
+  // Cancel any in-flight heatmap fetch and switch back to search chart
+  const handleCloseHeatmap = useCallback(() => {
+    heatmapFetchIdRef.current += 1;
+    setJournalChartMode("search");
+  }, []);
+
   // ─── Return ────────────────────────────────────────────────────────────────
   return {
     // State
@@ -2295,6 +2305,7 @@ export function useJournalChartLogic(config: JournalChartConfig) {
     setShowTradeMarkers,
     journalChartMode,
     setJournalChartMode,
+    handleCloseHeatmap,
     heatmapChartData,
     setHeatmapChartData,
     heatmapChartLoading,

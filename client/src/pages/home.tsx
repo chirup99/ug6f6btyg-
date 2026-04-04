@@ -8062,7 +8062,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     showJournalTimeframeDropdown, setShowJournalTimeframeDropdown,
     showHeatmapTimeframeDropdown, setShowHeatmapTimeframeDropdown,
     showTradeMarkers, setShowTradeMarkers,
-    journalChartMode, setJournalChartMode,
+    journalChartMode, setJournalChartMode, handleCloseHeatmap,
     heatmapChartData, setHeatmapChartData,
     heatmapChartLoading, setHeatmapChartLoading,
     heatmapChartTimeframe, setHeatmapChartTimeframe,
@@ -15390,6 +15390,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 setTradingDataByDate={setTradingDataByDate}
                 journalChartMode={journalChartMode}
                 setJournalChartMode={setJournalChartMode}
+                handleCloseHeatmap={handleCloseHeatmap}
                 showJournalTimeframeDropdown={showJournalTimeframeDropdown}
                 setShowJournalTimeframeDropdown={setShowJournalTimeframeDropdown}
                 showHeatmapTimeframeDropdown={showHeatmapTimeframeDropdown}

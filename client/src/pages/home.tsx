@@ -5445,21 +5445,24 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       });
       return;
     }
-    
+
+    // Close dialog instantly — no waiting
+    setIsGrowwDialogOpen(false);
+    toast({ title: "Connecting...", description: "Verifying Groww credentials..." });
+
+    const apiKey = growwApiKeyInput;
+    const apiSecret = growwApiSecretInput;
     setIsGrowwConnecting(true);
+
     try {
-      const response = await apiRequest("POST", "/api/broker/groww/connect", {
-        apiKey: growwApiKeyInput,
-        apiSecret: growwApiSecretInput,
-      });
+      const response = await apiRequest("POST", "/api/broker/groww/connect", { apiKey, apiSecret });
 
       if (response.success) {
         const accessToken = response.accessToken;
-        const userId = response.userId || growwApiKeyInput.substring(0, 8);
+        const userId = response.userId || apiKey.substring(0, 8);
         const userName = response.userName || "Groww User";
         const funds = response.funds;
 
-        // Save and update state immediately — close dialog without delay
         localStorage.setItem("growwIsConnected", "true");
         localStorage.setItem("growwAccessToken", accessToken);
         localStorage.setItem("growwUserId", userId);
@@ -5469,25 +5472,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         setGrowwAccessToken(accessToken);
         setGrowwUserId(userId);
         setGrowwUserName(userName);
-        setIsGrowwDialogOpen(false);
-        setIsGrowwConnecting(false);
 
         if (funds != null) {
           setBrokerFunds(funds);
           localStorage.setItem("zerodha_broker_funds", String(funds));
         }
 
-        toast({
-          title: "Connected",
-          description: `Groww account connected — ${userName}`,
-        });
+        toast({ title: "Connected", description: `Groww account connected — ${userName}` });
       }
     } catch (error: any) {
-      toast({
-        title: "Connection Failed",
-        description: error.message || "Failed to connect to Groww",
-        variant: "destructive"
-      });
+      toast({ title: "Connection Failed", description: error.message || "Failed to connect to Groww", variant: "destructive" });
     } finally {
       setIsGrowwConnecting(false);
     }
@@ -5704,49 +5698,40 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   };
 
   const submitDhanCredentials = async () => {
-    try {
-      if (!dhanClientIdInput || !dhanTokenInput) {
-        toast({
-          title: "Error",
-          description: "Please enter both Client ID and Access Token",
-          variant: "destructive"
-        });
-        return;
-      }
-
-      const response = await apiRequest("POST", "/api/broker/dhan/connect", {
-        clientId: dhanClientIdInput,
-        accessToken: dhanTokenInput
+    if (!dhanClientIdInput || !dhanTokenInput) {
+      toast({
+        title: "Error",
+        description: "Please enter both Client ID and Access Token",
+        variant: "destructive"
       });
+      return;
+    }
 
-      const data = response;
+    // Close dialog instantly — no waiting
+    setIsDhanDialogOpen(false);
+    toast({ title: "Connecting...", description: "Verifying Dhan credentials..." });
+
+    const clientId = dhanClientIdInput;
+    const accessToken = dhanTokenInput;
+
+    try {
+      const data = await apiRequest("POST", "/api/broker/dhan/connect", { clientId, accessToken });
+
       if (data.success) {
-        setDhanAccessToken(dhanTokenInput);
+        setDhanAccessToken(accessToken);
         setDhanIsConnected(true);
         if (data.clientName) {
           setDhanClientName(data.clientName);
           localStorage.setItem("dhan_client_name", data.clientName);
         }
-        localStorage.setItem("dhan_access_token", dhanTokenInput);
-        localStorage.setItem("dhan_client_id", dhanClientIdInput);
-        setIsDhanDialogOpen(false);
-        toast({
-          title: "Success",
-          description: "Dhan connected successfully"
-        });
+        localStorage.setItem("dhan_access_token", accessToken);
+        localStorage.setItem("dhan_client_id", clientId);
+        toast({ title: "Connected", description: "Dhan connected successfully" });
       } else {
-        toast({
-          title: "Error",
-          description: data.error || "Failed to connect to Dhan",
-          variant: "destructive"
-        });
+        toast({ title: "Error", description: data.error || "Failed to connect to Dhan", variant: "destructive" });
       }
     } catch (error: any) {
-      toast({
-        title: "Error",
-        description: error.message || "Failed to connect to Dhan",
-        variant: "destructive"
-      });
+      toast({ title: "Error", description: error.message || "Failed to connect to Dhan", variant: "destructive" });
     }
   };
   
@@ -6122,38 +6107,44 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         return;
       }
 
-      console.log('🔵 Saving Upstox credentials and starting OAuth flow...');
       localStorage.setItem("upstox_api_key", upstoxApiKeyInput);
       localStorage.setItem("upstox_api_secret", upstoxApiSecretInput);
 
+      // Close dialog immediately for instant feedback
+      setIsUpstoxDialogOpen(false);
+
+      // Open popup IMMEDIATELY from user gesture (before any await) to avoid popup blockers
+      const popup = window.open(
+        'about:blank',
+        'upstox_oauth',
+        'width=600,height=800,resizable=yes,scrollbars=yes'
+      );
+
+      if (!popup) {
+        toast({ title: "Popup blocked", description: "Please allow popups and try again.", variant: "destructive" });
+        return;
+      }
+
+      // Show loading in the popup while we fetch the real URL
+      popup.document.write('<html><body style="font-family:sans-serif;display:flex;align-items:center;justify-content:center;height:100vh;margin:0"><p style="color:#666">Connecting to Upstox...</p></body></html>');
+
+      // Fetch auth URL in background — popup is already open so no delay for user
       const response = await fetch('/api/upstox/auth-url', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ apiKey: upstoxApiKeyInput, apiSecret: upstoxApiSecretInput })
       });
       const data = await response.json();
-      
+
       if (!data.authUrl) {
-        alert('Error: Could not generate Upstox authorization URL');
+        popup.close();
+        toast({ title: "Error", description: "Could not generate Upstox authorization URL", variant: "destructive" });
         return;
       }
-      
-      setIsUpstoxDialogOpen(false);
-      console.log('🔗 Upstox auth URL:', data.authUrl);
-      
-      const popup = window.open(
-        data.authUrl,
-        'upstox_oauth',
-        'width=600,height=800,resizable=yes,scrollbars=yes'
-      );
-      
-      if (!popup) {
-        console.warn('❌ Popup blocked, falling back to main window');
-        alert('Popup blocked. Please enable popups and try again.');
-        return;
-      }
-      
-      console.log('✅ Upstox popup opened, waiting for OAuth callback...');
+
+      // Redirect popup to real auth URL
+      popup.location.href = data.authUrl;
+      console.log('✅ Upstox popup redirected to auth URL');
       
       // Listen for messages from the OAuth callback popup
       const messageListener = (event: MessageEvent) => {
@@ -6330,23 +6321,30 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   };
 
   const handleUserAngelOneConnect = async () => {
+    if (!angelOneClientCodeInput || !angelOneApiKeyInput || !angelOnePinInput || !angelOneTotpInput) {
+      toast({ variant: "destructive", title: "Missing fields", description: "Please fill in all fields." });
+      return;
+    }
+
+    // Close dialog and show feedback instantly — don't wait for the network
+    setIsAngelOneDialogOpen(false);
+    toast({ title: "Connecting...", description: "Authenticating with Angel One..." });
+
+    const clientCode = angelOneClientCodeInput.trim();
+    const pin = angelOnePinInput.trim();
+    const apiKey = angelOneApiKeyInput.trim();
+    const totpSecret = angelOneTotpInput.trim();
+
+    setAngelOneClientCodeInput("");
+    setAngelOneApiKeyInput("");
+    setAngelOnePinInput("");
+    setAngelOneTotpInput("");
+
     try {
-      if (!angelOneClientCodeInput || !angelOneApiKeyInput || !angelOnePinInput || !angelOneTotpInput) {
-        toast({ variant: "destructive", title: "Missing fields", description: "Please fill in all fields." });
-        return;
-      }
-
-      toast({ title: "Connecting...", description: "Authenticating with Angel One..." });
-
       const response = await fetch("/api/user/angelone/connect", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          clientCode: angelOneClientCodeInput.trim(),
-          pin: angelOnePinInput.trim(),
-          apiKey: angelOneApiKeyInput.trim(),
-          totpSecret: angelOneTotpInput.trim(),
-        }),
+        body: JSON.stringify({ clientCode, pin, apiKey, totpSecret }),
       });
 
       const data = await response.json();
@@ -6356,7 +6354,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       }
 
       localStorage.setItem("user_ao_jwt", data.token);
-      localStorage.setItem("angel_one_client_code", data.clientCode || angelOneClientCodeInput);
+      localStorage.setItem("angel_one_client_code", data.clientCode || clientCode);
       if (data.name) {
         localStorage.setItem("angel_one_user_name", data.name);
         setUserAngelOneName(data.name);
@@ -6364,12 +6362,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
       setUserAngelOneToken(data.token);
       setUserAngelOneIsConnected(true);
-      setIsAngelOneDialogOpen(false);
-
-      setAngelOneClientCodeInput("");
-      setAngelOneApiKeyInput("");
-      setAngelOnePinInput("");
-      setAngelOneTotpInput("");
 
       toast({
         title: "Connected",

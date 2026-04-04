@@ -15930,7 +15930,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             )}
 
             {activeTab === "journal" && (
-              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" /></div>}>
+              <Suspense fallback={null}>
               <JournalTabContent
                 setTabWithAuthCheck={setTabWithAuthCheck}
                 mobileBottomTab={mobileBottomTab}

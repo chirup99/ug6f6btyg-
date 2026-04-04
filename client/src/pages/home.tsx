@@ -707,9 +707,11 @@ function SwipeableCardStack({
     }
   };
 
-  const swipeCard = (direction: "left" | "right") => {
+  // skipAutoPlay=true when the caller already triggered fetchAndPlayContent inside
+  // the user-gesture handler (before any setTimeout) to preserve browser autoplay policy.
+  const swipeCard = (direction: "left" | "right", skipAutoPlay = false) => {
     // Immediately stop current audio and clear old content (prevent flashback)
-    globalStopAudio();
+    if (!skipAutoPlay) globalStopAudio();
     setCurrentContent("");
 
     let nextCard: any = null;
@@ -741,8 +743,11 @@ function SwipeableCardStack({
       // Kick off preload immediately (no-op if already cached or in-flight)
       preloadForSector(nextCard.sector);
 
-      // Auto-play the new top card — minimal delay just to let the DOM settle
-      setTimeout(() => fetchAndPlayContent(nextCard.title, nextCard.sector), 100);
+      // Auto-play the new top card. When skipAutoPlay=true the caller already
+      // called fetchAndPlayContent directly inside the user-gesture handler so
+      // we must NOT call it again (that would increment fetchRequestIdRef and
+      // mark the in-flight fetch as stale, silently cancelling playback).
+      if (!skipAutoPlay) fetchAndPlayContent(nextCard.title, nextCard.sector);
 
       // Warm the card after that in the background
       if (nextNextCard) {
@@ -967,6 +972,11 @@ function SwipeableCardStack({
                     const swipeDirection = deltaX > 0 ? "right" : "left";
 
                     if (swipeDirection === "right") {
+                      // Start audio NOW — still in user-gesture context (mouseup).
+                      // After right swipe cards[1] becomes the new top card.
+                      const futureTop = cards.length > 1 ? cards[1] : null;
+                      if (futureTop) fetchAndPlayContent(futureTop.title, futureTop.sector);
+
                       // Right swipe: Card moves away animation
                       const direction = "150%";
                       const rotation = "30deg";
@@ -978,15 +988,20 @@ function SwipeableCardStack({
                       setTimeout(() => {
                         cardElement.style.transform = "";
                         cardElement.style.opacity = "";
-                        swipeCard(swipeDirection);
+                        swipeCard(swipeDirection, true); // skipAutoPlay — already started above
                       }, 300);
                     } else {
+                      // Start audio NOW — still in user-gesture context (mouseup).
+                      // After left swipe cards[cards.length-1] becomes the new top card.
+                      const futureTop = cards.length > 0 ? cards[cards.length - 1] : null;
+                      if (futureTop) fetchAndPlayContent(futureTop.title, futureTop.sector);
+
                       // Left swipe: Previous card slides in from left (reverse animation)
                       cardElement.style.transform = "";
                       cardElement.style.opacity = "";
 
-                      // Change the card order first
-                      swipeCard(swipeDirection);
+                      // Change the card order (skipAutoPlay — already started above)
+                      swipeCard(swipeDirection, true);
 
                       // Then animate the new top card sliding in from the right (coming back)
                       setTimeout(() => {
@@ -1066,6 +1081,11 @@ function SwipeableCardStack({
                     const swipeDirection = deltaX > 0 ? "right" : "left";
 
                     if (swipeDirection === "right") {
+                      // Start audio NOW — still in user-gesture context (touchend).
+                      // After right swipe cards[1] becomes the new top card.
+                      const futureTop = cards.length > 1 ? cards[1] : null;
+                      if (futureTop) fetchAndPlayContent(futureTop.title, futureTop.sector);
+
                       // Right swipe: Card moves away animation
                       const direction = "150%";
                       const rotation = "30deg";
@@ -1077,15 +1097,20 @@ function SwipeableCardStack({
                       setTimeout(() => {
                         cardElement.style.transform = "";
                         cardElement.style.opacity = "";
-                        swipeCard(swipeDirection);
+                        swipeCard(swipeDirection, true); // skipAutoPlay — already started above
                       }, 300);
                     } else {
+                      // Start audio NOW — still in user-gesture context (touchend).
+                      // After left swipe cards[cards.length-1] becomes the new top card.
+                      const futureTop = cards.length > 0 ? cards[cards.length - 1] : null;
+                      if (futureTop) fetchAndPlayContent(futureTop.title, futureTop.sector);
+
                       // Left swipe: Previous card slides in from left (reverse animation)
                       cardElement.style.transform = "";
                       cardElement.style.opacity = "";
 
-                      // Change the card order first
-                      swipeCard(swipeDirection);
+                      // Change the card order (skipAutoPlay — already started above)
+                      swipeCard(swipeDirection, true);
 
                       // Then animate the new top card sliding in from the right (coming back)
                       setTimeout(() => {

@@ -236,7 +236,7 @@ const TradingNotesWindow = lazy(() => import("@/components/TradingNotesWindow").
 const JournalAIReportPanel = lazy(() => import("@/components/JournalAIReportPanel").then(m => ({ default: m.JournalAIReportPanel })));
 const SocialFeedInsightsPanel = lazy(() => import("@/components/SocialFeedInsightsPanel").then(m => ({ default: m.SocialFeedInsightsPanel })));
 import { usePaperTrading } from "@/hooks/usePaperTrading";
-const JournalTabContent = lazy(() => import("./JournalTabContent").then(m => ({ default: m.JournalTabContent })));
+import { JournalTabContent } from "./JournalTabContent";
 
 import type { BrokerTrade } from "@shared/schema";
 
@@ -15930,7 +15930,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             )}
 
             {activeTab === "journal" && (
-              <Suspense fallback={null}>
               <JournalTabContent
                 setTabWithAuthCheck={setTabWithAuthCheck}
                 mobileBottomTab={mobileBottomTab}
@@ -16281,7 +16280,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 showGuestDialog={showGuestDialog}
                 setShowGuestDialog={setShowGuestDialog}
               />
-              </Suspense>
             )}
 
 

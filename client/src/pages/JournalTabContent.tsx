@@ -1635,33 +1635,20 @@ export function JournalTabContent({
                                       <RefreshCw className="w-3 h-3" />
                                     </Button>
                                   )}
-                                </div>
 
-                                {/* Chart Mode Toggle Buttons */}
-                                <div className="flex items-center gap-1 ml-auto">
-                                  <button
-                                    onClick={() => setJournalChartMode("search")}
-                                    className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-                                      journalChartMode === "search"
-                                        ? "bg-blue-500 text-white"
-                                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                    }`}
-                                    data-testid="button-chart-mode-search"
-                                  >
-                                    Search
-                                  </button>
-                                  <button
-                                    onClick={() => setJournalChartMode("heatmap")}
-                                    className={`px-2 py-1 text-xs font-medium rounded transition-colors ${
-                                      journalChartMode === "heatmap"
-                                        ? "bg-purple-500 text-white"
-                                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600"
-                                    }`}
-                                    data-testid="button-chart-mode-heatmap"
-                                  >
-                                    <CalendarDays className="w-3 h-3 inline mr-1" />
-                                    Heatmap
-                                  </button>
+                                  {/* X Reset Button - ONLY in Heatmap Mode */}
+                                  {journalChartMode === "heatmap" && (
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-8 px-2 text-xs text-slate-700 dark:text-slate-300 hover:text-red-500"
+                                      onClick={() => setJournalChartMode("search")}
+                                      title="Close heatmap"
+                                      data-testid="button-close-heatmap"
+                                    >
+                                      <X className="w-3.5 h-3.5" />
+                                    </Button>
+                                  )}
                                 </div>
                               </div>
                             </div>

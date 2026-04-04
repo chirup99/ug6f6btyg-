@@ -899,14 +899,16 @@ function SwipeableCardStack({
     // profile ID even if the closure captured an older value
     const lang = localStorage.getItem('voiceLanguage') || voiceLanguage || 'en';
     const speaker = localStorage.getItem('activeVoiceProfileId') || ALL_LANGUAGES[lang] || 'en-IN-NeerjaNeural';
+    const langChangeTimers: ReturnType<typeof setTimeout>[] = [];
     cards.forEach((card, i) => {
       if (i === 0) {
         preloadForSectorAndLang(card.sector, lang, speaker);
       } else {
-        setTimeout(() => preloadForSectorAndLang(card.sector, lang, speaker), i * 400);
+        langChangeTimers.push(setTimeout(() => preloadForSectorAndLang(card.sector, lang, speaker), i * 400));
       }
     });
     console.log(`[LANG CHANGE] Switched to ${lang} — preloading ${cards.length} sectors with speaker: ${speaker}`);
+    return () => langChangeTimers.forEach(clearTimeout);
   }, [voiceLanguage]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
@@ -3496,10 +3498,13 @@ export default function Home() {
     setSearchResultsNewsSymbol(currentSymbol);
     setSearchResultsNews([]);
 
+    let newsCancelled = false;
     (async () => {
       try {
         const response = await fetch(`/api/stock-news/${encodeURIComponent(currentSymbol.toUpperCase())}?refresh=${Date.now()}`);
+        if (newsCancelled) return;
         const data = await response.json();
+        if (newsCancelled) return;
 
         const articles = Array.isArray(data) ? data : (data.articles || data.data || []);
 
@@ -3534,14 +3539,15 @@ export default function Home() {
           }));
 
           console.log('📰 News fetched successfully:', formattedNews.length, 'articles');
-          setSearchResultsNews(formattedNews);
+          if (!newsCancelled) setSearchResultsNews(formattedNews);
         } else {
           console.log('📰 No news articles found for:', currentSymbol);
         }
       } catch (error) {
-        console.warn("Failed to fetch news for symbol:", currentSymbol, error);
+        if (!newsCancelled) console.warn("Failed to fetch news for symbol:", currentSymbol, error);
       }
     })();
+    return () => { newsCancelled = true; };
   }, [searchResults, isSearchActive]);
 
   // ❌ REMOVED: journalSelectedDate - manual search chart is now completely standalone
@@ -5074,18 +5080,11 @@ ${fundamentalInsights}**📈 Essential Analysis Framework:**
     }
   };
 
-  // Screen time tracker for journal report
+  // Screen time tracker for journal report (display-only — does NOT double-count sessions;
+  // the journal tab tracker below owns session persistence to avoid double-counting)
   useEffect(() => {
     const isOpen = searchResults.includes("[CHART:JOURNAL_REPORT]");
     if (!isOpen) return;
-    // Load saved sessions from localStorage
-    try {
-      const saved = localStorage.getItem('journalScreenTimeSessions');
-      if (saved) {
-        const parsed = JSON.parse(saved) as Array<{date: string; totalSeconds: number}>;
-        setJournalScreenTimeSessions(parsed);
-      }
-    } catch {}
     const startMs = Date.now();
     setJournalScreenTimeStart(startMs);
     setJournalCurrentSessionSecs(0);
@@ -5094,21 +5093,6 @@ ${fundamentalInsights}**📈 Essential Analysis Framework:**
     }, 1000);
     return () => {
       clearInterval(iv);
-      const duration = Math.floor((Date.now() - startMs) / 1000);
-      if (duration < 3) return;
-      const today = new Date().toISOString().slice(0, 10);
-      setJournalScreenTimeSessions(prev => {
-        const updated = [...prev];
-        const idx = updated.findIndex(s => s.date === today);
-        if (idx >= 0) {
-          updated[idx] = { ...updated[idx], totalSeconds: updated[idx].totalSeconds + duration };
-        } else {
-          updated.push({ date: today, totalSeconds: duration });
-        }
-        const trimmed = updated.slice(-30);
-        try { localStorage.setItem('journalScreenTimeSessions', JSON.stringify(trimmed)); } catch {}
-        return trimmed;
-      });
       setJournalScreenTimeStart(null);
       setJournalCurrentSessionSecs(0);
     };
@@ -6331,12 +6315,21 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
       window.addEventListener("message", messageListener);
       
-      // Monitor popup closing and cleanup
+      // Monitor popup closing and cleanup — max 5 minutes (300 ticks)
+      let angelOneCheckCount = 0;
       const monitorPopup = setInterval(() => {
+        angelOneCheckCount++;
         if (popup.closed) {
           clearInterval(monitorPopup);
           window.removeEventListener("message", messageListener);
           console.log('⚠️ Angel One popup closed');
+          return;
+        }
+        if (angelOneCheckCount > 300) {
+          clearInterval(monitorPopup);
+          window.removeEventListener("message", messageListener);
+          popup.close();
+          console.log('⚠️ Angel One popup timeout after 5 minutes');
         }
       }, 1000);
       
@@ -6941,6 +6934,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Fetch broker positions when tab changes
   useEffect(() => {
     if (orderTab === "positions" && activeBroker) {
+      let cancelled = false;
       let lastPositionsKey = '__uninit__';
       const fetchPositions = async () => {
         try {
@@ -6952,6 +6946,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           const res = await fetch(endpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
+          if (cancelled) return;
           // On any error, leave the existing positions on screen — don't blank them out
           if (!res.ok) {
             if (res.status === 401) {
@@ -6960,6 +6955,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             return;
           }
           const data = await res.json();
+          if (cancelled) return;
           let positions = data.positions || [];
 
           // Fetch live prices for each position from WebSocket stream
@@ -6982,6 +6978,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 return pos;
               })
             );
+            if (cancelled) return;
             positions = livePositions;
           }
 
@@ -6998,7 +6995,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           }
         } catch (err) {
           // Silent fail — keep whatever is currently displayed, don't blank out
-          console.error('❌ [POSITIONS] Error fetching positions:', err);
+          if (!cancelled) console.error('❌ [POSITIONS] Error fetching positions:', err);
         }
       };
 
@@ -7008,8 +7005,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Poll every 700ms in background — UI only updates when positions actually change
       const pollInterval = setInterval(fetchPositions, 700);
 
-      // Cleanup: clear interval when tab changes
-      return () => clearInterval(pollInterval);
+      // Cleanup: clear interval and mark cancelled to prevent stale state updates
+      return () => { cancelled = true; clearInterval(pollInterval); };
     }
   }, [activeBroker, orderTab, getBrokerEndpoints]);
   const [brokerOrders, setBrokerOrders] = useState<any[]>([]);
@@ -7047,34 +7044,43 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // Fetch broker orders when Orders dialog opens
   useEffect(() => {
     if (orderTab === 'history' && activeBroker) {
+      let cancelled = false;
       const fetchOrders = async () => {
+        if (cancelled) return;
         setFetchingBrokerOrders(true);
         try {
           const { token, ordersEp: endpoint } = getBrokerEndpoints(activeBroker);
           const broker = activeBroker || '';
 
-          if (!endpoint) return;
+          if (!endpoint) {
+            if (!cancelled) setFetchingBrokerOrders(false);
+            return;
+          }
           
           const res = await fetch(endpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
+          if (cancelled) return;
           if (!res.ok) {
-            const errData = await res.json().catch(() => ({}));
+            await res.json().catch(() => ({}));
             if (res.status === 401) {
               console.warn('⚠️ [ORDERS] Session expired, please reconnect broker');
             }
-            setBrokerOrders([]);
-            setFetchingBrokerOrders(false);
+            if (!cancelled) { setBrokerOrders([]); setFetchingBrokerOrders(false); }
             return;
           }
           const data = await res.json();
-          setBrokerOrders(data.trades || data.orders || []);
-          console.log('✅ [ORDERS]', broker, 'Fetched', (data.trades || data.orders || []).length, 'trades');
+          if (!cancelled) {
+            setBrokerOrders(data.trades || data.orders || []);
+            console.log('✅ [ORDERS]', broker, 'Fetched', (data.trades || data.orders || []).length, 'trades');
+          }
         } catch (err) {
-          console.error('❌ [ORDERS] Error fetching trades:', err);
-          setBrokerOrders([]);
+          if (!cancelled) {
+            console.error('❌ [ORDERS] Error fetching trades:', err);
+            setBrokerOrders([]);
+          }
         } finally {
-          setFetchingBrokerOrders(false);
+          if (!cancelled) setFetchingBrokerOrders(false);
         }
       };
 
@@ -7084,8 +7090,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Set up polling to refresh every 5 seconds while dialog is open
       const pollInterval = setInterval(fetchOrders, 5000);
 
-      // Cleanup: clear interval when dialog closes
-      return () => clearInterval(pollInterval);
+      // Cleanup: clear interval and prevent stale state updates from in-flight fetches
+      return () => { cancelled = true; clearInterval(pollInterval); };
     }
   }, [activeBroker, orderTab, getBrokerEndpoints]);
 
@@ -7250,49 +7256,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     return () => { cancelled = true; clearInterval(interval); };
   }, [secondaryBroker, activeBroker, getBrokerEndpoints, zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken, fyersIsConnected]);
 
-// Fetch broker funds when dialog opens - with auto-refresh polling
-  useEffect(() => {
-    if (showOrderModal && (zerodhaAccessToken || upstoxAccessToken)) {
-      const fetchBrokerFunds = async () => {
-        try {
-          let endpoint = zerodhaAccessToken ? '/api/zerodha/margins' : '/api/broker/upstox/margins';
-          const token = zerodhaAccessToken || upstoxAccessToken;
-
-          // Add API Key to query or headers for Zerodha
-          if (zerodhaAccessToken) {
-            const apiKey = localStorage.getItem("zerodha_api_key");
-            if (apiKey) {
-              endpoint += `?api_key=${encodeURIComponent(apiKey)}`;
-            }
-          }
-
-          const response = await fetch(endpoint, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          const data = await response.json();
-          if (response.ok && data.success && data.availableCash !== undefined) {
-            setBrokerFunds(data.availableCash);
-            localStorage.setItem("zerodha_broker_funds", data.availableCash.toString());
-            console.log('✅ [BROKER] Fetched available funds:', data.availableCash);
-          } else {
-            console.error('❌ [BROKER] Failed to fetch funds:', data.error || 'Invalid response');
-            setBrokerFunds(null);
-          }
-        } catch (error) {
-          console.error('❌ [BROKER] Failed to fetch funds:', error);
-        }
-      };
-      
-      // Fetch funds immediately when dialog opens
-      fetchBrokerFunds();
-      
-      // Set up polling to refresh every 2 seconds while dialog is open
-      const pollInterval = setInterval(fetchBrokerFunds, 2000);
-      
-      // Cleanup: clear interval when dialog closes
-      return () => clearInterval(pollInterval);
-    }
-  }, [showOrderModal, zerodhaAccessToken]);
 
   // Restore broker funds from localStorage on mount when Zerodha connected
   useEffect(() => {
@@ -9439,20 +9402,24 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       } else {
         // ✅ SIMPLIFIED: Load demo data directly from AWS - NO localStorage!
         console.log(`📊 Demo mode - loading from AWS DynamoDB journal-database...`);
+        let demoCancelled = false;
         (async () => {
           try {
             const response = await fetch(getFullApiUrl('/api/journal/all-dates'));
-            if (response.ok) {
+            if (!demoCancelled && response.ok) {
               const awsData = await response.json(); // AWS DynamoDB data
-              const dateCount = Object.keys(awsData).length;
-              setDemoTradingDataByDate(awsData);
-              setCalendarData(awsData);
-              console.log(`✅ Loaded ${dateCount} real dates from AWS`);
+              if (!demoCancelled) {
+                const dateCount = Object.keys(awsData).length;
+                setDemoTradingDataByDate(awsData);
+                setCalendarData(awsData);
+                console.log(`✅ Loaded ${dateCount} real dates from AWS`);
+              }
             }
           } catch (error) {
-            console.error("❌ Error loading from AWS:", error);
+            if (!demoCancelled) console.error("❌ Error loading from AWS:", error);
           }
         })();
+        return () => { demoCancelled = true; };
       }
     }
   }, [isDemoMode, activeTab, heatmapYear]);

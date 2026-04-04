@@ -60,13 +60,16 @@ export async function setupVite(app: Express, server: Server) {
       "/src/main.tsx",
       "/src/App.tsx",
       "/src/pages/home.tsx",
+      "/src/hooks/useJournalChartLogic.ts",
+      "/src/pages/JournalTabContent.tsx",
+      "/src/components/trading-master.tsx",
       "/src/lib/queryClient.ts",
       "/src/lib/utils.ts",
     ];
     filesToWarm.forEach((file) => {
       vite.warmupRequest(file).catch(() => {});
     });
-  }, 1500);
+  }, 300);
 
   app.use("*", async (req, res, next) => {
     const url = req.originalUrl;

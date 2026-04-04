@@ -34,17 +34,17 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
-import Dashboard from "@/pages/home";
-import Landing from "@/pages/landing";
-import PrivacyPolicy from "@/pages/privacy";
-import TermsOfService from "@/pages/terms";
-import NotFound from "@/pages/not-found";
-import PublicHeatmap from "@/pages/public-heatmap";
-import SharedReport from "@/pages/shared-report";
-import TradingJournalDemo from "@/pages/trading-journal-demo";
-import MarketNews from "@/pages/market-news";
+const Dashboard = lazy(() => import("@/pages/home"));
+const Landing = lazy(() => import("@/pages/landing"));
+const PrivacyPolicy = lazy(() => import("@/pages/privacy"));
+const TermsOfService = lazy(() => import("@/pages/terms"));
+const NotFound = lazy(() => import("@/pages/not-found"));
+const PublicHeatmap = lazy(() => import("@/pages/public-heatmap"));
+const SharedReport = lazy(() => import("@/pages/shared-report"));
+const TradingJournalDemo = lazy(() => import("@/pages/trading-journal-demo"));
+const MarketNews = lazy(() => import("@/pages/market-news"));
 const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed"));
-import ZerodhaDebug from "@/pages/zerodha-debug";
+const ZerodhaDebug = lazy(() => import("@/pages/zerodha-debug"));
 
 import { AngelOneGlobalAutoConnect } from "@/hooks/useAngelOneAutoconnect";
 import { getCognitoToken, getCognitoUser, initializeCognito } from "@/cognito";
@@ -439,58 +439,70 @@ function MainLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+const PageLoader = () => (
+  <div className="flex items-center justify-center min-h-screen bg-gray-950">
+    <div className="flex flex-col items-center gap-4">
+      <div className="relative w-14 h-14">
+        <div className="absolute inset-0 w-14 h-14 border-4 border-blue-500/20 rounded-full" />
+        <div className="absolute inset-0 w-14 h-14 border-4 border-transparent border-t-blue-500 border-r-blue-500 rounded-full animate-spin" />
+      </div>
+      <p className="text-sm text-gray-400 animate-pulse">Loading...</p>
+    </div>
+  </div>
+);
+
 function Router() {
   return (
-    <Switch>
-      <Route path="/login" component={Landing} />
-      <Route path="/landing" component={Landing} />
-      <Route path="/">
-        <MainLayout>
-          <Dashboard />
-        </MainLayout>
-      </Route>
-      <Route path="/app">
-        <MainLayout>
-          <Dashboard />
-        </MainLayout>
-      </Route>
-      <Route path="/dashboard">
-        <MainLayout>
-          <Dashboard />
-        </MainLayout>
-      </Route>
-      <Route path="/trading">
-        <MainLayout>
-          <Dashboard />
-        </MainLayout>
-      </Route>
-      <Route path="/trading-master">
-        <MainLayout>
-          <Dashboard />
-        </MainLayout>
-      </Route>
-      <Route path="/voice">
-        <MainLayout>
-          <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-900"><div className="w-10 h-10 border-2 border-violet-500 border-t-transparent rounded-full animate-spin" /></div>}>
+    <Suspense fallback={<PageLoader />}>
+      <Switch>
+        <Route path="/login" component={Landing} />
+        <Route path="/landing" component={Landing} />
+        <Route path="/">
+          <MainLayout>
+            <Dashboard />
+          </MainLayout>
+        </Route>
+        <Route path="/app">
+          <MainLayout>
+            <Dashboard />
+          </MainLayout>
+        </Route>
+        <Route path="/dashboard">
+          <MainLayout>
+            <Dashboard />
+          </MainLayout>
+        </Route>
+        <Route path="/trading">
+          <MainLayout>
+            <Dashboard />
+          </MainLayout>
+        </Route>
+        <Route path="/trading-master">
+          <MainLayout>
+            <Dashboard />
+          </MainLayout>
+        </Route>
+        <Route path="/voice">
+          <MainLayout>
             <NeoFeedSocialFeed />
-          </Suspense>
-        </MainLayout>
-      </Route>
-      <Route path="/journal-demo">
-        <MainLayout>
-          <TradingJournalDemo />
-        </MainLayout>
-      </Route>
-      <Route path="/home" component={NewHome} />
-      <Route path="/share/:userId" component={PublicHeatmap} />
-      <Route path="/share/heatmap/:userId" component={PublicHeatmap} />
-      <Route path="/shared/:reportId" component={SharedReport} />
-      <Route path="/market-news" component={MarketNews} />
-      <Route path="/zerodha-debug" component={ZerodhaDebug} />
-      <Route path="/privacy" component={PrivacyPolicy} />
-      <Route path="/terms" component={TermsOfService} />
-      <Route component={NotFound} />
-    </Switch>
+          </MainLayout>
+        </Route>
+        <Route path="/journal-demo">
+          <MainLayout>
+            <TradingJournalDemo />
+          </MainLayout>
+        </Route>
+        <Route path="/home" component={NewHome} />
+        <Route path="/share/:userId" component={PublicHeatmap} />
+        <Route path="/share/heatmap/:userId" component={PublicHeatmap} />
+        <Route path="/shared/:reportId" component={SharedReport} />
+        <Route path="/market-news" component={MarketNews} />
+        <Route path="/zerodha-debug" component={ZerodhaDebug} />
+        <Route path="/privacy" component={PrivacyPolicy} />
+        <Route path="/terms" component={TermsOfService} />
+        <Route component={NotFound} />
+      </Switch>
+    </Suspense>
   );
 }
 

@@ -2742,6 +2742,10 @@ export default function Home() {
   const [feedbackType, setFeedbackType] = useState<"feedback" | "request">("feedback");
   const [rating, setRating] = useState(0);
   const [feedbackText, setFeedbackText] = useState("");
+  const [isFeedbackSubmitting, setIsFeedbackSubmitting] = useState(false);
+  const [feedbackSubmitSuccess, setFeedbackSubmitSuccess] = useState(false);
+  const [adminFeedbackItems, setAdminFeedbackItems] = useState<any[]>([]);
+  const [adminFeedbackLoading, setAdminFeedbackLoading] = useState(false);
   const [voicePitch, setVoicePitch] = useState(1.0);
   const [voiceRate, setVoiceRate] = useState(1.0);
   const [voiceBreakTime, setVoiceBreakTime] = useState(200); // ms
@@ -2913,6 +2917,23 @@ export default function Home() {
         })
         .catch(err => {
           console.error('❌ Error fetching admin access:', err);
+        });
+    }
+  }, [showAdminDashboardDialog, adminTab]);
+
+  // Fetch feedback/feature requests when admin feedback tabs open
+  useEffect(() => {
+    if (showAdminDashboardDialog && (adminTab === "feedback" || adminTab === "feature-requests")) {
+      setAdminFeedbackLoading(true);
+      fetch("/api/admin/feedback")
+        .then(res => res.json())
+        .then(data => {
+          setAdminFeedbackItems(Array.isArray(data) ? data : []);
+          setAdminFeedbackLoading(false);
+        })
+        .catch(err => {
+          console.error("Error fetching feedback:", err);
+          setAdminFeedbackLoading(false);
         });
     }
   }, [showAdminDashboardDialog, adminTab]);
@@ -11941,9 +11962,35 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 </div>
                 <Button 
                   className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl px-6"
-                  onClick={() => setIsFeedbackDialogOpen(false)}
+                  disabled={isFeedbackSubmitting || feedbackSubmitSuccess || !feedbackText.trim()}
+                  onClick={async () => {
+                    if (!feedbackText.trim()) return;
+                    setIsFeedbackSubmitting(true);
+                    try {
+                      const authToken = localStorage.getItem("cognitoAccessToken") || localStorage.getItem("angelOneJwt") || "";
+                      await fetch("/api/feedback", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          ...(authToken ? { "Authorization": `Bearer ${authToken}` } : {})
+                        },
+                        body: JSON.stringify({ type: feedbackType, text: feedbackText, rating })
+                      });
+                      setFeedbackSubmitSuccess(true);
+                      setFeedbackText("");
+                      setRating(0);
+                      setTimeout(() => {
+                        setFeedbackSubmitSuccess(false);
+                        setIsFeedbackDialogOpen(false);
+                      }, 1500);
+                    } catch (err) {
+                      console.error("Error submitting feedback:", err);
+                    } finally {
+                      setIsFeedbackSubmitting(false);
+                    }
+                  }}
                 >
-                  {feedbackType === "feedback" ? "Send feedback" : "Request feature"}
+                  {feedbackSubmitSuccess ? "Sent!" : isFeedbackSubmitting ? "Sending..." : feedbackType === "feedback" ? "Send feedback" : "Request feature"}
                 </Button>
               </div>
             </div>
@@ -13825,6 +13872,32 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                     <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-blue-500 rounded-full shadow-[0_0_8px_rgba(59,130,246,0.6)]" />
                   )}
                 </button>
+                <button
+                  onClick={() => setAdminTab("feedback")}
+                  className={`relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all ${ adminTab === "feedback" ? "text-green-400" : "text-slate-400 hover:text-slate-300" }`}
+                  data-testid="button-admin-tab-feedback"
+                >
+                  <span>Feedback</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-green-600 text-[11px] font-bold text-white ml-1 shadow-[0_0_10px_rgba(22,163,74,0.4)]">
+                    {adminFeedbackItems.filter(f => f.type === 'feedback').length}
+                  </span>
+                  {adminTab === "feedback" && (
+                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-green-500 rounded-full shadow-[0_0_8px_rgba(34,197,94,0.6)]" />
+                  )}
+                </button>
+                <button
+                  onClick={() => setAdminTab("feature-requests")}
+                  className={`relative flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-[13px] font-medium transition-all ${ adminTab === "feature-requests" ? "text-violet-400" : "text-slate-400 hover:text-slate-300" }`}
+                  data-testid="button-admin-tab-feature-requests"
+                >
+                  <span>Requests</span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-full bg-violet-600 text-[11px] font-bold text-white ml-1 shadow-[0_0_10px_rgba(124,58,237,0.4)]">
+                    {adminFeedbackItems.filter(f => f.type === 'request').length}
+                  </span>
+                  {adminTab === "feature-requests" && (
+                    <div className="absolute bottom-0 left-2 right-2 h-0.5 bg-violet-500 rounded-full shadow-[0_0_8px_rgba(139,92,246,0.6)]" />
+                  )}
+                </button>
               </div>
             </div>
             <div className="flex-1 overflow-y-auto custom-thin-scrollbar min-h-[400px]">
@@ -14115,6 +14188,63 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       })()}
                     </div>
                   )}
+                </div>
+              ) : adminTab === "feedback" || adminTab === "feature-requests" ? (
+                <div className="p-4 space-y-3 pt-[4px] pb-[0px] pl-[10px] pr-[10px] max-h-[450px] overflow-y-auto custom-thin-scrollbar">
+                  <div className="flex items-center justify-between gap-3">
+                    <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wider">
+                      {adminTab === "feedback" ? "User Feedback" : "Feature Requests"}
+                    </h3>
+                    <Badge variant="outline" className="text-[9px] h-4 px-2 border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50">
+                      {adminFeedbackItems.filter(f => f.type === (adminTab === "feedback" ? "feedback" : "request")).length} total
+                    </Badge>
+                  </div>
+                  {adminFeedbackLoading ? (
+                    <div className="flex items-center justify-center py-6">
+                      <div className="animate-spin rounded-full h-5 w-5 border-2 border-slate-300 dark:border-slate-600 border-t-green-500"></div>
+                    </div>
+                  ) : (() => {
+                    const filtered = adminFeedbackItems.filter(f => f.type === (adminTab === "feedback" ? "feedback" : "request"));
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="text-center py-10">
+                          <p className="text-xs text-slate-400 dark:text-slate-500">No {adminTab === "feedback" ? "feedback" : "feature requests"} yet</p>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div className="space-y-2">
+                        {filtered.map((item: any, index: number) => (
+                          <div key={item.feedbackId || index} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-900/40 border border-slate-200/50 dark:border-slate-700/50 space-y-1.5" data-testid={`feedback-item-${index}`}>
+                            <div className="flex items-center justify-between gap-2">
+                              <div className="flex items-center gap-2">
+                                <div className={`w-6 h-6 rounded-md flex items-center justify-center text-[10px] font-bold ${adminTab === "feedback" ? "bg-green-500/10 text-green-600 dark:text-green-400" : "bg-violet-500/10 text-violet-600 dark:text-violet-400"}`}>
+                                  {(item.username || "?").substring(0, 1).toUpperCase()}
+                                </div>
+                                <span className="text-[11px] font-medium text-slate-600 dark:text-slate-300">{item.username || "anonymous"}</span>
+                              </div>
+                              <div className="flex items-center gap-2">
+                                {item.rating > 0 && adminTab === "feedback" && (
+                                  <div className="flex items-center gap-0.5">
+                                    {[1,2,3,4,5].map(s => (
+                                      <span key={s} className={`text-[10px] ${s <= item.rating ? "text-yellow-400" : "text-slate-300 dark:text-slate-600"}`}>★</span>
+                                    ))}
+                                  </div>
+                                )}
+                                <span className="text-[9px] text-slate-400 dark:text-slate-500">
+                                  {new Date(item.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                                </span>
+                                <span className={`text-[9px] px-1.5 py-0.5 rounded ${item.status === 'new' ? 'bg-blue-500/10 text-blue-600 dark:text-blue-400' : item.status === 'reviewed' ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'}`}>
+                                  {item.status === 'new' ? 'New' : item.status === 'reviewed' ? 'Reviewed' : 'Done'}
+                                </span>
+                              </div>
+                            </div>
+                            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed pl-8">{item.text}</p>
+                          </div>
+                        ))}
+                      </div>
+                    );
+                  })()}
                 </div>
               ) : adminTab === "influencer" ? (
                 <div className="relative h-full p-6 space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-300 pt-[0px] pb-[0px] pl-[10px] pr-[10px]">

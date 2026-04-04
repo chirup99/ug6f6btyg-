@@ -25,7 +25,8 @@ export const TABLES = {
   FOLLOWS: 'neofeed-follows',
   REPORT_BUGS: 'neofeed-report-bugs',
   ADMIN_ACCESS: 'access-admin',
-  SCREEN_TIME: 'journal-screen-time'
+  SCREEN_TIME: 'journal-screen-time',
+  FEEDBACK: 'neofeed-feedback'
 };
 
 export interface AdminAccess {
@@ -211,6 +212,70 @@ export async function getAllBugReports(): Promise<BugReport[]> {
     return bugs;
   } catch (error) {
     console.error('❌ Error fetching bug reports:', error);
+    return [];
+  }
+}
+
+// ==================== FEEDBACK FUNCTIONS ====================
+
+export interface FeedbackItem {
+  feedbackId: string;
+  username: string;
+  emailId: string;
+  type: 'feedback' | 'request';
+  text: string;
+  rating: number;
+  createdAt: string;
+  status: 'new' | 'reviewed' | 'done';
+}
+
+export async function createFeedback(data: {
+  username: string;
+  emailId: string;
+  type: 'feedback' | 'request';
+  text: string;
+  rating?: number;
+}): Promise<FeedbackItem> {
+  try {
+    const feedbackId = nanoid();
+    const timestamp = new Date().toISOString();
+    const item: FeedbackItem = {
+      feedbackId,
+      username: data.username,
+      emailId: data.emailId,
+      type: data.type,
+      text: data.text,
+      rating: data.rating || 0,
+      createdAt: timestamp,
+      status: 'new'
+    };
+    await docClient.send(new PutCommand({
+      TableName: TABLES.FEEDBACK,
+      Item: {
+        pk: `feedback#${feedbackId}`,
+        sk: timestamp,
+        ...item
+      }
+    }));
+    console.log(`✅ Feedback created: ${feedbackId} (type=${data.type})`);
+    return item;
+  } catch (error) {
+    console.error('❌ Error creating feedback:', error);
+    throw error;
+  }
+}
+
+export async function getAllFeedback(): Promise<FeedbackItem[]> {
+  try {
+    const result = await docClient.send(new ScanCommand({
+      TableName: TABLES.FEEDBACK
+    }));
+    const items = (result.Items || []) as FeedbackItem[];
+    items.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    console.log(`✅ Fetched ${items.length} feedback items from AWS`);
+    return items;
+  } catch (error) {
+    console.error('❌ Error fetching feedback:', error);
     return [];
   }
 }

@@ -35,6 +35,8 @@ import {
   getFollowingList,
   getAllRepostsForFeed,
   createBugReport,
+  createFeedback,
+  getAllFeedback,
   upsertScreenTime,
   getUserScreenTimeHistory,
   getScreenTimeLeaderboard,
@@ -182,6 +184,42 @@ export function registerNeoFeedAwsRoutes(app: any) {
     } catch (error) {
       console.error("❌ Error submitting bug report:", error);
       res.status(500).json({ error: "Failed to submit bug report" });
+    }
+  });
+
+  // Submit feedback or feature request
+  app.post('/api/feedback', async (req: any, res: any) => {
+    try {
+      const user = await getAuthenticatedUser(req);
+      const { type, text, rating } = req.body;
+      if (!text || !text.trim()) {
+        return res.status(400).json({ error: 'Feedback text is required' });
+      }
+      if (type !== 'feedback' && type !== 'request') {
+        return res.status(400).json({ error: 'Invalid feedback type' });
+      }
+      const result = await createFeedback({
+        username: user?.username || 'anonymous',
+        emailId: user?.username || 'anonymous',
+        type,
+        text: text.trim(),
+        rating: type === 'feedback' ? (rating || 0) : 0
+      });
+      res.json(result);
+    } catch (error) {
+      console.error('❌ Error submitting feedback:', error);
+      res.status(500).json({ error: 'Failed to submit feedback' });
+    }
+  });
+
+  // Admin: get all feedback and feature requests
+  app.get('/api/admin/feedback', async (req: any, res: any) => {
+    try {
+      const items = await getAllFeedback();
+      res.json(items);
+    } catch (error) {
+      console.error('❌ Error fetching feedback:', error);
+      res.status(500).json({ error: 'Failed to fetch feedback' });
     }
   });
 

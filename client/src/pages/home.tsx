@@ -7403,9 +7403,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       setZerodhaIsConnected(true);
       setUpstoxIsConnected(true);
     } else {
-      // In personal mode, only keep connected if a real access token exists
-      if (!zerodhaAccessToken) setZerodhaIsConnected(false);
-      if (!upstoxAccessToken) setUpstoxIsConnected(false);
+      // In personal mode, only reset if no real token exists in localStorage OR URL params
+      // (checking localStorage directly because React state may not yet reflect the URL callback effect)
+      const urlParams = new URLSearchParams(window.location.search);
+      const hasZerodhaUrlToken = !!urlParams.get('zerodha_token');
+      const hasZerodhaStoredToken = !!localStorage.getItem('zerodha_token');
+      if (!hasZerodhaUrlToken && !hasZerodhaStoredToken) setZerodhaIsConnected(false);
+
+      const hasUpstoxStoredToken = !!localStorage.getItem('upstox_token');
+      if (!hasUpstoxStoredToken) setUpstoxIsConnected(false);
     }
   }, [isDemoMode]); // eslint-disable-line react-hooks/exhaustive-deps
 

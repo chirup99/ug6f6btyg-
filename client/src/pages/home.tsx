@@ -17083,6 +17083,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         {/* Brokerage Charges Breakdown Dialog */}
         {/* Journal Charges Dialog */}
 
+        </Suspense>
       </div>
     </div>
   );

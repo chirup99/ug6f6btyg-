@@ -12,7 +12,7 @@ import { Countdown } from '@/components/countdown';
 
 import { motion, AnimatePresence } from "framer-motion";
 
-import { WatchlistResultTab } from '@/components/WatchlistResultTab';
+const WatchlistResultTab = lazy(() => import('@/components/WatchlistResultTab').then(m => ({ default: m.WatchlistResultTab })));
 
 
 import { BrokerData } from "@/components/broker-data";
@@ -24,8 +24,8 @@ import { AuthButtonAngelOne, AngelOneStatus, AngelOneApiStatistics, AngelOneSyst
 
 import { AuthButtonUpstox } from "@/components/auth-button-upstox";
 import { TradingJournalModal } from "@/components/trading-journal-modal";
-import { PaperTradingModal } from "@/components/PaperTradingModal";
-import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
+const PaperTradingModal = lazy(() => import("@/components/PaperTradingModal").then(m => ({ default: m.PaperTradingModal })));
+const PaperTradingMobileTab = lazy(() => import("@/components/PaperTradingMobileTab").then(m => ({ default: m.PaperTradingMobileTab })));
 
 // REMOVED: All Fyers-related imports
 // import { AuthButton } from "@/components/auth-button";
@@ -39,9 +39,9 @@ import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
 // import { ErrorPanel } from "@/components/error-panel";
 
 
-import { AdvancedCandlestickChart } from "@/components/advanced-candlestick-chart";
+const AdvancedCandlestickChart = lazy(() => import("@/components/advanced-candlestick-chart").then(m => ({ default: m.AdvancedCandlestickChart })));
 import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
-import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
+const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed").then(m => ({ default: m.default })));
 const TradingMaster = lazy(() => import("@/components/trading-master").then(m => ({ default: m.TradingMaster })));
 const MiniCastTab = lazy(() => import("@/components/MiniCastTab").then(m => ({ default: m.MiniCastTab })));
 import { TradingDashboardTab } from "@/components/TradingDashboardTab";
@@ -52,11 +52,11 @@ import {
   MultipleImageUploadRef,
 } from "@/components/multiple-image-upload";
 
-import { WorldMap } from "@/components/world-map";
+const WorldMap = lazy(() => import("@/components/world-map").then(m => ({ default: m.WorldMap })));
 
 import { NeoFeedPostDialog } from "@/components/NeoFeedPostDialog";
 import { ShareReportTradebookDialog } from "@/components/ShareReportTradebookDialog";
-import { ImportPnLDialog } from "@/components/ImportPnLDialog";
+const ImportPnLDialog = lazy(() => import("@/components/ImportPnLDialog").then(m => ({ default: m.ImportPnLDialog })));
 
 
 import { useTheme } from "@/components/theme-provider";
@@ -236,13 +236,12 @@ import {
   UserPlus,
   Hash,
 } from "lucide-react";
-import { AIChatWindow } from "@/components/ai-chat-window";
-
-import { TradingNotesWindow } from "@/components/TradingNotesWindow";
-import { JournalAIReportPanel } from "@/components/JournalAIReportPanel";
-import { SocialFeedInsightsPanel } from "@/components/SocialFeedInsightsPanel";
+const AIChatWindow = lazy(() => import("@/components/ai-chat-window").then(m => ({ default: m.AIChatWindow })));
+const TradingNotesWindow = lazy(() => import("@/components/TradingNotesWindow").then(m => ({ default: m.TradingNotesWindow })));
+const JournalAIReportPanel = lazy(() => import("@/components/JournalAIReportPanel").then(m => ({ default: m.JournalAIReportPanel })));
+const SocialFeedInsightsPanel = lazy(() => import("@/components/SocialFeedInsightsPanel").then(m => ({ default: m.SocialFeedInsightsPanel })));
 import { usePaperTrading } from "@/hooks/usePaperTrading";
-import { JournalTabContent } from "./JournalTabContent";
+const JournalTabContent = lazy(() => import("./JournalTabContent").then(m => ({ default: m.JournalTabContent })));
 
 import type { BrokerTrade } from "@shared/schema";
 
@@ -11931,7 +11930,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         {/* Full-width Social Feed - No Sidebar */}
         <main className="h-screen w-full">
-              <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white/40" /></div>}>
+                <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
+              </Suspense>
         </main>
         {/* Guest login prompt for unauthenticated users */}
         {showGuestDialog && (
@@ -12597,7 +12598,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                   {!searchResults && (
                     <div className="w-full flex items-center justify-center h-[35vh]" style={{ background: theme === 'dark' ? '#1a1a1a' : '#e3f2fd' }}>
                       <div className="w-full h-full">
-                        <WorldMap />
+                        <Suspense fallback={null}>
+                          <WorldMap />
+                        </Suspense>
                       </div>
                     </div>
                   )}
@@ -13298,6 +13301,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       // Handle Watchlist view
                                       if (searchResults.includes("[CHART:WATCHLIST]")) {
                                         return (
+                                          <Suspense fallback={null}>
                                           <WatchlistResultTab
                                             watchlistSymbols={watchlistSymbols}
                                             selectedWatchlistSymbol={selectedWatchlistSymbol}
@@ -13352,6 +13356,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             handleCompareAnalysis={handleCompareAnalysis}
                                             getWatchlistNewsRelativeTime={getWatchlistNewsRelativeTime}
                                           />
+                                          </Suspense>
                                         );
                                       }
 
@@ -13737,25 +13742,29 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                       // Handle Social Feed Insights
                       if (searchResults.includes("[CHART:SOCIAL_FEED]")) {
                         renderedContent = (
-                          <SocialFeedInsightsPanel
-                            socialFeedPosts={socialFeedPosts}
-                            isSocialFeedLoading={isSocialFeedLoading}
-                            fetchSocialFeedData={fetchSocialFeedData}
-                          />
+                          <Suspense fallback={null}>
+                            <SocialFeedInsightsPanel
+                              socialFeedPosts={socialFeedPosts}
+                              isSocialFeedLoading={isSocialFeedLoading}
+                              fetchSocialFeedData={fetchSocialFeedData}
+                            />
+                          </Suspense>
                         );
                       }
 
                       // Handle Journal Full Report
                       if (searchResults.includes("[CHART:JOURNAL_REPORT]")) {
                         renderedContent = (
-                          <JournalAIReportPanel
-                            journalReportMetrics={journalReportMetrics}
-                            setJournalReportActiveTab={setJournalReportActiveTab}
-                            generateJournalAIReport={generateJournalAIReport}
-                            journalScreenTimeSessions={journalScreenTimeSessions}
-                            journalCurrentSessionSecs={journalCurrentSessionSecs}
-                            journalTabCurrentSecs={journalTabCurrentSecs}
-                          />
+                          <Suspense fallback={null}>
+                            <JournalAIReportPanel
+                              journalReportMetrics={journalReportMetrics}
+                              setJournalReportActiveTab={setJournalReportActiveTab}
+                              generateJournalAIReport={generateJournalAIReport}
+                              journalScreenTimeSessions={journalScreenTimeSessions}
+                              journalCurrentSessionSecs={journalCurrentSessionSecs}
+                              journalTabCurrentSecs={journalTabCurrentSecs}
+                            />
+                          </Suspense>
                         );
                       }
 
@@ -15914,12 +15923,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <AdvancedCandlestickChart />
+                <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
+                  <AdvancedCandlestickChart />
+                </Suspense>
                 <IndicatorCrossingsDisplay />
               </div>
             )}
 
             {activeTab === "journal" && (
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
               <JournalTabContent
                 setTabWithAuthCheck={setTabWithAuthCheck}
                 mobileBottomTab={mobileBottomTab}
@@ -16270,6 +16282,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 showGuestDialog={showGuestDialog}
                 setShowGuestDialog={setShowGuestDialog}
               />
+              </Suspense>
             )}
 
 
@@ -16344,6 +16357,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           isDemoMode={isDemoMode}
         />
         {/* Broker Funds Breakup Dialog */}
+        <Suspense fallback={null}>
         <ImportPnLDialog
           showImportModal={showImportModal}
           setShowImportModal={setShowImportModal}

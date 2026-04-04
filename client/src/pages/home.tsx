@@ -6072,7 +6072,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     setIsZerodhaDialogOpen(true);
   };
 
-  const submitZerodhaCredentials = async () => {
+  const submitZerodhaCredentials = () => {
     if (!zerodhaApiKeyInput || !zerodhaApiSecretInput) {
       toast({
         title: "Error",
@@ -6085,20 +6085,24 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     localStorage.setItem("zerodha_api_key", zerodhaApiKeyInput);
     localStorage.setItem("zerodha_api_secret", zerodhaApiSecretInput);
 
-    // Close dialog immediately for instant UI feedback
+    // Set api_key cookie instantly client-side (no network, available immediately for callback)
+    document.cookie = `zerodha_api_key=${encodeURIComponent(zerodhaApiKeyInput)}; path=/; max-age=900; SameSite=None; Secure`;
+
+    // Close dialog immediately
     setIsZerodhaDialogOpen(false);
 
-    // Save credentials server-side (sets cookies for the OAuth callback to use)
-    // This is a simple cookie-set operation — completes in milliseconds
-    try {
-      await fetch(`/api/zerodha/login-url?api_key=${encodeURIComponent(zerodhaApiKeyInput)}&api_secret=${encodeURIComponent(zerodhaApiSecretInput)}`);
-    } catch {
-      // Continue anyway — credentials are in localStorage as fallback
-    }
+    // Store secret server-side via beacon (fire-and-forget — no await, no delay)
+    // Server stores it in memory; callback reads it before the user can even finish logging in
+    navigator.sendBeacon(
+      '/api/zerodha/store-secret',
+      new Blob(
+        [JSON.stringify({ apiKey: zerodhaApiKeyInput, apiSecret: zerodhaApiSecretInput })],
+        { type: 'application/json' }
+      )
+    );
 
-    // Navigate to Zerodha login in the main browser window
-    const loginUrl = `https://kite.zerodha.com/connect/login?v=3&api_key=${encodeURIComponent(zerodhaApiKeyInput)}`;
-    window.location.href = loginUrl;
+    // Navigate instantly — no waiting
+    window.location.href = `https://kite.zerodha.com/connect/login?v=3&api_key=${encodeURIComponent(zerodhaApiKeyInput)}`;
   };
 
   const handleUpstoxConnect = async () => {

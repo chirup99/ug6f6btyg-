@@ -13,6 +13,10 @@ import YahooFinance from "yahoo-finance2";
 // Module-level yahoo-finance2 instance for use across all helper functions
 const yfGlobal = new (YahooFinance as any)({ suppressNotices: ['yahooSurvey'] });
 
+// In-memory store for Zerodha credentials (api_key → api_secret)
+// Entries expire after 15 minutes to avoid stale data
+const zerodhaSecretStore = new Map<string, { secret: string; expires: number }>();
+
 // Configure multer for memory storage (files stored in memory as Buffer)
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -19285,6 +19289,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // 8. Frontend receives token and can fetch trades
   // ========================================
 
+  // Store Zerodha secret in memory (called via sendBeacon before navigation)
+  app.post('/api/zerodha/store-secret', (req, res) => {
+    const { apiKey, apiSecret } = req.body || {};
+    if (apiKey && apiSecret) {
+      zerodhaSecretStore.set(apiKey, { secret: apiSecret, expires: Date.now() + 15 * 60 * 1000 });
+      // Also set cookies so the callback always has them
+      res.cookie('zerodha_api_secret', apiSecret, { maxAge: 900000, httpOnly: true, sameSite: 'none', secure: true });
+      res.cookie('zerodha_api_key', apiKey, { maxAge: 900000, httpOnly: true, sameSite: 'none', secure: true });
+    }
+    res.status(200).end();
+  });
+
   // STEP 1: Generate login URL
   app.get('/api/zerodha/login-url', (req, res) => {
     const apiKey = (req.query.api_key as string) || process.env.ZERODHA_API_KEY;
@@ -19343,7 +19359,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
     try {
       const apiKey = req.cookies?.zerodha_api_key || process.env.ZERODHA_API_KEY;
-      const apiSecret = req.cookies?.zerodha_api_secret || process.env.ZERODHA_SECRET;
+
+      // Look up secret: cookies first, then in-memory store, then env
+      let apiSecret = req.cookies?.zerodha_api_secret || process.env.ZERODHA_SECRET;
+      if (!apiSecret && apiKey) {
+        const stored = zerodhaSecretStore.get(apiKey);
+        if (stored && stored.expires > Date.now()) {
+          apiSecret = stored.secret;
+        }
+      }
 
       if (!apiKey || !apiSecret) {
         throw new Error('Zerodha credentials not found. Please ensure API Key and Secret are entered in the dialog.');

@@ -129,7 +129,7 @@ interface ConnectBrokerDialogProps {
   setShowZerodhaSecret: (v: boolean) => void;
 
   handleZerodhaConnect: () => void;
-  submitZerodhaCredentials: () => Promise<void>;
+  submitZerodhaCredentials: () => void;
   handleUpstoxConnect: () => Promise<void>;
   handleUpstoxDisconnect: () => Promise<void>;
   handleUserAngelOneConnect: () => Promise<void>;

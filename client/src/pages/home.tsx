@@ -15834,52 +15834,55 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Trading Challenge Coming Soon Modal */}
         <Dialog open={showTradingChallengeModal} onOpenChange={setShowTradingChallengeModal}>
-          <DialogContent className="w-[95vw] max-w-sm rounded-3xl max-h-[92dvh] overflow-y-auto border-none shadow-2xl p-0 bg-white dark:bg-slate-950 [&>button]:hidden">
-            {/* Gradient header */}
-            <div className="relative bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 px-6 pt-8 pb-10 text-center overflow-hidden">
-              <div className="absolute inset-0 opacity-10" style={{backgroundImage: 'radial-gradient(circle at 50% 50%, white 2px, transparent 2px)', backgroundSize: '20px 20px'}} />
-              <div className="relative">
-                <div className="mx-auto w-20 h-20 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-xl mb-4 border border-white/30">
-                  <Trophy className="h-9 w-9 text-white" />
+          <DialogContent className="w-[90vw] max-w-xs rounded-xl border border-slate-200 dark:border-slate-800 shadow-lg p-0 bg-white dark:bg-slate-900 [&>button]:hidden">
+            {/* Header */}
+            <div className="flex items-center justify-between px-4 pt-4 pb-3 border-b border-slate-100 dark:border-slate-800">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-md bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <Trophy className="h-3.5 w-3.5 text-slate-500 dark:text-slate-400" />
                 </div>
-                <h2 className="text-2xl font-bold text-white tracking-tight">Trade Challenge</h2>
-                <p className="text-orange-100 text-sm font-medium mt-1">Compete & Climb the Ranks</p>
-                <div className="inline-flex items-center gap-1.5 bg-white/20 backdrop-blur-sm border border-white/30 rounded-full px-3 py-1 mt-3">
-                  <div className="w-1.5 h-1.5 rounded-full bg-yellow-300 animate-pulse" />
-                  <span className="text-xs font-semibold text-white uppercase tracking-wider">Coming Soon</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Content */}
-            <div className="px-5 py-5 space-y-4">
-              <div className="space-y-2.5">
-                {[
-                  { icon: '🏁', label: 'Compete with Traders', sub: 'Join 7-day trading challenges' },
-                  { icon: '📊', label: 'Live P&L Tracking', sub: 'Real-time ranking based on your trades' },
-                  { icon: '🏆', label: 'Leaderboard Rankings', sub: 'See your position among all participants' },
-                  { icon: '🎖️', label: 'Win Rewards', sub: 'Earn badges and recognition' },
-                ].map((item, i) => (
-                  <div key={i} className="flex items-center gap-3 bg-slate-50 dark:bg-slate-900/60 rounded-xl px-4 py-2.5 border border-slate-100 dark:border-slate-800/50">
-                    <span className="text-base">{item.icon}</span>
-                    <div>
-                      <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">{item.label}</p>
-                      <p className="text-xs text-slate-400 dark:text-slate-500">{item.sub}</p>
-                    </div>
+                <div>
+                  <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Trade Challenge</p>
+                  <div className="flex items-center gap-1 mt-0.5">
+                    <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
+                    <span className="text-[9px] font-semibold uppercase tracking-widest text-amber-500 dark:text-amber-400">Coming Soon</span>
                   </div>
-                ))}
+                </div>
               </div>
-
-              <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 rounded-2xl px-4 py-3 text-center">
-                <p className="text-amber-700 dark:text-amber-400 text-xs font-semibold uppercase tracking-wider">🔥 Launching Very Soon — Stay Ready!</p>
-              </div>
-
+              <button
+                onClick={() => setShowTradingChallengeModal(false)}
+                className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                data-testid="button-close-challenge-modal-x"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+            {/* Features */}
+            <div className="px-4 py-3 space-y-0">
+              {[
+                { label: 'Compete with traders', sub: 'Join 7-day trading challenges' },
+                { label: 'Live P&L tracking', sub: 'Real-time ranking by your trades' },
+                { label: 'Leaderboard rankings', sub: 'See your position among all traders' },
+                { label: 'Win rewards', sub: 'Earn badges and recognition' },
+              ].map((item, i) => (
+                <div key={i} className="flex items-start gap-2 py-2 border-b border-slate-100 dark:border-slate-800 last:border-0">
+                  <span className="w-1 h-1 rounded-full bg-slate-300 dark:bg-slate-600 flex-shrink-0 mt-1.5" />
+                  <div>
+                    <p className="text-[11px] font-medium text-slate-700 dark:text-slate-300">{item.label}</p>
+                    <p className="text-[10px] text-slate-400 dark:text-slate-500">{item.sub}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {/* Footer */}
+            <div className="px-4 pb-4 pt-1">
               <Button
                 onClick={() => setShowTradingChallengeModal(false)}
-                className="w-full h-11 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-semibold rounded-2xl shadow-lg shadow-orange-500/20 transition-all active:scale-[0.98]"
+                variant="outline"
+                className="w-full h-8 text-xs font-medium border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 rounded-lg"
                 data-testid="button-close-challenge-modal"
               >
-                Got It, I'll Wait!
+                Got it
               </Button>
             </div>
           </DialogContent>

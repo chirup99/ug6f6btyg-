@@ -3064,6 +3064,8 @@ function ImageCropModal({
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  const [imgNaturalSize, setImgNaturalSize] = useState({ w: 0, h: 0 });
+  const [coverContainerSize, setCoverContainerSize] = useState({ w: 280, h: 140 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -3073,19 +3075,46 @@ function ImageCropModal({
     if (isOpen) {
       setScale(1);
       setPosition({ x: 0, y: 0 });
+      setImgNaturalSize({ w: 0, h: 0 });
     }
   }, [isOpen, imageSrc]);
 
-  // Load image when source changes
+  // Load image when source changes and capture natural dimensions
   useEffect(() => {
     if (imageSrc) {
       const img = new Image();
       img.onload = () => {
         imageRef.current = img;
+        setImgNaturalSize({ w: img.naturalWidth, h: img.naturalHeight });
       };
       img.src = imageSrc;
     }
   }, [imageSrc]);
+
+  // Measure cover container width after it mounts
+  useEffect(() => {
+    if (imageType === 'cover' && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      if (rect.width > 0) setCoverContainerSize(prev =>
+        prev.w === rect.width && prev.h === rect.height ? prev : { w: rect.width, h: rect.height }
+      );
+    }
+  }, [isOpen, imageType]);
+
+  // Compute the "cover" display size so image fills the container at scale=1
+  const getCoverDisplaySize = (contW: number, contH: number) => {
+    if (imgNaturalSize.w === 0 || imgNaturalSize.h === 0) return { w: contW, h: contH };
+    const imgAspect = imgNaturalSize.w / imgNaturalSize.h;
+    const contAspect = contW / contH;
+    if (imgAspect > contAspect) {
+      return { w: contH * imgAspect, h: contH };
+    } else {
+      return { w: contW, h: contW / imgAspect };
+    }
+  };
+
+  const profileDisplaySize = getCoverDisplaySize(220, 220);
+  const coverDisplaySize = getCoverDisplaySize(coverContainerSize.w, coverContainerSize.h);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -3238,9 +3267,9 @@ function ImageCropModal({
                     position: 'absolute',
                     top: '50%',
                     left: '50%',
+                    width: profileDisplaySize.w,
+                    height: profileDisplaySize.h,
                     transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${scale})`,
-                    width: 'auto',
-                    height: 'auto',
                     maxWidth: 'none',
                     maxHeight: 'none',
                   }}
@@ -3282,9 +3311,9 @@ function ImageCropModal({
                   position: 'absolute',
                   top: '50%',
                   left: '50%',
+                  width: coverDisplaySize.w,
+                  height: coverDisplaySize.h,
                   transform: `translate(calc(-50% + ${position.x}px), calc(-50% + ${position.y}px)) scale(${scale})`,
-                  width: 'auto',
-                  height: 'auto',
                   maxWidth: 'none',
                   maxHeight: 'none',
                 }}

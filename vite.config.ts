@@ -23,9 +23,7 @@ export default defineConfig({
       "react-dom/client",
       "wouter",
       "@tanstack/react-query",
-      "framer-motion",
       "lucide-react",
-      "recharts",
       "date-fns",
       "zod",
       "clsx",
@@ -44,6 +42,50 @@ export default defineConfig({
   build: {
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (
+            id.includes("node_modules/react/") ||
+            id.includes("node_modules/react-dom/") ||
+            id.includes("node_modules/scheduler/")
+          ) {
+            return "vendor-react";
+          }
+          if (id.includes("node_modules/lightweight-charts")) {
+            return "vendor-lightweight-charts";
+          }
+          if (
+            id.includes("node_modules/recharts") ||
+            id.includes("node_modules/d3-") ||
+            id.includes("node_modules/d3/") ||
+            id.includes("node_modules/victory-vendor")
+          ) {
+            return "vendor-recharts";
+          }
+          if (id.includes("node_modules/framer-motion")) {
+            return "vendor-framer-motion";
+          }
+          if (
+            id.includes("node_modules/aws-amplify") ||
+            id.includes("node_modules/@aws-amplify") ||
+            id.includes("node_modules/amazon-cognito-identity-js") ||
+            id.includes("node_modules/aws-jwt-verify")
+          ) {
+            return "vendor-auth";
+          }
+          if (
+            id.includes("node_modules/@tanstack/react-query") ||
+            id.includes("node_modules/@tanstack/query-core")
+          ) {
+            return "vendor-query";
+          }
+          if (id.includes("node_modules/@radix-ui/")) {
+            return "vendor-radix";
+          }
+        },
+      },
+    },
   },
   server: {
     host: "0.0.0.0",
@@ -65,8 +107,6 @@ export default defineConfig({
       clientFiles: [
         "./client/src/main.tsx",
         "./client/src/App.tsx",
-        "./client/src/pages/home.tsx",
-        "./client/src/pages/dashboard.tsx",
         "./client/src/lib/queryClient.ts",
         "./client/src/lib/utils.ts",
       ],

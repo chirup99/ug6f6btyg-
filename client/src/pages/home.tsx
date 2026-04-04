@@ -15,7 +15,7 @@ import { motion, AnimatePresence } from "framer-motion";
 const WatchlistResultTab = lazy(() => import('@/components/WatchlistResultTab').then(m => ({ default: m.WatchlistResultTab })));
 
 
-import { BrokerData } from "@/components/broker-data";
+const BrokerData = lazy(() => import("@/components/broker-data").then(m => ({ default: m.BrokerData })));
 import { useLocation } from "wouter";
 
 import { useToast } from "@/hooks/use-toast";
@@ -23,7 +23,7 @@ import { useToast } from "@/hooks/use-toast";
 import { AuthButtonAngelOne, AngelOneStatus, AngelOneApiStatistics, AngelOneSystemStatus, AngelOneLiveMarketPrices } from "@/components/auth-button-angelone";
 
 import { AuthButtonUpstox } from "@/components/auth-button-upstox";
-import { TradingJournalModal } from "@/components/trading-journal-modal";
+const TradingJournalModal = lazy(() => import("@/components/trading-journal-modal").then(m => ({ default: m.TradingJournalModal })));
 const PaperTradingModal = lazy(() => import("@/components/PaperTradingModal").then(m => ({ default: m.PaperTradingModal })));
 const PaperTradingMobileTab = lazy(() => import("@/components/PaperTradingMobileTab").then(m => ({ default: m.PaperTradingMobileTab })));
 
@@ -40,22 +40,18 @@ const PaperTradingMobileTab = lazy(() => import("@/components/PaperTradingMobile
 
 
 const AdvancedCandlestickChart = lazy(() => import("@/components/advanced-candlestick-chart").then(m => ({ default: m.AdvancedCandlestickChart })));
-import { IndicatorCrossingsDisplay } from "@/components/indicator-crossings-display";
+const IndicatorCrossingsDisplay = lazy(() => import("@/components/indicator-crossings-display").then(m => ({ default: m.IndicatorCrossingsDisplay })));
 const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed").then(m => ({ default: m.default })));
 const TradingMaster = lazy(() => import("@/components/trading-master").then(m => ({ default: m.TradingMaster })));
 const MiniCastTab = lazy(() => import("@/components/MiniCastTab").then(m => ({ default: m.MiniCastTab })));
-import { TradingDashboardTab } from "@/components/TradingDashboardTab";
+const TradingDashboardTab = lazy(() => import("@/components/TradingDashboardTab").then(m => ({ default: m.TradingDashboardTab })));
 
-import {
-
-  MultipleImageUpload,
-  MultipleImageUploadRef,
-} from "@/components/multiple-image-upload";
+import type { MultipleImageUploadRef } from "@/components/multiple-image-upload";
 
 const WorldMap = lazy(() => import("@/components/world-map").then(m => ({ default: m.WorldMap })));
 
-import { NeoFeedPostDialog } from "@/components/NeoFeedPostDialog";
-import { ShareReportTradebookDialog } from "@/components/ShareReportTradebookDialog";
+const NeoFeedPostDialog = lazy(() => import("@/components/NeoFeedPostDialog").then(m => ({ default: m.NeoFeedPostDialog })));
+const ShareReportTradebookDialog = lazy(() => import("@/components/ShareReportTradebookDialog").then(m => ({ default: m.ShareReportTradebookDialog })));
 const ImportPnLDialog = lazy(() => import("@/components/ImportPnLDialog").then(m => ({ default: m.ImportPnLDialog })));
 
 
@@ -66,7 +62,7 @@ import { useCurrentUser } from "@/hooks/useCurrentUser";
 
 import { cognitoSignOut, getCognitoToken, sendEmailVerificationCode, confirmEmailVerification, checkEmailVerified } from "@/cognito";
 
-import { createChart, ColorType, IChartApi, ISeriesApi, CandlestickSeries, LineSeries, HistogramSeries, IPriceLine, createSeriesMarkers } from 'lightweight-charts';
+import type { IChartApi, ISeriesApi, CandlestickSeries, LineSeries, HistogramSeries, IPriceLine } from 'lightweight-charts';
 
 import { ArrowLeft, Banknote, Clock, ExternalLink, Info, Loader2, LogOut, Newspaper, RefreshCw, Save, TrendingUp, Award, Headset, X, Play, Music2, Pencil, CheckCircle, Activity, Bitcoin, Wallet } from "lucide-react";
 
@@ -11987,7 +11983,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             {/* Render content based on active tab */}
 
             {activeTab === 'dashboard' && localStorage.getItem('currentUserEmail') === 'chiranjeevi.perala99@gmail.com' && (
-              <TradingDashboardTab setActiveTab={setActiveTab} />
+              <Suspense fallback={null}>
+                <TradingDashboardTab setActiveTab={setActiveTab} />
+              </Suspense>
             )}
 
             {activeTab === "trading-home" && (
@@ -15926,7 +15924,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>}>
                   <AdvancedCandlestickChart />
                 </Suspense>
-                <IndicatorCrossingsDisplay />
+                <Suspense fallback={null}>
+                  <IndicatorCrossingsDisplay />
+                </Suspense>
               </div>
             )}
 
@@ -16289,6 +16289,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           </div>
         </main>
 
+        <Suspense fallback={null}>
         <BrokerData 
           showOrderModal={showOrderModal} 
           setShowOrderModal={setShowOrderModal}
@@ -16356,6 +16357,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           importDataTextareaRef={importDataTextareaRef} brokerFunds={brokerFunds}
           isDemoMode={isDemoMode}
         />
+        </Suspense>
         {/* Broker Funds Breakup Dialog */}
         <Suspense fallback={null}>
         <ImportPnLDialog
@@ -16457,7 +16459,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           </DialogContent>
         </Dialog>
 
-        <TradingJournalModal open={!!showJournalInfoModal} onOpenChange={setShowJournalInfoModal} isAutoPopup={showJournalInfoModal === "auto"} />
+        <Suspense fallback={null}>
+          <TradingJournalModal open={!!showJournalInfoModal} onOpenChange={setShowJournalInfoModal} isAutoPopup={showJournalInfoModal === "auto"} />
+        </Suspense>
 
 
         {/* Paper Trading (Demo Trading) Modal - Minimalist Design */}
@@ -17043,42 +17047,46 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         )}
 
         {/* Share Tradebook Dialog */}
-        <ShareReportTradebookDialog
-          open={showShareDialog}
-          handleShareDialogClose={handleShareDialogClose}
-          setShowShareDialog={setShowShareDialog}
-          setShareDialogTagHighlight={setShareDialogTagHighlight}
-          shareableUrl={shareableUrl}
-          isCreatingShareableLink={isCreatingShareableLink}
-          handleCreateShareableLink={handleCreateShareableLink}
-          isSharedReportMode={isSharedReportMode}
-          sharedReportData={sharedReportData}
-          currentUser={currentUser}
-          getFilteredHeatmapData={getFilteredHeatmapData}
-          setJournalChartMode={setJournalChartMode}
-          fetchHeatmapChartData={fetchHeatmapChartData}
-          toast={toast}
-        />
+        <Suspense fallback={null}>
+          <ShareReportTradebookDialog
+            open={showShareDialog}
+            handleShareDialogClose={handleShareDialogClose}
+            setShowShareDialog={setShowShareDialog}
+            setShareDialogTagHighlight={setShareDialogTagHighlight}
+            shareableUrl={shareableUrl}
+            isCreatingShareableLink={isCreatingShareableLink}
+            handleCreateShareableLink={handleCreateShareableLink}
+            isSharedReportMode={isSharedReportMode}
+            sharedReportData={sharedReportData}
+            currentUser={currentUser}
+            getFilteredHeatmapData={getFilteredHeatmapData}
+            setJournalChartMode={setJournalChartMode}
+            fetchHeatmapChartData={fetchHeatmapChartData}
+            toast={toast}
+          />
+        </Suspense>
 
-                {/* Post to NeoFeed Composition Dialog */}
-        <NeoFeedPostDialog
-          open={showReportPostDialog}
-          onOpenChange={setShowReportPostDialog}
-          reportPostMode={reportPostMode}
-          setReportPostMode={setReportPostMode}
-          reportPostDescription={reportPostDescription}
-          setReportPostDescription={setReportPostDescription}
-          reportPostSelectedDate={reportPostSelectedDate}
-          setReportPostSelectedDate={setReportPostSelectedDate}
-          rangePostOverrideData={rangePostOverrideData}
-          setRangePostOverrideData={setRangePostOverrideData}
-          tradingDataByDate={tradingDataByDate}
-          getFilteredHeatmapData={getFilteredHeatmapData}
-          currentUser={currentUser}
-          isPostingReport={isPostingReport}
-          setIsPostingReport={setIsPostingReport}
-          isDemoMode={isDemoMode}
-        />
+        {/* Post to NeoFeed Composition Dialog */}
+        <Suspense fallback={null}>
+          <NeoFeedPostDialog
+            open={showReportPostDialog}
+            onOpenChange={setShowReportPostDialog}
+            reportPostMode={reportPostMode}
+            setReportPostMode={setReportPostMode}
+            reportPostDescription={reportPostDescription}
+            setReportPostDescription={setReportPostDescription}
+            reportPostSelectedDate={reportPostSelectedDate}
+            setReportPostSelectedDate={setReportPostSelectedDate}
+            rangePostOverrideData={rangePostOverrideData}
+            setRangePostOverrideData={setRangePostOverrideData}
+            tradingDataByDate={tradingDataByDate}
+            getFilteredHeatmapData={getFilteredHeatmapData}
+            currentUser={currentUser}
+            isPostingReport={isPostingReport}
+            setIsPostingReport={setIsPostingReport}
+            isDemoMode={isDemoMode}
+          />
+        </Suspense>
 
         {/* Brokerage Charges Breakdown Dialog */}
         {/* Journal Charges Dialog */}

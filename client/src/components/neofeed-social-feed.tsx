@@ -5786,8 +5786,17 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
           <div className="relative">
             {(() => {
               const isJournalPost = post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight';
-              const isReportContent = post.content?.trim().toLowerCase().replace(/[-\s]/g, '') === 'tradingreport' || post.content?.trim().toLowerCase() === 'trading-report';
-              if (isJournalPost || isReportContent) return null;
+              const normalised = post.content?.trim().toLowerCase().replace(/[-\s]/g, '') ?? '';
+              // Generic placeholder phrases that are auto-filled when user leaves description blank
+              const isPlaceholder = normalised === 'tradingreport'
+                || normalised === 'sharedmytradingjournal'
+                || normalised === 'sharedmytradingreport'
+                || post.content?.trim().toLowerCase() === 'trading-report'
+                || post.content?.trim().toLowerCase() === 'shared my trading report';
+              // Hide text only when it is a journal post AND the content is just the auto-filled
+              // placeholder — never suppress a description the user actually typed.
+              if (isJournalPost && isPlaceholder) return null;
+              if (!post.content?.trim()) return null;
               return (
             <p 
               className={`text-gray-900 dark:text-white leading-snug mb-1.5 xl:mb-3 text-sm xl:text-base font-medium ${
@@ -5803,7 +5812,7 @@ const PostCard = memo(function PostCard({ post, currentUserUsername, onViewUserP
             })()}
             
             {/* Expand/Collapse button for long text */}
-            {!(post.metadata?.type === 'range_report' || post.metadata?.type === 'trade_insight') && !['trading-report','trading report'].includes(post.content?.trim().toLowerCase()) && post.content.length > MAX_TEXT_LENGTH && (
+            {!['trading-report','trading report','shared my trading report'].includes(post.content?.trim().toLowerCase()) && post.content.length > MAX_TEXT_LENGTH && (
               <button
                 onClick={() => setIsExpanded(!isExpanded)}
                 className="flex items-center gap-1 text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium mt-1 transition-colors"

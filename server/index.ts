@@ -21,7 +21,7 @@ function log(message: string, source = "express") {
 }
 
 // Serve static files in production (inline to avoid vite dependency)
-function serveStatic(app: express.Express) {
+async function serveStatic(app: express.Express) {
   const distPath = path.resolve(process.cwd(), "dist", "public");
 
   if (!fs.existsSync(distPath)) {
@@ -30,10 +30,27 @@ function serveStatic(app: express.Express) {
     );
   }
 
-  app.use(express.static(distPath));
+  // Use express-static-gzip to serve pre-compressed .br (Brotli) and .gz files
+  // This dramatically reduces transfer size for large JS bundles
+  const expressStaticGzip = (await import("express-static-gzip")).default;
+  app.use(expressStaticGzip(distPath, {
+    enableBrotli: true,
+    orderPreference: ["br", "gz"],
+    serveStatic: {
+      // Cache hashed assets for 1 year — safe because filenames change on rebuild
+      setHeaders(res, filePath) {
+        if (filePath.includes("/assets/")) {
+          res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+        } else {
+          res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+        }
+      },
+    },
+  }));
 
   // fall through to index.html if the file doesn't exist
   app.use("*", (_req, res) => {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
     res.sendFile(path.resolve(distPath, "index.html"));
   });
 }
@@ -219,7 +236,7 @@ app.use((req, res, next) => {
     }
   } else {
     try {
-      serveStatic(app);
+      await serveStatic(app);
     } catch (error) {
       console.error('⚠️ Error serving static files:', error);
       console.log('⚠️ API-only mode activated');

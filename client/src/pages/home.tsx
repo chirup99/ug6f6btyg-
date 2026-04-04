@@ -11926,7 +11926,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 text-white">
         {/* Full-width Social Feed - No Sidebar */}
         <main className="h-screen w-full">
-              <Suspense fallback={null}>
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-8 h-8 rounded-full border-2 border-white/10 border-t-white/60 animate-spin" /></div>}>
                 <NeoFeedSocialFeed onBackClick={() => setTabWithAuthCheck("trading-home")} />
               </Suspense>
         </main>
@@ -11962,7 +11962,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   // MiniCast/Tutor tab with full page view
   if (activeTab === "tutor") {
     return (
-      <Suspense fallback={null}>
+      <Suspense fallback={<div className="flex items-center justify-center min-h-screen bg-slate-900"><div className="w-8 h-8 rounded-full border-2 border-violet-500/20 border-t-violet-500 animate-spin" /></div>}>
         <MiniCastTab setActiveTab={setActiveTab} />
       </Suspense>
     );
@@ -15903,7 +15903,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <Suspense fallback={null}>
+                <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-8 h-8 rounded-full border-2 border-indigo-500/20 border-t-indigo-400 animate-spin" /></div>}>
                   <TradingMaster />
                 </Suspense>
               </div>
@@ -15921,7 +15921,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 >
                   <ArrowLeft className="h-6 w-6" />
                 </Button>
-                <Suspense fallback={null}>
+                <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-8 h-8 rounded-full border-2 border-blue-500/20 border-t-blue-400 animate-spin" /></div>}>
                   <AdvancedCandlestickChart />
                 </Suspense>
                 <Suspense fallback={null}>
@@ -15931,7 +15931,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             )}
 
             {activeTab === "journal" && (
-              <Suspense fallback={null}>
+              <Suspense fallback={<div className="flex items-center justify-center h-full"><div className="w-8 h-8 rounded-full border-2 border-emerald-500/20 border-t-emerald-400 animate-spin" /></div>}>
               <JournalTabContent
                 setTabWithAuthCheck={setTabWithAuthCheck}
                 mobileBottomTab={mobileBottomTab}

@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
+import { compression } from "vite-plugin-compression2";
 
 const cdnUrl = process.env.VITE_CDN_URL;
 
@@ -10,6 +11,8 @@ export default defineConfig({
   plugins: [
     react(),
     runtimeErrorOverlay(),
+    compression({ algorithm: "brotliCompress", exclude: [/\.(png|jpg|webp|gif|ico|woff2)$/] }),
+    compression({ algorithm: "gzip", exclude: [/\.(png|jpg|webp|gif|ico|woff2)$/] }),
     ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [

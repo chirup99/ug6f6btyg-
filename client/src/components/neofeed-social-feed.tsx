@@ -7427,22 +7427,19 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
     });
   }, [posts]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const displayedPosts = feedData.slice(0, pageNumber * POSTS_PER_PAGE);
-  const hasMorePosts = displayedPosts.length < feedData.length;
-
   // Infinite scroll observer
   useEffect(() => {
     if (!loaderRef.current) return;
     
     const observer = new IntersectionObserver(entries => {
-      if (entries[0].isIntersecting && !isLoading && !isFetching && posts.length > 0 && hasMorePosts) {
+      if (entries[0].isIntersecting && !isLoading && !isFetching && posts.length > 0) {
         setPageNumber(prev => prev + 1);
       }
     }, { threshold: 0.1 });
     
     observer.observe(loaderRef.current);
     return () => observer.disconnect();
-  }, [isLoading, isFetching, posts.length, hasMorePosts]);
+  }, [isLoading, isFetching, posts.length]);
 
 
   // Check if user has profile (username) when component mounts and fetch real username
@@ -7674,6 +7671,9 @@ function NeoFeedSocialFeedComponent({ onBackClick }: { onBackClick?: () => void 
       return bDate - aDate;
     });
   }, [filteredData]);
+
+  const displayedPosts = feedData.slice(0, pageNumber * POSTS_PER_PAGE);
+  const hasMorePosts = displayedPosts.length < feedData.length;
 
   function formatTimestamp(dateStr: string | Date): string {
     const date = new Date(dateStr);

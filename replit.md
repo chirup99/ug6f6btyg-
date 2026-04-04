@@ -56,8 +56,6 @@ Root cause of Journal tab loading delays was identified and fixed in `client/src
 4. **`quickStatsData`** — Quick Stats Banner ran a 100-line computation loop on every render; now `useMemo`
 5. **`strategyMetrics`** — Strategy Summary Cards IIFE with expensive `Object.values` filter; now `useMemo`
 6. **`riskMetrics`** — Risk Management IIFE re-processed all day data every render; now `useMemo`
-7. **SSE console.log spam** — SSE hot path in `useJournalChartLogic.ts` fired 3 verbose `console.log`s every 700ms (price tick); removed
-
 ## Environment Variables
 Key secrets managed via Replit environment:
 - `ANGEL_ONE_CLIENT_CODE`, `ANGEL_ONE_PIN`, `ANGEL_ONE_API_KEY`, `ANGEL_ONE_TOTP_SECRET`

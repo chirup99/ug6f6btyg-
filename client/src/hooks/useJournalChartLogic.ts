@@ -1135,7 +1135,9 @@ export function useJournalChartLogic(config: JournalChartConfig) {
 
     eventSource.onmessage = (event) => {
       try {
+        console.log("📡 [SSE MESSAGE] Raw data:", event.data.substring(0, 100));
         const liveCandle = JSON.parse(event.data);
+        console.log("💹 [PRICE] LTP:", liveCandle.close, "Open:", liveCandle.open, "Time:", liveCandle.time);
 
         // Update demo trading positions with live price (700ms real-time P&L)
         if (liveCandle.close > 0 && paperPositions.length > 0) {
@@ -1162,7 +1164,9 @@ export function useJournalChartLogic(config: JournalChartConfig) {
 
         // Update chart candlestick - only if chart is initialized
         if (journalCandlestickSeriesRef.current && journalChartRef.current && liveCandle.close > 0) {
+          // 🔶 Convert selected timeframe to seconds (selectedJournalInterval is in minutes)
           const intervalSeconds = parseInt(selectedJournalInterval || "1") * 60;
+          console.log(`⏱️ [INTERVAL] Using ${selectedJournalInterval}min = ${intervalSeconds}s for countdown`);
 
           // Get the last candle from the chart (use ref to avoid triggering re-render)
           const chartData = journalChartDataRef.current;
@@ -1279,12 +1283,22 @@ export function useJournalChartLogic(config: JournalChartConfig) {
               }
             }, 50);
 
+            console.log(`📊 [UPDATE] Same candle interval, OHLC: O${candleOpen} H${candleHigh} L${candleLow} C${candleClose}`);
           } else if (currentCandleStartTime > lastCandleStartTime && isMarketActuallyOpen) {
+            // We've crossed into a new candle interval AND market is open - add new candle
+            console.log("🆕 [NEW CANDLE] New interval detected, adding new candle to chart (market is open)");
+
+            // 🔴 CRITICAL: Use the SAVED final OHLC from the previous candle's last update
+            // NOT the new candle's data!
             const savedOHLC = (window as any).journalLastFinalizedOHLC;
             const prevCandleOpen = savedOHLC?.open || lastChartCandle.open;
             const prevCandleHigh = savedOHLC?.high || lastChartCandle.high;
             const prevCandleLow = savedOHLC?.low || lastChartCandle.low;
             const prevCandleClose = savedOHLC?.close || lastChartCandle.close;
+
+            console.log(
+              `✅ [USING SAVED OHLC] From last update: O${prevCandleOpen} H${prevCandleHigh} L${prevCandleLow} C${prevCandleClose} (NOT from new candle with close: ${liveCandle.close})`
+            );
 
             // 🔴 CRITICAL FIX: For new candle, initialize OHLC properly
             // Don't use live data's OHLC directly (it's just a single price point)

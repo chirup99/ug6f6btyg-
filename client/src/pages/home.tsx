@@ -2558,8 +2558,9 @@ export default function Home() {
     profiles.forEach((profile) => {
       const cacheKey = `${profile.id}_${lang}`;
       if (voiceAudioCacheRef.current[cacheKey]) return; // already cached
+      if (voicePromiseCacheRef.current[cacheKey]) return; // already in-flight
       const text = getGreeting(profile.name);
-      fetch('/api/tts/generate', {
+      const promise = fetch('/api/tts/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ text, language: lang, speaker: profile.id, speed: 1.0, pitch: 1.0 }),
@@ -2571,8 +2572,13 @@ export default function Home() {
           for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
           const audioUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
           voiceAudioCacheRef.current[cacheKey] = audioUrl;
+          delete voicePromiseCacheRef.current[cacheKey];
+          return audioUrl;
         }
-      }).catch(() => {});
+        delete voicePromiseCacheRef.current[cacheKey];
+        return null;
+      }).catch(() => { delete voicePromiseCacheRef.current[cacheKey]; return null; });
+      voicePromiseCacheRef.current[cacheKey] = promise;
     });
 
     if (!silent) {
@@ -2778,6 +2784,8 @@ export default function Home() {
   const [voiceMicroJitter, setVoiceMicroJitter] = useState(3);
   // Use a ref (not state) so cache writes never trigger re-renders
   const voiceAudioCacheRef = useRef<{[key: string]: string}>({});
+  // Tracks in-flight TTS fetches so clicks can await them instead of firing duplicates
+  const voicePromiseCacheRef = useRef<{[key: string]: Promise<string | null>}>({});
   const [voiceLangLoading, setVoiceLangLoading] = useState(false);
   const [voiceLangProgress, setVoiceLangProgress] = useState(0);
   const [showAdminDashboardDialog, setShowAdminDashboardDialog] = useState(false);
@@ -11623,38 +11631,50 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                   return;
                                                 }
                                                 setLoadingVoiceId(profile.id);
-                                                const userName = currentUser?.displayName || currentUser?.name || currentUser?.username || '';
-                                                const greetings: { [key: string]: (p: string, u: string) => string } = {
-                                                  en: (p, u) => u ? `Hello ${u}! I am ${p}. Welcome to Perala! How is your day?` : `Hello! I am ${p}. Welcome to Perala! How is your day?`,
-                                                  hi: (p, u) => u ? `नमस्ते ${u}! मैं ${p} हूँ। पेरला में आपका स्वागत है!` : `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
-                                                  bn: (p, u) => u ? `নমস্কার ${u}! আমি ${p}। পেরলায় আপনাকে স্বাগত!` : `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
-                                                  ta: (p, u) => u ? `வணக்கம் ${u}! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!` : `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
-                                                  te: (p, u) => u ? `నమస్కారం ${u}! నేను ${p}. పెరలాలో మీకు స్వాగతం!` : `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
-                                                  mr: (p, u) => u ? `नमस्कार ${u}! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत!` : `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत!`,
-                                                  gu: (p, u) => u ? `નમસ્તે ${u}! હું ${p} છું. પেরলامां आपनुं स्वागत छे!` : `નમસ્તે! હું ${p} છું. પेरलामां आपनुं स्वागत छे!`,
-                                                  kn: (p, u) => u ? `ನಮಸ್ಕಾರ ${u}! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!` : `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
-                                                  ml: (p, u) => u ? `നമസ്കാരം ${u}! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!` : `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
-                                                };
-                                                const baseText = (greetings[voiceLanguage] || greetings['en'])(profile.name, userName);
                                                 try {
-                                                  const response = await fetch('/api/tts/generate', {
-                                                    method: 'POST',
-                                                    headers: { 'Content-Type': 'application/json' },
-                                                    body: JSON.stringify({ text: baseText, language: voiceLanguage || 'en', speaker: profile.id, speed: voiceRate || 1.0, pitch: voicePitch || 1.0 })
-                                                  });
-                                                  if (response.ok) {
-                                                    const data = await response.json();
-                                                    if (data.audioBase64) {
-                                                      const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-                                                      const binaryString = atob(base64Data);
-                                                      const bytes = new Uint8Array(binaryString.length);
-                                                      for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
-                                                      const audioUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
-                                                      voiceAudioCacheRef.current[cacheKey] = audioUrl;
-                                                      const audio = new Audio(audioUrl);
-                                                      currentAudioRef.current = audio;
-                                                      audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));
-                                                    }
+                                                  let audioUrl: string | null = null;
+                                                  // Prefetch already in-flight — await it instead of firing a duplicate request
+                                                  if (voicePromiseCacheRef.current[cacheKey]) {
+                                                    audioUrl = await voicePromiseCacheRef.current[cacheKey];
+                                                  } else {
+                                                    const userName = currentUser?.displayName || currentUser?.name || currentUser?.username || '';
+                                                    const greetings: { [key: string]: (p: string, u: string) => string } = {
+                                                      en: (p, u) => u ? `Hello ${u}! I am ${p}. Welcome to Perala! How is your day?` : `Hello! I am ${p}. Welcome to Perala! How is your day?`,
+                                                      hi: (p, u) => u ? `नमस्ते ${u}! मैं ${p} हूँ। पेरला में आपका स्वागत है!` : `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
+                                                      bn: (p, u) => u ? `নমস্কার ${u}! আমি ${p}। পেরলায় আপনাকে স্বাগত!` : `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্঵াগত!`,
+                                                      ta: (p, u) => u ? `வணக்கம் ${u}! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!` : `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
+                                                      te: (p, u) => u ? `నమస్కారం ${u}! నేను ${p}. పెరలాలో మీకు స్వాగతం!` : `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
+                                                      mr: (p, u) => u ? `नमस्कार ${u}! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत!` : `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत!`,
+                                                      gu: (p, u) => u ? `નમસ્તે ${u}! હું ${p} છું. પેરલામां आपनुं स्वागत छे!` : `નમસ્તે! હું ${p} છું. પેરલામां आपनुं स्वागत छे!`,
+                                                      kn: (p, u) => u ? `ನಮಸ್ಕಾರ ${u}! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!` : `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+                                                      ml: (p, u) => u ? `നമസ്കാരം ${u}! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!` : `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
+                                                    };
+                                                    const baseText = (greetings[voiceLanguage] || greetings['en'])(profile.name, userName);
+                                                    const freshPromise: Promise<string | null> = fetch('/api/tts/generate', {
+                                                      method: 'POST',
+                                                      headers: { 'Content-Type': 'application/json' },
+                                                      body: JSON.stringify({ text: baseText, language: voiceLanguage || 'en', speaker: profile.id, speed: voiceRate || 1.0, pitch: voicePitch || 1.0 })
+                                                    }).then(r => r.ok ? r.json() : null).then(data => {
+                                                      if (data?.audioBase64) {
+                                                        const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+                                                        const binaryString = atob(base64Data);
+                                                        const bytes = new Uint8Array(binaryString.length);
+                                                        for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                                                        const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+                                                        voiceAudioCacheRef.current[cacheKey] = url;
+                                                        delete voicePromiseCacheRef.current[cacheKey];
+                                                        return url;
+                                                      }
+                                                      delete voicePromiseCacheRef.current[cacheKey];
+                                                      return null;
+                                                    }).catch(() => { delete voicePromiseCacheRef.current[cacheKey]; return null; });
+                                                    voicePromiseCacheRef.current[cacheKey] = freshPromise;
+                                                    audioUrl = await freshPromise;
+                                                  }
+                                                  if (audioUrl) {
+                                                    const audio = new Audio(audioUrl);
+                                                    currentAudioRef.current = audio;
+                                                    audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));
                                                   }
                                                 } catch (error) {
                                                   console.error('🎤 [TTS] Error:', error);
@@ -11884,37 +11904,49 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                             return;
                                           }
                                           setLoadingVoiceId(profile.id);
-                                          const greetings: { [key: string]: (p: string) => string } = {
-                                            en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
-                                            hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
-                                            bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্বাগত!`,
-                                            ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
-                                            te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
-                                            mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत!`,
-                                            gu: (p) => `નમસ્તે! હું ${p} છું. પेरलामां आपनुं स्वागत छे!`,
-                                            kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
-                                            ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
-                                          };
-                                          const text = (greetings[voiceLanguage] || greetings['en'])(profile.name);
                                           try {
-                                            const response = await fetch('/api/tts/generate', {
-                                              method: 'POST',
-                                              headers: { 'Content-Type': 'application/json' },
-                                              body: JSON.stringify({ text, language: voiceLanguage || 'en', speaker: profile.id, speed: voiceRate || 1.0, pitch: voicePitch || 1.0 })
-                                            });
-                                            if (response.ok) {
-                                              const data = await response.json();
-                                              if (data.audioBase64) {
-                                                const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
-                                                const binaryString = atob(base64Data);
-                                                const bytes = new Uint8Array(binaryString.length);
-                                                for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
-                                                const audioUrl = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
-                                                voiceAudioCacheRef.current[cacheKey] = audioUrl;
-                                                const audio = new Audio(audioUrl);
-                                                currentAudioRef.current = audio;
-                                                audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));
-                                              }
+                                            let audioUrl: string | null = null;
+                                            // Prefetch already in-flight — await it instead of firing a duplicate request
+                                            if (voicePromiseCacheRef.current[cacheKey]) {
+                                              audioUrl = await voicePromiseCacheRef.current[cacheKey];
+                                            } else {
+                                              const greetings: { [key: string]: (p: string) => string } = {
+                                                en: (p) => `Hello! I am ${p}. Welcome to Perala!`,
+                                                hi: (p) => `नमस्ते! मैं ${p} हूँ। पेरला में आपका स्वागत है!`,
+                                                bn: (p) => `নমস্কার! আমি ${p}। পেরলায় আপনাকে স্঵াগত!`,
+                                                ta: (p) => `வணக்கம்! நான் ${p}. பெரலாவில் உங்களை வரவேற்கிறோம்!`,
+                                                te: (p) => `నమస్కారం! నేను ${p}. పెరలాలో మీకు స్వాగతం!`,
+                                                mr: (p) => `नमस्कार! मी ${p} आहे. पेरलामध्ये तुमचे स्वागत!`,
+                                                gu: (p) => `નમસ્તે! હું ${p} છું. પેરલામां आपनुं स्वागत छे!`,
+                                                kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
+                                                ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
+                                              };
+                                              const text = (greetings[voiceLanguage] || greetings['en'])(profile.name);
+                                              const freshPromise: Promise<string | null> = fetch('/api/tts/generate', {
+                                                method: 'POST',
+                                                headers: { 'Content-Type': 'application/json' },
+                                                body: JSON.stringify({ text, language: voiceLanguage || 'en', speaker: profile.id, speed: voiceRate || 1.0, pitch: voicePitch || 1.0 })
+                                              }).then(r => r.ok ? r.json() : null).then(data => {
+                                                if (data?.audioBase64) {
+                                                  const base64Data = data.audioBase64.replace(/^data:audio\/\w+;base64,/, '');
+                                                  const binaryString = atob(base64Data);
+                                                  const bytes = new Uint8Array(binaryString.length);
+                                                  for (let i = 0; i < binaryString.length; i++) { bytes[i] = binaryString.charCodeAt(i); }
+                                                  const url = URL.createObjectURL(new Blob([bytes], { type: 'audio/mpeg' }));
+                                                  voiceAudioCacheRef.current[cacheKey] = url;
+                                                  delete voicePromiseCacheRef.current[cacheKey];
+                                                  return url;
+                                                }
+                                                delete voicePromiseCacheRef.current[cacheKey];
+                                                return null;
+                                              }).catch(() => { delete voicePromiseCacheRef.current[cacheKey]; return null; });
+                                              voicePromiseCacheRef.current[cacheKey] = freshPromise;
+                                              audioUrl = await freshPromise;
+                                            }
+                                            if (audioUrl) {
+                                              const audio = new Audio(audioUrl);
+                                              currentAudioRef.current = audio;
+                                              audio.play().catch(err => console.error('🎤 [TTS] Audio play error:', err));
                                             }
                                           } catch (error) {
                                             console.error('🎤 [TTS] Error:', error);

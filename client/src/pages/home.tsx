@@ -41,7 +41,7 @@ const PaperTradingMobileTab = lazy(() => import("@/components/PaperTradingMobile
 
 const AdvancedCandlestickChart = lazy(() => import("@/components/advanced-candlestick-chart").then(m => ({ default: m.AdvancedCandlestickChart })));
 const IndicatorCrossingsDisplay = lazy(() => import("@/components/indicator-crossings-display").then(m => ({ default: m.IndicatorCrossingsDisplay })));
-const NeoFeedSocialFeed = lazy(() => import("@/components/neofeed-social-feed").then(m => ({ default: m.default })));
+import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
 const TradingMaster = lazy(() => import("@/components/trading-master").then(m => ({ default: m.TradingMaster })));
 const MiniCastTab = lazy(() => import("@/components/MiniCastTab").then(m => ({ default: m.MiniCastTab })));
 const TradingDashboardTab = lazy(() => import("@/components/TradingDashboardTab").then(m => ({ default: m.TradingDashboardTab })));

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback, memo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Radio, Play, Pause, Heart, MessageCircle, Share, MoreVertical, Trash2, Loader2 } from 'lucide-react';
+import { Radio, Play, Pause, Heart, MessageCircle, Share, MoreVertical, Trash2, Loader2, Send, X } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,9 +11,22 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient, useQuery, useMutation } from '@tanstack/react-query';
 import { getCognitoToken } from '@/cognito';
 import { ttsUtils } from '@/lib/tts-utils';
+
+function formatAudioCommentTs(dateStr: string): string {
+  if (!dateStr) return '';
+  try {
+    const d = new Date(dateStr);
+    const now = new Date();
+    const diff = (now.getTime() - d.getTime()) / 1000;
+    if (diff < 60) return 'just now';
+    if (diff < 3600) return `${Math.floor(diff / 60)}m`;
+    if (diff < 86400) return `${Math.floor(diff / 3600)}h`;
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch { return ''; }
+}
 
 interface SelectedPost {
   id: string | number;
@@ -65,6 +78,11 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
   const [isLiking, setIsLiking] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showComments, setShowComments] = useState(false);
+  const [commentText, setCommentText] = useState('');
+  const [replyingTo, setReplyingTo] = useState<string | null>(null);
+  const commentInputRef = useRef<HTMLInputElement>(null);
+  const currentUsername = localStorage.getItem('currentUsername') || '';
 
   useEffect(() => {
     setLocalLiked(isLiked);
@@ -460,6 +478,76 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
       }
     }
   }
+
+  const { data: audioComments = [] } = useQuery<any[]>({
+    queryKey: [`/api/social-posts/${postId}/comments`],
+    queryFn: () => fetch(`/api/social-posts/${postId}/comments`).then(r => r.json()),
+    enabled: showComments && !!postId,
+    staleTime: 30000,
+  });
+
+  const addCommentMutation = useMutation({
+    mutationFn: async (content: string) => {
+      const username = localStorage.getItem('currentUsername') || 'anonymous';
+      const displayName = localStorage.getItem('currentDisplayName') || username;
+      const response = await fetch(`/api/social-posts/${postId}/comments/aws`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content, authorUsername: username, authorDisplayName: displayName, authorAvatar: null }),
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to add comment');
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/social-posts/${postId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
+      setCommentText('');
+      setReplyingTo(null);
+    },
+    onError: (error: any) => {
+      toast({ description: error.message || 'Failed to add comment', variant: 'destructive' });
+    },
+  });
+
+  const deleteCommentMutation = useMutation({
+    mutationFn: async (commentId: string) => {
+      const username = localStorage.getItem('currentUsername') || '';
+      const response = await fetch(`/api/comments/${commentId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authorUsername: username }),
+      });
+      if (!response.ok) throw new Error('Failed to delete');
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [`/api/social-posts/${postId}/comments`] });
+      queryClient.invalidateQueries({ queryKey: ['/api/social-posts'] });
+    },
+    onError: () => {
+      toast({ description: 'Failed to delete comment', variant: 'destructive' });
+    },
+  });
+
+  const handleCommentSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (commentText.trim()) {
+      addCommentMutation.mutate(commentText.trim());
+    }
+  };
+
+  const startAudioReply = (username: string) => {
+    setReplyingTo(username);
+    setCommentText(`@${username} `);
+    setTimeout(() => {
+      commentInputRef.current?.focus();
+      const len = username.length + 2;
+      commentInputRef.current?.setSelectionRange(len, len);
+    }, 0);
+  };
 
   const handleLike = async () => {
     if (!postId || isLiking) return;
@@ -880,11 +968,12 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
           <Button
             variant="ghost"
             size="sm"
-            className="text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20"
+            onClick={() => setShowComments(v => !v)}
+            className={`${showComments ? 'text-blue-500 bg-blue-50 dark:bg-blue-900/20' : 'text-gray-500 hover:text-blue-500 hover:bg-blue-50 dark:hover:bg-blue-900/20'}`}
             data-testid="button-comment-audio"
           >
             <MessageCircle className="h-5 w-5 mr-1" />
-            <span className="text-sm">{comments}</span>
+            <span className="text-sm">{audioComments.length || comments}</span>
           </Button>
 
           <Button
@@ -912,6 +1001,108 @@ export const AudioMinicastCard = memo(function AudioMinicastCard({
             <Share className="h-5 w-5" />
           </Button>
         </div>
+
+        {/* Inline Comment Section */}
+        {showComments && (
+          <div className="border-t border-gray-200 dark:border-zinc-800 px-4 py-3" data-testid={`comment-section-audio-${postId}`}>
+            {/* Comments list */}
+            <div className="mb-3 space-y-1.5 overflow-y-auto" style={{ minHeight: '60px', maxHeight: '200px' }}>
+              {audioComments.length === 0 && (
+                <div className="flex items-center justify-center h-14 text-xs text-gray-400 dark:text-gray-500">No comments yet. Be the first!</div>
+              )}
+              {audioComments.map((c: any) => {
+                const commentId = c.id || c.commentId;
+                const isOwn = currentUsername && c.authorUsername === currentUsername;
+                return (
+                  <div key={commentId} className="flex items-start gap-1.5 group">
+                    <div className="w-6 h-6 rounded-full bg-gray-200 dark:bg-gray-700 flex-shrink-0 flex items-center justify-center overflow-hidden mt-0.5">
+                      {c.authorAvatar && !c.authorAvatar.includes('ui-avatars.com') ? (
+                        <img src={c.authorAvatar} alt="" className="w-full h-full object-cover" />
+                      ) : (
+                        <span className="text-[9px] font-bold text-gray-500 dark:text-gray-400 uppercase">
+                          {(c.authorDisplayName || c.authorUsername || '?')[0]}
+                        </span>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="bg-gray-100 dark:bg-gray-800 rounded-2xl px-2.5 py-1.5">
+                        <span className="text-[11px] font-semibold text-gray-800 dark:text-gray-200 mr-1">
+                          {c.authorDisplayName || c.authorUsername}
+                        </span>
+                        <span className="text-[11px] text-gray-700 dark:text-gray-300 break-words">{c.content}</span>
+                      </div>
+                      <div className="flex items-center gap-2 ml-2 mt-0.5">
+                        <span className="text-[10px] text-gray-400 dark:text-gray-500">{formatAudioCommentTs(c.createdAt)}</span>
+                        <button
+                          type="button"
+                          onClick={() => startAudioReply(c.authorUsername)}
+                          className="text-[10px] font-semibold text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                          data-testid={`button-reply-audio-comment-${commentId}`}
+                        >
+                          Reply
+                        </button>
+                      </div>
+                    </div>
+                    {isOwn && (
+                      <button
+                        onClick={() => deleteCommentMutation.mutate(commentId)}
+                        disabled={deleteCommentMutation.isPending}
+                        className="opacity-0 group-hover:opacity-100 text-gray-400 hover:text-red-500 transition-all flex-shrink-0 mt-1.5 p-0.5"
+                        data-testid={`button-delete-audio-comment-${commentId}`}
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Reply chip */}
+            {replyingTo && (
+              <div className="flex items-center gap-1.5 mb-1">
+                <span className="text-[10px] text-gray-400 dark:text-gray-500">Replying to</span>
+                <span className="text-[10px] font-semibold text-blue-500 dark:text-blue-400">@{replyingTo}</span>
+                <button
+                  type="button"
+                  onClick={() => { setReplyingTo(null); setCommentText(''); }}
+                  className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                  data-testid="button-cancel-audio-reply"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </div>
+            )}
+
+            {/* Add comment form */}
+            <form onSubmit={handleCommentSubmit} className="flex items-center gap-1.5">
+              <input
+                ref={commentInputRef}
+                placeholder={replyingTo ? `Reply to @${replyingTo}…` : 'Add a comment…'}
+                value={commentText}
+                onChange={e => setCommentText(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); if (commentText.trim()) addCommentMutation.mutate(commentText.trim()); }
+                }}
+                className="flex-1 h-7 text-xs bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-full px-3 outline-none focus:border-blue-400 dark:focus:border-blue-500 text-gray-800 dark:text-gray-200 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                disabled={addCommentMutation.isPending}
+                data-testid={`input-comment-audio-${postId}`}
+              />
+              <button
+                type="submit"
+                disabled={!commentText.trim() || addCommentMutation.isPending}
+                className="h-7 w-7 flex-shrink-0 rounded-full bg-blue-500 hover:bg-blue-600 text-white disabled:opacity-30 flex items-center justify-center transition-colors"
+                data-testid={`button-submit-comment-audio-${postId}`}
+              >
+                {addCommentMutation.isPending ? (
+                  <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white" />
+                ) : (
+                  <Send className="h-3 w-3" />
+                )}
+              </button>
+            </form>
+          </div>
+        )}
 
         {/* Delete Confirmation Dialog */}
         <Dialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>

@@ -6072,7 +6072,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     setIsZerodhaDialogOpen(true);
   };
 
-  const submitZerodhaCredentials = () => {
+  const submitZerodhaCredentials = async () => {
     if (!zerodhaApiKeyInput || !zerodhaApiSecretInput) {
       toast({
         title: "Error",
@@ -6085,10 +6085,19 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     localStorage.setItem("zerodha_api_key", zerodhaApiKeyInput);
     localStorage.setItem("zerodha_api_secret", zerodhaApiSecretInput);
 
-    // Build login URL directly — no backend round-trip needed, opens popup instantly
-    const loginUrl = `https://kite.zerodha.com/connect/login?v=3&api_key=${encodeURIComponent(zerodhaApiKeyInput)}`;
-
+    // Close dialog immediately for instant UI feedback
     setIsZerodhaDialogOpen(false);
+
+    // Save credentials server-side (sets cookies for the OAuth callback to use)
+    // This is a simple cookie-set operation — completes in milliseconds
+    try {
+      await fetch(`/api/zerodha/login-url?api_key=${encodeURIComponent(zerodhaApiKeyInput)}&api_secret=${encodeURIComponent(zerodhaApiSecretInput)}`);
+    } catch {
+      // Continue anyway — credentials are in localStorage as fallback
+    }
+
+    // Open popup with login URL directly constructed — no extra fetch needed
+    const loginUrl = `https://kite.zerodha.com/connect/login?v=3&api_key=${encodeURIComponent(zerodhaApiKeyInput)}`;
 
     const popup = window.open(
       loginUrl,
@@ -6104,10 +6113,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       });
       return;
     }
-
-    // Save credentials to server in background so the callback can exchange the token
-    fetch(`/api/zerodha/login-url?api_key=${encodeURIComponent(zerodhaApiKeyInput)}&api_secret=${encodeURIComponent(zerodhaApiSecretInput)}`)
-      .catch(() => {});
 
     const monitorPopup = setInterval(() => {
       if (popup.closed) {

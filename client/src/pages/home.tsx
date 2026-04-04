@@ -6096,29 +6096,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Continue anyway — credentials are in localStorage as fallback
     }
 
-    // Open popup with login URL directly constructed — no extra fetch needed
+    // Navigate to Zerodha login in the main browser window
     const loginUrl = `https://kite.zerodha.com/connect/login?v=3&api_key=${encodeURIComponent(zerodhaApiKeyInput)}`;
-
-    const popup = window.open(
-      loginUrl,
-      'zerodha_oauth',
-      'width=600,height=800,resizable=yes,scrollbars=yes'
-    );
-
-    if (!popup) {
-      toast({
-        title: "Popup Blocked",
-        description: "Please allow popups for this site and try again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const monitorPopup = setInterval(() => {
-      if (popup.closed) {
-        clearInterval(monitorPopup);
-      }
-    }, 500);
+    window.location.href = loginUrl;
   };
 
   const handleUpstoxConnect = async () => {

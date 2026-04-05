@@ -202,9 +202,6 @@ export function ImportPnLDialog({
               className="h-8 text-xs bg-white border-gray-200 text-gray-700 file:text-gray-500 file:bg-gray-100 file:border-0 file:text-xs file:px-2 file:py-1 file:rounded file:mr-2 hover:border-gray-300 transition-colors"
               data-testid="input-csv-upload"
             />
-            <p className="text-[11px] text-gray-400 font-mono">
-              Zerodha · Upstox · Angel One · Dhan · Fyers · Groww
-            </p>
           </div>
 
           {/* Divider */}

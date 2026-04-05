@@ -34,6 +34,12 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 
+// Eager prefetch: start downloading home.js immediately when this module runs
+// (before any route matching), so by the time the route renders, the chunk
+// is already in-flight or cached. Eliminates the lazy-import waterfall.
+if (typeof window !== 'undefined') {
+  import("@/pages/home");
+}
 const Dashboard = lazy(() => import("@/pages/home"));
 const Landing = lazy(() => import("@/pages/landing"));
 const PrivacyPolicy = lazy(() => import("@/pages/privacy"));

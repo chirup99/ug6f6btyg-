@@ -899,7 +899,7 @@ function ShareModal({ isOpen, onClose, post }: { isOpen: boolean; onClose: () =>
   const winRate: number = meta?.winRate ?? 0;
   const chartData: number[] = Array.isArray(meta?.chartData) ? meta.chartData : [];
   const isProfit = pnl >= 0;
-  const pnlSign = isProfit ? '+' : '';
+  const pnlSign = isProfit ? '+' : '-';
   const pnlColor = isProfit ? 'text-emerald-500' : 'text-red-500';
   const authorName = post.authorDisplayName || post.authorUsername || 'Trader';
   const handle = post.authorUsername ? `@${post.authorUsername}` : '';

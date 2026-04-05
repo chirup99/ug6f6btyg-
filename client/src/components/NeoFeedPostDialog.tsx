@@ -120,6 +120,10 @@ export function NeoFeedPostDialog({
           type: 'trade_insight',
           date: dateKey,
           dateLabel: formattedDate,
+          pnl: totalPnL,
+          trades: totalTrades,
+          winRate: Math.round(winRate),
+          chartData,
         };
       } else if (reportPostMode === 'range') {
         const filteredData = rangePostOverrideData || getFilteredHeatmapData();
@@ -164,6 +168,10 @@ export function NeoFeedPostDialog({
           fromDate: dates[0] || '',
           toDate: dates[dates.length - 1] || '',
           dateCount: dates.length,
+          pnl: totalPnL,
+          trades: totalTrades,
+          winRate: Math.round(winRate),
+          chartData: trendData,
         };
       }
 

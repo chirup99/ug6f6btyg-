@@ -14004,6 +14004,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         </div>
                       </Button> */}
 
+                        {isPrimaryOwner && (
                         <Button
                           variant="secondary"
                           className="bg-cyan-600 hover:bg-cyan-700  text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200"
@@ -14037,6 +14038,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             <span>Watchlist</span>
                           </div>
                         </Button>
+                        )}
 
                         <Button
                           variant="secondary"
@@ -14065,7 +14067,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         >
                           <div className="flex items-center gap-2">
                             <User className="h-3 w-3" />
-                            <span>Social Feed</span>
+                            <span>Feed Report</span>
                           </div>
                         </Button>
 
@@ -14085,10 +14087,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                         >
                           <div className="flex items-center gap-2">
                             <FileText className="h-3 w-3" />
-                            <span>Trading Journal</span>
+                            <span>Journal Report</span>
                           </div>
                         </Button>
 
+                        {isPrimaryOwner && (
                         <Button
                           variant="secondary"
                           className="bg-red-600 hover:bg-red-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200"
@@ -14109,6 +14112,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             <span>Trade Challenge</span>
                           </div>
                         </Button>
+                        )}
 
 
                         {/* <Button
@@ -14290,6 +14294,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             className="mt-2 flex gap-2 overflow-x-auto scrollbar-hide pb-2 relative z-50"
                             style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
                           >
+                            {isPrimaryOwner && (
                             <Button
                               variant="secondary"
                               className="hidden md:flex bg-cyan-600 hover:bg-cyan-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
@@ -14322,6 +14327,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 <span>Watchlist</span>
                               </div>
                             </Button>
+                            )}
 
                             <Button
                               variant="secondary"
@@ -14350,7 +14356,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             >
                               <div className="flex items-center gap-1">
                                 <User className="h-3 w-3" />
-                                <span>Social Feed</span>
+                                <span>Feed Report</span>
                               </div>
                             </Button>
 
@@ -14370,10 +14376,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             >
                               <div className="flex items-center gap-1">
                                 <FileText className="h-3 w-3" />
-                                <span>Trading Journal</span>
+                                <span>Journal Report</span>
                               </div>
                             </Button>
 
+                            {isPrimaryOwner && (
                             <Button
                               variant="secondary"
                               className="bg-orange-600 hover:bg-orange-700 text-white border-0 h-7 px-2 rounded-full text-xs font-medium transition-all duration-200 whitespace-nowrap flex-shrink-0"
@@ -14394,6 +14401,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 <span>Trade Challenge</span>
                               </div>
                             </Button>
+                            )}
                           </div>
 
                           {/* Mobile AI Search Results - suppressed for all tabs; desktop layout is used on all screen sizes */}

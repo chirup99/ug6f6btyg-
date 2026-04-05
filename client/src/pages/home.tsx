@@ -3034,17 +3034,27 @@ function MarketNewsResultTab({
       ) : (
         <div className="divide-y divide-gray-800/60 max-h-[50vh] md:max-h-[640px] overflow-y-auto">
           {newsItems.map((item, index) => {
-            const stockData = !isAllMode ? newsStockPrices[(item as any).symbol] : null;
-            const isUp = stockData ? stockData.change >= 0 : null;
-            const sparkColor = isUp === true ? '#22c55e' : isUp === false ? '#ef4444' : '#6b7280';
-            const rawPts = stockData?.chartData ?? [];
             const sym = (item as any).symbol as string;
-            const effectivePts = rawPts.length >= 2 ? rawPts : (fallbackChartData[sym] ?? []);
+            const stockData = !isAllMode ? newsStockPrices[sym] : null;
+            const rawPts = stockData?.chartData ?? [];
+            const fallbackPts = fallbackChartData[sym] ?? [];
+            const effectivePts = rawPts.length >= 2 ? rawPts : fallbackPts;
+
+            // When main price API has no data, derive price/change from fallback chart
+            const displayData = stockData ?? ((!isAllMode && effectivePts.length >= 2) ? (() => {
+              const first = effectivePts[0].price;
+              const last = effectivePts[effectivePts.length - 1].price;
+              const change = last - first;
+              return { price: last, change, changePercent: first > 0 ? (change / first) * 100 : 0, currency: 'INR' as const };
+            })() : null);
+
+            const isUp = displayData ? displayData.change >= 0 : null;
+            const sparkColor = isUp === true ? '#22c55e' : isUp === false ? '#ef4444' : '#6b7280';
             let sparkPath = '';
             if (effectivePts.length >= 2) {
               const prices = effectivePts.map((p: any) => p.price);
               const mn = Math.min(...prices), mx = Math.max(...prices);
-              const rng = mx - mn || (stockData?.price ?? 1) * 0.001 || 1;
+              const rng = mx - mn || (displayData?.price ?? 1) * 0.001 || 1;
               const W = 56, H = 22;
               sparkPath = prices.map((p: number, i: number) => {
                 const x = (i / (prices.length - 1)) * W;
@@ -3069,15 +3079,15 @@ function MarketNewsResultTab({
                 </div>
                 {!isAllMode && (
                   <div className="flex items-center gap-2 pl-0.5">
-                    {stockData ? (
+                    {displayData ? (
                       <>
                         <span className="text-gray-300 text-xs font-mono">
-                          {stockData.currency === 'USD'
-                            ? `$${stockData.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
-                            : `₹${stockData.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
+                          {displayData.currency === 'USD'
+                            ? `$${displayData.price.toLocaleString('en-US', { maximumFractionDigits: 2 })}`
+                            : `₹${displayData.price.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`}
                         </span>
                         <span className={`text-xs font-medium ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-                          {isUp ? '▲' : '▼'} {Math.abs(stockData.changePercent).toFixed(2)}%
+                          {isUp ? '▲' : '▼'} {Math.abs(displayData.changePercent).toFixed(2)}%
                         </span>
                         {sparkPath && (
                           <svg width="56" height="22" viewBox="0 0 56 22" className="shrink-0">

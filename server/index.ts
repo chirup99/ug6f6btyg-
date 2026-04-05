@@ -214,6 +214,27 @@ app.use((req, res, next) => {
 });
 
 (async () => {
+  // ── Route-level response caching ──────────────────────────────────────────
+  // Applied BEFORE registerRoutes so they intercept the route handlers.
+  // Cache-Miss: passes through and captures res.json to store result.
+  // Cache-Hit:  returns immediately with X-Cache: HIT header.
+
+  // Market data — refreshes every 60 seconds (fast-moving but not tick-level)
+  app.use('/api/market-indices',       apiCache(60));
+  app.use('/api/market-gainers-losers', apiCache(30));
+  app.use('/api/market-status',        apiCache(60));
+  app.use('/api/region-market-data',   apiCache(60));
+
+  // News — refreshes every 5 minutes (doesn't change frequently)
+  app.use('/api/general-market-news',  apiCache(300));
+  app.use('/api/stock-news',           apiCache(300));
+  app.use('/api/news-stock-prices',    apiCache(120));
+  app.use('/api/intelligent/news',     apiCache(300));
+  app.use('/api/intelligent/market-trends', apiCache(120));
+
+  // AI analysis — expensive; cache for 2 minutes per symbol
+  app.use('/api/stock-analysis',       apiCache(120));
+
   // Try to register routes, but don't crash if it fails
   let server;
   try {

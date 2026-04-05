@@ -49,6 +49,7 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, "dist/public"),
     emptyOutDir: true,
     assetsDir: "assets",
+    manifest: true,
     rollupOptions: {
       output: {
         manualChunks(id) {

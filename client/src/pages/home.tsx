@@ -8844,6 +8844,29 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     return items;
   }, [watchlistSymbols, allMarketNewsItems, nifty50NewsItems, marketNewsItems]);
 
+  // Journal summary stats for authenticated users — shown on the flashbar Journal item
+  const journalFlashStats = useMemo(() => {
+    const userId = localStorage.getItem('currentUserId');
+    const userEmail = localStorage.getItem('currentUserEmail');
+    const isAuth = userId && userEmail && userId !== 'null' && userEmail !== 'null';
+    if (!isAuth) return null;
+    const dates = Object.keys(tradingDataByDate).sort();
+    if (dates.length === 0) return null;
+    let totalPnL = 0, totalTrades = 0, winningTrades = 0;
+    dates.forEach(dateKey => {
+      const dayData = tradingDataByDate[dateKey];
+      const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+      if (metrics) {
+        totalPnL += metrics.netPnL || 0;
+        totalTrades += metrics.totalTrades || 0;
+        winningTrades += metrics.winningTrades || 0;
+      }
+    });
+    if (totalTrades === 0) return null;
+    const winRate = (winningTrades / totalTrades) * 100;
+    return { totalPnL, totalTrades, winRate, tradingDays: dates.length };
+  }, [tradingDataByDate]);
+
   useEffect(() => {
     if (flashBarItems.length <= 1) return;
     const id = setInterval(() => {
@@ -12760,7 +12783,27 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 className="flex-1 min-w-0 flex items-center gap-2 transition-opacity duration-200 overflow-hidden"
                                 style={{ opacity: flashBarVisible ? 1 : 0 }}
                               >
-                                {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
+                                {item.category === 'Journal' && journalFlashStats ? (() => {
+                                  const { totalPnL, totalTrades, winRate, tradingDays } = journalFlashStats;
+                                  const isPositive = totalPnL >= 0;
+                                  return (
+                                    <>
+                                      <span className="text-sm font-semibold text-gray-100 flex-shrink-0">Journal</span>
+                                      <span className={`text-sm font-bold flex-shrink-0 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                                        {isPositive ? '+' : ''}₹{Math.abs(totalPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                      </span>
+                                      <span className={`text-[11px] flex-shrink-0 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                                        P&L
+                                      </span>
+                                      <span className="flex-shrink-0 w-px h-3 bg-gray-700 mx-0.5" />
+                                      <span className="text-[11px] text-gray-400 flex-shrink-0">{totalTrades} trades</span>
+                                      <span className="flex-shrink-0 w-px h-3 bg-gray-700 mx-0.5" />
+                                      <span className="text-[11px] text-gray-400 flex-shrink-0">{winRate.toFixed(0)}% win</span>
+                                      <span className="flex-shrink-0 w-px h-3 bg-gray-700 mx-0.5" />
+                                      <span className="text-[11px] text-gray-500 flex-shrink-0">{tradingDays}d</span>
+                                    </>
+                                  );
+                                })() : item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
                                   const sd = newsStockPrices[item.symbol];
                                   const sym = item.symbol;
                                   const isUp = sd.changePercent >= 0;
@@ -14166,7 +14209,22 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   className="flex-1 min-w-0 flex items-center gap-2 transition-opacity duration-200 overflow-hidden"
                                   style={{ opacity: flashBarVisible ? 1 : 0 }}
                                 >
-                                  {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
+                                  {item.category === 'Journal' && journalFlashStats ? (() => {
+                                    const { totalPnL, totalTrades, winRate, tradingDays } = journalFlashStats;
+                                    const isPositive = totalPnL >= 0;
+                                    return (
+                                      <>
+                                        <span className="text-[11px] font-semibold text-gray-200 flex-shrink-0">Journal</span>
+                                        <span className={`text-[11px] font-bold flex-shrink-0 ${isPositive ? 'text-green-400' : 'text-red-400'}`}>
+                                          {isPositive ? '+' : ''}₹{Math.abs(totalPnL).toLocaleString('en-IN', { maximumFractionDigits: 0 })}
+                                        </span>
+                                        <span className="flex-shrink-0 w-px h-3 bg-gray-700 mx-0.5" />
+                                        <span className="text-[10px] text-gray-400 flex-shrink-0">{totalTrades}T</span>
+                                        <span className="flex-shrink-0 w-px h-3 bg-gray-700 mx-0.5" />
+                                        <span className="text-[10px] text-gray-400 flex-shrink-0">{winRate.toFixed(0)}%W</span>
+                                      </>
+                                    );
+                                  })() : item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
                                     const sd = newsStockPrices[item.symbol];
                                     const sym = item.symbol;
                                     const isUp = sd.changePercent >= 0;

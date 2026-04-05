@@ -3008,13 +3008,9 @@ function MarketNewsResultTab({
             const isUp = stockData ? stockData.change >= 0 : null;
             const sparkColor = isUp === true ? '#22c55e' : isUp === false ? '#ef4444' : '#6b7280';
             const rawPts = stockData?.chartData ?? [];
-            const effectivePts = rawPts.length >= 2 ? rawPts : (stockData ? [
-              { price: Math.max(0.01, stockData.price - stockData.change), time: '09:15' },
-              { price: stockData.price, time: '15:30' }
-            ] : []);
             let sparkPath = '';
-            if (effectivePts.length >= 2) {
-              const prices = effectivePts.map((p: any) => p.price);
+            if (rawPts.length >= 2) {
+              const prices = rawPts.map((p: any) => p.price);
               const mn = Math.min(...prices), mx = Math.max(...prices);
               const rng = mx - mn || stockData!.price * 0.001 || 1;
               const W = 56, H = 22;

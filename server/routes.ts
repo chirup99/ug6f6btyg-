@@ -20951,5 +20951,247 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ─── Open Graph: SVG card image for social sharing ───────────────────────
+  app.get('/api/og/image/:postId', async (req, res) => {
+    try {
+      const { postId } = req.params;
+      let post: any = null;
+
+      try {
+        const doc = await db.collection('user_posts').doc(postId).get();
+        if (doc.exists) post = { id: doc.id, ...doc.data() };
+      } catch { /* ignore */ }
+
+      const content: string = post?.content || 'Check out this trade post on NeoFeed';
+      const author: string = post?.authorDisplayName || post?.authorUsername || 'Trader';
+      const handle: string = post?.authorUsername ? `@${post.authorUsername}` : '@neofeed';
+      const meta: any = post?.metadata || {};
+      const isRange = meta?.type === 'range_report' || meta?.type === 'trade_insight';
+      const pnl: number = meta?.pnl ?? 0;
+      const trades: number = meta?.trades ?? 0;
+      const winRate: number = meta?.winRate ?? 0;
+      const chartData: number[] = Array.isArray(meta?.chartData) ? meta.chartData : [];
+      const isProfit = pnl >= 0;
+      const pnlColor = isProfit ? '#10b981' : '#ef4444';
+      const pnlSign = isProfit ? '+' : '';
+
+      // Truncate content for display
+      const shortContent = content.length > 120 ? content.substring(0, 120) + '…' : content;
+      // Wrap content into lines of ~55 chars each for SVG text
+      const wrapText = (text: string, maxLen: number): string[] => {
+        const words = text.split(' ');
+        const lines: string[] = [];
+        let cur = '';
+        for (const w of words) {
+          if ((cur + ' ' + w).trim().length <= maxLen) {
+            cur = (cur + ' ' + w).trim();
+          } else {
+            if (cur) lines.push(cur);
+            cur = w;
+          }
+        }
+        if (cur) lines.push(cur);
+        return lines.slice(0, 3);
+      };
+      const contentLines = wrapText(shortContent, 55);
+
+      // Build P&L chart path
+      let chartPath = '';
+      let areaPath = '';
+      if (chartData.length > 1) {
+        const cW = 460, cH = 100;
+        const minV = Math.min(...chartData, 0);
+        const maxV = Math.max(...chartData, 0);
+        const range = maxV - minV || 1;
+        const pts = chartData.map((v, i) => ({
+          x: (i / (chartData.length - 1)) * cW,
+          y: cH - ((v - minV) / range) * cH * 0.9 - cH * 0.05,
+        }));
+        const lineParts = pts.reduce((d, pt, i) => {
+          if (i === 0) return `M ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+          const prev = pts[i - 1];
+          const pp = i >= 2 ? pts[i - 2] : prev;
+          const nx = i < pts.length - 1 ? pts[i + 1] : pt;
+          const cp1x = prev.x + (pt.x - pp.x) / 5;
+          const cp1y = prev.y + (pt.y - pp.y) / 5;
+          const cp2x = pt.x - (nx.x - prev.x) / 5;
+          const cp2y = pt.y - (nx.y - prev.y) / 5;
+          return `${d} C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+        }, '');
+        chartPath = lineParts;
+        areaPath = `M 0,${cH} L ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)} ${lineParts.replace(/^M [0-9.,]+ /, '')} L ${cW},${cH} Z`;
+      }
+
+      const initials = author.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || 'T';
+
+      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#1e293b"/>
+    </linearGradient>
+    <linearGradient id="card" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1e293b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="${pnlColor}" stop-opacity="0.3"/>
+      <stop offset="100%" stop-color="${pnlColor}" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="chartClip">
+      <rect x="0" y="0" width="460" height="100" rx="4"/>
+    </clipPath>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- Subtle grid lines -->
+  <line x1="0" y1="210" x2="1200" y2="210" stroke="#334155" stroke-width="1" stroke-dasharray="4,8"/>
+  <line x1="0" y1="420" x2="1200" y2="420" stroke="#334155" stroke-width="1" stroke-dasharray="4,8"/>
+  <line x1="400" y1="0" x2="400" y2="630" stroke="#334155" stroke-width="1" stroke-dasharray="4,8"/>
+  <line x1="800" y1="0" x2="800" y2="630" stroke="#334155" stroke-width="1" stroke-dasharray="4,8"/>
+
+  <!-- Main card -->
+  <rect x="60" y="60" width="1080" height="510" rx="24" fill="#1e293b" stroke="#334155" stroke-width="1.5"/>
+
+  <!-- NeoFeed branding top-right -->
+  <rect x="960" y="88" width="150" height="32" rx="8" fill="#6366f1" opacity="0.15"/>
+  <text x="1035" y="109" font-family="system-ui,sans-serif" font-size="15" font-weight="700" fill="#818cf8" text-anchor="middle">NeoFeed</text>
+
+  <!-- Author avatar circle -->
+  <circle cx="130" cy="150" r="38" fill="#6366f1" opacity="0.2"/>
+  <circle cx="130" cy="150" r="36" fill="#6366f1"/>
+  <text x="130" y="158" font-family="system-ui,sans-serif" font-size="20" font-weight="700" fill="white" text-anchor="middle">${initials}</text>
+
+  <!-- Author name + handle -->
+  <text x="185" y="142" font-family="system-ui,sans-serif" font-size="22" font-weight="700" fill="white">${author.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>
+  <text x="185" y="168" font-family="system-ui,sans-serif" font-size="16" fill="#94a3b8">${handle}</text>
+
+  <!-- Divider -->
+  <line x1="88" y1="200" x2="1112" y2="200" stroke="#334155" stroke-width="1"/>
+
+  <!-- Post content -->
+  ${contentLines.map((line, i) => `<text x="88" y="${240 + i * 36}" font-family="system-ui,sans-serif" font-size="24" fill="#e2e8f0">${line.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</text>`).join('\n  ')}
+
+  ${isRange && chartData.length > 1 ? `
+  <!-- P&L Chart area -->
+  <g transform="translate(88, 340)" clip-path="url(#chartClip)">
+    <path d="${areaPath}" fill="url(#chartFill)"/>
+    <path d="${chartPath}" fill="none" stroke="${pnlColor}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Baseline -->
+  <line x1="88" y1="${340 + 100}" x2="548" y2="${340 + 100}" stroke="#475569" stroke-width="1" stroke-dasharray="3,5"/>
+
+  <!-- Stats -->
+  <rect x="620" y="330" width="180" height="80" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+  <text x="710" y="360" font-family="system-ui,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">P&amp;L</text>
+  <text x="710" y="390" font-family="system-ui,sans-serif" font-size="26" font-weight="700" fill="${pnlColor}" text-anchor="middle">${pnlSign}₹${Math.abs(pnl).toLocaleString('en-IN')}</text>
+
+  <rect x="815" y="330" width="140" height="80" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+  <text x="885" y="360" font-family="system-ui,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">Trades</text>
+  <text x="885" y="390" font-family="system-ui,sans-serif" font-size="26" font-weight="700" fill="white" text-anchor="middle">${trades}</text>
+
+  <rect x="970" y="330" width="142" height="80" rx="12" fill="#0f172a" stroke="#334155" stroke-width="1"/>
+  <text x="1041" y="360" font-family="system-ui,sans-serif" font-size="12" fill="#64748b" text-anchor="middle">Win Rate</text>
+  <text x="1041" y="390" font-family="system-ui,sans-serif" font-size="26" font-weight="700" fill="${winRate >= 50 ? '#10b981' : '#ef4444'}" text-anchor="middle">${winRate}%</text>
+  ` : ''}
+
+  <!-- Footer bar -->
+  <rect x="60" y="520" width="1080" height="50" rx="0" fill="#0f172a" opacity="0.5"/>
+  <rect x="60" y="520" width="1080" height="50" rx="0" fill="transparent"/>
+  <rect x="60" y="544" width="1080" height="2" fill="transparent"/>
+  <line x1="88" y1="536" x2="1112" y2="536" stroke="#334155" stroke-width="1"/>
+  <text x="130" y="553" font-family="system-ui,sans-serif" font-size="13" fill="#475569">neofeed.app • Trade smarter together</text>
+  <text x="1112" y="553" font-family="system-ui,sans-serif" font-size="13" fill="#475569" text-anchor="end">Tap to view full post →</text>
+</svg>`;
+
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.setHeader('Cache-Control', 'public, max-age=3600');
+      res.send(svg);
+    } catch (err) {
+      console.error('OG image error:', err);
+      res.status(500).send('Error generating image');
+    }
+  });
+
+  // ─── Open Graph: Bot detection for /post/:postId ─────────────────────────
+  // Social media crawlers hit this URL to read OG meta tags.
+  // Regular users get the SPA (Vite handles the fallback).
+  app.get('/post/:postId', async (req, res, next) => {
+    const ua = req.headers['user-agent'] || '';
+    const isCrawler = /Twitterbot|LinkedInBot|facebookexternalhit|WhatsApp|TelegramBot|Slackbot|Discordbot|bingbot|Googlebot|applebot|ia_archiver|Embedly|Quora|Pinterest|vkShare|W3C_Validator|Screaming Frog/i.test(ua);
+
+    if (!isCrawler) {
+      return next(); // Let Vite/SPA handle it
+    }
+
+    try {
+      const { postId } = req.params;
+      const appOrigin = `${req.protocol}://${req.get('host')}`;
+      let post: any = null;
+
+      try {
+        const doc = await db.collection('user_posts').doc(postId).get();
+        if (doc.exists) post = { id: doc.id, ...doc.data() };
+      } catch { /* ignore */ }
+
+      const content: string = post?.content || 'A trade post on NeoFeed';
+      const author: string = post?.authorDisplayName || post?.authorUsername || 'Trader';
+      const handle: string = post?.authorUsername ? `@${post.authorUsername}` : '';
+      const meta: any = post?.metadata || {};
+      const isRange = meta?.type === 'range_report' || meta?.type === 'trade_insight';
+      const pnl: number = meta?.pnl ?? 0;
+      const trades: number = meta?.trades ?? 0;
+      const winRate: number = meta?.winRate ?? 0;
+      const isProfit = pnl >= 0;
+
+      let ogTitle = `${author} on NeoFeed`;
+      let ogDescription = content.substring(0, 200);
+
+      if (isRange) {
+        const pnlSign = isProfit ? '+' : '';
+        ogTitle = `${author}'s Trade Report | NeoFeed`;
+        ogDescription = `P&L: ${pnlSign}₹${Math.abs(pnl).toLocaleString('en-IN')} • ${trades} Trades • Win Rate: ${winRate}%\n${content.substring(0, 140)}`;
+      }
+
+      const imageUrl = `${appOrigin}/api/og/image/${postId}`;
+      const postUrl = `${appOrigin}/post/${postId}`;
+
+      res.send(`<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8"/>
+  <title>${ogTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;')}</title>
+  <meta name="description" content="${ogDescription.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')}"/>
+
+  <meta property="og:type" content="website"/>
+  <meta property="og:url" content="${postUrl}"/>
+  <meta property="og:title" content="${ogTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;')}"/>
+  <meta property="og:description" content="${ogDescription.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')}"/>
+  <meta property="og:image" content="${imageUrl}"/>
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta property="og:site_name" content="NeoFeed"/>
+
+  <meta name="twitter:card" content="summary_large_image"/>
+  <meta name="twitter:site" content="@neofeed_app"/>
+  <meta name="twitter:title" content="${ogTitle.replace(/&/g, '&amp;').replace(/</g, '&lt;')}"/>
+  <meta name="twitter:description" content="${ogDescription.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;')}"/>
+  <meta name="twitter:image" content="${imageUrl}"/>
+
+  <meta http-equiv="refresh" content="0; url=${postUrl}"/>
+</head>
+<body>
+  <p>Redirecting to <a href="${postUrl}">NeoFeed post</a>…</p>
+</body>
+</html>`);
+    } catch (err) {
+      console.error('OG post route error:', err);
+      next();
+    }
+  });
+
   return httpServer;
 }

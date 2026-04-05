@@ -892,6 +892,26 @@ function ShareModal({ isOpen, onClose, post }: { isOpen: boolean; onClose: () =>
   const { toast } = useToast();
   const postUrl = `${window.location.origin}/post/${post.id}`;
 
+  const meta = post.metadata || {};
+  const isRange = meta?.type === 'range_report' || meta?.type === 'trade_insight';
+  const pnl: number = meta?.pnl ?? 0;
+  const trades: number = meta?.trades ?? 0;
+  const winRate: number = meta?.winRate ?? 0;
+  const chartData: number[] = Array.isArray(meta?.chartData) ? meta.chartData : [];
+  const isProfit = pnl >= 0;
+  const pnlSign = isProfit ? '+' : '';
+  const pnlColor = isProfit ? 'text-emerald-500' : 'text-red-500';
+  const authorName = post.authorDisplayName || post.authorUsername || 'Trader';
+  const handle = post.authorUsername ? `@${post.authorUsername}` : '';
+
+  // Build share text — rich description for each platform
+  const shareSnippet = post.content?.substring(0, 100) || '';
+  const rangeText = isRange
+    ? `P&L: ${pnlSign}₹${Math.abs(pnl).toLocaleString('en-IN')} | ${trades} Trades | Win: ${winRate}%\n`
+    : '';
+  const twitterText = `${rangeText}${shareSnippet}\n\nvia @neofeed_app`;
+  const waText = `${authorName} on NeoFeed:\n${rangeText}${shareSnippet}\n${postUrl}`;
+
   const copyToClipboard = async () => {
     try {
       if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -914,16 +934,55 @@ function ShareModal({ isOpen, onClose, post }: { isOpen: boolean; onClose: () =>
   };
 
   const socialPlatforms = [
-    { name: 'Facebook', icon: 'https://play-lh.googleusercontent.com/KCMTYuiTrKom4Vyf0G4foetVOwhKWzNbHWumV73IXexAIy5TTgZipL52WTt8ICL-oIo=w240-h480-rw', color: 'text-blue-600', bgColor: 'bg-blue-50 dark:bg-blue-900/10', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}` },
-    { name: 'X', icon: 'https://cdn.simpleicons.org/x', color: 'text-gray-900 dark:text-white', bgColor: 'bg-black dark:bg-gray-800/50', url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}` },
-    { name: 'Whatsapp', icon: 'https://cdn.simpleicons.org/whatsapp', color: 'text-green-500', bgColor: 'bg-green-50 dark:bg-green-900/10', url: `https://wa.me/?text=${encodeURIComponent(postUrl)}` },
-    { name: 'Telegram', icon: 'https://cdn.simpleicons.org/telegram', color: 'text-sky-500', bgColor: 'bg-sky-50 dark:bg-sky-900/10', url: `https://t.me/share/url?url=${encodeURIComponent(postUrl)}` },
-    { name: 'Linkedin', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linkedin/linkedin-original.svg', color: 'text-blue-700', bgColor: 'bg-blue-50 dark:bg-blue-900/10', url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}` },
+    { name: 'Facebook', icon: 'https://play-lh.googleusercontent.com/KCMTYuiTrKom4Vyf0G4foetVOwhKWzNbHWumV73IXexAIy5TTgZipL52WTt8ICL-oIo=w240-h480-rw', bgColor: 'bg-blue-50 dark:bg-blue-900/10', url: `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(postUrl)}` },
+    { name: 'X', icon: 'https://cdn.simpleicons.org/x', bgColor: 'bg-black dark:bg-gray-800/50', url: `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(twitterText)}` },
+    { name: 'Whatsapp', icon: 'https://cdn.simpleicons.org/whatsapp', bgColor: 'bg-green-50 dark:bg-green-900/10', url: `https://wa.me/?text=${encodeURIComponent(waText)}` },
+    { name: 'Telegram', icon: 'https://cdn.simpleicons.org/telegram', bgColor: 'bg-sky-50 dark:bg-sky-900/10', url: `https://t.me/share/url?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(`${authorName} on NeoFeed: ${rangeText}${shareSnippet}`)}` },
+    { name: 'LinkedIn', icon: 'https://cdn.jsdelivr.net/gh/devicons/devicon/icons/linkedin/linkedin-original.svg', bgColor: 'bg-blue-50 dark:bg-blue-900/10', url: `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}` },
   ];
+
+  // Mini SVG P&L chart for preview
+  const MiniChart = () => {
+    if (chartData.length < 2) return null;
+    const w = 200, h = 48;
+    const minV = Math.min(...chartData, 0);
+    const maxV = Math.max(...chartData, 0);
+    const range = maxV - minV || 1;
+    const pts = chartData.map((v, i) => ({
+      x: (i / (chartData.length - 1)) * w,
+      y: h - ((v - minV) / range) * h * 0.85 - h * 0.075,
+    }));
+    const linePath = pts.reduce((d, pt, i) => {
+      if (i === 0) return `M ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+      const prev = pts[i - 1];
+      const pp = i >= 2 ? pts[i - 2] : prev;
+      const nx = i < pts.length - 1 ? pts[i + 1] : pt;
+      const cp1x = prev.x + (pt.x - pp.x) / 5;
+      const cp1y = prev.y + (pt.y - pp.y) / 5;
+      const cp2x = pt.x - (nx.x - prev.x) / 5;
+      const cp2y = pt.y - (nx.y - prev.y) / 5;
+      return `${d} C ${cp1x.toFixed(1)},${cp1y.toFixed(1)} ${cp2x.toFixed(1)},${cp2y.toFixed(1)} ${pt.x.toFixed(1)},${pt.y.toFixed(1)}`;
+    }, '');
+    const areaPath = `M 0,${h} L ${pts[0].x.toFixed(1)},${pts[0].y.toFixed(1)} ${linePath.replace(/^M [0-9.,]+ /, '')} L ${w},${h} Z`;
+    const stroke = isProfit ? '#10b981' : '#ef4444';
+    const fillId = `sf-${post.id}`;
+    return (
+      <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ display: 'block' }}>
+        <defs>
+          <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={stroke} stopOpacity="0.25"/>
+            <stop offset="100%" stopColor={stroke} stopOpacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d={areaPath} fill={`url(#${fillId})`}/>
+        <path d={linePath} fill="none" stroke={stroke} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    );
+  };
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-xs p-0 overflow-visible border-none bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
+      <DialogContent className="max-w-sm p-0 overflow-visible border-none bg-white dark:bg-gray-900 rounded-2xl shadow-2xl">
         <div className="relative pt-10 pb-5 px-5 flex flex-col items-center text-center">
           {/* Top floating logo */}
           <div className="absolute -top-6 left-1/2 -translate-x-1/2 w-14 h-14 bg-white dark:bg-gray-900 rounded-full flex items-center justify-center shadow-lg border border-gray-100 dark:border-gray-800 z-10 p-1">
@@ -937,14 +996,61 @@ function ShareModal({ isOpen, onClose, post }: { isOpen: boolean; onClose: () =>
             Trading is more effective when you connect with friends!
           </p>
 
+          {/* Post fingerprint preview card */}
+          <div className="w-full mb-3 rounded-xl border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/40 text-left overflow-hidden">
+            {/* Author row */}
+            <div className="flex items-center gap-2 px-3 pt-3 pb-2">
+              <div className="w-7 h-7 rounded-full bg-indigo-500 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                {authorName.split(' ').slice(0, 2).map(w => w[0] || '').join('').toUpperCase() || 'T'}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="text-xs font-semibold text-gray-900 dark:text-white truncate">{authorName}</div>
+                {handle && <div className="text-[10px] text-gray-400">{handle}</div>}
+              </div>
+              <span className="text-[10px] text-indigo-400 font-semibold shrink-0">NeoFeed</span>
+            </div>
+
+            {/* Content snippet */}
+            <div className="px-3 pb-2">
+              <p className="text-xs text-gray-700 dark:text-gray-300 line-clamp-2 leading-relaxed">
+                {post.content}
+              </p>
+            </div>
+
+            {/* Range/P&L card if applicable */}
+            {isRange && (
+              <div className="mx-3 mb-3 rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 overflow-hidden">
+                <div className="flex items-stretch">
+                  {/* Stats */}
+                  <div className="flex-1 px-3 py-2 space-y-1">
+                    <div className={`text-base font-bold ${pnlColor}`}>
+                      {pnlSign}₹{Math.abs(pnl).toLocaleString('en-IN')}
+                    </div>
+                    <div className="flex gap-2 text-[10px] text-gray-500 dark:text-gray-400">
+                      <span>{trades} trades</span>
+                      <span>·</span>
+                      <span className={winRate >= 50 ? 'text-emerald-500' : 'text-red-500'}>{winRate}% win</span>
+                    </div>
+                  </div>
+                  {/* Mini chart */}
+                  {chartData.length > 1 && (
+                    <div className="flex items-center pr-2">
+                      <MiniChart />
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+
           <div className="w-full space-y-3 text-left">
             <div>
               <label className="text-xs font-bold text-gray-900 dark:text-white mb-2 block">Link</label>
               <div className="flex items-center gap-2 bg-gray-50 dark:bg-gray-800/50 p-2 rounded-lg border border-gray-100 dark:border-gray-800 overflow-hidden">
                 <p className="flex-1 text-xs text-gray-600 dark:text-gray-300 truncate font-medium">
-                  {postUrl.length > 20 ? postUrl.substring(0, 20) + '...' : postUrl}
+                  {postUrl.length > 30 ? postUrl.substring(0, 30) + '...' : postUrl}
                 </p>
-                <button 
+                <button
                   onClick={copyToClipboard}
                   className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors text-gray-500 dark:text-gray-400"
                 >
@@ -959,16 +1065,14 @@ function ShareModal({ isOpen, onClose, post }: { isOpen: boolean; onClose: () =>
                 {socialPlatforms.map((platform) => (
                   <button
                     key={platform.name}
-                    onClick={() => {
-                      window.open(platform.url, '_blank');
-                    }}
+                    onClick={() => window.open(platform.url, '_blank')}
                     className="flex flex-col items-center gap-1 group transition-all flex-1"
                     title={platform.name}
                   >
                     <div className={`w-8 h-8 rounded-full flex items-center justify-center ${platform.bgColor} group-hover:scale-105 transition-transform shadow-sm overflow-hidden ${platform.name === 'X' ? 'p-2' : 'p-1.5'}`}>
-                      <img 
-                        src={platform.icon} 
-                        alt={platform.name} 
+                      <img
+                        src={platform.icon}
+                        alt={platform.name}
                         className="w-full h-full object-contain"
                         style={platform.name === 'Facebook' ? { filter: 'hue-rotate(-30deg)' } : platform.name === 'X' ? { filter: 'invert(1)' } : undefined}
                       />

@@ -178,19 +178,19 @@ export function ImportPnLDialog({
 
   return (
     <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
-      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto custom-thin-scrollbar p-0 rounded-xl border border-gray-800 bg-gray-950 shadow-2xl">
+      <DialogContent className="w-[95vw] max-w-2xl max-h-[85vh] overflow-y-auto custom-thin-scrollbar p-0 rounded-xl border border-gray-200 bg-white shadow-xl">
 
         {/* Header */}
-        <div className="sticky top-0 z-10 bg-gray-950 border-b border-gray-800 px-4 py-3 flex items-center gap-2">
-          <FileText className="h-3.5 w-3.5 text-indigo-400 flex-shrink-0" />
-          <span className="text-sm font-semibold text-gray-200">Import P&L Data</span>
+        <div className="sticky top-0 z-10 bg-white border-b border-gray-100 px-4 py-3 flex items-center gap-2">
+          <FileText className="h-3.5 w-3.5 text-indigo-500 flex-shrink-0" />
+          <span className="text-sm font-semibold text-gray-800">Import P&L Data</span>
         </div>
 
         <div className="p-4 space-y-4">
 
           {/* CSV Upload */}
           <div className="space-y-1.5">
-            <Label htmlFor="csv-upload" className="text-xs font-medium text-gray-400 flex items-center gap-1.5">
+            <Label htmlFor="csv-upload" className="text-xs font-medium text-gray-500 flex items-center gap-1.5">
               <Upload className="w-3 h-3" />
               Upload CSV
             </Label>
@@ -199,19 +199,19 @@ export function ImportPnLDialog({
               type="file"
               accept=".csv"
               onChange={handleFileUpload}
-              className="h-8 text-xs bg-gray-900 border-gray-800 text-gray-300 file:text-gray-400 file:bg-gray-800 file:border-0 file:text-xs file:px-2 file:py-1 file:rounded file:mr-2 hover:border-gray-700 transition-colors"
+              className="h-8 text-xs bg-white border-gray-200 text-gray-700 file:text-gray-500 file:bg-gray-100 file:border-0 file:text-xs file:px-2 file:py-1 file:rounded file:mr-2 hover:border-gray-300 transition-colors"
               data-testid="input-csv-upload"
             />
-            <p className="text-[11px] text-gray-600 font-mono">
+            <p className="text-[11px] text-gray-400 font-mono">
               date, symbol, action, qty, entry, exit, pnl, duration
             </p>
           </div>
 
           {/* Divider */}
           <div className="flex items-center gap-3">
-            <div className="flex-1 h-px bg-gray-800" />
-            <span className="text-[11px] text-gray-600 uppercase tracking-widest">or paste</span>
-            <div className="flex-1 h-px bg-gray-800" />
+            <div className="flex-1 h-px bg-gray-100" />
+            <span className="text-[11px] text-gray-400 uppercase tracking-widest">or paste</span>
+            <div className="flex-1 h-px bg-gray-100" />
           </div>
 
           {/* Paste Section */}
@@ -219,25 +219,25 @@ export function ImportPnLDialog({
             {/* Format badge */}
             {activeFormat && detectedFormatLabel && (
               <div className="flex items-center gap-1.5">
-                <span className="text-[11px] px-2 py-0.5 bg-indigo-500/15 text-indigo-400 border border-indigo-500/25 rounded-full font-medium">
+                <span className="text-[11px] px-2 py-0.5 bg-indigo-50 text-indigo-600 border border-indigo-100 rounded-full font-medium">
                   {detectedFormatLabel}
                 </span>
               </div>
             )}
-            <p className="text-[11px] text-gray-600">
+            <p className="text-[11px] text-gray-400">
               {activeFormat
                 ? `Using "${detectedFormatLabel}" format`
                 : "Paste trade data — format auto-detected if saved."}
             </p>
 
             {/* Preview / Build Mode panel */}
-            <div className="rounded-lg border border-gray-800 bg-gray-900/60 overflow-hidden">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 overflow-hidden">
               {isBuildMode ? (
                 <div className="space-y-0">
                   {/* Build mode toolbar */}
-                  <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-800 bg-gray-900">
-                    <span className="text-[11px] font-medium text-gray-400">
-                      Build Mode — select text, click <span className="text-indigo-400">+</span>, drag to swap
+                  <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-gray-200 bg-white">
+                    <span className="text-[11px] font-medium text-gray-500">
+                      Build Mode — select text, click <span className="text-indigo-500">+</span>, drag to swap
                     </span>
                     <div className="flex items-center gap-1.5">
                       {/* Broker name input */}
@@ -251,15 +251,15 @@ export function ImportPnLDialog({
                           }}
                           onFocus={() => setShowBrokerSuggestions(true)}
                           onBlur={() => setTimeout(() => setShowBrokerSuggestions(false), 200)}
-                          className="h-7 w-44 text-xs bg-gray-800 border-gray-700 text-gray-200 placeholder:text-gray-600 focus:border-indigo-500/50"
+                          className="h-7 w-44 text-xs bg-white border-gray-200 text-gray-700 placeholder:text-gray-400 focus:border-indigo-400"
                           data-testid="input-broker-search"
                         />
                         {showBrokerSuggestions && filteredBrokers.length > 0 && (
-                          <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-700 rounded-md shadow-xl z-50 max-h-48 overflow-y-auto">
+                          <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50 max-h-48 overflow-y-auto">
                             {filteredBrokers.map((broker) => (
                               <button
                                 key={broker}
-                                className="w-full text-left px-3 py-1.5 text-xs text-gray-300 hover:bg-gray-700 transition-colors"
+                                className="w-full text-left px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-50 transition-colors"
                                 onMouseDown={() => {
                                   setBrokerSearchInput(broker);
                                   setShowBrokerSuggestions(false);
@@ -303,8 +303,7 @@ export function ImportPnLDialog({
                                     setSavedFormats(updatedFormats);
                                     if (Object.keys(updatedFormats).length > 0) {
                                       const firstLabel = Object.keys(updatedFormats)[0];
-                                      const firstFormat = updatedFormats[firstLabel];
-                                      setActiveFormat(firstFormat);
+                                      setActiveFormat(updatedFormats[firstLabel]);
                                     }
                                   }
                                 }
@@ -315,7 +314,7 @@ export function ImportPnLDialog({
                           }
                         }}
                         data-testid="button-save-format"
-                        className="h-7 text-xs px-2 bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white"
+                        className="h-7 text-xs px-2 bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800"
                       >
                         <Save className="w-3 h-3 mr-1" />
                         Save
@@ -325,7 +324,7 @@ export function ImportPnLDialog({
                       <button
                         onClick={() => setIsBuildMode(false)}
                         data-testid="button-close-build-mode"
-                        className="flex items-center justify-center w-7 h-7 rounded text-gray-500 hover:text-gray-300 hover:bg-gray-800 transition-colors"
+                        className="flex items-center justify-center w-7 h-7 rounded text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
                       >
                         <X className="w-3.5 h-3.5" />
                       </button>
@@ -333,12 +332,12 @@ export function ImportPnLDialog({
                   </div>
 
                   {/* Build mode mapping table */}
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto bg-white">
                     <table className="w-full font-mono text-xs">
                       <thead>
-                        <tr className="border-b border-gray-800">
+                        <tr className="border-b border-gray-100">
                           {COLS.map(col => (
-                            <th key={col} className="px-2.5 py-2 text-left text-[11px] font-semibold text-indigo-400 uppercase tracking-wide">
+                            <th key={col} className="px-2.5 py-2 text-left text-[11px] font-semibold text-indigo-500 uppercase tracking-wide">
                               {col}
                             </th>
                           ))}
@@ -364,27 +363,27 @@ export function ImportPnLDialog({
                                     e.dataTransfer.setData("sourceField", col);
                                     e.dataTransfer.setData("sourceValue", buildModeData.displayValues[col]);
                                   }}
-                                  className="inline-flex flex-col gap-0.5 px-2 py-1.5 bg-indigo-500/10 border border-indigo-500/25 text-indigo-300 rounded-md text-xs cursor-move group"
+                                  className="inline-flex flex-col gap-0.5 px-2 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-md text-xs cursor-move"
                                 >
                                   <div className="flex items-center gap-1">
-                                    <span className="text-[10px] text-indigo-500 font-mono">
+                                    <span className="text-[10px] text-indigo-400 font-mono">
                                       [{buildModeData.positions[col].join(", ")}]
                                     </span>
                                     <button
                                       onClick={() => handleClearCol(col)}
-                                      className="opacity-60 hover:opacity-100 hover:text-red-400 transition-opacity rounded"
+                                      className="opacity-50 hover:opacity-100 hover:text-red-500 transition-opacity rounded"
                                       data-testid={`delete-${col}`}
                                       title="Clear"
                                     >
                                       <X className="w-2.5 h-2.5" />
                                     </button>
                                   </div>
-                                  <span className="font-medium text-[11px] text-gray-300">{buildModeData.displayValues[col]}</span>
+                                  <span className="font-medium text-[11px] text-gray-700">{buildModeData.displayValues[col]}</span>
                                 </div>
                               ) : (
                                 <button
                                   onClick={() => handleAddCol(col)}
-                                  className="flex items-center justify-center w-7 h-7 rounded-md border border-dashed border-gray-700 text-gray-600 hover:border-indigo-500/50 hover:text-indigo-400 transition-colors"
+                                  className="flex items-center justify-center w-7 h-7 rounded-md border border-dashed border-gray-300 text-gray-400 hover:border-indigo-400 hover:text-indigo-500 transition-colors"
                                   data-testid={`add-${col}`}
                                   title="Select text in textarea, then click +"
                                 >
@@ -400,32 +399,32 @@ export function ImportPnLDialog({
 
                   {/* Saved formats */}
                   {Object.keys(savedFormats).length > 0 && (
-                    <div className="border-t border-gray-800">
+                    <div className="border-t border-gray-100">
                       <button
                         onClick={() => setShowSavedFormatsDropdown(!showSavedFormatsDropdown)}
-                        className="flex items-center gap-1.5 text-[11px] font-medium text-gray-500 hover:text-gray-300 transition-colors w-full px-3 py-2"
+                        className="flex items-center gap-1.5 text-[11px] font-medium text-gray-400 hover:text-gray-600 transition-colors w-full px-3 py-2"
                         data-testid="button-toggle-saved-formats"
                       >
                         <ChevronDown className={`w-3 h-3 transition-transform ${showSavedFormatsDropdown ? "rotate-180" : ""}`} />
                         Saved Formats ({Object.keys(savedFormats).length})
                       </button>
                       {showSavedFormatsDropdown && (
-                        <div className="border-t border-gray-800 overflow-hidden">
+                        <div className="border-t border-gray-100 bg-white overflow-hidden">
                           <table className="w-full text-xs">
                             <thead>
-                              <tr className="border-b border-gray-800">
-                                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500">Label</th>
-                                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-500">Sample line</th>
-                                <th className="px-3 py-2 text-right text-[11px] font-medium text-gray-500">Actions</th>
+                              <tr className="border-b border-gray-100">
+                                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-400">Label</th>
+                                <th className="px-3 py-2 text-left text-[11px] font-medium text-gray-400">Sample line</th>
+                                <th className="px-3 py-2 text-right text-[11px] font-medium text-gray-400">Actions</th>
                               </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-800/60">
+                            <tbody className="divide-y divide-gray-100">
                               {Object.entries(savedFormats).map(([formatId, format]) => {
                                 const displayLabel = format.label || formatId;
                                 return (
-                                  <tr key={formatId} className="hover:bg-gray-800/40 transition-colors">
-                                    <td className="px-3 py-2 text-gray-300 font-medium">{displayLabel}</td>
-                                    <td className="px-3 py-2 font-mono text-gray-600 truncate max-w-[200px]">
+                                  <tr key={formatId} className="hover:bg-gray-50 transition-colors">
+                                    <td className="px-3 py-2 text-gray-700 font-medium">{displayLabel}</td>
+                                    <td className="px-3 py-2 font-mono text-gray-400 truncate max-w-[200px]">
                                       {format.sampleLine || "—"}
                                     </td>
                                     <td className="px-3 py-2">
@@ -433,7 +432,7 @@ export function ImportPnLDialog({
                                         <Button
                                           variant="outline"
                                           size="sm"
-                                          className="h-6 text-[11px] px-2 bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white"
+                                          className="h-6 text-[11px] px-2 bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800"
                                           onClick={() => {
                                             setUserSelectedFormatId(formatId);
                                             setBuildModeData(format);
@@ -445,7 +444,7 @@ export function ImportPnLDialog({
                                           Use
                                         </Button>
                                         <button
-                                          className="flex items-center justify-center w-6 h-6 rounded text-gray-600 hover:text-red-400 hover:bg-red-500/10 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                          className="flex items-center justify-center w-6 h-6 rounded text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                           disabled={!currentUser?.userId}
                                           title={!currentUser?.userId ? "Log in to delete formats" : "Delete"}
                                           onClick={async () => {
@@ -477,15 +476,15 @@ export function ImportPnLDialog({
               ) : (
                 /* Live preview */
                 <div>
-                  <div className="px-3 py-2 border-b border-gray-800 flex items-center justify-between">
-                    <span className="text-[11px] text-gray-500 font-medium">Live preview — first trade</span>
+                  <div className="px-3 py-2 border-b border-gray-200 flex items-center bg-white">
+                    <span className="text-[11px] text-gray-400 font-medium">Live preview — first trade</span>
                   </div>
-                  <div className="overflow-x-auto">
+                  <div className="overflow-x-auto bg-white">
                     <table className="w-full font-mono text-xs">
                       <thead>
-                        <tr className="border-b border-gray-800">
+                        <tr className="border-b border-gray-100">
                           {COLS.map(col => (
-                            <th key={col} className="px-2.5 py-2 text-left text-[11px] font-semibold text-indigo-400 uppercase tracking-wide">
+                            <th key={col} className="px-2.5 py-2 text-left text-[11px] font-semibold text-indigo-500 uppercase tracking-wide">
                               {col}
                             </th>
                           ))}
@@ -496,7 +495,7 @@ export function ImportPnLDialog({
                           if (!importData.trim()) {
                             return (
                               <tr>
-                                <td colSpan={6} className="px-3 py-4 text-center text-[11px] text-gray-600 italic">
+                                <td colSpan={6} className="px-3 py-4 text-center text-[11px] text-gray-400 italic">
                                   Paste trade data below to see live preview...
                                 </td>
                               </tr>
@@ -516,9 +515,9 @@ export function ImportPnLDialog({
                           }
                           const t = trades[0];
                           return (
-                            <tr className="bg-indigo-500/5">
+                            <tr className="bg-indigo-50/60">
                               {COLS.map(col => (
-                                <td key={col} className="px-2.5 py-2 text-gray-300">{t[col]}</td>
+                                <td key={col} className="px-2.5 py-2 text-gray-700">{t[col]}</td>
                               ))}
                             </tr>
                           );
@@ -528,9 +527,9 @@ export function ImportPnLDialog({
                   </div>
 
                   {/* Format selector + Build button row */}
-                  <div className="px-3 py-2 border-t border-gray-800 flex items-center gap-2 flex-wrap">
+                  <div className="px-3 py-2 border-t border-gray-100 bg-white flex items-center gap-2 flex-wrap">
                     <select
-                      className="h-7 text-xs border border-gray-700 bg-gray-800 text-gray-300 rounded-md px-2 cursor-pointer focus:outline-none focus:border-indigo-500/50 min-w-0"
+                      className="h-7 text-xs border border-gray-200 bg-white text-gray-600 rounded-md px-2 cursor-pointer focus:outline-none focus:border-indigo-400 min-w-0"
                       onChange={(e) => {
                         const formatId = e.target.value;
                         if (formatId && savedFormats[formatId]) {
@@ -575,7 +574,7 @@ export function ImportPnLDialog({
 
                     {currentUser?.userId && (
                       <button
-                        className="flex items-center justify-center w-7 h-7 rounded-md border border-gray-700 text-gray-500 hover:text-gray-300 hover:border-gray-600 transition-colors"
+                        className="flex items-center justify-center w-7 h-7 rounded-md border border-gray-200 text-gray-400 hover:text-gray-600 hover:border-gray-300 transition-colors"
                         onClick={async () => {
                           setFormatsLoading(true);
                           try {
@@ -606,7 +605,7 @@ export function ImportPnLDialog({
                     <Button
                       variant="outline"
                       size="sm"
-                      className="h-7 text-xs gap-1 ml-auto bg-gray-800 border-gray-700 text-gray-300 hover:bg-gray-700 hover:text-white"
+                      className="h-7 text-xs gap-1 ml-auto bg-white border-gray-200 text-gray-600 hover:bg-gray-50 hover:text-gray-800"
                       onClick={() => {
                         const firstLine = importData.trim().split('\n')[0] || "";
                         const parts = firstLine.split(/\s+/);
@@ -654,33 +653,33 @@ export function ImportPnLDialog({
               placeholder="Paste your trade data here..."
               value={importData}
               onChange={(e) => setImportData(e.target.value)}
-              className="min-h-28 text-xs bg-gray-900 border-gray-800 text-gray-300 placeholder:text-gray-700 focus:border-indigo-500/40 resize-none font-mono"
+              className="min-h-28 text-xs bg-white border-gray-200 text-gray-700 placeholder:text-gray-400 focus:border-indigo-400 resize-none font-mono"
               data-testid="textarea-paste-data"
             />
           </div>
 
           {/* Error messages */}
           {importError && (
-            <div className="rounded-lg border border-red-500/25 bg-red-500/10 px-3 py-2">
-              <p className="text-xs text-red-400">{importError}</p>
+            <div className="rounded-lg border border-red-200 bg-red-50 px-3 py-2">
+              <p className="text-xs text-red-500">{importError}</p>
             </div>
           )}
 
           {parseErrors.length > 0 && (
-            <div className="rounded-lg border border-gray-800 bg-gray-900/60 max-h-36 overflow-y-auto custom-thin-scrollbar">
-              <div className="px-3 py-2 border-b border-gray-800">
-                <p className="text-[11px] font-medium text-gray-400">
+            <div className="rounded-lg border border-gray-200 bg-gray-50 max-h-36 overflow-y-auto custom-thin-scrollbar">
+              <div className="px-3 py-2 border-b border-gray-100">
+                <p className="text-[11px] font-medium text-gray-500">
                   {parseErrors.length} line(s) could not be parsed
                 </p>
               </div>
-              <div className="divide-y divide-gray-800/60">
+              <div className="divide-y divide-gray-100">
                 {parseErrors.map((error, index) => (
                   <div key={index} className="px-3 py-2">
                     <div className="flex gap-2 text-[11px]">
                       <span className="font-mono text-amber-500 shrink-0">Line {error.line}:</span>
-                      <span className="text-red-400">{error.reason}</span>
+                      <span className="text-red-500">{error.reason}</span>
                     </div>
-                    <div className="mt-0.5 text-[11px] text-gray-600 font-mono truncate">{error.content}</div>
+                    <div className="mt-0.5 text-[11px] text-gray-400 font-mono truncate">{error.content}</div>
                   </div>
                 ))}
               </div>
@@ -688,7 +687,7 @@ export function ImportPnLDialog({
           )}
 
           {/* Footer actions */}
-          <div className="flex justify-end gap-2 pt-2 border-t border-gray-800">
+          <div className="flex justify-end gap-2 pt-2 border-t border-gray-100">
             <Button
               variant="ghost"
               size="sm"
@@ -699,7 +698,7 @@ export function ImportPnLDialog({
                 setParseErrors([]);
                 setUserSelectedFormatId(null);
               }}
-              className="h-8 text-xs text-gray-400 hover:text-gray-200 hover:bg-gray-800"
+              className="h-8 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100"
             >
               Cancel
             </Button>

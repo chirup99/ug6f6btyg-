@@ -14603,8 +14603,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                             </div>
                           </div>
 
-                          {/* Trading Master Card - Admin only */}
-                          {currentUser && authorizedUsers.some(u => u.email.toLowerCase() === currentUser?.email?.toLowerCase()) && (
+                          {/* Trading Master Card */}
                           <div
                             className="bg-indigo-500 rounded-2xl overflow-hidden h-28 w-full relative cursor-pointer hover:scale-105 transition-transform"
                             onClick={handleTradingMasterAccess}
@@ -14620,7 +14619,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               </div>
                             </div>
                           </div>
-                          )}
 
                           {/* Trading Charts Card */}
                           <div
@@ -14673,8 +14671,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               </div>
                             </div>
 
-                            {/* Trading Master Card - Admin only */}
-                            {currentUser && authorizedUsers.some(u => u.email.toLowerCase() === currentUser?.email?.toLowerCase()) && (
+                            {/* Trading Master Card */}
                             <div
                               className="bg-purple-500 rounded-xl overflow-hidden h-20 relative cursor-pointer active:scale-95 transition-transform"
                               onClick={handleTradingMasterAccess}
@@ -14690,7 +14687,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 </div>
                               </div>
                             </div>
-                            )}
 
                             {/* Journal Card */}
                             <div

@@ -894,10 +894,57 @@ function ShareModal({ isOpen, onClose, post }: { isOpen: boolean; onClose: () =>
 
   const meta = post.metadata || {};
   const isRange = meta?.type === 'range_report' || meta?.type === 'trade_insight';
-  const pnl: number = meta?.pnl ?? 0;
-  const trades: number = meta?.trades ?? 0;
-  const winRate: number = meta?.winRate ?? 0;
-  const chartData: number[] = Array.isArray(meta?.chartData) ? meta.chartData : [];
+
+  // Live-fetched stats for old posts that don't have pnl/trades/winRate in metadata
+  const [liveStats, setLiveStats] = useState<{ pnl: number; trades: number; winRate: number; chartData: number[] } | null>(null);
+  const [liveLoading, setLiveLoading] = useState(false);
+
+  useEffect(() => {
+    if (!isOpen || !isRange || !meta?.ownerUserId) return;
+    // Only fetch live data if the metadata is missing pnl/trades/winRate
+    const hasStoredData = meta?.pnl !== undefined || meta?.trades !== undefined;
+    if (hasStoredData) return;
+
+    setLiveLoading(true);
+    const fromDate = meta?.date || meta?.fromDate || '';
+    const toDate = meta?.date || meta?.toDate || fromDate;
+    if (!fromDate) { setLiveLoading(false); return; }
+
+    const params = new URLSearchParams({ from: fromDate, to: toDate });
+    fetch(`/api/journal/heatmap-mirror/${meta.ownerUserId}?${params.toString()}`)
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (!data) return;
+        let totalPnL = 0, totalTrades = 0, winningTrades = 0;
+        let cumulative = 0;
+        const chartPoints: number[] = [];
+
+        Object.values(data).forEach((dayData: any) => {
+          const metrics = dayData?.tradingData?.performanceMetrics || dayData?.performanceMetrics;
+          const tradeHistory: any[] = dayData?.tradeHistory || [];
+          if (metrics) {
+            totalPnL += metrics.netPnL ?? 0;
+            totalTrades += metrics.totalTrades ?? 0;
+            winningTrades += metrics.winningTrades ?? 0;
+            tradeHistory.forEach((t: any) => {
+              const p = typeof t.pnl === 'number' ? t.pnl : parseFloat(String(t.pnl || '0').replace(/[₹+,]/g, '')) || 0;
+              cumulative += p;
+              chartPoints.push(cumulative);
+            });
+          }
+        });
+
+        const computedWinRate = totalTrades > 0 ? Math.round((winningTrades / totalTrades) * 100) : 0;
+        setLiveStats({ pnl: totalPnL, trades: totalTrades, winRate: computedWinRate, chartData: chartPoints });
+      })
+      .catch(() => {})
+      .finally(() => setLiveLoading(false));
+  }, [isOpen, isRange, meta?.ownerUserId, meta?.date, meta?.fromDate, meta?.toDate]);
+
+  const pnl: number = liveStats?.pnl ?? meta?.pnl ?? 0;
+  const trades: number = liveStats?.trades ?? meta?.trades ?? 0;
+  const winRate: number = liveStats?.winRate ?? meta?.winRate ?? 0;
+  const chartData: number[] = liveStats?.chartData ?? (Array.isArray(meta?.chartData) ? meta.chartData : []);
   const isProfit = pnl >= 0;
   const pnlSign = isProfit ? '+' : '-';
   const pnlColor = isProfit ? 'text-emerald-500' : 'text-red-500';
@@ -1020,25 +1067,32 @@ function ShareModal({ isOpen, onClose, post }: { isOpen: boolean; onClose: () =>
             {/* Range/P&L card if applicable */}
             {isRange && (
               <div className="mx-3 mb-3 rounded-lg bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 overflow-hidden">
-                <div className="flex items-stretch">
-                  {/* Stats */}
-                  <div className="flex-1 px-3 py-2 space-y-1">
-                    <div className={`text-base font-bold ${pnlColor}`}>
-                      {pnlSign}₹{Math.abs(pnl).toLocaleString('en-IN')}
-                    </div>
-                    <div className="flex gap-2 text-[10px] text-gray-500 dark:text-gray-400">
-                      <span>{trades} trades</span>
-                      <span>·</span>
-                      <span className={winRate >= 50 ? 'text-emerald-500' : 'text-red-500'}>{winRate}% win</span>
-                    </div>
+                {liveLoading ? (
+                  <div className="flex items-center gap-2 px-3 py-3 text-[11px] text-gray-400">
+                    <div className="w-3 h-3 border-2 border-gray-300 border-t-emerald-500 rounded-full animate-spin flex-shrink-0" />
+                    Loading stats...
                   </div>
-                  {/* Mini chart */}
-                  {chartData.length > 1 && (
-                    <div className="flex items-center pr-2">
-                      <MiniChart />
+                ) : (
+                  <div className="flex items-stretch">
+                    {/* Stats */}
+                    <div className="flex-1 px-3 py-2 space-y-1">
+                      <div className={`text-base font-bold ${pnlColor}`}>
+                        {pnlSign}₹{Math.abs(pnl).toLocaleString('en-IN')}
+                      </div>
+                      <div className="flex gap-2 text-[10px] text-gray-500 dark:text-gray-400">
+                        <span>{trades} trades</span>
+                        <span>·</span>
+                        <span className={winRate >= 50 ? 'text-emerald-500' : 'text-red-500'}>{winRate}% win</span>
+                      </div>
                     </div>
-                  )}
-                </div>
+                    {/* Mini chart */}
+                    {chartData.length > 1 && (
+                      <div className="flex items-center pr-2">
+                        <MiniChart />
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </div>

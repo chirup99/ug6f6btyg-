@@ -2658,6 +2658,36 @@ function MarketNewsResultTab({
   const loading = isAllMode ? isAllMarketNewsLoading : isNifty50Mode ? isNifty50NewsLoading : isMarketNewsLoading;
   const rawNewsItems = isAllMode ? allMarketNewsItems : isNifty50Mode ? nifty50NewsItems : marketNewsItems;
 
+  // Fallback chart data for when market is closed (no intraday data) — same API as NeoFeed
+  const [fallbackChartData, setFallbackChartData] = useState<Record<string, {price: number; time: string}[]>>({});
+  const fallbackFetchedRef = useRef<Set<string>>(new Set());
+
+  // When news items change, fetch last-traded chart data for any symbol missing intraday points
+  useEffect(() => {
+    if (isAllMode) return;
+    const symbolsToFetch = rawNewsItems
+      .filter((item: any) => item.symbol)
+      .map((item: any) => item.symbol as string)
+      .filter((sym: string, idx: number, arr: string[]) => arr.indexOf(sym) === idx) // unique
+      .filter((sym: string) => {
+        const pts = newsStockPrices[sym]?.chartData ?? [];
+        return pts.length < 2 && !fallbackFetchedRef.current.has(sym);
+      });
+    if (symbolsToFetch.length === 0) return;
+    symbolsToFetch.forEach((sym: string) => fallbackFetchedRef.current.add(sym));
+    symbolsToFetch.forEach(async (sym: string) => {
+      try {
+        const res = await fetch(`/api/stock-chart-data/${sym}?timeframe=1D`);
+        if (res.ok) {
+          const data = await res.json();
+          if (Array.isArray(data) && data.length >= 2) {
+            setFallbackChartData(prev => ({ ...prev, [sym]: data }));
+          }
+        }
+      } catch {}
+    });
+  }, [rawNewsItems, newsStockPrices, isAllMode]);
+
   const newsItems = newsSelectedSector
     ? rawNewsItems.filter((item: any) => {
         if (isAllMode) return (item.sector || item.displayName) === newsSelectedSector;
@@ -3008,11 +3038,13 @@ function MarketNewsResultTab({
             const isUp = stockData ? stockData.change >= 0 : null;
             const sparkColor = isUp === true ? '#22c55e' : isUp === false ? '#ef4444' : '#6b7280';
             const rawPts = stockData?.chartData ?? [];
+            const sym = (item as any).symbol as string;
+            const effectivePts = rawPts.length >= 2 ? rawPts : (fallbackChartData[sym] ?? []);
             let sparkPath = '';
-            if (rawPts.length >= 2) {
-              const prices = rawPts.map((p: any) => p.price);
+            if (effectivePts.length >= 2) {
+              const prices = effectivePts.map((p: any) => p.price);
               const mn = Math.min(...prices), mx = Math.max(...prices);
-              const rng = mx - mn || stockData!.price * 0.001 || 1;
+              const rng = mx - mn || (stockData?.price ?? 1) * 0.001 || 1;
               const W = 56, H = 22;
               sparkPath = prices.map((p: number, i: number) => {
                 const x = (i / (prices.length - 1)) * W;

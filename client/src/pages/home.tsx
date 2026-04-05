@@ -8822,27 +8822,33 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
   const flashBarItems = useMemo(() => {
     const items: Array<{ category: string; text: string; colorClass: string; tab: string; symbol?: string }> = [];
+    const isAdmin = currentUser?.email?.toLowerCase() === PRIMARY_OWNER_EMAIL.toLowerCase();
 
     const newsSource = allMarketNewsItems.length > 0 ? allMarketNewsItems : nifty50NewsItems.length > 0 ? nifty50NewsItems : marketNewsItems;
     newsSource.slice(0, 6).forEach(n => {
       items.push({ category: 'News', text: n.title, colorClass: 'bg-green-500/20 text-green-300 border-green-500/30', tab: 'market-news' });
     });
 
-    watchlistSymbols.slice(0, 4).forEach(s => {
-      const cleanSym = s.symbol.replace(/^[A-Z]+:/i, '').replace('-EQ', '').replace('-BE', '');
-      items.push({ category: 'Watchlist', text: s.displayName || cleanSym, colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', tab: 'watchlist', symbol: cleanSym });
-    });
+    if (isAdmin) {
+      watchlistSymbols.slice(0, 4).forEach(s => {
+        const cleanSym = s.symbol.replace(/^[A-Z]+:/i, '').replace('-EQ', '').replace('-BE', '');
+        items.push({ category: 'Watchlist', text: s.displayName || cleanSym, colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', tab: 'watchlist', symbol: cleanSym });
+      });
 
-    if (watchlistSymbols.length === 0) {
-      items.push({ category: 'Watchlist', text: 'Add stocks to your watchlist to track live prices', colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', tab: 'watchlist' });
+      if (watchlistSymbols.length === 0) {
+        items.push({ category: 'Watchlist', text: 'Add stocks to your watchlist to track live prices', colorClass: 'bg-cyan-500/20 text-cyan-300 border-cyan-500/30', tab: 'watchlist' });
+      }
     }
 
     items.push({ category: 'Social', text: 'Community insights · Trading discussions · Market reactions', colorClass: 'bg-purple-500/20 text-purple-300 border-purple-500/30', tab: 'social' });
     items.push({ category: 'Journal', text: 'Log your trades and track P&L performance over time', colorClass: 'bg-orange-500/20 text-orange-300 border-orange-500/30', tab: 'journal' });
-    items.push({ category: 'Challenge', text: 'Live Trading Challenge — sharpen your skills & compete', colorClass: 'bg-red-500/20 text-red-300 border-red-500/30', tab: 'trade-challenge' });
+
+    if (isAdmin) {
+      items.push({ category: 'Challenge', text: 'Live Trading Challenge — sharpen your skills & compete', colorClass: 'bg-red-500/20 text-red-300 border-red-500/30', tab: 'trade-challenge' });
+    }
 
     return items;
-  }, [watchlistSymbols, allMarketNewsItems, nifty50NewsItems, marketNewsItems]);
+  }, [watchlistSymbols, allMarketNewsItems, nifty50NewsItems, marketNewsItems, currentUser?.email]);
 
   // Journal summary stats for authenticated users — shown on the flashbar Journal item
   const journalFlashStats = useMemo(() => {
@@ -12803,6 +12809,36 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       <span className="text-[11px] text-gray-500 flex-shrink-0">{tradingDays}d</span>
                                     </>
                                   );
+                                })() : item.category === 'News' ? (() => {
+                                  const niftyPrices = nifty50FormattedData.map((d: any) => d.price).filter((p: number) => p > 0);
+                                  const minP = niftyPrices.length >= 2 ? Math.min(...niftyPrices) : 0;
+                                  const maxP = niftyPrices.length >= 2 ? Math.max(...niftyPrices) : 0;
+                                  const rangeP = maxP - minP || 1;
+                                  const W = 52, H = 18;
+                                  const pts = niftyPrices.length >= 2
+                                    ? niftyPrices.map((p: number, i: number) => `${(i / (niftyPrices.length - 1)) * W},${H - ((p - minP) / rangeP) * H}`).join(' ')
+                                    : '';
+                                  const lastP = niftyPrices[niftyPrices.length - 1] || 0;
+                                  const firstP = niftyPrices[0] || 0;
+                                  const isUp = lastP >= firstP;
+                                  const changePct = firstP ? ((lastP - firstP) / firstP) * 100 : 0;
+                                  return (
+                                    <>
+                                      <span className="text-sm text-gray-300 truncate min-w-0 flex-1">{item.text}</span>
+                                      {pts && (
+                                        <>
+                                          <span className="flex-shrink-0 w-px h-3 bg-gray-600 mx-0.5" />
+                                          <span className="text-[11px] font-mono flex-shrink-0 text-gray-400">N50</span>
+                                          <span className={`text-[11px] flex-shrink-0 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                                            {isUp ? '▲' : '▼'}{Math.abs(changePct).toFixed(2)}%
+                                          </span>
+                                          <svg width={W} height={H} className="flex-shrink-0" style={{ overflow: 'visible' }}>
+                                            <polyline points={pts} fill="none" stroke={isUp ? '#4ade80' : '#f87171'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                          </svg>
+                                        </>
+                                      )}
+                                    </>
+                                  );
                                 })() : item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
                                   const sd = newsStockPrices[item.symbol];
                                   const sym = item.symbol;
@@ -14226,6 +14262,35 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <span className="text-[10px] text-gray-400 flex-shrink-0">{totalTrades}T</span>
                                         <span className="flex-shrink-0 w-px h-3 bg-gray-700 mx-0.5" />
                                         <span className="text-[10px] text-gray-400 flex-shrink-0">{winRate.toFixed(0)}%W</span>
+                                      </>
+                                    );
+                                  })() : item.category === 'News' ? (() => {
+                                    const niftyPrices = nifty50FormattedData.map((d: any) => d.price).filter((p: number) => p > 0);
+                                    const minP = niftyPrices.length >= 2 ? Math.min(...niftyPrices) : 0;
+                                    const maxP = niftyPrices.length >= 2 ? Math.max(...niftyPrices) : 0;
+                                    const rangeP = maxP - minP || 1;
+                                    const pts = niftyPrices.length >= 2
+                                      ? niftyPrices.map((p: number, i: number) => `${(i / (niftyPrices.length - 1)) * 36},${16 - ((p - minP) / rangeP) * 14}`).join(' ')
+                                      : '';
+                                    const lastP = niftyPrices[niftyPrices.length - 1] || 0;
+                                    const firstP = niftyPrices[0] || 0;
+                                    const isUp = lastP >= firstP;
+                                    const changePct = firstP ? ((lastP - firstP) / firstP) * 100 : 0;
+                                    return (
+                                      <>
+                                        <span className="text-xs text-gray-300 truncate min-w-0 flex-1">{item.text}</span>
+                                        {pts && (
+                                          <>
+                                            <span className="flex-shrink-0 w-px h-3 bg-gray-600 mx-0.5" />
+                                            <span className="text-[10px] font-mono flex-shrink-0 text-gray-400">N50</span>
+                                            <span className={`text-[10px] flex-shrink-0 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
+                                              {isUp ? '▲' : '▼'}{Math.abs(changePct).toFixed(2)}%
+                                            </span>
+                                            <svg width="36" height="16" viewBox="0 0 36 16" className="flex-shrink-0">
+                                              <polyline points={pts} fill="none" stroke={isUp ? '#22c55e' : '#ef4444'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                            </svg>
+                                          </>
+                                        )}
                                       </>
                                     );
                                   })() : item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {

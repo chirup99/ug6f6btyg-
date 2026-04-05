@@ -203,7 +203,7 @@ export function ImportPnLDialog({
               data-testid="input-csv-upload"
             />
             <p className="text-[11px] text-gray-400 font-mono">
-              date, symbol, action, qty, entry, exit, pnl, duration
+              Zerodha · Upstox · Angel One · Dhan · Fyers · Groww
             </p>
           </div>
 
@@ -501,25 +501,45 @@ export function ImportPnLDialog({
                               </tr>
                             );
                           }
-                          const { trades } = activeFormat
-                            ? parseTradesWithFormat(importData, activeFormat)
-                            : parseBrokerTrades(importData);
+                          let trades: any[] = [];
+                          let detectedBroker: string | undefined;
+                          if (activeFormat) {
+                            trades = parseTradesWithFormat(importData, activeFormat).trades;
+                          } else {
+                            const result = parseBrokerTrades(importData);
+                            trades = result.trades;
+                            detectedBroker = result.detectedBroker;
+                            if (detectedBroker && !detectedFormatLabel) {
+                              setDetectedFormatLabel(`${detectedBroker} (auto)`);
+                            }
+                          }
                           if (trades.length === 0) {
                             return (
                               <tr>
                                 <td colSpan={6} className="px-3 py-4 text-center text-[11px] text-amber-500">
-                                  ⚠ Unable to parse — check format
+                                  ⚠ Unable to parse — check format or use Build mode
                                 </td>
                               </tr>
                             );
                           }
                           const t = trades[0];
                           return (
-                            <tr className="bg-indigo-50/60">
-                              {COLS.map(col => (
-                                <td key={col} className="px-2.5 py-2 text-gray-700">{t[col]}</td>
-                              ))}
-                            </tr>
+                            <>
+                              {detectedBroker && (
+                                <tr>
+                                  <td colSpan={6} className="px-2.5 pt-2 pb-0">
+                                    <span className="inline-flex items-center gap-1 text-[10px] px-2 py-0.5 bg-green-50 text-green-600 border border-green-100 rounded-full font-medium">
+                                      ✓ {detectedBroker} format detected
+                                    </span>
+                                  </td>
+                                </tr>
+                              )}
+                              <tr className="bg-indigo-50/60">
+                                {COLS.map(col => (
+                                  <td key={col} className="px-2.5 py-2 text-gray-700">{t[col]}</td>
+                                ))}
+                              </tr>
+                            </>
                           );
                         })()}
                       </tbody>

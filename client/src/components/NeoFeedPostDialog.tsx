@@ -290,13 +290,26 @@ export function NeoFeedPostDialog({
             const minVal = Math.min(...chartPoints, 0);
             const range = maxVal - minVal || 1;
             const svgW = 160, svgH = 60;
-            const pathD = chartPoints.length > 1
-              ? chartPoints.map((v, i) => {
-                  const x = (i / (chartPoints.length - 1)) * svgW;
-                  const y = svgH - ((v - minVal) / range) * svgH;
-                  return `${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`;
-                }).join(' ')
-              : `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
+            const pathD = (() => {
+              if (chartPoints.length < 2) return `M 0 ${svgH / 2} L ${svgW} ${svgH / 2}`;
+              const pts = chartPoints.map((v, i) => ({
+                x: (i / (chartPoints.length - 1)) * svgW,
+                y: svgH - ((v - minVal) / range) * svgH * 0.85 - svgH * 0.075,
+              }));
+              let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+              for (let i = 1; i < pts.length; i++) {
+                const prev = pts[i - 1];
+                const curr = pts[i];
+                const pp = i >= 2 ? pts[i - 2] : prev;
+                const nx = i < pts.length - 1 ? pts[i + 1] : curr;
+                const cp1x = (prev.x + (curr.x - pp.x) / 5).toFixed(1);
+                const cp1y = (prev.y + (curr.y - pp.y) / 5).toFixed(1);
+                const cp2x = (curr.x - (nx.x - prev.x) / 5).toFixed(1);
+                const cp2y = (curr.y - (nx.y - prev.y) / 5).toFixed(1);
+                d += ` C ${cp1x},${cp1y} ${cp2x},${cp2y} ${curr.x.toFixed(1)},${curr.y.toFixed(1)}`;
+              }
+              return d;
+            })();
 
             const ordDay = (() => {
               const d = dateObj.getDate();

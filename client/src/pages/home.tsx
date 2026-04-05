@@ -3007,12 +3007,16 @@ function MarketNewsResultTab({
             const stockData = !isAllMode ? newsStockPrices[(item as any).symbol] : null;
             const isUp = stockData ? stockData.change >= 0 : null;
             const sparkColor = isUp === true ? '#22c55e' : isUp === false ? '#ef4444' : '#6b7280';
-            const pts = stockData?.chartData ?? [];
+            const rawPts = stockData?.chartData ?? [];
+            const effectivePts = rawPts.length >= 2 ? rawPts : (stockData ? [
+              { price: Math.max(0.01, stockData.price - stockData.change), time: '09:15' },
+              { price: stockData.price, time: '15:30' }
+            ] : []);
             let sparkPath = '';
-            if (pts.length >= 2) {
-              const prices = pts.map((p: any) => p.price);
+            if (effectivePts.length >= 2) {
+              const prices = effectivePts.map((p: any) => p.price);
               const mn = Math.min(...prices), mx = Math.max(...prices);
-              const rng = mx - mn || 1;
+              const rng = mx - mn || stockData!.price * 0.001 || 1;
               const W = 56, H = 22;
               sparkPath = prices.map((p: number, i: number) => {
                 const x = (i / (prices.length - 1)) * W;
@@ -12696,14 +12700,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
                                   const sd = newsStockPrices[item.symbol];
                                   const isUp = sd.changePercent >= 0;
-                                  const prices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
-                                  const minP = prices.length > 1 ? Math.min(...prices) : 0;
-                                  const maxP = prices.length > 1 ? Math.max(...prices) : 1;
-                                  const range = maxP - minP || 1;
+                                  const rawPrices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
+                                  const prices = rawPrices.length > 1 ? rawPrices : [
+                                    Math.max(0.01, sd.price - sd.change),
+                                    sd.price
+                                  ];
+                                  const minP = Math.min(...prices);
+                                  const maxP = Math.max(...prices);
+                                  const range = maxP - minP || sd.price * 0.001 || 1;
                                   const W = 52, H = 18;
-                                  const pts = prices.length > 1
-                                    ? prices.map((p: number, i: number) => `${(i / (prices.length - 1)) * W},${H - ((p - minP) / range) * H}`).join(' ')
-                                    : null;
+                                  const pts = prices.map((p: number, i: number) => `${(i / (prices.length - 1)) * W},${H - ((p - minP) / range) * H}`).join(' ');
                                   const newsSource = nifty50NewsItems.length > 0 ? nifty50NewsItems : marketNewsItems;
                                   const latestNews = newsSource.find((n: any) => n.symbol === item.symbol)?.title || null;
                                   return (
@@ -12715,11 +12721,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       <span className={`text-[11px] flex-shrink-0 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
                                         {isUp ? '▲' : '▼'}{Math.abs(sd.changePercent).toFixed(2)}%
                                       </span>
-                                      {pts && (
-                                        <svg width={W} height={H} className="flex-shrink-0" style={{ overflow: 'visible' }}>
-                                          <polyline points={pts} fill="none" stroke={isUp ? '#4ade80' : '#f87171'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                      )}
+                                      <svg width={W} height={H} className="flex-shrink-0" style={{ overflow: 'visible' }}>
+                                        <polyline points={pts} fill="none" stroke={isUp ? '#4ade80' : '#f87171'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                      </svg>
                                       {latestNews && (
                                         <>
                                           <span className="flex-shrink-0 w-px h-3 bg-gray-600 mx-0.5" />
@@ -14101,9 +14105,14 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
                                     const sd = newsStockPrices[item.symbol];
                                     const isUp = sd.changePercent >= 0;
-                                    const prices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
-                                    const minP = prices.length > 1 ? Math.min(...prices) : 0;
-                                    const maxP = prices.length > 1 ? Math.max(...prices) : 1;
+                                    const rawPrices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
+                                    const prices = rawPrices.length > 1 ? rawPrices : [
+                                      Math.max(0.01, sd.price - sd.change),
+                                      sd.price
+                                    ];
+                                    const minP = Math.min(...prices);
+                                    const maxP = Math.max(...prices);
+                                    const range = maxP - minP || sd.price * 0.001 || 1;
                                     return (
                                       <>
                                         <span className="text-[11px] font-semibold text-gray-200 truncate">{item.symbol.replace('-EQ','')}</span>
@@ -14113,18 +14122,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <span className={`text-[10px] ${isUp ? 'text-green-400' : 'text-red-400'}`}>
                                           {isUp ? '▲' : '▼'} {Math.abs(sd.changePercent).toFixed(2)}%
                                         </span>
-                                        {prices.length > 1 && (
-                                          <svg width="36" height="16" viewBox={`0 0 36 16`} className="flex-shrink-0">
-                                            <polyline
-                                              points={prices.map((p, i) => `${(i / (prices.length - 1)) * 36},${16 - ((p - minP) / (maxP - minP || 1)) * 14}`).join(' ')}
-                                              fill="none"
-                                              stroke={isUp ? '#22c55e' : '#ef4444'}
-                                              strokeWidth="1.5"
-                                              strokeLinecap="round"
-                                              strokeLinejoin="round"
-                                            />
-                                          </svg>
-                                        )}
+                                        <svg width="36" height="16" viewBox="0 0 36 16" className="flex-shrink-0">
+                                          <polyline
+                                            points={prices.map((p, i) => `${(i / (prices.length - 1)) * 36},${16 - ((p - minP) / range) * 14}`).join(' ')}
+                                            fill="none"
+                                            stroke={isUp ? '#22c55e' : '#ef4444'}
+                                            strokeWidth="1.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                          />
+                                        </svg>
                                       </>
                                     );
                                   })() : (

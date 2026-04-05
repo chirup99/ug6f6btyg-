@@ -50,50 +50,7 @@ export default defineConfig({
     emptyOutDir: true,
     assetsDir: "assets",
     manifest: true,
-    rollupOptions: {
-      output: {
-        manualChunks(id) {
-          if (
-            id.includes("node_modules/react/") ||
-            id.includes("node_modules/react-dom/") ||
-            id.includes("node_modules/scheduler/")
-          ) {
-            return "vendor-react";
-          }
-          if (id.includes("node_modules/lightweight-charts")) {
-            return "vendor-lightweight-charts";
-          }
-          if (
-            id.includes("node_modules/recharts") ||
-            id.includes("node_modules/d3-") ||
-            id.includes("node_modules/d3/") ||
-            id.includes("node_modules/victory-vendor")
-          ) {
-            return "vendor-recharts";
-          }
-          if (id.includes("node_modules/framer-motion")) {
-            return "vendor-framer-motion";
-          }
-          if (
-            id.includes("node_modules/aws-amplify") ||
-            id.includes("node_modules/@aws-amplify") ||
-            id.includes("node_modules/amazon-cognito-identity-js") ||
-            id.includes("node_modules/aws-jwt-verify")
-          ) {
-            return "vendor-auth";
-          }
-          if (
-            id.includes("node_modules/@tanstack/react-query") ||
-            id.includes("node_modules/@tanstack/query-core")
-          ) {
-            return "vendor-query";
-          }
-          if (id.includes("node_modules/@radix-ui/")) {
-            return "vendor-radix";
-          }
-        },
-      },
-    },
+    chunkSizeWarningLimit: 4000,
   },
   server: {
     host: "0.0.0.0",

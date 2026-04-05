@@ -4088,6 +4088,8 @@ export default function Home() {
 
   const [flashBarIndex, setFlashBarIndex] = useState(0);
   const [flashBarVisible, setFlashBarVisible] = useState(true);
+  const [flashBarFallbackChartData, setFlashBarFallbackChartData] = useState<Record<string, {price: number; time: string}[]>>({});
+  const flashBarFallbackFetchedRef = useRef<Set<string>>(new Set());
 
   // Listen for timeframe change events to trigger re-render
   useEffect(() => {
@@ -8854,6 +8856,29 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     return () => clearInterval(id);
   }, [flashBarItems.length]);
 
+  // Fetch fallback last-traded chart data for watchlist symbols with < 2 intraday points
+  useEffect(() => {
+    const watchlistFlashItems = flashBarItems.filter(it => it.category === 'Watchlist' && it.symbol);
+    const toFetch = watchlistFlashItems
+      .map(it => it.symbol as string)
+      .filter(sym => {
+        const pts = (newsStockPrices[sym]?.chartData ?? []).filter((d: any) => d.price > 0);
+        return pts.length < 2 && !flashBarFallbackFetchedRef.current.has(sym);
+      });
+    if (toFetch.length === 0) return;
+    toFetch.forEach(sym => flashBarFallbackFetchedRef.current.add(sym));
+    toFetch.forEach(async (sym) => {
+      try {
+        const res = await fetch(`/api/stock-chart-data/${sym}?timeframe=1D`);
+        if (!res.ok) return;
+        const data = await res.json();
+        if (Array.isArray(data) && data.length >= 2) {
+          setFlashBarFallbackChartData(prev => ({ ...prev, [sym]: data }));
+        }
+      } catch {}
+    });
+  }, [flashBarItems, newsStockPrices]);
+
   // Queries for NIFTY50 and NIFTYBANK chart data - optimized with caching
   const { data: nifty50ChartData = [], isLoading: isNifty50Loading } = useQuery({
     queryKey: ['stock-chart', 'NSE:NIFTY50-INDEX', nifty50Timeframe],
@@ -12737,19 +12762,18 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                               >
                                 {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
                                   const sd = newsStockPrices[item.symbol];
+                                  const sym = item.symbol;
                                   const isUp = sd.changePercent >= 0;
                                   const rawPrices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
-                                  const prices = rawPrices.length > 1 ? rawPrices : [
-                                    Math.max(0.01, sd.price - sd.change),
-                                    sd.price
-                                  ];
-                                  const minP = Math.min(...prices);
-                                  const maxP = Math.max(...prices);
+                                  const fallbackPrices = (flashBarFallbackChartData[sym] ?? []).map((d: any) => d.price).filter((p: number) => p > 0);
+                                  const prices = rawPrices.length >= 2 ? rawPrices : (fallbackPrices.length >= 2 ? fallbackPrices : []);
+                                  const minP = prices.length >= 2 ? Math.min(...prices) : 0;
+                                  const maxP = prices.length >= 2 ? Math.max(...prices) : 0;
                                   const range = maxP - minP || sd.price * 0.001 || 1;
                                   const W = 52, H = 18;
-                                  const pts = prices.map((p: number, i: number) => `${(i / (prices.length - 1)) * W},${H - ((p - minP) / range) * H}`).join(' ');
+                                  const pts = prices.length >= 2 ? prices.map((p: number, i: number) => `${(i / (prices.length - 1)) * W},${H - ((p - minP) / range) * H}`).join(' ') : '';
                                   const newsSource = nifty50NewsItems.length > 0 ? nifty50NewsItems : marketNewsItems;
-                                  const latestNews = newsSource.find((n: any) => n.symbol === item.symbol)?.title || null;
+                                  const latestNews = newsSource.find((n: any) => n.symbol === sym)?.title || null;
                                   return (
                                     <>
                                       <span className="text-sm font-semibold text-gray-100 flex-shrink-0">{item.text}</span>
@@ -12759,9 +12783,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                       <span className={`text-[11px] flex-shrink-0 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
                                         {isUp ? '▲' : '▼'}{Math.abs(sd.changePercent).toFixed(2)}%
                                       </span>
-                                      <svg width={W} height={H} className="flex-shrink-0" style={{ overflow: 'visible' }}>
-                                        <polyline points={pts} fill="none" stroke={isUp ? '#4ade80' : '#f87171'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                      </svg>
+                                      {pts && (
+                                        <svg width={W} height={H} className="flex-shrink-0" style={{ overflow: 'visible' }}>
+                                          <polyline points={pts} fill="none" stroke={isUp ? '#4ade80' : '#f87171'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                                        </svg>
+                                      )}
                                       {latestNews && (
                                         <>
                                           <span className="flex-shrink-0 w-px h-3 bg-gray-600 mx-0.5" />
@@ -14142,34 +14168,35 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                 >
                                   {item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
                                     const sd = newsStockPrices[item.symbol];
+                                    const sym = item.symbol;
                                     const isUp = sd.changePercent >= 0;
                                     const rawPrices = (sd.chartData || []).map((d: any) => d.price).filter((p: number) => p > 0);
-                                    const prices = rawPrices.length > 1 ? rawPrices : [
-                                      Math.max(0.01, sd.price - sd.change),
-                                      sd.price
-                                    ];
-                                    const minP = Math.min(...prices);
-                                    const maxP = Math.max(...prices);
+                                    const fallbackPrices = (flashBarFallbackChartData[sym] ?? []).map((d: any) => d.price).filter((p: number) => p > 0);
+                                    const prices = rawPrices.length >= 2 ? rawPrices : (fallbackPrices.length >= 2 ? fallbackPrices : []);
+                                    const minP = prices.length >= 2 ? Math.min(...prices) : 0;
+                                    const maxP = prices.length >= 2 ? Math.max(...prices) : 0;
                                     const range = maxP - minP || sd.price * 0.001 || 1;
                                     return (
                                       <>
-                                        <span className="text-[11px] font-semibold text-gray-200 truncate">{item.symbol.replace('-EQ','')}</span>
+                                        <span className="text-[11px] font-semibold text-gray-200 truncate">{sym.replace('-EQ','')}</span>
                                         <span className={`text-[11px] font-mono ${isUp ? 'text-green-400' : 'text-red-400'}`}>
                                           ₹{sd.price?.toLocaleString('en-IN', { maximumFractionDigits: 2 })}
                                         </span>
                                         <span className={`text-[10px] ${isUp ? 'text-green-400' : 'text-red-400'}`}>
                                           {isUp ? '▲' : '▼'} {Math.abs(sd.changePercent).toFixed(2)}%
                                         </span>
-                                        <svg width="36" height="16" viewBox="0 0 36 16" className="flex-shrink-0">
-                                          <polyline
-                                            points={prices.map((p, i) => `${(i / (prices.length - 1)) * 36},${16 - ((p - minP) / range) * 14}`).join(' ')}
-                                            fill="none"
-                                            stroke={isUp ? '#22c55e' : '#ef4444'}
-                                            strokeWidth="1.5"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                          />
-                                        </svg>
+                                        {prices.length >= 2 && (
+                                          <svg width="36" height="16" viewBox="0 0 36 16" className="flex-shrink-0">
+                                            <polyline
+                                              points={prices.map((p, i) => `${(i / (prices.length - 1)) * 36},${16 - ((p - minP) / range) * 14}`).join(' ')}
+                                              fill="none"
+                                              stroke={isUp ? '#22c55e' : '#ef4444'}
+                                              strokeWidth="1.5"
+                                              strokeLinecap="round"
+                                              strokeLinejoin="round"
+                                            />
+                                          </svg>
+                                        )}
                                       </>
                                     );
                                   })() : (

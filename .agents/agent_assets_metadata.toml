@@ -48,3 +48,9 @@ id = "EaHOSYg2iggWRtl4uXjRR"
 uri = "file://Perala_AWS_Deployment_Guide.docx"
 type = "word_document"
 title = "Perala AWS Deployment Guide — Complete Beginner's Reference"
+
+[[outputs]]
+id = "TXerQQHSmp447UtfbzQ5V"
+uri = "file://Perala_AWS_Cost_Analysis_April2026.docx"
+type = "word_document"
+title = "Perala AWS Cost Analysis — April 2026"

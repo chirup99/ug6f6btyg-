@@ -327,7 +327,7 @@ function SwipeableCardStack({
       id: 1,
       title: "TECH NEWS",
       subtitle: "Latest in\ntechnology",
-      buttonText: "Read Now",
+      buttonText: "Play",
       gradient: "from-blue-500 to-blue-600",
       buttonColor: "text-blue-600",
       icon: "💻",

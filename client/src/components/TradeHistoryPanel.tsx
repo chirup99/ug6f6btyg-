@@ -369,7 +369,7 @@ export default function TradeHistoryPanel({
     );
   }
 
-  // ── Mobile trade rows ────────────────────────────────────────────────────
+  // ── Mobile trade rows (window 1 – primary) ──────────────────────────────
   function MobileRows() {
     if (isLoadingHeatmapData && tradeHistoryData.length === 0) {
       return (
@@ -442,6 +442,69 @@ export default function TradeHistoryPanel({
     );
   }
 
+  // ── Mobile trade rows (window 2 – secondary broker) ──────────────────────
+  function MobileSecondaryRows() {
+    if (tradeHistoryData2.length === 0) {
+      return (
+        <tr>
+          <td colSpan={9} className="p-6 text-center">
+            <div className="flex flex-col items-center gap-1">
+              <p className="text-xs font-medium text-violet-700 dark:text-violet-300">
+                Connect your secondary broker to view trades here
+              </p>
+            </div>
+          </td>
+        </tr>
+      );
+    }
+    return (
+      <>
+        {tradeHistoryData2.map((trade, index) => (
+          <tr
+            key={index}
+            className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+          >
+            <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{formatTradeTime(trade.time)}</td>
+            <td className="px-2 py-2">
+              <span
+                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                  trade.order === "BUY"
+                    ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                    : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+                }`}
+              >
+                {trade.order}
+              </span>
+            </td>
+            <td className="px-2 py-2 text-slate-700 dark:text-slate-300 font-medium truncate max-w-[100px]">
+              {resolveSymbol(trade.symbol)}
+            </td>
+            <td className="px-2 py-2 text-indigo-600 dark:text-indigo-300 font-semibold">MIS</td>
+            <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{trade.qty}</td>
+            <td className="px-2 py-2 text-amber-600 dark:text-amber-300 font-medium">
+              ₹{typeof trade.price === "number" ? trade.price.toFixed(2) : trade.price}
+            </td>
+            <td
+              className={`px-2 py-2 font-bold ${
+                (trade.pnl || "").includes("+")
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : (trade.pnl || "").includes("-")
+                  ? "text-red-600 dark:text-red-400"
+                  : "text-slate-600 dark:text-slate-400"
+              }`}
+            >
+              {trade.pnl}
+            </td>
+            <td className={`px-2 py-2 font-bold ${calcPctClass(trade)}`}>{calcPctString(trade)}</td>
+            <td className="px-2 py-2 text-violet-600 dark:text-violet-300 font-medium">
+              {normalizeDurationForDisplay(trade.duration)}
+            </td>
+          </tr>
+        ))}
+      </>
+    );
+  }
+
   return (
     <>
       {/* ── MOBILE: collapsible Trade History ─────────────────────────────── */}
@@ -453,14 +516,18 @@ export default function TradeHistoryPanel({
           data-testid="button-mobile-trade-history-toggle"
         >
           <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-slate-700 dark:text-slate-300 uppercase tracking-wide">
-              Trade History Summary
+            <span className={`text-sm font-medium uppercase tracking-wide ${
+              tradeHistoryWindow === 2
+                ? "text-violet-700 dark:text-violet-300"
+                : "text-slate-700 dark:text-slate-300"
+            }`}>
+              Trade History
             </span>
           </div>
           <div className="flex items-center gap-3">
             <div className="px-2 py-0.5 bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-800 rounded text-[10px] font-bold text-blue-600 dark:text-blue-400 flex items-center">
               <Timer className="h-3 w-3 mr-1" />
-              {calculateTotalDuration(tradeHistoryData)}
+              {calculateTotalDuration(tradeHistoryWindow === 2 ? tradeHistoryData2 : tradeHistoryData)}
             </div>
             <Button
               variant="ghost"
@@ -486,6 +553,33 @@ export default function TradeHistoryPanel({
           <Card className="mt-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 max-h-[420px] overflow-hidden">
             <CardContent className="p-3">
               <div className="flex items-center justify-between mb-3 gap-2">
+                {/* Window toggle */}
+                <div className="flex items-center gap-0.5 shrink-0">
+                  <button
+                    onClick={() => setTradeHistoryWindow(1)}
+                    data-testid="button-trade-history-window-1-mobile"
+                    className={`w-6 h-6 rounded text-xs font-bold transition-colors ${
+                      tradeHistoryWindow === 1
+                        ? "bg-slate-700 dark:bg-slate-200 text-white dark:text-slate-900 shadow-sm"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    1
+                  </button>
+                  <button
+                    onClick={() => setTradeHistoryWindow(2)}
+                    data-testid="button-trade-history-window-2-mobile"
+                    className={`w-6 h-6 rounded text-xs font-bold transition-colors ${
+                      tradeHistoryWindow === 2
+                        ? "bg-violet-600 text-white shadow-sm"
+                        : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                    }`}
+                  >
+                    2
+                  </button>
+                </div>
+
+                {/* Broker + action buttons */}
                 <div className="flex gap-1.5 overflow-x-auto custom-thin-scrollbar pb-1">
                   <Button
                     variant="ghost"
@@ -503,12 +597,57 @@ export default function TradeHistoryPanel({
                       className="h-7 px-2 text-xs shrink-0"
                       onClick={() => secondaryBroker === "zerodha" ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                       data-testid="button-broker-orders-zerodha-mobile"
+                      title="View Orders & Positions (Zerodha)"
                     >
-                      <img
-                        src="https://zerodha.com/static/images/products/kite-logo.svg"
-                        alt="Zerodha"
-                        className="h-4 w-4"
-                      />
+                      <img src="https://zerodha.com/static/images/products/kite-logo.svg" alt="Zerodha" className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {upstoxIsConnected && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs shrink-0"
+                      onClick={() => secondaryBroker === "upstox" ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
+                      data-testid="button-broker-orders-upstox-mobile"
+                      title="View Orders & Positions (Upstox)"
+                    >
+                      <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {(angelOneIsConnected || userAngelOneIsConnected) && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs shrink-0"
+                      onClick={() => secondaryBroker === "angelone" ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
+                      data-testid="button-broker-orders-angelone-mobile"
+                      title="View Orders & Positions (Angel One)"
+                    >
+                      <img src="https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701" alt="Angel One" className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {dhanIsConnected && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs shrink-0"
+                      onClick={() => secondaryBroker === "dhan" ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
+                      data-testid="button-broker-orders-dhan-mobile"
+                      title="View Orders & Positions (Dhan)"
+                    >
+                      <img src="https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701" alt="Dhan" className="h-4 w-4" />
+                    </Button>
+                  )}
+                  {deltaExchangeIsConnected && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs shrink-0"
+                      onClick={() => secondaryBroker === "delta" ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
+                      data-testid="button-broker-orders-delta-mobile"
+                      title="View Orders & Positions (Delta Exchange)"
+                    >
+                      <img src="https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw" alt="Delta Exchange" className="h-4 w-4 rounded-full" />
                     </Button>
                   )}
                   {fyersIsConnected && (
@@ -518,12 +657,21 @@ export default function TradeHistoryPanel({
                       className="h-7 px-2 text-xs shrink-0"
                       onClick={() => secondaryBroker === "fyers" ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
                       data-testid="button-broker-orders-fyers-mobile"
+                      title="View Orders & Positions (Fyers)"
                     >
-                      <img
-                        src="https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw"
-                        alt="Fyers"
-                        className="h-4 w-4 rounded-full"
-                      />
+                      <img src="https://play-lh.googleusercontent.com/5Y1kVEbboWVeZ4T0l7cjP2nAUbz1_-ImIWKbbdXkJ0-JMpwV7svbG4uEakENWxPQFRWuQgu4tDtaENULAzZW=s48-rw" alt="Fyers" className="h-4 w-4 rounded-full" />
+                    </Button>
+                  )}
+                  {growwIsConnected && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 px-2 text-xs shrink-0"
+                      onClick={() => secondaryBroker === "groww" ? setShowSecondaryOrderModal(true) : setShowOrderModal(true)}
+                      data-testid="button-broker-orders-groww-mobile"
+                      title="View Orders & Positions (Groww)"
+                    >
+                      <img src="https://play-lh.googleusercontent.com/LHjOai6kf1IsstKNWO9jbMxD-ix_FVYaJSLodKCqYQdoFVzQBuV9z5txxzcTagQcyX8=s48-rw" alt="Groww" className="h-4 w-4 rounded-full" />
                     </Button>
                   )}
                 </div>
@@ -531,7 +679,11 @@ export default function TradeHistoryPanel({
 
               <div className="max-h-80 overflow-y-auto overflow-x-auto custom-thin-scrollbar">
                 <table className="text-xs w-full" style={{ minWidth: "600px" }}>
-                  <thead className="sticky top-0 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
+                  <thead className={`sticky top-0 border-b ${
+                    tradeHistoryWindow === 2
+                      ? "bg-violet-100 dark:bg-violet-900/40 border-violet-200 dark:border-violet-700"
+                      : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                  }`}>
                     <tr>
                       <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[60px]">Time</th>
                       <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[50px]">Order</th>
@@ -545,7 +697,7 @@ export default function TradeHistoryPanel({
                     </tr>
                   </thead>
                   <tbody className="bg-white dark:bg-slate-900">
-                    <MobileRows />
+                    {tradeHistoryWindow === 2 ? <MobileSecondaryRows /> : <MobileRows />}
                   </tbody>
                 </table>
               </div>

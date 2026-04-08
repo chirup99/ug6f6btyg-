@@ -16529,7 +16529,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           secondaryBroker={secondaryBroker}
           secondaryBrokerOrders={secondaryBroker === 'fyers' ? (fyersOrders || []) : secondaryBroker === 'delta' ? (deltaExchangeTradesData || []) : broker2Orders}
           secondaryBrokerPositions={secondaryBroker === 'fyers' ? (fyersPositions || []) : secondaryBroker === 'delta' ? (deltaExchangePositionsData || []) : broker2Positions}
-          secondaryBrokerFunds={isDemoMode ? 25000 : broker2Funds}
+          secondaryBrokerFunds={broker2Funds}
           fetchingSecondaryBroker={fetchingBroker2}
           showBrokerImportModal={showBrokerImportModal} 
           setShowBrokerImportModal={setShowBrokerImportModal} 

@@ -316,11 +316,7 @@ export default function TradeHistoryPanel({
       return (
         <tr>
           <td colSpan={9} className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
-            {!isDemoMode
-              ? "No data yet"
-              : selectedDate
-              ? "No trades for this date"
-              : "Select a date to view trades"}
+            {selectedDate ? "No trades for this date" : "Select a date to view trades"}
           </td>
         </tr>
       );
@@ -391,11 +387,7 @@ export default function TradeHistoryPanel({
       return (
         <tr>
           <td colSpan={9} className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
-            {!isDemoMode
-              ? "No data yet"
-              : selectedDate
-              ? "No trades for this date"
-              : "Select a date to view trades"}
+            {selectedDate ? "No trades for this date" : "Select a date to view trades"}
           </td>
         </tr>
       );

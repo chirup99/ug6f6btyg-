@@ -78,24 +78,6 @@ interface BrokerDataProps {
   isDemoMode?: boolean;
 }
 
-// ─── Demo data for guest mode ─────────────────────────────────────────────────
-const DEMO_ORDERS = [
-  { time: "11:19:15 AM", order: "BUY",  symbol: "SENSEX FEB PE", type: "MIS", qty: 440, price: 483.00, status: "COMPLETE" },
-  { time: "11:20:33 AM", order: "SELL", symbol: "SENSEX FEB PE", type: "MIS", qty: 440, price: 457.35, status: "COMPLETE" },
-  { time: "11:23:43 AM", order: "BUY",  symbol: "SENSEX FEB PE", type: "MIS", qty: 420, price: 492.00, status: "COMPLETE" },
-  { time: "11:24:39 AM", order: "SELL", symbol: "SENSEX FEB PE", type: "MIS", qty: 420, price: 452.78, status: "COMPLETE" },
-  { time: "11:47:41 AM", order: "BUY",  symbol: "SENSEX FEB PE", type: "MIS", qty: 360, price: 539.00, status: "COMPLETE" },
-  { time: "11:47:50 AM", order: "SELL", symbol: "SENSEX FEB PE", type: "MIS", qty: 360, price: 568.96, status: "COMPLETE" },
-  { time: "10:02:14 AM", order: "BUY",  symbol: "NIFTY 24300 CE", type: "MIS", qty: 75, price: 82.50, status: "COMPLETE" },
-  { time: "10:11:30 AM", order: "SELL", symbol: "NIFTY 24300 CE", type: "MIS", qty: 75, price: 108.20, status: "COMPLETE" },
-  { time: "12:35:00 PM", order: "BUY",  symbol: "NIFTY 24100 PE", type: "MIS", qty: 75, price: 145.00, status: "COMPLETE" },
-  { time: "12:55:22 PM", order: "SELL", symbol: "NIFTY 24100 PE", type: "MIS", qty: 75, price: 133.75, status: "COMPLETE" },
-];
-const DEMO_POSITIONS = [
-  { symbol: "NIFTY 24500 CE", entryPrice: 198.50, currentPrice: 215.30, qty: 75, status: "OPEN", exchange: "NSE" },
-  { symbol: "SENSEX 81000 PE", entryPrice: 420.00, currentPrice: 388.60, qty: 20, status: "OPEN", exchange: "BSE" },
-];
-const DEMO_FUNDS = 25000;
 
 export function BrokerData(props: BrokerDataProps) {
   const {
@@ -133,8 +115,8 @@ export function BrokerData(props: BrokerDataProps) {
   const [secondaryOrderTab, setSecondaryOrderTab] = useState("history");
 
   const isFyersConnected = fyersStatus?.connected && fyersStatus?.authenticated;
-  const isConnected = isDemoMode || zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken || growwAccessToken || deltaExchangeIsConnected || isFyersConnected;
-  const activeBroker = isDemoMode ? 'zerodha' : (zerodhaAccessToken ? 'zerodha' : upstoxAccessToken ? 'upstox' : angelOneAccessToken ? 'angelone' : dhanAccessToken ? 'dhan' : growwAccessToken ? 'groww' : deltaExchangeIsConnected ? 'delta' : isFyersConnected ? 'fyers' : null);
+  const isConnected = zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken || growwAccessToken || deltaExchangeIsConnected || isFyersConnected;
+  const activeBroker = zerodhaAccessToken ? 'zerodha' : upstoxAccessToken ? 'upstox' : angelOneAccessToken ? 'angelone' : dhanAccessToken ? 'dhan' : growwAccessToken ? 'groww' : deltaExchangeIsConnected ? 'delta' : isFyersConnected ? 'fyers' : null;
 
   // Refresh Dhan profile every 10 seconds if connected
   useEffect(() => {
@@ -315,9 +297,9 @@ export function BrokerData(props: BrokerDataProps) {
     return () => clearInterval(ltpInterval);
   }, [activeBroker, secondaryBroker, growwAccessToken, showOrderModal, showSecondaryOrderModal, growwPositions, secondaryBrokerPositions]);
 
-  const displayOrders = isDemoMode ? DEMO_ORDERS : (activeBroker === 'groww' ? growwOrders : brokerOrders);
-  const displayPositions = isDemoMode ? DEMO_POSITIONS : (activeBroker === 'groww' ? growwPositions : brokerPositions);
-  const isFetchingOrders = isDemoMode ? false : (activeBroker === 'groww' ? fetchingGrowwOrders : fetchingBrokerOrders);
+  const displayOrders = activeBroker === 'groww' ? growwOrders : brokerOrders;
+  const displayPositions = activeBroker === 'groww' ? growwPositions : brokerPositions;
+  const isFetchingOrders = activeBroker === 'groww' ? fetchingGrowwOrders : fetchingBrokerOrders;
 
   const formatSymbol = (symbol: string) => {
     if (!symbol) return "";
@@ -341,15 +323,13 @@ export function BrokerData(props: BrokerDataProps) {
     return symbol;
   };
 
-  const brokerFundsValue = isDemoMode
-    ? DEMO_FUNDS
-    : (activeBroker === 'groww'
-        ? (growwFundsValue !== null ? growwFundsValue : (brokerFunds ?? 0))
-        : brokerFunds);
+  const brokerFundsValue = activeBroker === 'groww'
+    ? (growwFundsValue !== null ? growwFundsValue : (brokerFunds ?? 0))
+    : brokerFunds;
 
   const allBrokerInfo: Record<string, { logo: string; id: string; name: string; rounded?: boolean }> = {
-    zerodha:  { logo: "https://zerodha.com/static/images/products/kite-logo.svg", id: isDemoMode ? "DEMO01" : (zerodhaClientId || "N/A"), name: isDemoMode ? "Demo Trader" : (zerodhaUserName || "N/A") },
-    upstox:   { logo: "https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png", id: isDemoMode ? "DEMO02" : (upstoxUserId || "N/A"), name: isDemoMode ? "Demo Trader" : (upstoxUserName && upstoxUserName !== "undefined" && upstoxUserName !== "N/A" ? upstoxUserName : "Upstox User") },
+    zerodha:  { logo: "https://zerodha.com/static/images/products/kite-logo.svg", id: zerodhaClientId || "N/A", name: zerodhaUserName || "N/A" },
+    upstox:   { logo: "https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png", id: upstoxUserId || "N/A", name: upstoxUserName && upstoxUserName !== "undefined" && upstoxUserName !== "N/A" ? upstoxUserName : "Upstox User" },
     dhan:     { logo: "https://play-lh.googleusercontent.com/lVXf_i8Gi3C7eZVWKgeG8U5h_kAzUT0MrmvEAXfM_ihlo44VEk01HgAi6vbBNsSzBQ=w240-h480-rw?v=1701", id: dhanClientId || dhanUserId || "N/A", name: dhanClientName || "Dhan User" },
     groww:    { logo: "https://play-lh.googleusercontent.com/LHjOai6kf1IsstKNWO9jbMxD-ix_FVYaJSLodKCqYQdoFVzQBuV9z5txxzcTagQcyX8=s48-rw", id: growwUserId || "N/A", name: growwUserName || "Groww User", rounded: true },
     delta:    { logo: "https://play-lh.googleusercontent.com/XAQ7c8MRAvy_mOUw8EGS3tQsn95MY7gJxtj-sSoVZ6OYJmjvt7KaGGDyT85UTRpLxL6d=w240-h480-rw", id: (deltaExchangeUserId && deltaExchangeUserId !== "Fetching..." ? deltaExchangeUserId : "N/A"), name: (deltaExchangeAccountName && deltaExchangeAccountName !== "Delta User" ? deltaExchangeAccountName : "Delta User"), rounded: true },

@@ -409,7 +409,7 @@ export function ConnectBrokerDialog({
                     }`}
                     data-testid="button-upstox-dialog"
                     disabled={connectedBrokersCount >= 2 && !upstoxIsConnected}
-                    onClick={() => isDemoMode ? handleUpstoxConnect() : setIsUpstoxDialogOpen(true)}
+                    onClick={() => setIsUpstoxDialogOpen(true)}
                   >
                     <img src="https://assets.upstox.com/content/assets/images/cms/202494/MediumWordmark_UP(WhiteOnPurple).png" alt="Upstox" className="h-4 mr-2" />
                     Upstox

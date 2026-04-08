@@ -30,7 +30,6 @@ export async function setupVite(app: Express, server: Server) {
           host: process.env.REPLIT_DEV_DOMAIN,
           clientPort: 443,
           protocol: "wss" as const,
-          path: "/__vite_hmr",
         }
       : { server },
     allowedHosts: true as const,

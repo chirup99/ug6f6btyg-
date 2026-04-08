@@ -60,7 +60,7 @@ export default defineConfig({
       ? {
           host: process.env.REPLIT_DEV_DOMAIN,
           clientPort: 443,
-          protocol: "wss",
+          protocol: "wss" as const,
         }
       : true,
     fs: {

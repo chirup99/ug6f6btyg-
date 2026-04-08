@@ -474,12 +474,15 @@ class AngelOneWebSocket {
     return prices;
   }
 
-  // Subscribe to live index prices (BANKNIFTY, SENSEX, GOLD)
+  // Subscribe to live index prices (BANKNIFTY, SENSEX, GOLD, SILVER, CRUDEOIL, NATURALGAS)
   subscribeToLiveIndices(): void {
     const indices = [
-      { symbol: 'BANKNIFTY', token: '99926009', exchange: 'NSE' },
-      { symbol: 'SENSEX', token: '99919000', exchange: 'BSE' },
-      { symbol: 'GOLD', token: '99920003', exchange: 'MCX' }
+      { symbol: 'BANKNIFTY',  token: '99926009', exchange: 'NSE' },
+      { symbol: 'SENSEX',     token: '99919000', exchange: 'BSE' },
+      { symbol: 'GOLD',       token: '99920003', exchange: 'MCX' },
+      { symbol: 'SILVER',     token: '99920004', exchange: 'MCX' },
+      { symbol: 'CRUDEOIL',   token: '99920001', exchange: 'MCX' },
+      { symbol: 'NATURALGAS', token: '99920002', exchange: 'MCX' },
     ];
 
     for (const idx of indices) {

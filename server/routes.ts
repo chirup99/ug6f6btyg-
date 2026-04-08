@@ -11718,27 +11718,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
 
       const indices = [
-        { 
-          symbol: 'BANKNIFTY', 
-          name: 'Bank Nifty', 
-          token: '99926009', 
-          exchange: 'NSE',
-          marketOpen: !isWeekend && nseOpen
-        },
-        { 
-          symbol: 'SENSEX', 
-          name: 'Sensex', 
-          token: '99919000', 
-          exchange: 'BSE',
-          marketOpen: !isWeekend && nseOpen
-        },
-        { 
-          symbol: 'GOLD', 
-          name: 'Gold', 
-          token: '99920003', 
-          exchange: 'MCX',
-          marketOpen: !isWeekend && mcxOpen
-        }
+        { symbol: 'BANKNIFTY',  name: 'Bank Nifty',   token: '99926009', exchange: 'NSE', marketOpen: !isWeekend && nseOpen },
+        { symbol: 'SENSEX',     name: 'Sensex',        token: '99919000', exchange: 'BSE', marketOpen: !isWeekend && nseOpen },
+        { symbol: 'GOLD',       name: 'Gold',          token: '99920003', exchange: 'MCX', marketOpen: !isWeekend && mcxOpen },
+        { symbol: 'SILVER',     name: 'Silver',        token: '99920004', exchange: 'MCX', marketOpen: !isWeekend && mcxOpen },
+        { symbol: 'CRUDEOIL',   name: 'Crude Oil',     token: '99920001', exchange: 'MCX', marketOpen: !isWeekend && mcxOpen },
+        { symbol: 'NATURALGAS', name: 'Natural Gas',   token: '99920002', exchange: 'MCX', marketOpen: !isWeekend && mcxOpen },
       ];
 
       // Create default empty response structure

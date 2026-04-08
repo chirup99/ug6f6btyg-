@@ -44,7 +44,7 @@ const IndicatorCrossingsDisplay = lazy(() => import("@/components/indicator-cros
 import NeoFeedSocialFeed from "@/components/neofeed-social-feed";
 const TradingMaster = lazy(() => import("@/components/trading-master").then(m => ({ default: m.TradingMaster })));
 const MiniCastTab = lazy(() => import("@/components/MiniCastTab").then(m => ({ default: m.MiniCastTab })));
-const TradingDashboardTab = lazy(() => import("@/components/TradingDashboardTab").then(m => ({ default: m.TradingDashboardTab })));
+import { TradingDashboardTab } from "@/components/TradingDashboardTab";
 
 import type { MultipleImageUploadRef } from "@/components/multiple-image-upload";
 import { WorldMap } from "@/components/world-map";
@@ -12058,10 +12058,10 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           <div className="h-full overflow-auto">
             {/* Render content based on active tab */}
 
-            {activeTab === 'dashboard' && localStorage.getItem('currentUserEmail') === 'chiranjeevi.perala99@gmail.com' && (
-              <Suspense fallback={null}>
+            {localStorage.getItem('currentUserEmail') === 'chiranjeevi.perala99@gmail.com' && (
+              <div style={{ display: activeTab === 'dashboard' ? 'block' : 'none' }}>
                 <TradingDashboardTab setActiveTab={setActiveTab} />
-              </Suspense>
+              </div>
             )}
 
             {activeTab === "trading-home" && (

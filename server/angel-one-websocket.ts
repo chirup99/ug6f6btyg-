@@ -208,14 +208,15 @@ class AngelOneWebSocket {
       this.latestPrices.set(symbolKey, ohlcData);
       console.log(`💹 [WS] ${ohlcData.symbol}: LTP=${ohlcData.close} O=${ohlcData.open} H=${ohlcData.high} L=${ohlcData.low} V=${ohlcData.volume}`);
 
-      // Call tick callbacks for this symbol
-      const callbacks = this.tickCallbacks.get(symbolKey);
+      // Call tick callbacks keyed by token (so all subscribers with same token get notified,
+      // regardless of which tradingSymbol string was used to register them)
+      const callbacks = this.tickCallbacks.get(normalizedToken);
       if (callbacks && callbacks.length > 0) {
         for (const callback of callbacks) {
           try {
             callback(ohlcData);
           } catch (cbError) {
-            console.error(`[WEBSOCKET] Tick callback error for ${symbolKey}:`, cbError);
+            console.error(`[WEBSOCKET] Tick callback error for token ${normalizedToken}:`, cbError);
           }
         }
       }
@@ -507,15 +508,16 @@ class AngelOneWebSocket {
     
     console.log(`📊 [WEBSOCKET] Subscribe request: ${tradingSymbol} (${symbolToken}) on ${exchange}`);
     
-    // Add to subscriptions
+    // Add to subscriptions (keyed by tradingSymbol_token for deduplication)
     this.subscriptions.set(key, { symbolToken, exchange: exchangeType });
     
-    // Add callback to the callbacks list
-    const existingCallbacks = this.tickCallbacks.get(key) || [];
+    // Store callbacks keyed by RAW TOKEN so handleTick always finds them regardless
+    // of which tradingSymbol string was used (e.g. "GOLD" vs "MCXGOLDEX" for same token)
+    const existingCallbacks = this.tickCallbacks.get(symbolToken) || [];
     existingCallbacks.push(callback);
-    this.tickCallbacks.set(key, existingCallbacks);
+    this.tickCallbacks.set(symbolToken, existingCallbacks);
     
-    console.log(`📊 [WEBSOCKET] Added subscription: ${key} with callback (total callbacks: ${existingCallbacks.length})`);
+    console.log(`📊 [WEBSOCKET] Added subscription: ${key} with callback keyed by token ${symbolToken} (total: ${existingCallbacks.length})`);
     
     // Subscribe if WebSocket is connected
     if (this.isConnected && this.ws) {

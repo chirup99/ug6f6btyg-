@@ -100,6 +100,35 @@ export const MultipleImageUpload = forwardRef<MultipleImageUploadRef, MultipleIm
       });
     };
 
+    // Global paste listener for journal variant - paste image anywhere on the page
+    useEffect(() => {
+      if (variant !== 'journal') return;
+
+      const handleGlobalPaste = (e: ClipboardEvent) => {
+        const target = e.target as HTMLElement;
+        const tag = target.tagName.toLowerCase();
+        if (tag === 'input' || tag === 'textarea' || target.isContentEditable) return;
+
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        const files: File[] = [];
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].kind === 'file' && items[i].type.startsWith('image/')) {
+            const file = items[i].getAsFile();
+            if (file) files.push(file);
+          }
+        }
+        if (files.length > 0) {
+          e.preventDefault();
+          processFiles(files);
+        }
+      };
+
+      window.addEventListener('paste', handleGlobalPaste);
+      return () => window.removeEventListener('paste', handleGlobalPaste);
+    }, [variant, images]);
+
     const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
       const files = Array.from(e.target.files || []);
       if (files.length > 0) {

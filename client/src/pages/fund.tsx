@@ -232,7 +232,7 @@ export function FundsAnalysis({
   return (
     <>
       {/* Full Width Funds Analysis - New Empty Window */}
-      <div className="mt-6">
+      {!isGuestMode && <div className="mt-6">
         <Card className="bg-gradient-to-br from-indigo-500/10 via-purple-500/10 to-pink-500/10 dark:from-indigo-500/20 dark:via-purple-500/20 dark:to-pink-500/20 border-indigo-200/50 dark:border-indigo-500/30 shadow-xl overflow-hidden relative">
           {/* Decorative background elements */}
           <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
@@ -662,7 +662,7 @@ export function FundsAnalysis({
             })()}
           </CardContent>
         </Card>
-      </div>
+      </div>}
 
       {/* Broker Breakup Dialog */}
       <Dialog open={showBrokerBreakupDialog} onOpenChange={setShowBrokerBreakupDialog}>

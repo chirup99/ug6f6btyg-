@@ -14245,36 +14245,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                         <span className="text-[10px] text-gray-400 flex-shrink-0">{winRate.toFixed(0)}%W</span>
                                       </>
                                     );
-                                  })() : item.category === 'News' ? (() => {
-                                    const niftyPrices = nifty50FormattedData.map((d: any) => d.price).filter((p: number) => p > 0);
-                                    const minP = niftyPrices.length >= 2 ? Math.min(...niftyPrices) : 0;
-                                    const maxP = niftyPrices.length >= 2 ? Math.max(...niftyPrices) : 0;
-                                    const rangeP = maxP - minP || 1;
-                                    const pts = niftyPrices.length >= 2
-                                      ? niftyPrices.map((p: number, i: number) => `${(i / (niftyPrices.length - 1)) * 36},${16 - ((p - minP) / rangeP) * 14}`).join(' ')
-                                      : '';
-                                    const lastP = niftyPrices[niftyPrices.length - 1] || 0;
-                                    const firstP = niftyPrices[0] || 0;
-                                    const isUp = lastP >= firstP;
-                                    const changePct = firstP ? ((lastP - firstP) / firstP) * 100 : 0;
-                                    return (
-                                      <>
-                                        <span className="text-xs text-gray-300 truncate min-w-0 flex-1">{item.text}</span>
-                                        {pts && (
-                                          <>
-                                            <span className="flex-shrink-0 w-px h-3 bg-gray-600 mx-0.5" />
-                                            <span className="text-[10px] font-mono flex-shrink-0 text-gray-400">N50</span>
-                                            <span className={`text-[10px] flex-shrink-0 ${isUp ? 'text-green-400' : 'text-red-400'}`}>
-                                              {isUp ? '▲' : '▼'}{Math.abs(changePct).toFixed(2)}%
-                                            </span>
-                                            <svg width="36" height="16" viewBox="0 0 36 16" className="flex-shrink-0">
-                                              <polyline points={pts} fill="none" stroke={isUp ? '#22c55e' : '#ef4444'} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-                                            </svg>
-                                          </>
-                                        )}
-                                      </>
-                                    );
-                                  })() : item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
+                                  })() : item.category === 'News' ? (
+                                    <span className="text-xs text-gray-300 truncate min-w-0 flex-1">{item.text}</span>
+                                  ) : item.category === 'Watchlist' && item.symbol && newsStockPrices[item.symbol] ? (() => {
                                     const sd = newsStockPrices[item.symbol];
                                     const sym = item.symbol;
                                     const isUp = sd.changePercent >= 0;

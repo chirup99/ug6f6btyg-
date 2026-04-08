@@ -6687,12 +6687,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   }, []);
 
   const handleZerodhaConnect = () => {
-    if (isDemoMode) {
-      setZerodhaIsConnected(true);
-      setShowConnectDialog(false);
-      toast({ title: "Kite Connected (Demo)", description: "Tap the Kite icon to explore orders & positions." });
-      return;
-    }
     setIsZerodhaDialogOpen(true);
   };
 
@@ -6730,12 +6724,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   };
 
   const handleUpstoxConnect = async () => {
-    if (isDemoMode) {
-      setUpstoxIsConnected(true);
-      setShowConnectDialog(false);
-      toast({ title: "Upstox Connected (Demo)", description: "Tap the Upstox icon to explore orders & positions." });
-      return;
-    }
     try {
       if (!upstoxApiKeyInput || !upstoxApiSecretInput) {
         toast({

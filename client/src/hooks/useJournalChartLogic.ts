@@ -550,8 +550,8 @@ export function useJournalChartLogic(config: JournalChartConfig) {
         exchange: stockToken.exchange,
         symbolToken: stockToken.token,
         interval: interval,
-        fromDate: formatDateWithTime(tenDaysAgo, "09:15"), // Market open time
-        toDate: formatDateWithTime(today, "15:30"), // Market close time
+        fromDate: formatDateWithTime(tenDaysAgo, "00:00"), // Full day start (supports MCX, crypto, 24hr markets)
+        toDate: formatDateWithTime(today, "23:59"), // Full day end (supports MCX, crypto, 24hr markets)
       };
 
       console.log(`📊 [SEARCH CHART] API Request:`, requestBody);

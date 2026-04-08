@@ -12092,24 +12092,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // User selected a specific date - format with proper market hours
         console.log(`📅 [DATE FILTER] User selected specific date: ${date}`);
 
-        const cleanExchange = exchange.toUpperCase();
-        const isMCX = cleanExchange === 'MCX' || cleanExchange === '3';
-        const isNCDEX = cleanExchange === 'NCDEX' || cleanExchange === '5';
-
-        if (isMCX) {
-          finalFromDate = `${date} 09:00`;
-          finalToDate = `${date} 23:55`;
-          console.log(`📅 [MCX HOURS] From: ${finalFromDate}, To: ${finalToDate}`);
-        } else if (isNCDEX) {
-          finalFromDate = `${date} 09:00`;
-          finalToDate = `${date} 20:00`;
-          console.log(`📅 [NCDEX HOURS] From: ${finalFromDate}, To: ${finalToDate}`);
-        } else {
-          // NSE/Default: 09:15 to 15:30
-          finalFromDate = `${date} 09:15`;
-          finalToDate = `${date} 15:30`;
-          console.log(`📅 [NSE HOURS] From: ${finalFromDate}, To: ${finalToDate}`);
-        }
+        // Full 24-hour range — no market-hours filter so MCX, crypto, and future 24hr markets all work
+        finalFromDate = `${date} 00:00`;
+        finalToDate = `${date} 23:59`;
+        console.log(`📅 [FULL DAY] From: ${finalFromDate}, To: ${finalToDate}`);
       } else if (!fromDate || !toDate) {
         return res.status(400).json({ 
           success: false,

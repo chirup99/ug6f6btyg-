@@ -442,6 +442,13 @@ export interface JournalTabContentProps {
   // Guest Dialog
   showGuestDialog: any;
   setShowGuestDialog: any;
+
+  // Live streaming / candle countdown
+  journalCandleCountRef: any;
+  journalCountdownBarRef: any;
+  journalLiveData: any;
+  isJournalStreaming: boolean;
+  liveOhlc: any;
 }
 
 export function JournalTabContent({
@@ -791,6 +798,11 @@ export function JournalTabContent({
   toast,
   showGuestDialog,
   setShowGuestDialog,
+  journalCandleCountRef,
+  journalCountdownBarRef,
+  journalLiveData,
+  isJournalStreaming,
+  liveOhlc,
 }: JournalTabContentProps) {
   const [, setLocation] = useLocation();
 
@@ -1988,7 +2000,7 @@ export function JournalTabContent({
                                   </div>
                                 )}
 
-                                {/* Search Chart OHLC Display */}
+                                {/* Search Chart OHLC Display - hovered candle */}
                                 {hoveredCandleOhlc &&
                                   journalChartData &&
                                   journalChartData.length > 0 && (
@@ -2017,12 +2029,62 @@ export function JournalTabContent({
                                     </div>
                                   )}
 
+                                {/* Live OHLC display (shown when not hovering a candle) */}
+                                {liveOhlc && !hoveredCandleOhlc && journalChartData && journalChartData.length > 0 && (
+                                  <div
+                                    className="absolute top-1 left-2 z-40 flex items-center gap-1 text-xs font-mono pointer-events-none"
+                                    data-testid="live-ohlc-display"
+                                  >
+                                    <span className="text-green-600 dark:text-green-400 font-medium">
+                                      O{liveOhlc.open.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300 font-medium">
+                                      H{liveOhlc.high.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <span className="text-gray-700 dark:text-gray-300 font-medium">
+                                      L{liveOhlc.low.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <span className={`font-medium ${liveOhlc.close >= liveOhlc.open ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                                      C{liveOhlc.close.toLocaleString("en-IN", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </span>
+                                    <span className={`font-medium ${liveOhlc.change >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                                      {liveOhlc.change >= 0 ? "+" : ""}{liveOhlc.change.toFixed(2)}%
+                                    </span>
+                                  </div>
+                                )}
+
+                                {/* Candle count badge (top-right) — updated directly via ref by the SSE handler */}
+                                {journalChartData && journalChartData.length > 0 && (
+                                  <div className="absolute top-1 right-2 z-40 flex items-center gap-1.5 pointer-events-none" data-testid="candle-count-badge">
+                                    {isJournalStreaming && journalLiveData?.isMarketOpen && (
+                                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" title="Live streaming" />
+                                    )}
+                                    <span
+                                      ref={journalCandleCountRef}
+                                      className="text-[10px] font-mono text-gray-400 dark:text-gray-500"
+                                      data-testid="candle-count-value"
+                                    >
+                                      {journalChartData.length}
+                                    </span>
+                                  </div>
+                                )}
+
                                 {/* Search Chart Container */}
                                 <div
                                   ref={journalChartContainerRef}
                                   className="flex-1 w-full relative bg-white dark:bg-gray-800"
                                   data-testid="search-chart-container"
                                 />
+
+                                {/* Candle countdown bar — width is set directly via ref by the SSE handler */}
+                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-100 dark:bg-gray-800 pointer-events-none z-40" data-testid="countdown-bar-track">
+                                  <div
+                                    ref={journalCountdownBarRef}
+                                    className="h-full bg-blue-400/60 dark:bg-blue-500/60"
+                                    style={{ width: "100%" }}
+                                    data-testid="countdown-bar-fill"
+                                  />
+                                </div>
 
                                 {/* Search Chart - No Data Message */}
                                 {(!journalChartData || journalChartData.length === 0) &&

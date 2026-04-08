@@ -16436,6 +16436,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 toast={toast}
                 showGuestDialog={showGuestDialog}
                 setShowGuestDialog={setShowGuestDialog}
+                journalCandleCountRef={journalCandleCountRef}
+                journalCountdownBarRef={journalCountdownBarRef}
+                journalLiveData={journalLiveData}
+                isJournalStreaming={isJournalStreaming}
+                liveOhlc={liveOhlc}
               />
             )}
 

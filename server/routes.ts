@@ -11759,15 +11759,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const price = cachedPrices.get(idx.token);
         const isLive = idx.marketOpen && price && price.close > 0;
 
+        const ltp    = price?.close || 0;
+        const open   = price?.open  || 0;
+        const change = open > 0 ? parseFloat((ltp - open).toFixed(2)) : 0;
+        const changePercent = open > 0 ? parseFloat(((change / open) * 100).toFixed(2)) : 0;
+
         return {
           ...idx,
-          ltp: price?.close || 0,
-          change: 0,
-          changePercent: 0,
-          open: price?.open || 0,
-          high: price?.high || 0,
-          low: price?.low || 0,
-          close: price?.close || 0,
+          ltp,
+          change,
+          changePercent,
+          open,
+          high: price?.high   || 0,
+          low:  price?.low    || 0,
+          close: ltp,
           volume: price?.volume || 0,
           isLive,
           lastUpdate: isLive && price ? new Date(price.time * 1000).toISOString() : null

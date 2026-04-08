@@ -8007,22 +8007,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     localStorage.setItem("tradingJournalDemoMode", String(val));
   };
 
-  // Pre-connect Zerodha and Upstox in guest/demo mode so they appear ready without tapping
+  // Reset broker connections based on actual stored tokens only
   useEffect(() => {
-    if (isDemoMode) {
-      setZerodhaIsConnected(true);
-      setUpstoxIsConnected(true);
-    } else {
-      // In personal mode, only reset if no real token exists in localStorage OR URL params
-      // (checking localStorage directly because React state may not yet reflect the URL callback effect)
-      const urlParams = new URLSearchParams(window.location.search);
-      const hasZerodhaUrlToken = !!urlParams.get('zerodha_token');
-      const hasZerodhaStoredToken = !!localStorage.getItem('zerodha_token');
-      if (!hasZerodhaUrlToken && !hasZerodhaStoredToken) setZerodhaIsConnected(false);
+    const urlParams = new URLSearchParams(window.location.search);
+    const hasZerodhaUrlToken = !!urlParams.get('zerodha_token');
+    const hasZerodhaStoredToken = !!localStorage.getItem('zerodha_token');
+    if (!hasZerodhaUrlToken && !hasZerodhaStoredToken) setZerodhaIsConnected(false);
 
-      const hasUpstoxStoredToken = !!localStorage.getItem('upstox_token');
-      if (!hasUpstoxStoredToken) setUpstoxIsConnected(false);
-    }
+    const hasUpstoxStoredToken = !!localStorage.getItem('upstox_token');
+    if (!hasUpstoxStoredToken) setUpstoxIsConnected(false);
   }, [isDemoMode]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Loading state for heatmap data

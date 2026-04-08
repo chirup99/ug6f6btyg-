@@ -585,7 +585,7 @@ export default function TradeHistoryPanel({
                     variant="ghost"
                     size="sm"
                     onClick={() => setShowConnectDialog(true)}
-                    className="h-7 px-2 text-xs shrink-0"
+                    className="h-7 px-2 text-xs shrink-0 bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 hover:bg-purple-200 dark:hover:bg-purple-800/50"
                     data-testid="button-connect-mobile"
                   >
                     Connect
@@ -753,7 +753,7 @@ export default function TradeHistoryPanel({
                 variant="ghost"
                 size="sm"
                 onClick={() => setShowConnectDialog(true)}
-                className="h-7 px-2 text-xs"
+                className="h-7 px-2 text-xs bg-purple-100 dark:bg-purple-900/40 text-purple-700 dark:text-purple-300 border border-purple-300 dark:border-purple-700 hover:bg-purple-200 dark:hover:bg-purple-800/50"
                 data-testid="button-connect"
               >
                 Connect

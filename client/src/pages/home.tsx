@@ -5979,6 +5979,32 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const connectedBrokersCount = connectedBrokersList.length;
   const secondaryBroker = connectedBrokersList[1] || null;
 
+  const mobileBrokerAccountInfo = (() => {
+    switch (activeBroker) {
+      case 'zerodha':  return { name: zerodhaUserName || 'Zerodha User', id: zerodhaClientId || '' };
+      case 'upstox':   return { name: upstoxUserName || 'Upstox User', id: '' };
+      case 'angelone': return { name: userAngelOneName || 'Angel One User', id: angelOneClientCodeInput || '' };
+      case 'dhan':     return { name: dhanClientName || 'Dhan User', id: dhanClientIdInput || '' };
+      case 'groww':    return { name: growwUserName || 'Groww User', id: '' };
+      case 'fyers':    return { name: (fyersStatus as any)?.userName || 'Fyers User', id: (fyersStatus as any)?.userId || '' };
+      case 'delta':    return { name: deltaExchangeAccountName || 'Delta Exchange', id: '' };
+      default:         return null;
+    }
+  })();
+
+  const mobileSecondaryBrokerAccountInfo = (() => {
+    switch (secondaryBroker) {
+      case 'zerodha':  return { name: zerodhaUserName || 'Zerodha User', id: zerodhaClientId || '' };
+      case 'upstox':   return { name: upstoxUserName || 'Upstox User', id: '' };
+      case 'angelone': return { name: userAngelOneName || 'Angel One User', id: angelOneClientCodeInput || '' };
+      case 'dhan':     return { name: dhanClientName || 'Dhan User', id: dhanClientIdInput || '' };
+      case 'groww':    return { name: growwUserName || 'Groww User', id: '' };
+      case 'fyers':    return { name: (fyersStatus as any)?.userName || 'Fyers User', id: (fyersStatus as any)?.userId || '' };
+      case 'delta':    return { name: deltaExchangeAccountName || 'Delta Exchange', id: '' };
+      default:         return null;
+    }
+  })();
+
   const brokerFundsValue = activeBroker === 'groww' 
     ? (queryClient.getQueryData<{funds: number}>(["/api/broker/groww/funds"])?.funds ?? brokerFunds)
     : brokerFunds;
@@ -16438,6 +16464,15 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 journalLiveData={journalLiveData}
                 isJournalStreaming={isJournalStreaming}
                 liveOhlc={liveOhlc}
+                mobileBrokerOrders={zerodhaAccessToken ? brokerOrders : upstoxAccessToken ? brokerOrders : userAngelOneIsConnected ? brokerOrders : dhanAccessToken ? brokerOrders : growwAccessToken ? (brokerOrders || []) : deltaExchangeIsConnected ? (deltaExchangeTradesData || []) : fyersIsConnected ? (fyersOrders || []) : []}
+                mobileBrokerPositions={zerodhaAccessToken ? brokerPositions : upstoxAccessToken ? brokerPositions : userAngelOneIsConnected ? brokerPositions : dhanAccessToken ? brokerPositions : growwAccessToken ? (brokerPositions || []) : deltaExchangeIsConnected ? (deltaExchangePositionsData || []) : fyersIsConnected ? (fyersPositions || []) : []}
+                mobileBrokerFunds={brokerFunds}
+                mobileBrokerAccountInfo={mobileBrokerAccountInfo}
+                mobileSecondaryBrokerOrders={secondaryBroker === 'fyers' ? (fyersOrders || []) : secondaryBroker === 'delta' ? (deltaExchangeTradesData || []) : broker2Orders}
+                mobileSecondaryBrokerPositions={secondaryBroker === 'fyers' ? (fyersPositions || []) : secondaryBroker === 'delta' ? (deltaExchangePositionsData || []) : broker2Positions}
+                mobileSecondaryBrokerFunds={broker2Funds}
+                mobileSecondaryBrokerAccountInfo={mobileSecondaryBrokerAccountInfo}
+                recordAllBrokerOrders={recordAllBrokerOrders}
               />
             )}
 

@@ -34,6 +34,7 @@ import {
   MoreVertical,
   Plus,
   Loader2,
+  Plug,
 } from "lucide-react";
 import {
   AreaChart,
@@ -68,6 +69,7 @@ import { FundsAnalysis } from "./fund";
 import LossMakingAnalysisPanel from "@/components/LossMakingAnalysisPanel";
 import { DisciplineRiskPanel } from "@/components/DisciplineRiskPanel";
 import { PaperTradingMobileTab } from "@/components/PaperTradingMobileTab";
+import { BrokerMobileTab } from "@/components/BrokerMobileTab";
 import JournalScreenTime from "@/components/JournalScreenTime";
 import { useLocation } from "wouter";
 
@@ -450,6 +452,17 @@ export interface JournalTabContentProps {
   journalLiveData: any;
   isJournalStreaming: boolean;
   liveOhlc: any;
+
+  // Mobile Broker Tab
+  mobileBrokerOrders?: any[];
+  mobileBrokerPositions?: any[];
+  mobileBrokerFunds?: number | null;
+  mobileBrokerAccountInfo?: { name: string; id: string } | null;
+  mobileSecondaryBrokerOrders?: any[];
+  mobileSecondaryBrokerPositions?: any[];
+  mobileSecondaryBrokerFunds?: number | null;
+  mobileSecondaryBrokerAccountInfo?: { name: string; id: string } | null;
+  recordAllBrokerOrders?: () => void;
 }
 
 export function JournalTabContent({
@@ -804,6 +817,15 @@ export function JournalTabContent({
   journalLiveData,
   isJournalStreaming,
   liveOhlc,
+  mobileBrokerOrders = [],
+  mobileBrokerPositions = [],
+  mobileBrokerFunds = null,
+  mobileBrokerAccountInfo = null,
+  mobileSecondaryBrokerOrders = [],
+  mobileSecondaryBrokerPositions = [],
+  mobileSecondaryBrokerFunds = null,
+  mobileSecondaryBrokerAccountInfo = null,
+  recordAllBrokerOrders,
 }: JournalTabContentProps) {
   const [, setLocation] = useLocation();
 
@@ -3885,6 +3907,19 @@ export function JournalTabContent({
                 <TrendingUp className={`h-5 w-5 ${mobileBottomTab === "paper-trade" ? "fill-current" : ""}`} />
               </button>
 
+              {/* Broker Connect Tab */}
+              <button
+                onClick={() => setMobileBottomTab("broker")}
+                className={`flex items-center justify-center flex-1 rounded-full px-4 py-2 transition-all duration-200 ${
+                  mobileBottomTab === "broker"
+                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md"
+                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white"
+                }`}
+                data-testid="mobile-tab-broker"
+              >
+                <Plug className={`h-5 w-5 ${mobileBottomTab === "broker" ? "fill-current" : ""}`} />
+              </button>
+
               {/* Ranking Tab */}
               <button
                 onClick={() => setMobileBottomTab("ranking")}
@@ -3962,6 +3997,35 @@ export function JournalTabContent({
             exitPosition={exitPosition}
             resetPaperTradingAccount={resetPaperTradingAccount}
             toast={toast}
+          />
+        )}
+
+        {/* Mobile Broker Tab - Full Screen */}
+        {mobileBottomTab === "broker" && (
+          <BrokerMobileTab
+            isConnected={isConnected}
+            activeBroker={activeBroker}
+            secondaryBroker={secondaryBroker}
+            brokerIconMap={brokerIconMap}
+            getBrokerDisplayName={getBrokerDisplayName}
+            mobileBrokerOrders={mobileBrokerOrders}
+            mobileBrokerPositions={mobileBrokerPositions}
+            mobileBrokerFunds={mobileBrokerFunds}
+            mobileBrokerAccountInfo={mobileBrokerAccountInfo}
+            mobileSecondaryBrokerOrders={mobileSecondaryBrokerOrders}
+            mobileSecondaryBrokerPositions={mobileSecondaryBrokerPositions}
+            mobileSecondaryBrokerFunds={mobileSecondaryBrokerFunds}
+            mobileSecondaryBrokerAccountInfo={mobileSecondaryBrokerAccountInfo}
+            setShowConnectDialog={setShowConnectDialog}
+            recordAllBrokerOrders={recordAllBrokerOrders}
+            zerodhaIsConnected={zerodhaIsConnected}
+            upstoxIsConnected={upstoxIsConnected}
+            angelOneIsConnected={angelOneIsConnected}
+            userAngelOneIsConnected={userAngelOneIsConnected}
+            dhanIsConnected={dhanIsConnected}
+            growwIsConnected={growwIsConnected}
+            deltaExchangeIsConnected={deltaExchangeIsConnected}
+            fyersIsConnected={fyersIsConnected}
           />
         )}
 

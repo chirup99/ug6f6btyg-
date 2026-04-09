@@ -61,17 +61,18 @@ const GOOGLE_LANG_MAP: Record<string, string> = {
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Gurmukhi → Roman transliteration (NOT translation)
-// Keeps Punjabi language and words — only converts script to Roman letters
-// so the Hindi voice can pronounce them as Punjabi sounds.
-// Example: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ" → "Sat Sri Akaal"
-// Uses Google's dt=rm (romanization) parameter on the gtx endpoint.
+// Gurmukhi → Devanagari script conversion (NOT language translation)
+// Punjabi words/meaning stay the same — only the script changes from
+// Gurmukhi to Devanagari (Hindi script) so the Hindi voice can read and
+// pronounce them as authentic Punjabi sounds.
+// Example: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ" → "सत श्री अकाल"
 // ─────────────────────────────────────────────────────────────────────────────
 async function transliterateGurmukhi(chunk: string): Promise<string> {
   const encoded = encodeURIComponent(chunk.trim());
-  // dt=rm requests romanization of the SOURCE text, dt=t requests translation
-  // We use sl=pa (Punjabi source), tl=en is required but we discard it — we only want the romanization
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=pa&tl=en&dt=t&dt=rm&q=${encoded}`;
+  // sl=pa (Punjabi source), tl=hi (Hindi/Devanagari target)
+  // This converts Gurmukhi script → Devanagari script while preserving
+  // Punjabi phonetics (Google uses phonetic mapping for closely related languages)
+  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=pa&tl=hi&dt=t&q=${encoded}`;
 
   const response = await axios.get(url, {
     timeout: 12000,
@@ -79,25 +80,15 @@ async function transliterateGurmukhi(chunk: string): Promise<string> {
   });
 
   const data = response.data;
-  // Response structure with dt=rm:
-  // data[0] = array of sentence chunks
-  // Each chunk: [translated, original, null, romanized_source, ...]
-  // data[0][i][3] contains the romanization of the source Punjabi text
+  // Response format: [[["devanagari_text","original",...],...],...]
+  // data[0][i][0] contains the Devanagari output
   if (Array.isArray(data) && Array.isArray(data[0])) {
-    const romanized = data[0]
-      .filter((item: any) => Array.isArray(item) && item[3])
-      .map((item: any) => item[3])
-      .join(' ');
-    if (romanized && romanized.trim().length > 0) {
-      return romanized.trim();
-    }
-    // Fallback: if romanization field missing, use the translation chunks
-    const translated = data[0]
+    const devanagari = data[0]
       .filter((item: any) => Array.isArray(item) && item[0])
       .map((item: any) => item[0])
       .join('');
-    if (translated && translated.trim().length > 0) {
-      return translated.trim();
+    if (devanagari && devanagari.trim().length > 0) {
+      return devanagari.trim();
     }
   }
   return chunk;
@@ -182,25 +173,25 @@ export async function translateText(text: string, targetLanguage: string): Promi
     if (current) chunks.push(current);
     if (chunks.length === 0 && text.trim().length > 0) chunks.push(text.trim());
 
-    // Punjabi uses transliteration (Gurmukhi → Roman script) instead of translation.
-    // This keeps Punjabi words/meaning but writes them in Roman letters so the Hindi
-    // voice can pronounce them correctly as Punjabi sounds.
+    // Punjabi uses script conversion (Gurmukhi → Devanagari) instead of language translation.
+    // This keeps Punjabi words/meaning but writes them in Devanagari (Hindi script) so
+    // the Hindi TTS voice can pronounce them as authentic Punjabi sounds.
     const isPunjabi = targetLanguage === 'pa';
-    const action = isPunjabi ? 'Transliterating (Gurmukhi→Roman)' : 'Translating';
+    const action = isPunjabi ? 'Transliterating Gurmukhi→Devanagari' : 'Translating';
     console.log(`🌐 [TTS] ${action} ${chunks.length} chunk(s) to ${targetLanguage}...`);
 
     const translatedChunks = await Promise.all(
       chunks.map(chunk =>
         (isPunjabi ? transliterateGurmukhi(chunk) : translateChunkGoogle(chunk, targetLanguage))
           .catch(err => {
-            console.warn(`⚠️ [TTS] Chunk ${isPunjabi ? 'transliteration' : 'translation'} failed (${targetLanguage}): ${err?.message}`);
-            return chunk; // keep original on error
+            console.warn(`⚠️ [TTS] Chunk ${isPunjabi ? 'script conversion' : 'translation'} failed (${targetLanguage}): ${err?.message}`);
+            return chunk;
           })
       )
     );
 
     const result = translatedChunks.join(' ');
-    console.log(`✅ [TTS] ${isPunjabi ? 'Transliterated' : 'Translated'} to ${targetLanguage}: "${result.substring(0, 100)}..."`);
+    console.log(`✅ [TTS] ${isPunjabi ? 'Gurmukhi→Devanagari' : 'Translated'} (${targetLanguage}): "${result.substring(0, 100)}..."`);
 
     // Cache the translation
     setTranslationCache(targetLanguage, text, result);

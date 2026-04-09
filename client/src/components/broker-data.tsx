@@ -1,9 +1,6 @@
 import { DialogContent, Dialog } from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { Eye, EyeOff, Plus, X, Save } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
+import { Eye, EyeOff, BookOpen, TrendingUp, TrendingDown } from "lucide-react";
 import { useRef, useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -78,7 +75,6 @@ interface BrokerDataProps {
   isDemoMode?: boolean;
 }
 
-
 export function BrokerData(props: BrokerDataProps) {
   const {
     showOrderModal, setShowOrderModal, orderTab, setOrderTab, showUserId, setShowUserId,
@@ -111,63 +107,46 @@ export function BrokerData(props: BrokerDataProps) {
   } = props;
 
   const queryClient = useQueryClient();
-
   const [secondaryOrderTab, setSecondaryOrderTab] = useState("history");
 
   const isFyersConnected = fyersStatus?.connected && fyersStatus?.authenticated;
   const isConnected = zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken || growwAccessToken || deltaExchangeIsConnected || isFyersConnected;
   const activeBroker = zerodhaAccessToken ? 'zerodha' : upstoxAccessToken ? 'upstox' : angelOneAccessToken ? 'angelone' : dhanAccessToken ? 'dhan' : growwAccessToken ? 'groww' : deltaExchangeIsConnected ? 'delta' : isFyersConnected ? 'fyers' : null;
 
-  // Refresh Dhan profile every 10 seconds if connected
   useEffect(() => {
     if (activeBroker !== 'dhan' || !showOrderModal) return;
-
     const refreshDhanProfile = async () => {
       try {
-        const response = await apiRequest("GET", `/api/broker/dhan/profile?accessToken=${encodeURIComponent(dhanAccessToken || '')}&dhanClientId=${encodeURIComponent(dhanClientId || dhanUserId || '')}`, null);
-        console.log("🔍 [DHAN] Profile refresh response:", response);
+        await apiRequest("GET", `/api/broker/dhan/profile?accessToken=${encodeURIComponent(dhanAccessToken || '')}&dhanClientId=${encodeURIComponent(dhanClientId || dhanUserId || '')}`, null);
         queryClient.invalidateQueries({ queryKey: ["/api/broker/dhan/status"] });
         queryClient.invalidateQueries({ queryKey: ["/api/broker/dhan/profile"] });
-      } catch (error) {
-        console.error("Error refreshing Dhan profile:", error);
-      }
+      } catch (error) { console.error("Error refreshing Dhan profile:", error); }
     };
-
     refreshDhanProfile();
     const interval = setInterval(refreshDhanProfile, 10000);
     return () => clearInterval(interval);
   }, [activeBroker, dhanAccessToken, dhanClientId, dhanUserId, showOrderModal, queryClient]);
 
-  // Refresh Delta profile every minute if connected
   useEffect(() => {
     if (!deltaExchangeIsConnected || !showOrderModal) return;
-
     const refreshProfile = async () => {
       try {
-        const response = await apiRequest("GET", `/api/broker/delta/profile?apiKey=${encodeURIComponent(deltaExchangeApiKey || '')}&apiSecret=${encodeURIComponent(deltaExchangeApiSecret || '')}`, null);
-        console.log("🔍 [DELTA] Profile refresh response:", response);
+        await apiRequest("GET", `/api/broker/delta/profile?apiKey=${encodeURIComponent(deltaExchangeApiKey || '')}&apiSecret=${encodeURIComponent(deltaExchangeApiSecret || '')}`, null);
         queryClient.invalidateQueries({ queryKey: ["/api/broker/delta/profile"] });
-      } catch (error) {
-        console.error("Error refreshing Delta profile:", error);
-      }
+      } catch (error) { console.error("Error refreshing Delta profile:", error); }
     };
-
     refreshProfile();
     const interval = setInterval(refreshProfile, 60000);
     return () => clearInterval(interval);
   }, [deltaExchangeIsConnected, showOrderModal, queryClient]);
-
 
   const [growwOrders, setGrowwOrders] = useState<any[]>([]);
   const [fetchingGrowwOrders, setFetchingGrowwOrders] = useState(false);
   const growwInitialLoadDone = useRef(false);
   const [growwPositions, setGrowwPositions] = useState<any[]>([]);
   const [growwFundsValue, setGrowwFundsValue] = useState<number | null>(null);
-  // Live LTP overlay for Groww positions — updated every 600ms
   const [growwLivePrices, setGrowwLivePrices] = useState<Record<string, number>>({});
 
-  // Pre-fetch Groww orders + positions the moment Groww connects so data is ready
-  // before the user opens the dialog — eliminates the "Loading..." delay on first open
   useEffect(() => {
     if (activeBroker !== 'groww' || !growwAccessToken) return;
     let cancelled = false;
@@ -178,120 +157,60 @@ export function BrokerData(props: BrokerDataProps) {
           apiRequest("GET", `/api/broker/groww/positions?accessToken=${encodeURIComponent(growwAccessToken)}`, null),
         ]);
         if (cancelled) return;
-        if (ordersRes.success && ordersRes.orders) {
-          setGrowwOrders(ordersRes.orders);
-          growwInitialLoadDone.current = true;
-        }
+        if (ordersRes.success && ordersRes.orders) { setGrowwOrders(ordersRes.orders); growwInitialLoadDone.current = true; }
         if (posRes.success && posRes.positions) setGrowwPositions(posRes.positions);
-      } catch (e) {
-        // silent — modal polling will retry
-      }
+      } catch (e) {}
     };
     prefetch();
     return () => { cancelled = true; };
   }, [activeBroker, growwAccessToken]);
 
-  // Refresh Groww orders every 10 seconds if connected (reduced from 3s to avoid constant loading flicker)
   useEffect(() => {
     if (activeBroker !== 'groww' || !showOrderModal) return;
-
-    // Only show loading if pre-fetch hasn't completed yet (growwInitialLoadDone stays true after pre-fetch)
     const refreshGrowwOrders = async () => {
-      // Show loading only if we have no data yet (pre-fetch not done or failed)
       const needsLoader = !growwInitialLoadDone.current;
       if (needsLoader) setFetchingGrowwOrders(true);
       try {
         const response = await apiRequest("GET", `/api/broker/groww/orders?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
-        if (response.success && response.orders) {
-          setGrowwOrders(response.orders);
-        }
-      } catch (error) {
-        console.error("Error refreshing Groww orders:", error);
-      } finally {
-        if (needsLoader) {
-          setFetchingGrowwOrders(false);
-          growwInitialLoadDone.current = true;
-        }
-      }
+        if (response.success && response.orders) setGrowwOrders(response.orders);
+      } catch (error) { console.error("Error refreshing Groww orders:", error); }
+      finally { if (needsLoader) { setFetchingGrowwOrders(false); growwInitialLoadDone.current = true; } }
     };
-
     const refreshGrowwPositions = async () => {
       try {
         const response = await apiRequest("GET", `/api/broker/groww/positions?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
-        if (response.success && response.positions) {
-          setGrowwPositions(response.positions);
-        }
-      } catch (error) {
-        console.error("Error refreshing Groww positions:", error);
-      }
+        if (response.success && response.positions) setGrowwPositions(response.positions);
+      } catch (error) { console.error("Error refreshing Groww positions:", error); }
     };
-
     const refreshGrowwFunds = async () => {
       try {
         const response = await apiRequest("GET", `/api/broker/groww/funds?accessToken=${encodeURIComponent(growwAccessToken || '')}`, null);
-        if (response.success && response.fundsAvailable) {
-          setGrowwFundsValue(Number(response.funds));
-        }
-      } catch (error) {
-        console.error("Error refreshing Groww funds:", error);
-      }
+        if (response.success && response.fundsAvailable) setGrowwFundsValue(Number(response.funds));
+      } catch (error) { console.error("Error refreshing Groww funds:", error); }
     };
-
-    refreshGrowwOrders();
-    refreshGrowwPositions();
-    refreshGrowwFunds();
-    // Poll every 10s instead of 3s — orders don't change that fast and 3s caused constant loading flicker
-    const ordersInterval = setInterval(() => {
-      refreshGrowwOrders();
-      refreshGrowwPositions();
-    }, 10000);
+    refreshGrowwOrders(); refreshGrowwPositions(); refreshGrowwFunds();
+    const ordersInterval = setInterval(() => { refreshGrowwOrders(); refreshGrowwPositions(); }, 10000);
     const fundsInterval = setInterval(refreshGrowwFunds, 10000);
-    return () => {
-      clearInterval(ordersInterval);
-      clearInterval(fundsInterval);
-      setGrowwFundsValue(null);
-      // Don't reset growwInitialLoadDone here — pre-fetched data should persist across modal re-opens
-    };
+    return () => { clearInterval(ordersInterval); clearInterval(fundsInterval); setGrowwFundsValue(null); };
   }, [activeBroker, growwAccessToken, showOrderModal, queryClient]);
 
-  // Real-time LTP polling for Groww positions — fires every 600ms
-  // Works whether Groww is the primary or secondary connected broker
   useEffect(() => {
-    const isGrowwPrimary   = activeBroker === 'groww' && showOrderModal;
+    const isGrowwPrimary = activeBroker === 'groww' && showOrderModal;
     const isGrowwSecondary = secondaryBroker === 'groww' && showSecondaryOrderModal;
     if (!isGrowwPrimary && !isGrowwSecondary) return;
     if (!growwAccessToken) return;
-
-    // Use whichever positions list is available
-    const positionsToUse = isGrowwPrimary
-      ? growwPositions
-      : (secondaryBrokerPositions || []);
-
+    const positionsToUse = isGrowwPrimary ? growwPositions : (secondaryBrokerPositions || []);
     if (positionsToUse.length === 0) return;
-
     const fetchLTP = async () => {
       try {
-        // Build repeated exchange_symbols params as Groww Python SDK does
-        const symbolsToFetch = positionsToUse
-          .filter(p => p.symbol && (p.status || 'OPEN').toUpperCase() === 'OPEN');
-
+        const symbolsToFetch = positionsToUse.filter(p => p.symbol && (p.status || 'OPEN').toUpperCase() === 'OPEN');
         if (!symbolsToFetch.length) return;
-
         const qs = new URLSearchParams({ accessToken: growwAccessToken, segment: 'CASH' });
-        for (const p of symbolsToFetch) {
-          qs.append('exchange_symbols', `${p.exchange || 'NSE'}_${p.symbol}`);
-        }
-
+        for (const p of symbolsToFetch) qs.append('exchange_symbols', `${p.exchange || 'NSE'}_${p.symbol}`);
         const response = await apiRequest("GET", `/api/broker/groww/ltp?${qs.toString()}`, null);
-
-        if (response.success && response.prices) {
-          setGrowwLivePrices(response.prices as Record<string, number>);
-        }
-      } catch {
-        // silently ignore — stale price shown if fetch fails
-      }
+        if (response.success && response.prices) setGrowwLivePrices(response.prices as Record<string, number>);
+      } catch {}
     };
-
     fetchLTP();
     const ltpInterval = setInterval(fetchLTP, 600);
     return () => clearInterval(ltpInterval);
@@ -314,13 +233,28 @@ export function BrokerData(props: BrokerDataProps) {
       const getOrdinal = (d: string) => {
         const n = parseInt(d);
         if (n > 3 && n < 21) return 'th';
-        switch (n % 10) {
-          case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th";
-        }
+        switch (n % 10) { case 1: return "st"; case 2: return "nd"; case 3: return "rd"; default: return "th"; }
       };
-      return `${name} ${parseInt(day).toString()}${getOrdinal(day)} ${months[month] || month} ${strike} ${type}`;
+      return `${name} ${parseInt(day)}${getOrdinal(day)} ${months[month] || month} ${strike} ${type}`;
     }
     return symbol;
+  };
+
+  const formatTime = (raw: any): string => {
+    if (!raw) return "";
+    try {
+      const s = String(raw).trim();
+      if (/^\d{1,2}:\d{2}(:\d{2})?(\s*(AM|PM))?$/i.test(s)) return s;
+      const d = new Date(s);
+      if (!isNaN(d.getTime())) return d.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+      if (s.includes(' ')) {
+        const t = s.split(' ')[1];
+        const d2 = new Date(`2000-01-01T${t}`);
+        if (!isNaN(d2.getTime())) return d2.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+        return t;
+      }
+    } catch {}
+    return String(raw);
   };
 
   const brokerFundsValue = activeBroker === 'groww'
@@ -337,21 +271,6 @@ export function BrokerData(props: BrokerDataProps) {
     angelone: { logo: "https://play-lh.googleusercontent.com/Ic8lUYwMCgTePpo-Gbg0VwE_0srDj1xD386BvQHO_mOwsfMjX8lFBLl0Def28pO_Mvk=s48-rw?v=1701", id: angelOneClientCode || "N/A", name: angelOneUserName || "Angel One User", rounded: true },
   };
 
-  const renderBrokerChip = (broker: string) => {
-    const info = allBrokerInfo[broker];
-    if (!info) return null;
-    return (
-      <div className="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800/50 rounded px-2 py-1 min-w-0">
-        <img src={info.logo} alt={broker} className={`w-3 h-3 flex-shrink-0 ${info.rounded ? 'rounded-full' : ''}`} />
-        <div className="flex flex-col min-w-0 leading-tight">
-          <span className="text-[10px] font-medium text-slate-700 dark:text-slate-200 truncate max-w-[120px]">{showUserId ? info.id : "••••••"}</span>
-          <span className="text-[10px] text-slate-500 dark:text-slate-400 truncate max-w-[120px]">{showUserId ? info.name : "•••••"}</span>
-        </div>
-      </div>
-    );
-  };
-
-  // Reusable dialog header for any broker
   const renderDialogHeader = (broker: string | null, funds: number | null | undefined, onToggleUserId: () => void, isSecondary = false) => {
     if (!broker) return null;
     const info = allBrokerInfo[broker];
@@ -361,248 +280,380 @@ export function BrokerData(props: BrokerDataProps) {
           ? `$${Number(funds).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
           : `₹${Number(funds).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`)
       : (isDelta ? '$0.00' : '₹0.00');
+
     return (
-      <div className={`sticky top-0 z-10 border-b px-3 py-2.5 flex flex-col sm:flex-row sm:items-center gap-2 ${
+      <div className={`sticky top-0 z-10 flex items-center justify-between px-4 py-2.5 border-b ${
         isSecondary
-          ? 'bg-violet-100 dark:bg-violet-900/40 border-violet-200 dark:border-violet-700'
-          : 'bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800'
+          ? 'bg-violet-50 dark:bg-violet-950/40 border-violet-100 dark:border-violet-800/50'
+          : 'bg-white dark:bg-gray-950 border-gray-100 dark:border-gray-800'
       }`}>
-        <div className="flex items-center justify-between sm:w-1/3">
-          <span className={`text-sm font-semibold ${isSecondary ? 'text-violet-800 dark:text-violet-200' : 'text-slate-800 dark:text-slate-100'}`}>
-            Orders & Positions
-          </span>
+        <div className="flex items-center gap-2.5 min-w-0">
+          {info && (
+            <img
+              src={info.logo}
+              alt={broker}
+              className={`w-5 h-5 flex-shrink-0 object-contain ${info.rounded ? 'rounded-full' : ''}`}
+            />
+          )}
+          <div className="min-w-0">
+            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate leading-none">
+              {showUserId ? info?.name : "••••••"}
+            </p>
+            <p className="text-[10px] text-gray-400 dark:text-gray-500 truncate leading-tight mt-0.5">
+              {showUserId ? info?.id : "••••••"}
+            </p>
+          </div>
         </div>
-        <div className="flex items-center justify-between sm:w-1/3 sm:flex-col sm:items-center sm:justify-center gap-1">
-          <span className={`text-[10px] font-medium uppercase tracking-wider ${isSecondary ? 'text-violet-600 dark:text-violet-400' : 'text-slate-500 dark:text-slate-400'}`}>
-            Available Funds
-          </span>
-          <span className={`text-xs font-bold ${isSecondary ? 'text-green-600 dark:text-green-400' : 'text-green-600 dark:text-green-400'}`}>
-            {showUserId ? fundsDisplay : (isDelta ? "$***" : "₹***")}
-          </span>
-        </div>
-        <div className="flex items-center justify-end sm:w-1/3 gap-2 flex-wrap">
-          {info && renderBrokerChip(broker)}
-          <button onClick={onToggleUserId} className={`p-1 rounded transition-colors flex-shrink-0 ${isSecondary ? 'hover:bg-violet-200 dark:hover:bg-violet-800' : 'hover:bg-gray-200 dark:hover:bg-gray-700'}`} data-testid="button-toggle-user-id" title={showUserId ? "Hide ID" : "Show ID"}>
-            {showUserId ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
+
+        <div className="flex items-center gap-3">
+          <div className="text-right">
+            <p className="text-[9px] font-medium uppercase tracking-wider text-gray-400 dark:text-gray-500 leading-none">Funds</p>
+            <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 leading-tight mt-0.5">
+              {showUserId ? fundsDisplay : (isDelta ? "$***" : "₹***")}
+            </p>
+          </div>
+          <button
+            onClick={onToggleUserId}
+            className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:hover:bg-gray-800 dark:hover:text-gray-300 transition-colors flex-shrink-0"
+            data-testid="button-toggle-user-id"
+          >
+            {showUserId ? <Eye className="w-3.5 h-3.5" /> : <EyeOff className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>
     );
   };
 
-  // Reusable orders table (full-width single-broker style)
-  const renderOrdersTable = (orders: any[], isFetching: boolean, onRecord?: () => void) => (
-    <>
-      <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
-        <table className="w-full min-w-[520px] text-xs">
-          <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
-            <tr>
-              <th className="px-2 py-2 text-left font-medium">Time</th>
-              <th className="px-2 py-2 text-left font-medium">Order</th>
-              <th className="px-2 py-2 text-left font-medium">Symbol</th>
-              <th className="px-2 py-2 text-left font-medium">Type</th>
-              <th className="px-2 py-2 text-left font-medium">Qty</th>
-              <th className="px-2 py-2 text-left font-medium">Price</th>
-              <th className="px-2 py-2 text-left font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {orders.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-2 py-4 text-center text-gray-500">
-                  {isFetching ? 'Loading...' : 'No orders found'}
-                </td>
-              </tr>
-            ) : (
-              [...orders].sort((a, b) => {
-                const aS = String(a.status || "").toUpperCase().trim();
-                const bS = String(b.status || "").toUpperCase().trim();
-                const aO = aS === "COMPLETE" || aS === "PENDING" ? 0 : aS === "REJECTED" || aS === "CANCELLED" ? 999 : 500;
-                const bO = bS === "COMPLETE" || bS === "PENDING" ? 0 : bS === "REJECTED" || bS === "CANCELLED" ? 999 : 500;
-                return aO - bO;
-              }).map((trade, index) => {
-                const status = String(trade.status || "").toUpperCase().trim();
-                const isClosed = status === "REJECTED" || status === "CANCELLED";
-                let displayTime = trade.time || trade.executedAt || trade.created_at;
-                if (displayTime) {
-                  try {
-                    const raw = String(displayTime).trim();
-                    // Already a formatted locale time like "12:10:22 PM" — use as-is
-                    if (/^\d{1,2}:\d{2}(:\d{2})?(\s*(AM|PM))?$/i.test(raw)) {
-                      displayTime = raw;
-                    } else {
-                      const dateObj = new Date(raw);
-                      if (!isNaN(dateObj.getTime())) {
-                        displayTime = dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-                      } else if (raw.includes(' ')) {
-                        // Handle "YYYY-MM-DD HH:MM:SS" — time is dateParts[1]
-                        const dateParts = raw.split(' ');
-                        const timePart = dateParts[1] || dateParts[0];
-                        const timeObj = new Date(`2000-01-01T${timePart}`);
-                        if (!isNaN(timeObj.getTime())) {
-                          displayTime = timeObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-                        } else {
-                          displayTime = timePart;
-                        }
-                      }
-                    }
-                  } catch (e) { console.error("Error formatting time:", e); }
-                }
-                return (
-                  <tr key={index} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${isClosed ? 'bg-gray-100/50 dark:bg-gray-800/40' : ''}`}>
-                    <td className="px-2 py-2 font-medium">{displayTime}</td>
-                    <td className="px-2 py-2">
-                      <span className={`px-1 py-0.5 rounded text-xs ${trade.order === "BUY" ? "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300" : "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300"}`}>{trade.order}</span>
-                    </td>
-                    <td className="px-2 py-2 font-medium">{formatSymbol(trade.symbol)}</td>
-                    <td className="px-2 py-2">{trade.type}</td>
-                    <td className="px-2 py-2">{trade.qty}</td>
-                    <td className="px-2 py-2">₹{typeof trade.price === 'number' ? trade.price.toFixed(2) : trade.price}</td>
-                    <td className="px-2 py-2">
-                      <span className={`text-xs font-medium ${(status === 'COMPLETE' || status === 'COMPLETED' || status === 'EXECUTED' || status === 'FILLED') ? 'text-green-600 dark:text-green-400' : status === 'REJECTED' || status === 'FAILED' ? 'text-red-600 dark:text-red-400' : status === 'CANCELLED' || status === 'CANCELED' ? 'text-yellow-600 dark:text-yellow-400' : 'text-blue-600 dark:text-blue-400'}`}>
-                        {(trade.status || 'PENDING').toUpperCase()}
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
-            )}
-          </tbody>
-        </table>
-      </div>
-      <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700 mt-2">
-        {onRecord && (
-          <button onClick={onRecord} disabled={orders.length === 0} className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed text-white rounded transition-colors" data-testid="button-record-broker-orders">
-            Record to Journal
-          </button>
-        )}
-        <span className="text-xs text-gray-500 dark:text-gray-400 ml-auto">{orders.length} orders</span>
-      </div>
-    </>
-  );
+  const getStatusStyle = (status: string) => {
+    const s = status.toUpperCase();
+    if (s === 'COMPLETE' || s === 'COMPLETED' || s === 'EXECUTED' || s === 'FILLED')
+      return 'text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20';
+    if (s === 'REJECTED' || s === 'FAILED')
+      return 'text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20';
+    if (s === 'CANCELLED' || s === 'CANCELED')
+      return 'text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20';
+    return 'text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20';
+  };
 
-  // Reusable positions table (full-width single-broker style)
-  // livePrices: map of "NSE_SYMBOL" → ltp — injected for Groww real-time updates
-  const renderPositionsTable = (positions: any[], livePrices: Record<string, number> = {}) => (
-    <>
-      <div className="max-h-96 overflow-auto border rounded-lg custom-thin-scrollbar">
-        <table className="w-full min-w-[560px] text-xs">
-          <thead className="bg-gray-100 dark:bg-gray-700 sticky top-0">
-            <tr>
-              <th className="px-2 py-2 text-left font-medium">Symbol</th>
-              <th className="px-2 py-2 text-left font-medium">Entry Price</th>
-              <th className="px-2 py-2 text-left font-medium">Current Price</th>
-              <th className="px-2 py-2 text-left font-medium">Qty</th>
-              <th className="px-2 py-2 text-left font-medium">Unrealized P&L</th>
-              <th className="px-2 py-2 text-left font-medium">Return %</th>
-              <th className="px-2 py-2 text-left font-medium">Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {positions.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-2 py-4 text-center text-gray-500">
-                  {isConnected ? 'No open positions' : 'Connect to broker to view positions'}
-                </td>
-              </tr>
-            ) : (
-              [...positions].sort((a, b) => {
-                const aS = String(a.status || "Open").toUpperCase().trim();
-                const bS = String(b.status || "Open").toUpperCase().trim();
-                return (aS === "OPEN" ? 0 : 999) - (bS === "OPEN" ? 0 : 999);
-              }).map((pos, index) => {
+  const renderOrdersTable = (orders: any[], isFetching: boolean, onRecord?: () => void) => {
+    const sorted = [...orders].sort((a, b) => {
+      const aS = String(a.status || "").toUpperCase().trim();
+      const bS = String(b.status || "").toUpperCase().trim();
+      const rank = (s: string) => s === "COMPLETE" || s === "PENDING" ? 0 : s === "REJECTED" || s === "CANCELLED" ? 999 : 500;
+      return rank(aS) - rank(bS);
+    });
+
+    return (
+      <div className="space-y-2">
+        {orders.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-600">
+            <BookOpen className="w-8 h-8 mb-2 opacity-40" />
+            <p className="text-xs">{isFetching ? 'Loading orders…' : 'No orders found'}</p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-800">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-800">
+                    <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Time</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Symbol</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Side</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Type</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400">Qty</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400">Price</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800/60">
+                  {sorted.map((trade, index) => {
+                    const status = String(trade.status || "PENDING").toUpperCase().trim();
+                    const isClosed = status === "REJECTED" || status === "CANCELLED";
+                    return (
+                      <tr
+                        key={index}
+                        className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-colors ${isClosed ? 'opacity-50' : ''}`}
+                        data-testid={`row-order-${index}`}
+                      >
+                        <td className="px-3 py-2 text-gray-500 dark:text-gray-400 tabular-nums whitespace-nowrap">
+                          {formatTime(trade.time || trade.executedAt || trade.created_at)}
+                        </td>
+                        <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-200 max-w-[140px] truncate">
+                          {formatSymbol(trade.symbol)}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                            trade.order === "BUY"
+                              ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                              : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                          }`}>
+                            {trade.order === "BUY" ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
+                            {trade.order}
+                          </span>
+                        </td>
+                        <td className="px-3 py-2 text-gray-500 dark:text-gray-400">{trade.type}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300">{trade.qty}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300">
+                          {typeof trade.price === 'number' ? `₹${trade.price.toFixed(2)}` : trade.price}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${getStatusStyle(status)}`}>
+                            {status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden space-y-1.5">
+              {sorted.map((trade, index) => {
+                const status = String(trade.status || "PENDING").toUpperCase().trim();
+                const isClosed = status === "REJECTED" || status === "CANCELLED";
+                return (
+                  <div
+                    key={index}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 ${isClosed ? 'opacity-50' : ''}`}
+                    data-testid={`card-order-${index}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-1.5 mb-0.5">
+                        <span className={`inline-flex items-center gap-0.5 text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                          trade.order === "BUY"
+                            ? "bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400"
+                            : "bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-400"
+                        }`}>
+                          {trade.order}
+                        </span>
+                        <span className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate">
+                          {formatSymbol(trade.symbol)}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500">
+                        <span>{formatTime(trade.time || trade.executedAt || trade.created_at)}</span>
+                        <span>·</span>
+                        <span>{trade.type}</span>
+                        <span>·</span>
+                        <span>Qty {trade.qty}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-xs font-semibold tabular-nums text-gray-800 dark:text-gray-200">
+                        {typeof trade.price === 'number' ? `₹${trade.price.toFixed(2)}` : trade.price}
+                      </p>
+                      <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${getStatusStyle(status)}`}>
+                        {status}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-[10px] text-gray-400 dark:text-gray-600">{orders.length} order{orders.length !== 1 ? 's' : ''}</span>
+          {onRecord && (
+            <button
+              onClick={onRecord}
+              disabled={orders.length === 0}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 text-[11px] font-medium bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-200 dark:disabled:bg-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed text-white rounded-md transition-colors"
+              data-testid="button-record-broker-orders"
+            >
+              <BookOpen className="w-3 h-3" />
+              Save to Journal
+            </button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  const renderPositionsTable = (positions: any[], livePrices: Record<string, number> = {}) => {
+    const sorted = [...positions].sort((a, b) => {
+      const aS = String(a.status || "Open").toUpperCase().trim();
+      const bS = String(b.status || "Open").toUpperCase().trim();
+      return (aS === "OPEN" ? 0 : 999) - (bS === "OPEN" ? 0 : 999);
+    });
+
+    return (
+      <div className="space-y-2">
+        {positions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-600">
+            <TrendingUp className="w-8 h-8 mb-2 opacity-40" />
+            <p className="text-xs">{isConnected ? 'No open positions' : 'Connect a broker to view positions'}</p>
+          </div>
+        ) : (
+          <>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto rounded-lg border border-gray-100 dark:border-gray-800">
+              <table className="w-full text-xs">
+                <thead>
+                  <tr className="bg-gray-50 dark:bg-gray-900/60 border-b border-gray-100 dark:border-gray-800">
+                    <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Symbol</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400">Entry</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400">LTP</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400">Qty</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400">P&L</th>
+                    <th className="px-3 py-2 text-right font-medium text-gray-500 dark:text-gray-400">Ret%</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-500 dark:text-gray-400">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50 dark:divide-gray-800/60">
+                  {sorted.map((pos, index) => {
+                    const entryPrice = (pos.entryPrice || pos.entry_price || pos.avgPrice || 0) as number;
+                    const ltpKey = `${pos.exchange || 'NSE'}_${pos.symbol}`;
+                    const liveLTP = livePrices[ltpKey];
+                    const currentPrice = liveLTP !== undefined ? liveLTP : (pos.currentPrice || pos.current_price || pos.ltp || 0) as number;
+                    const qty = (pos.qty || pos.quantity || pos.netQty || 0) as number;
+                    const unrealizedPnl = (currentPrice - entryPrice) * qty;
+                    const status = String(pos.status || "Open").toUpperCase().trim();
+                    const isClosed = status === "CLOSED";
+                    const returnPercent = (entryPrice > 0 && !isClosed) ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
+                    const isProfit = unrealizedPnl >= 0;
+                    return (
+                      <tr
+                        key={index}
+                        className={`hover:bg-gray-50/80 dark:hover:bg-gray-800/40 transition-colors ${isClosed ? 'opacity-50' : ''}`}
+                        data-testid={`row-position-${index}`}
+                      >
+                        <td className="px-3 py-2 font-medium text-gray-800 dark:text-gray-200 max-w-[140px] truncate">
+                          {formatSymbol(pos.symbol)}
+                        </td>
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-600 dark:text-gray-400">₹{entryPrice.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300 font-medium">₹{currentPrice.toFixed(2)}</td>
+                        <td className="px-3 py-2 text-right tabular-nums text-gray-700 dark:text-gray-300">{qty}</td>
+                        <td className={`px-3 py-2 text-right tabular-nums font-semibold ${isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {isProfit ? '+' : ''}₹{unrealizedPnl.toFixed(2)}
+                        </td>
+                        <td className={`px-3 py-2 text-right tabular-nums text-xs ${(returnPercent >= 0 || isClosed) ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                          {isClosed ? '–' : `${returnPercent >= 0 ? '+' : ''}${returnPercent.toFixed(2)}%`}
+                        </td>
+                        <td className="px-3 py-2">
+                          <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded ${
+                            isClosed
+                              ? 'text-gray-500 bg-gray-100 dark:bg-gray-800'
+                              : 'text-emerald-700 bg-emerald-50 dark:bg-emerald-900/20 dark:text-emerald-400'
+                          }`}>
+                            {status}
+                          </span>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile cards */}
+            <div className="sm:hidden space-y-1.5">
+              {sorted.map((pos, index) => {
                 const entryPrice = (pos.entryPrice || pos.entry_price || pos.avgPrice || 0) as number;
-                // Resolve live LTP: check livePrices map using "EXCHANGE_SYMBOL" key first
                 const ltpKey = `${pos.exchange || 'NSE'}_${pos.symbol}`;
                 const liveLTP = livePrices[ltpKey];
-                const currentPrice = liveLTP !== undefined
-                  ? liveLTP
-                  : (pos.currentPrice || pos.current_price || pos.ltp || 0) as number;
+                const currentPrice = liveLTP !== undefined ? liveLTP : (pos.currentPrice || pos.current_price || pos.ltp || 0) as number;
                 const qty = (pos.qty || pos.quantity || pos.netQty || 0) as number;
                 const unrealizedPnl = (currentPrice - entryPrice) * qty;
                 const status = String(pos.status || "Open").toUpperCase().trim();
                 const isClosed = status === "CLOSED";
                 const returnPercent = (entryPrice > 0 && !isClosed) ? ((currentPrice - entryPrice) / entryPrice) * 100 : 0;
-                let displayTime = pos.time || pos.timestamp || '';
-                if (displayTime && typeof displayTime === 'string' && displayTime.includes(' ')) {
-                  try {
-                    const dateParts = displayTime.split(' ');
-                    if (dateParts.length >= 2) {
-                      displayTime = dateParts[1];
-                      const timeObj = new Date(`2000-01-01 ${displayTime}`);
-                      if (!isNaN(timeObj.getTime())) {
-                        displayTime = timeObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true });
-                      }
-                    }
-                  } catch (e) { console.error("Error formatting position time:", e); }
-                }
+                const isProfit = unrealizedPnl >= 0;
                 return (
-                  <tr key={index} className={`border-b hover:bg-gray-50 dark:hover:bg-gray-700 ${isClosed ? 'bg-gray-100/50 dark:bg-gray-800/40' : ''}`}>
-                    <td className="px-2 py-2 font-medium">
-                      <div>{formatSymbol(pos.symbol)}</div>
-                      {displayTime && <div className="text-[10px] text-gray-500 font-normal">{displayTime}</div>}
-                    </td>
-                    <td className="px-2 py-2">₹{entryPrice.toFixed(2)}</td>
-                    <td className="px-2 py-2">₹{currentPrice.toFixed(2)}</td>
-                    <td className="px-2 py-2">{qty}</td>
-                    <td className={`px-2 py-2 font-medium ${unrealizedPnl >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>₹{unrealizedPnl.toFixed(2)}</td>
-                    <td className={`px-2 py-2 ${returnPercent >= 0 || isClosed ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
-                      {isClosed ? "0.00%" : `${returnPercent.toFixed(2)}%`}
-                    </td>
-                    <td className="px-2 py-2">{(pos.status || 'Open').toUpperCase()}</td>
-                  </tr>
+                  <div
+                    key={index}
+                    className={`flex items-center gap-3 px-3 py-2.5 rounded-lg border border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-900/40 ${isClosed ? 'opacity-50' : ''}`}
+                    data-testid={`card-position-${index}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-gray-800 dark:text-gray-200 truncate mb-0.5">
+                        {formatSymbol(pos.symbol)}
+                      </p>
+                      <div className="flex items-center gap-2 text-[10px] text-gray-400 dark:text-gray-500">
+                        <span>Entry ₹{entryPrice.toFixed(2)}</span>
+                        <span>·</span>
+                        <span>LTP ₹{currentPrice.toFixed(2)}</span>
+                        <span>·</span>
+                        <span>Qty {qty}</span>
+                      </div>
+                    </div>
+                    <div className="text-right flex-shrink-0">
+                      <p className={`text-xs font-bold tabular-nums ${isProfit ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {isProfit ? '+' : ''}₹{unrealizedPnl.toFixed(2)}
+                      </p>
+                      <p className={`text-[10px] tabular-nums ${(returnPercent >= 0 || isClosed) ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400'}`}>
+                        {isClosed ? '–' : `${returnPercent >= 0 ? '+' : ''}${returnPercent.toFixed(2)}%`}
+                      </p>
+                    </div>
+                  </div>
                 );
-              })
-            )}
-          </tbody>
-        </table>
+              })}
+            </div>
+          </>
+        )}
+        <p className="text-[10px] text-gray-400 dark:text-gray-600 pt-1">{positions.length} position{positions.length !== 1 ? 's' : ''}</p>
       </div>
-      <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700 mt-2">
-        <span className="text-xs text-gray-500 dark:text-gray-400">{positions.length} open positions</span>
-      </div>
-    </>
-  );
+    );
+  };
 
   return (
     <>
-      {/* Primary broker dialog — always single-broker layout */}
       <Dialog open={showOrderModal} onOpenChange={setShowOrderModal}>
-        <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-thin-scrollbar p-0 sm:mx-4">
+        <DialogContent className="w-full max-w-2xl max-h-[85vh] sm:max-h-[80vh] flex flex-col p-0 gap-0 rounded-xl overflow-hidden">
           {renderDialogHeader(activeBroker, brokerFundsValue, () => setShowUserId(!showUserId))}
-          <div className="p-4">
+          <div className="flex-1 overflow-y-auto custom-thin-scrollbar">
             <Tabs value={orderTab} onValueChange={setOrderTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 mb-3">
-                <TabsTrigger value="history">Orders</TabsTrigger>
-                <TabsTrigger value="positions">Positions</TabsTrigger>
-              </TabsList>
-              <TabsContent value="history" className="space-y-4">
-                {renderOrdersTable(displayOrders, isFetchingOrders, recordAllBrokerOrders)}
-              </TabsContent>
-              <TabsContent value="positions" className="space-y-4">
-                {renderPositionsTable(displayPositions, activeBroker === 'groww' ? growwLivePrices : {})}
-              </TabsContent>
+              <div className="px-4 pt-3 pb-0 sticky top-0 bg-white dark:bg-gray-950 z-[5]">
+                <TabsList className="h-8 w-full grid grid-cols-2 bg-gray-100 dark:bg-gray-900 rounded-lg p-0.5">
+                  <TabsTrigger value="history" className="text-xs h-7 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
+                    Orders
+                  </TabsTrigger>
+                  <TabsTrigger value="positions" className="text-xs h-7 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-gray-800 data-[state=active]:shadow-sm">
+                    Positions
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+              <div className="px-4 py-3">
+                <TabsContent value="history" className="mt-0">
+                  {renderOrdersTable(displayOrders, isFetchingOrders, recordAllBrokerOrders)}
+                </TabsContent>
+                <TabsContent value="positions" className="mt-0">
+                  {renderPositionsTable(displayPositions, activeBroker === 'groww' ? growwLivePrices : {})}
+                </TabsContent>
+              </div>
             </Tabs>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Secondary broker dialog — independent, same layout as primary */}
       {secondaryBroker && (
         <Dialog open={showSecondaryOrderModal} onOpenChange={setShowSecondaryOrderModal}>
-          <DialogContent className="w-full max-w-4xl max-h-[90vh] overflow-y-auto custom-thin-scrollbar p-0 sm:mx-4">
+          <DialogContent className="w-full max-w-2xl max-h-[85vh] sm:max-h-[80vh] flex flex-col p-0 gap-0 rounded-xl overflow-hidden">
             {renderDialogHeader(secondaryBroker, secondaryBrokerFunds, () => setShowUserId(!showUserId), true)}
-            <div className="p-4">
+            <div className="flex-1 overflow-y-auto custom-thin-scrollbar">
               <Tabs value={secondaryOrderTab} onValueChange={setSecondaryOrderTab} className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-3">
-                  <TabsTrigger value="history">Orders</TabsTrigger>
-                  <TabsTrigger value="positions">Positions</TabsTrigger>
-                </TabsList>
-                <TabsContent value="history" className="space-y-4">
-                  {renderOrdersTable(secondaryBrokerOrders, fetchingSecondaryBroker || false, recordSecondaryBrokerOrders ? () => recordSecondaryBrokerOrders(secondaryBrokerOrders) : undefined)}
-                </TabsContent>
-                <TabsContent value="positions" className="space-y-4">
-                  {renderPositionsTable(secondaryBrokerPositions, secondaryBroker === 'groww' ? growwLivePrices : {})}
-                </TabsContent>
+                <div className="px-4 pt-3 pb-0 sticky top-0 bg-violet-50 dark:bg-violet-950/40 z-[5]">
+                  <TabsList className="h-8 w-full grid grid-cols-2 bg-violet-100/70 dark:bg-violet-900/30 rounded-lg p-0.5">
+                    <TabsTrigger value="history" className="text-xs h-7 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-violet-900/60 data-[state=active]:shadow-sm">
+                      Orders
+                    </TabsTrigger>
+                    <TabsTrigger value="positions" className="text-xs h-7 rounded-md data-[state=active]:bg-white dark:data-[state=active]:bg-violet-900/60 data-[state=active]:shadow-sm">
+                      Positions
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+                <div className="px-4 py-3">
+                  <TabsContent value="history" className="mt-0">
+                    {renderOrdersTable(secondaryBrokerOrders, fetchingSecondaryBroker || false, recordSecondaryBrokerOrders ? () => recordSecondaryBrokerOrders(secondaryBrokerOrders) : undefined)}
+                  </TabsContent>
+                  <TabsContent value="positions" className="mt-0">
+                    {renderPositionsTable(secondaryBrokerPositions, secondaryBroker === 'groww' ? growwLivePrices : {})}
+                  </TabsContent>
+                </div>
               </Tabs>
             </div>
           </DialogContent>

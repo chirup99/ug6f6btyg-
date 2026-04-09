@@ -7666,26 +7666,20 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       let cancelled = false;
       const fetchOrders = async () => {
         if (cancelled) return;
-        setFetchingBrokerOrders(true);
         try {
           const { token, ordersEp: endpoint } = getBrokerEndpoints(activeBroker);
           const broker = activeBroker || '';
 
-          if (!endpoint) {
-            if (!cancelled) setFetchingBrokerOrders(false);
-            return;
-          }
+          if (!endpoint) return;
           
           const res = await fetch(endpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
           if (cancelled) return;
           if (!res.ok) {
-            await res.json().catch(() => ({}));
             if (res.status === 401) {
               console.warn('⚠️ [ORDERS] Session expired, please reconnect broker');
             }
-            if (!cancelled) { setBrokerOrders([]); setFetchingBrokerOrders(false); }
             return;
           }
           const data = await res.json();
@@ -7696,10 +7690,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         } catch (err) {
           if (!cancelled) {
             console.error('❌ [ORDERS] Error fetching trades:', err);
-            setBrokerOrders([]);
           }
-        } finally {
-          if (!cancelled) setFetchingBrokerOrders(false);
         }
       };
 
@@ -7724,13 +7715,11 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     const fetchOrders = async () => {
       const { token, ordersEp: ep } = getBrokerEndpoints(secondaryBroker);
       if (!ep || (!token && secondaryBroker !== 'groww')) return;
-      setFetchingBroker2(true);
       try {
         const res = await fetch(ep, { headers: token ? { 'Authorization': `Bearer ${token}` } : {} });
         if (!cancelled) {
           if (!res.ok) {
             if (res.status === 401) console.warn('⚠️ [BROKER2 ORDERS] Session expired, please reconnect broker');
-            setBroker2Orders([]);
           } else {
             const data = await res.json();
             setBroker2Orders(data.trades || data.orders || []);
@@ -7739,9 +7728,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         }
       } catch (err) {
         console.error('❌ [BROKER2 ORDERS] Error:', err);
-        if (!cancelled) setBroker2Orders([]);
-      } finally {
-        if (!cancelled) setFetchingBroker2(false);
       }
     };
     fetchOrders();

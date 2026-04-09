@@ -14310,8 +14310,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
                           {/* Mobile Quick Action Buttons - Always visible below flashbar */}
                           <div
-                            className="mt-2 flex gap-2 overflow-x-auto scrollbar-hide pb-2 relative z-50"
-                            style={{ scrollbarWidth: "none", msOverflowStyle: "none" }}
+                            className="mt-2 flex gap-2 justify-center flex-wrap relative z-50"
                           >
                             {isPrimaryOwner && (
                             <Button

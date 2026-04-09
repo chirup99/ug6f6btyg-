@@ -2054,27 +2054,8 @@ export function JournalTabContent({
                                   </div>
                                 )}
 
-                                {/* Candle count badge + countdown (top-right) */}
-                                {journalChartData && journalChartData.length > 0 && (
-                                  <div className="absolute top-1 right-2 z-40 flex items-center gap-1.5 pointer-events-none" data-testid="candle-count-badge">
-                                    {isJournalStreaming && (
-                                      <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" title="Live streaming" />
-                                    )}
-                                    {/* Smooth per-second countdown using Countdown component */}
-                                    {isJournalStreaming && journalLiveData?.countdown?.expiryMs && journalLiveData.countdown.expiryMs > Date.now() && (
-                                      <Countdown
-                                        expiryTime={journalLiveData.countdown.expiryMs}
-                                      />
-                                    )}
-                                    <span
-                                      ref={journalCandleCountRef}
-                                      className="text-[10px] font-mono text-gray-400 dark:text-gray-500"
-                                      data-testid="candle-count-value"
-                                    >
-                                      {journalChartData.length}
-                                    </span>
-                                  </div>
-                                )}
+                                {/* Candle count ref — hidden, kept for internal tracking only */}
+                                <span ref={journalCandleCountRef} className="hidden" data-testid="candle-count-value" />
 
                                 {/* Search Chart Container */}
                                 <div

@@ -68,30 +68,43 @@ const GOOGLE_LANG_MAP: Record<string, string> = {
 // Example: "ਸਤਿ ਸ੍ਰੀ ਅਕਾਲ" → "सत श्री अकाल"
 // ─────────────────────────────────────────────────────────────────────────────
 async function transliterateGurmukhi(chunk: string): Promise<string> {
-  const encoded = encodeURIComponent(chunk.trim());
-  // sl=pa (Punjabi source), tl=hi (Hindi/Devanagari target)
-  // This converts Gurmukhi script → Devanagari script while preserving
-  // Punjabi phonetics (Google uses phonetic mapping for closely related languages)
-  const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=pa&tl=hi&dt=t&q=${encoded}`;
+  const text = chunk.trim();
 
-  const response = await axios.get(url, {
+  // ── Step 1: Ensure we have Punjabi (Gurmukhi) text ───────────────────────
+  // If input is non-Gurmukhi (English news titles etc.), translate to Punjabi first.
+  // If it's already Gurmukhi (user-typed Punjabi), keep as-is for step 2.
+  const isGurmukhi = /[\u0A00-\u0A7F]/.test(text);
+  let gurmukhi = text;
+
+  if (!isGurmukhi) {
+    // Translate whatever source language → Punjabi (Gurmukhi script)
+    const step1Url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=pa&dt=t&q=${encodeURIComponent(text)}`;
+    const step1 = await axios.get(step1Url, {
+      timeout: 12000,
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' },
+    });
+    const d1 = step1.data;
+    if (Array.isArray(d1) && Array.isArray(d1[0])) {
+      const punjabi = d1[0].filter((i: any) => Array.isArray(i) && i[0]).map((i: any) => i[0]).join('');
+      if (punjabi.trim().length > 0) gurmukhi = punjabi.trim();
+    }
+  }
+
+  // ── Step 2: Convert Gurmukhi → Devanagari ────────────────────────────────
+  // Punjabi words are now in Gurmukhi. Convert the script to Devanagari
+  // so the Hindi voice can pronounce them as authentic Punjabi sounds.
+  const step2Url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=pa&tl=hi&dt=t&q=${encodeURIComponent(gurmukhi)}`;
+  const step2 = await axios.get(step2Url, {
     timeout: 12000,
     headers: { 'User-Agent': 'Mozilla/5.0 (compatible; Googlebot/2.1)' },
   });
-
-  const data = response.data;
-  // Response format: [[["devanagari_text","original",...],...],...]
-  // data[0][i][0] contains the Devanagari output
-  if (Array.isArray(data) && Array.isArray(data[0])) {
-    const devanagari = data[0]
-      .filter((item: any) => Array.isArray(item) && item[0])
-      .map((item: any) => item[0])
-      .join('');
-    if (devanagari && devanagari.trim().length > 0) {
-      return devanagari.trim();
-    }
+  const d2 = step2.data;
+  if (Array.isArray(d2) && Array.isArray(d2[0])) {
+    const devanagari = d2[0].filter((i: any) => Array.isArray(i) && i[0]).map((i: any) => i[0]).join('');
+    if (devanagari.trim().length > 0) return devanagari.trim();
   }
-  return chunk;
+
+  return gurmukhi; // fallback: return the Punjabi Gurmukhi if step 2 fails
 }
 
 async function translateChunkGoogle(chunk: string, targetLang: string): Promise<string> {

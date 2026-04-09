@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useMarketData } from "../hooks/useMarketData";
 import { useTheme } from "@/components/theme-provider";
+import { useCurrentUser } from "@/hooks/useCurrentUser";
 import {
   ArrowUp,
   ArrowDown,
@@ -561,12 +562,16 @@ const getRegionColor = (
   return isDarkMode ? "#ffffff" : "#00296b";
 };
 
+const PRIMARY_OWNER_EMAIL = "chiranjeevi.perala99@gmail.com";
+
 export function WorldMap() {
   const { marketData, loading } = useMarketData(900000); // Refresh every 15 minutes (900000ms)
   const { theme } = useTheme();
   const { toast } = useToast();
+  const { currentUser } = useCurrentUser();
   const isDarkMode = theme === "dark";
   const [isMobile, setIsMobile] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(
@@ -582,6 +587,23 @@ export function WorldMap() {
   const [savedPaths, setSavedPaths] = useState<string[]>([]);
   const [showShips, setShowShips] = useState(true);
   const svgRef = useRef<SVGSVGElement>(null);
+
+  // Check if current user has admin access
+  useEffect(() => {
+    const email = currentUser?.email || localStorage.getItem("currentUserEmail");
+    if (!email) {
+      setIsAdmin(false);
+      return;
+    }
+    if (email.toLowerCase() === PRIMARY_OWNER_EMAIL.toLowerCase()) {
+      setIsAdmin(true);
+      return;
+    }
+    fetch(`/api/admin/check-access/${encodeURIComponent(email)}`)
+      .then((r) => r.json())
+      .then((data) => setIsAdmin(!!data.authorized))
+      .catch(() => setIsAdmin(false));
+  }, [currentUser?.email]);
 
   useEffect(() => {
     // Default routes defined in UI code
@@ -1192,8 +1214,8 @@ export function WorldMap() {
             );
           })}
 
-          {/* Clickable region markers on the map */}
-          {!isDrawing &&
+          {/* Clickable region markers on the map — admin only */}
+          {!isDrawing && isAdmin &&
             marketRegions.map((region) => {
               const market =
                 marketData?.[region.name as keyof typeof marketData];
@@ -1524,23 +1546,25 @@ export function WorldMap() {
         )}
       </div>
 
-      {/* Region Detail Dialog */}
-      <Dialog
-        open={!!selectedRegion}
-        onOpenChange={(open) => {
-          if (!open) setSelectedRegion(null);
-        }}
-      >
-        <DialogContent className="dark-scrollbar-area sm:max-w-[380px] bg-gray-950 border-gray-800 text-white p-0 overflow-hidden rounded-2xl">
-          {selectedRegion && (
-            <RegionDialog
-              region={selectedRegion}
-              marketData={marketData}
-              onClose={() => setSelectedRegion(null)}
-            />
-          )}
-        </DialogContent>
-      </Dialog>
+      {/* Region Detail Dialog — admin only */}
+      {isAdmin && (
+        <Dialog
+          open={!!selectedRegion}
+          onOpenChange={(open) => {
+            if (!open) setSelectedRegion(null);
+          }}
+        >
+          <DialogContent className="dark-scrollbar-area sm:max-w-[380px] bg-gray-950 border-gray-800 text-white p-0 overflow-hidden rounded-2xl">
+            {selectedRegion && (
+              <RegionDialog
+                region={selectedRegion}
+                marketData={marketData}
+                onClose={() => setSelectedRegion(null)}
+              />
+            )}
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }

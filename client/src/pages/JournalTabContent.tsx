@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useMemo } from "react";
+import { Countdown } from "@/components/countdown";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -2053,11 +2054,17 @@ export function JournalTabContent({
                                   </div>
                                 )}
 
-                                {/* Candle count badge (top-right) — updated directly via ref by the SSE handler */}
+                                {/* Candle count badge + countdown (top-right) */}
                                 {journalChartData && journalChartData.length > 0 && (
                                   <div className="absolute top-1 right-2 z-40 flex items-center gap-1.5 pointer-events-none" data-testid="candle-count-badge">
-                                    {isJournalStreaming && journalLiveData?.isMarketOpen && (
+                                    {isJournalStreaming && (
                                       <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" title="Live streaming" />
+                                    )}
+                                    {/* Smooth per-second countdown using Countdown component */}
+                                    {isJournalStreaming && journalLiveData?.countdown?.expiryMs && journalLiveData.countdown.expiryMs > Date.now() && (
+                                      <Countdown
+                                        expiryTime={journalLiveData.countdown.expiryMs}
+                                      />
                                     )}
                                     <span
                                       ref={journalCandleCountRef}
@@ -2076,15 +2083,17 @@ export function JournalTabContent({
                                   data-testid="search-chart-container"
                                 />
 
-                                {/* Candle countdown bar — width is set directly via ref by the SSE handler */}
-                                <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-100 dark:bg-gray-800 pointer-events-none z-40" data-testid="countdown-bar-track">
-                                  <div
-                                    ref={journalCountdownBarRef}
-                                    className="h-full bg-blue-400/60 dark:bg-blue-500/60"
-                                    style={{ width: "100%" }}
-                                    data-testid="countdown-bar-fill"
-                                  />
-                                </div>
+                                {/* Candle countdown bar — width driven by ref from SSE handler */}
+                                {journalChartData && journalChartData.length > 0 && (
+                                  <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gray-200 dark:bg-gray-700 pointer-events-none z-40" data-testid="countdown-bar-track">
+                                    <div
+                                      ref={journalCountdownBarRef}
+                                      className="h-full bg-blue-500 dark:bg-blue-400"
+                                      style={{ width: "100%", transition: "width 0.65s linear" }}
+                                      data-testid="countdown-bar-fill"
+                                    />
+                                  </div>
+                                )}
 
                                 {/* Search Chart - No Data Message */}
                                 {(!journalChartData || journalChartData.length === 0) &&

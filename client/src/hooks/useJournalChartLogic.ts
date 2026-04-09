@@ -219,7 +219,7 @@ export function useJournalChartLogic(config: JournalChartConfig) {
   // Live streaming state for Journal Chart
   const [journalLiveData, setJournalLiveData] = useState<{
     ltp: number;
-    countdown: { remaining: number; total: number; formatted: string };
+    countdown: { remaining: number; total: number; formatted: string; expiryMs: number };
     currentCandle: { time: number; open: number; high: number; low: number; close: number; volume: number };
     isMarketOpen: boolean;
   } | null>(null);
@@ -1196,12 +1196,14 @@ export function useJournalChartLogic(config: JournalChartConfig) {
             liveCandle.marketStatus === "live" ||
             liveCandle.marketStatus === "delayed";
 
-          // Only show countdown if market is open, otherwise show empty
-          const countdownFormatted = isMarketActuallyOpen
-            ? remainingMinutes > 0
+          // Always compute countdown based on time — show regardless of market status
+          // so the UI is useful for replay/testing as well as live trading
+          const countdownFormatted =
+            remainingMinutes > 0
               ? `${remainingMinutes}:${remainingSecondsDisplay.toString().padStart(2, "0")}`
-              : `${remainingSeconds}s`
-            : "";
+              : remainingSeconds > 0
+              ? `${remainingSeconds}s`
+              : "";
 
           // Update or create price line with LTP and countdown
           if (journalCandlestickSeriesRef.current) {
@@ -1210,24 +1212,28 @@ export function useJournalChartLogic(config: JournalChartConfig) {
               journalCandlestickSeriesRef.current.removePriceLine(journalPriceLineRef.current);
             }
 
-            // Create new price line with current LTP and countdown
+            // Create new price line with current LTP and countdown on price scale
             journalPriceLineRef.current = journalCandlestickSeriesRef.current.createPriceLine({
               price: liveCandle.close,
               color: liveCandle.close >= liveCandle.open ? "#16a34a" : "#dc2626",
               lineWidth: 1,
               lineStyle: 2,
               axisLabelVisible: true,
-              title: isMarketActuallyOpen ? countdownFormatted : "",
+              title: countdownFormatted,
             });
           }
+
+          // Compute next candle expiry timestamp (ms) for smooth Countdown component
+          const nextCandleExpiryMs = (currentCandleStartTime + intervalSeconds) * 1000;
 
           // Update journalLiveData state with countdown
           setJournalLiveData({
             ltp: liveCandle.close,
             countdown: {
-              remaining: isMarketActuallyOpen ? remainingSeconds : 0,
+              remaining: remainingSeconds,
               total: intervalSeconds,
-              formatted: isMarketActuallyOpen ? countdownFormatted : "Market Closed",
+              formatted: countdownFormatted || (isMarketActuallyOpen ? "0s" : ""),
+              expiryMs: nextCandleExpiryMs,
             },
             currentCandle: {
               time: liveCandle.time,

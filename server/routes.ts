@@ -20842,9 +20842,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // ── Start new generation and register the promise for dedup ──────────
       const generationPromise = (async (): Promise<string | null> => {
         // Skip translation if: English, already in native script (skipTranslation flag),
-        // or text contains non-Latin characters (already translated)
+        // or text contains non-Latin characters (already translated).
+        // Exception: pa (Punjabi) and or (Odia) always re-translate because they use
+        // a proxy voice (Hindi for Punjabi, Bengali for Odia) — the voice must receive
+        // text in its own script (Devanagari / Bengali), not Gurmukhi / Odia script.
         const hasNativeScript = /[^\u0000-\u007F]/.test(text);
-        const textToSpeak = (targetLanguage === 'en' || skipTranslation || hasNativeScript)
+        const needsProxyTranslation = ['pa', 'or'].includes(targetLanguage);
+        const textToSpeak = (targetLanguage === 'en' || skipTranslation || (hasNativeScript && !needsProxyTranslation))
           ? text
           : await translateText(text, targetLanguage);
 

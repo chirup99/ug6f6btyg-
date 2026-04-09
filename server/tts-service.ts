@@ -56,7 +56,9 @@ function releaseTranslationSlot() {
 const GOOGLE_LANG_MAP: Record<string, string> = {
   hi: 'hi', bn: 'bn', ta: 'ta', te: 'te',
   mr: 'mr', gu: 'gu', kn: 'kn', ml: 'ml',
-  pa: 'pa', or: 'or',
+  // pa uses Hindi voice (hi-IN) — translate to Hindi (Devanagari) so the voice can read it
+  // or uses Bengali voice (bn-IN) — translate to Bengali so the voice can read it
+  pa: 'hi', or: 'bn',
 };
 
 async function translateChunkGoogle(chunk: string, targetLang: string): Promise<string> {

@@ -12361,6 +12361,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                           <option value="gu">ગુજરાતી (Gujarati)</option>
                                           <option value="kn">ಕನ್ನಡ (Kannada)</option>
                                           <option value="ml">മലയാളം (Malayalam)</option>
+                                          <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                                          <option value="or">ଓଡ଼ିଆ (Odia)</option>
                                         </select>
                                       </div>
                                     </div>
@@ -12558,6 +12560,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                                 gu: (p) => `નમસ્તે! હું ${p} છું. પેરલામां आपनुं स्वागत छे!`,
                                                 kn: (p) => `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ!`,
                                                 ml: (p) => `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം!`,
+                                                pa: (p) => `ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ${p} ਹਾਂ। ਪੇਰਲਾ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ!`,
+                                                or: (p) => `ନମସ୍କାର! ମୁଁ ${p}। ପେରଲାରେ ଆପଣଙ୍କୁ ସ୍ୱାଗତ!`,
                                               };
                                               const text = (greetings[voiceLanguage] || greetings['en'])(profile.name);
                                               const freshPromise: Promise<string | null> = fetch('/api/tts/generate', {
@@ -12632,6 +12636,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                                   <option value="gu">ગુજરાતી (Gujarati)</option>
                                   <option value="kn">ಕನ್ನಡ (Kannada)</option>
                                   <option value="ml">മലയാളം (Malayalam)</option>
+                                  <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+                                  <option value="or">ଓଡ଼ିଆ (Odia)</option>
                                 </select>
                               </div>
                               <p className="text-[11px] text-gray-500 italic text-center pb-1">Select a voice for your audio post</p>

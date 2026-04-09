@@ -1213,10 +1213,10 @@ export function useJournalChartLogic(config: JournalChartConfig) {
               journalCandlestickSeriesRef.current.removePriceLine(journalPriceLineRef.current);
             }
 
-            // Create new price line with current LTP and countdown on price scale
+            // Create new price line with current LTP and countdown on price scale (grey label)
             journalPriceLineRef.current = journalCandlestickSeriesRef.current.createPriceLine({
               price: liveCandle.close,
-              color: liveCandle.close >= liveCandle.open ? "#16a34a" : "#dc2626",
+              color: "#6b7280",
               lineWidth: 1,
               lineStyle: 2,
               axisLabelVisible: true,

@@ -20842,9 +20842,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // ── Start new generation and register the promise for dedup ──────────
       const generationPromise = (async (): Promise<string | null> => {
         // Skip translation if: English, already in native script (skipTranslation flag),
-        // or text contains non-Latin characters (already translated)
+        // or text contains non-Latin characters (already translated).
+        // Exception: Punjabi (pa) MUST always re-translate because it maps to Hindi voice —
+        // the Hindi voice cannot read Gurmukhi script, so Gurmukhi must become Devanagari.
         const hasNativeScript = /[^\u0000-\u007F]/.test(text);
-        const textToSpeak = (targetLanguage === 'en' || skipTranslation || hasNativeScript)
+        const needsForceTranslate = targetLanguage === 'pa';
+        const textToSpeak = (targetLanguage === 'en' || skipTranslation || (hasNativeScript && !needsForceTranslate))
           ? text
           : await translateText(text, targetLanguage);
 

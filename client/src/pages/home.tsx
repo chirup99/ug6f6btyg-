@@ -251,8 +251,8 @@ const VOICES_BY_LANGUAGE: { [key: string]: Array<{ id: string; name: string; des
   gu: [{ id: 'gu-IN-NiranjanNeural', name: 'Niranjan', description: 'Natural Gujarati', gender: 'Male' }, { id: 'gu-IN-DhwaniNeural', name: 'Dhwani', description: 'Natural Gujarati', gender: 'Female' }],
   kn: [{ id: 'kn-IN-GaganNeural', name: 'Gagan', description: 'Natural Kannada', gender: 'Male' }, { id: 'kn-IN-SapnaNeural', name: 'Sapna', description: 'Natural Kannada', gender: 'Female' }],
   ml: [{ id: 'ml-IN-MidhunNeural', name: 'Midhun', description: 'Natural Malayalam', gender: 'Male' }, { id: 'ml-IN-SobhanaNeural', name: 'Sobhana', description: 'Natural Malayalam', gender: 'Female' }],
-  pa: [{ id: 'pa-IN-GurdipNeural', name: 'Gurdip', description: 'Natural Punjabi', gender: 'Male' }, { id: 'pa-IN-OjasNeural', name: 'Ojas', description: 'Natural Punjabi', gender: 'Female' }],
-  or: [{ id: 'or-IN-SukantNeural', name: 'Sukant', description: 'Natural Odia', gender: 'Male' }, { id: 'or-IN-SubhasiniNeural', name: 'Subhasini', description: 'Natural Odia', gender: 'Female' }],
+  pa: [{ id: 'hi-IN-MadhurNeural', name: 'Madhur', description: 'Punjabi voice', gender: 'Male' }, { id: 'hi-IN-SwaraNeural', name: 'Swara', description: 'Punjabi voice', gender: 'Female' }],
+  or: [{ id: 'bn-IN-BashkarNeural', name: 'Bashkar', description: 'Odia voice', gender: 'Male' }, { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa', description: 'Odia voice', gender: 'Female' }],
 };
 const LANGUAGE_SCRIPTS: { [key: string]: string } = {
   en: 'A', hi: 'हि', bn: 'বা', ta: 'த', te: 'తె', mr: 'मर', gu: 'ગુ', kn: 'ಕ', ml: 'മ', pa: 'ਪੰ', or: 'ଓ',
@@ -3186,8 +3186,8 @@ export default function Home() {
       gu: [{ id: 'gu-IN-NiranjanNeural', name: 'Niranjan' }, { id: 'gu-IN-DhwaniNeural', name: 'Dhwani' }],
       kn: [{ id: 'kn-IN-GaganNeural', name: 'Gagan' }, { id: 'kn-IN-SapnaNeural', name: 'Sapna' }],
       ml: [{ id: 'ml-IN-MidhunNeural', name: 'Midhun' }, { id: 'ml-IN-SobhanaNeural', name: 'Sobhana' }],
-      pa: [{ id: 'pa-IN-GurdipNeural', name: 'Gurdip' }, { id: 'pa-IN-OjasNeural', name: 'Ojas' }],
-      or: [{ id: 'or-IN-SukantNeural', name: 'Sukant' }, { id: 'or-IN-SubhasiniNeural', name: 'Subhasini' }],
+      pa: [{ id: 'hi-IN-MadhurNeural', name: 'Madhur' }, { id: 'hi-IN-SwaraNeural', name: 'Swara' }],
+      or: [{ id: 'bn-IN-BashkarNeural', name: 'Bashkar' }, { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa' }],
     };
     const getGreeting = greetingsByLang[lang] || greetingsByLang['en'];
     const profiles = profilesByLang[lang] || profilesByLang['en'];

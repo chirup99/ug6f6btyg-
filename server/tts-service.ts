@@ -56,7 +56,10 @@ function releaseTranslationSlot() {
 const GOOGLE_LANG_MAP: Record<string, string> = {
   hi: 'hi', bn: 'bn', ta: 'ta', te: 'te',
   mr: 'mr', gu: 'gu', kn: 'kn', ml: 'ml',
-  pa: 'pa', or: 'or',
+  // Punjabi: Edge TTS has no pa-IN voice — translate to Hindi so hi-IN voice can read Devanagari
+  pa: 'hi',
+  // Odia: Bengali voice (bn-IN) can read Odia script — keep Odia translation intact
+  or: 'or',
 };
 
 async function translateChunkGoogle(chunk: string, targetLang: string): Promise<string> {
@@ -294,8 +297,8 @@ export const sarvamTTSService = {
       'gu': 'gu-IN-DhwaniNeural',
       'kn': 'kn-IN-GaganNeural',
       'ml': 'ml-IN-MidhunNeural',
-      'pa': 'pa-IN-GurdipNeural',
-      'or': 'or-IN-SukantNeural',
+      'pa': 'hi-IN-MadhurNeural',
+      'or': 'bn-IN-BashkarNeural',
     };
 
     return languageVoiceMap[language] || 'en-US-AriaNeural';
@@ -349,12 +352,12 @@ export const sarvamTTSService = {
       { name: 'Sobhana', voice: 'ml-IN-SobhanaNeural', gender: 'Female', accent: 'India', description: 'Natural Malayalam' },
     ],
     'pa': [
-      { name: 'Gurdip', voice: 'pa-IN-GurdipNeural', gender: 'Male', accent: 'India', description: 'Natural Punjabi' },
-      { name: 'Ojas', voice: 'pa-IN-OjasNeural', gender: 'Female', accent: 'India', description: 'Natural Punjabi' },
+      { name: 'Madhur', voice: 'hi-IN-MadhurNeural', gender: 'Male', accent: 'India', description: 'Punjabi voice' },
+      { name: 'Swara', voice: 'hi-IN-SwaraNeural', gender: 'Female', accent: 'India', description: 'Punjabi voice' },
     ],
     'or': [
-      { name: 'Sukant', voice: 'or-IN-SukantNeural', gender: 'Male', accent: 'India', description: 'Natural Odia' },
-      { name: 'Subhasini', voice: 'or-IN-SubhasiniNeural', gender: 'Female', accent: 'India', description: 'Natural Odia' },
+      { name: 'Bashkar', voice: 'bn-IN-BashkarNeural', gender: 'Male', accent: 'India', description: 'Odia voice' },
+      { name: 'Tanishaa', voice: 'bn-IN-TanishaaNeural', gender: 'Female', accent: 'India', description: 'Odia voice' },
     ],
   }
 };

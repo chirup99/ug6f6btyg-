@@ -251,9 +251,11 @@ const VOICES_BY_LANGUAGE: { [key: string]: Array<{ id: string; name: string; des
   gu: [{ id: 'gu-IN-NiranjanNeural', name: 'Niranjan', description: 'Natural Gujarati', gender: 'Male' }, { id: 'gu-IN-DhwaniNeural', name: 'Dhwani', description: 'Natural Gujarati', gender: 'Female' }],
   kn: [{ id: 'kn-IN-GaganNeural', name: 'Gagan', description: 'Natural Kannada', gender: 'Male' }, { id: 'kn-IN-SapnaNeural', name: 'Sapna', description: 'Natural Kannada', gender: 'Female' }],
   ml: [{ id: 'ml-IN-MidhunNeural', name: 'Midhun', description: 'Natural Malayalam', gender: 'Male' }, { id: 'ml-IN-SobhanaNeural', name: 'Sobhana', description: 'Natural Malayalam', gender: 'Female' }],
+  pa: [{ id: 'hi-IN-MadhurNeural', name: 'Madhur', description: 'Punjabi (Hindi voice)', gender: 'Male' }, { id: 'hi-IN-SwaraNeural', name: 'Swara', description: 'Punjabi (Hindi voice)', gender: 'Female' }],
+  or: [{ id: 'bn-IN-BashkarNeural', name: 'Bashkar', description: 'Odia (Bengali voice)', gender: 'Male' }, { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa', description: 'Odia (Bengali voice)', gender: 'Female' }],
 };
 const LANGUAGE_SCRIPTS: { [key: string]: string } = {
-  en: 'A', hi: 'हि', bn: 'বা', ta: 'த', te: 'తె', mr: 'मर', gu: 'ગુ', kn: 'ಕ', ml: 'മ',
+  en: 'A', hi: 'हि', bn: 'বা', ta: 'த', te: 'తె', mr: 'मर', gu: 'ગુ', kn: 'ಕ', ml: 'മ', pa: 'ਪੰ', or: 'ଓ',
 };
 
 // Type definitions for stock data and trading
@@ -3171,6 +3173,8 @@ export default function Home() {
       gu: (p) => u ? `નમસ્તે ${u}! હું ${p} છું. પेरलामां आपनुं स्वागत छे! तमारो दिवस केवो छे?` : `નમસ્તે! હું ${p} છું. પेरलामां आपनुं स्वागत छे! तमारो दिवस केवो छे?`,
       kn: (p) => u ? `ನಮಸ್ಕಾರ ${u}! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ! ನಿಮ್ಮ ದಿನ ಹೇಗಿದೆ?` : `ನಮಸ್ಕಾರ! ನಾನು ${p}. ಪೆರಲಾದಲ್ಲಿ ನಿಮಗೆ ಸ್ವಾಗತ! ನಿಮ್ಮ ದಿನ ಹೇಗಿದೆ?`,
       ml: (p) => u ? `നമസ്കാരം ${u}! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം! നിങ്ങളുടെ ദിവസം എങ്ങനെയുണ്ട്?` : `നമസ്കാരം! ഞാൻ ${p} ആണ്. പെരലയിലേക്ക് സ്വാഗതം! നിങ്ങളുടെ ദിവസം എങ്ങനെയുണ്ട്?`,
+      pa: (p) => u ? `ਸਤ ਸ੍ਰੀ ਅਕਾਲ ${u}! ਮੈਂ ${p} ਹਾਂ। ਪੇਰਲਾ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ! ਤੁਹਾਡਾ ਦਿਨ ਕਿਵੇਂ ਹੈ?` : `ਸਤ ਸ੍ਰੀ ਅਕਾਲ! ਮੈਂ ${p} ਹਾਂ। ਪੇਰਲਾ ਵਿੱਚ ਤੁਹਾਡਾ ਸੁਆਗਤ ਹੈ! ਤੁਹਾਡਾ ਦਿਨ ਕਿਵੇਂ ਹੈ?`,
+      or: (p) => u ? `ନମସ୍କାର ${u}! ମୁଁ ${p}। ପେରଲାରେ ଆପଣଙ୍କୁ ସ୍ୱାଗତ! ଆପଣଙ୍କ ଦିନ କ'ଣ?` : `ନମସ୍କାର! ମୁଁ ${p}। ପେରଲାରେ ଆପଣଙ୍କୁ ସ୍ୱାଗତ! ଆପଣଙ୍କ ଦିନ କ'ଣ?`,
     };
     const profilesByLang: { [key: string]: Array<{id: string, name: string}> } = {
       en: [{ id: 'en-IN-PrabhatNeural', name: 'Prabhat' }, { id: 'en-IN-NeerjaNeural', name: 'Neerja' }],
@@ -3182,6 +3186,8 @@ export default function Home() {
       gu: [{ id: 'gu-IN-NiranjanNeural', name: 'Niranjan' }, { id: 'gu-IN-DhwaniNeural', name: 'Dhwani' }],
       kn: [{ id: 'kn-IN-GaganNeural', name: 'Gagan' }, { id: 'kn-IN-SapnaNeural', name: 'Sapna' }],
       ml: [{ id: 'ml-IN-MidhunNeural', name: 'Midhun' }, { id: 'ml-IN-SobhanaNeural', name: 'Sobhana' }],
+      pa: [{ id: 'hi-IN-MadhurNeural', name: 'Madhur' }, { id: 'hi-IN-SwaraNeural', name: 'Swara' }],
+      or: [{ id: 'bn-IN-BashkarNeural', name: 'Bashkar' }, { id: 'bn-IN-TanishaaNeural', name: 'Tanishaa' }],
     };
     const getGreeting = greetingsByLang[lang] || greetingsByLang['en'];
     const profiles = profilesByLang[lang] || profilesByLang['en'];

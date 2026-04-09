@@ -56,6 +56,7 @@ function releaseTranslationSlot() {
 const GOOGLE_LANG_MAP: Record<string, string> = {
   hi: 'hi', bn: 'bn', ta: 'ta', te: 'te',
   mr: 'mr', gu: 'gu', kn: 'kn', ml: 'ml',
+  pa: 'pa', or: 'or',
 };
 
 async function translateChunkGoogle(chunk: string, targetLang: string): Promise<string> {
@@ -90,7 +91,7 @@ async function translateChunkGoogle(chunk: string, targetLang: string): Promise<
 // Main translateText — splits text, uses translation cache, concurrency limiter
 // ─────────────────────────────────────────────────────────────────────────────
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
-  const supportedLangs = ['hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml'];
+  const supportedLangs = ['hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml', 'pa', 'or'];
   if (!supportedLangs.includes(targetLanguage)) return text;
 
   // Check translation cache first (avoids duplicate API calls entirely)
@@ -293,6 +294,8 @@ export const sarvamTTSService = {
       'gu': 'gu-IN-DhwaniNeural',
       'kn': 'kn-IN-GaganNeural',
       'ml': 'ml-IN-MidhunNeural',
+      'pa': 'hi-IN-MadhurNeural',
+      'or': 'bn-IN-BashkarNeural',
     };
 
     return languageVoiceMap[language] || 'en-US-AriaNeural';
@@ -308,6 +311,8 @@ export const sarvamTTSService = {
     { code: 'gu', name: 'ગુજરાતી (Gujarati)' },
     { code: 'kn', name: 'ಕನ್ನಡ (Kannada)' },
     { code: 'ml', name: 'മലയാളം (Malayalam)' },
+    { code: 'pa', name: 'ਪੰਜਾਬੀ (Punjabi)' },
+    { code: 'or', name: 'ଓଡ଼ିଆ (Odia)' },
   ],
 
   voicesByLanguage: {
@@ -342,6 +347,14 @@ export const sarvamTTSService = {
     'ml': [
       { name: 'Midhun', voice: 'ml-IN-MidhunNeural', gender: 'Male', accent: 'India', description: 'Natural Malayalam' },
       { name: 'Sobhana', voice: 'ml-IN-SobhanaNeural', gender: 'Female', accent: 'India', description: 'Natural Malayalam' },
+    ],
+    'pa': [
+      { name: 'Madhur', voice: 'hi-IN-MadhurNeural', gender: 'Male', accent: 'India', description: 'Punjabi via Hindi voice' },
+      { name: 'Swara', voice: 'hi-IN-SwaraNeural', gender: 'Female', accent: 'India', description: 'Punjabi via Hindi voice' },
+    ],
+    'or': [
+      { name: 'Bashkar', voice: 'bn-IN-BashkarNeural', gender: 'Male', accent: 'India', description: 'Odia via Bengali voice' },
+      { name: 'Tanishaa', voice: 'bn-IN-TanishaaNeural', gender: 'Female', accent: 'India', description: 'Odia via Bengali voice' },
     ],
   }
 };

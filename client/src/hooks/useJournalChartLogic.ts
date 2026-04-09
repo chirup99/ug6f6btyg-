@@ -202,6 +202,7 @@ export function useJournalChartLogic(config: JournalChartConfig) {
   const journalChartContainerRef = useRef<HTMLDivElement>(null);
   const journalCandleCountRef = useRef<HTMLDivElement>(null);
   const journalCountdownBarRef = useRef<HTMLDivElement>(null);
+  const journalCountdownLabelRef = useRef<HTMLDivElement>(null);
   const journalChartRef = useRef<IChartApi | null>(null);
   const journalCandlestickSeriesRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const journalEma12SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
@@ -1424,12 +1425,16 @@ export function useJournalChartLogic(config: JournalChartConfig) {
             );
           }
 
-          // Update countdown bar
+          // Update countdown bar (always attempt — ref non-null once component mounts)
           if (journalCountdownBarRef.current) {
             const percentRemaining = (remainingSeconds / intervalSeconds) * 100;
             journalCountdownBarRef.current.style.width = `${percentRemaining}%`;
-            journalCountdownBarRef.current.style.transformOrigin = "right center";
-            journalCountdownBarRef.current.title = `${remainingSeconds}s / ${intervalSeconds}s`;
+          }
+
+          // Update price-scale countdown label overlay
+          if (journalCountdownLabelRef.current) {
+            journalCountdownLabelRef.current.textContent = countdownFormatted || "";
+            journalCountdownLabelRef.current.style.display = countdownFormatted ? "flex" : "none";
           }
         } else {
           console.log("⏳ Chart not ready yet:", {
@@ -2360,6 +2365,7 @@ export function useJournalChartLogic(config: JournalChartConfig) {
     heatmapChartContainerRef,
     journalCandleCountRef,
     journalCountdownBarRef,
+    journalCountdownLabelRef,
 
     // Refs (chart instances - for external access e.g. handleDateSelect)
     journalChartRef,

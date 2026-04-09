@@ -16,6 +16,10 @@ import path from 'path';
 // Compress all text responses > 1 KB (JSON, HTML, plain text)
 export const compressionMiddleware = compression({
   filter(req, res) {
+    // Don't compress SSE (Server-Sent Events) connections — gzip buffering breaks streaming
+    // Check for exact SSE endpoint paths (not /status sub-paths which return JSON)
+    if (req.path === '/api/angelone/live-stream-ws') return false;
+    if (req.path === '/api/angelone/live-stream') return false;
     // Don't compress responses that already have Content-Encoding (pre-compressed static)
     if (res.getHeader('Content-Encoding')) return false;
     // Don't compress WebSocket upgrades

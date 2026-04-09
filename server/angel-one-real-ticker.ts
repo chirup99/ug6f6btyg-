@@ -210,6 +210,7 @@ class AngelOneRealTicker {
         client.lastPrice = closedPrice;
         if (client.res.writable) {
           client.res.write(`data: ${JSON.stringify(closedPrice)}\n\n`);
+          if (typeof (client.res as any).flush === 'function') (client.res as any).flush();
         }
         return; // Skip all candle processing when market is closed
       }
@@ -264,6 +265,7 @@ class AngelOneRealTicker {
       client.lastPrice = livePrice;
       if (client.res.writable) {
         client.res.write(`data: ${JSON.stringify(livePrice)}\n\n`);
+        if (typeof (client.res as any).flush === 'function') (client.res as any).flush();
       }
     };
 
@@ -329,6 +331,7 @@ class AngelOneRealTicker {
             if (client.res.writable) {
               client.lastPrice = fallbackPrice;
               client.res.write(`data: ${JSON.stringify(fallbackPrice)}\n\n`);
+              if (typeof (client.res as any).flush === 'function') (client.res as any).flush();
             }
           }
         } catch (error) {

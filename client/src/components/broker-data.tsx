@@ -348,7 +348,7 @@ export function BrokerData(props: BrokerDataProps) {
         {orders.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-600">
             <BookOpen className="w-8 h-8 mb-2 opacity-40" />
-            <p className="text-xs">{isFetching ? 'Loading orders…' : 'No orders found'}</p>
+            <p className="text-xs">No orders found</p>
           </div>
         ) : (
           <>
@@ -486,7 +486,7 @@ export function BrokerData(props: BrokerDataProps) {
         {positions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-600">
             <TrendingUp className="w-8 h-8 mb-2 opacity-40" />
-            <p className="text-xs">{isConnected ? 'No open positions' : 'Connect a broker to view positions'}</p>
+            <p className="text-xs">No positions</p>
           </div>
         ) : (
           <>

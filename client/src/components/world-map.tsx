@@ -564,69 +564,6 @@ const getRegionColor = (
 
 const PRIMARY_OWNER_EMAIL = "chiranjeevi.perala99@gmail.com";
 
-// ── Day / Night Terminator Helpers ──────────────────────────────────────────
-// SVG viewBox: "-10 0 1045.2 458"  → full equirectangular map
-const _SVG_W = 1045.2;   // total viewBox width
-const _SVG_H = 458;       // total viewBox height
-const _SVG_OX = -10;      // viewBox minX offset
-
-function _lonToX(lon: number) {
-  return _SVG_OX + ((lon + 180) / 360) * _SVG_W;
-}
-function _latToY(lat: number) {
-  return ((90 - lat) / 180) * _SVG_H;
-}
-
-function buildTerminatorPaths(now: Date): { nightPath: string; linePath: string } {
-  const start = new Date(Date.UTC(now.getUTCFullYear(), 0, 1));
-  const day = Math.floor((now.getTime() - start.getTime()) / 86400000) + 1;
-  const decDeg = -23.45 * Math.cos((2 * Math.PI / 365) * (day + 10));
-  const decRad = (decDeg * Math.PI) / 180;
-  const utcH = now.getUTCHours() + now.getUTCMinutes() / 60 + now.getUTCSeconds() / 3600;
-  const sunLon = (12 - utcH) * 15;   // longitude where sun is directly overhead
-
-  const L = _SVG_OX;
-  const R = _SVG_OX + _SVG_W;
-  const T = 0;
-  const B = _SVG_H;
-
-  // Near equinox: approximate as vertical line
-  if (Math.abs(decRad) < 0.015) {
-    const x = Math.max(L, Math.min(R, _lonToX(((sunLon + 90) % 360))));
-    return {
-      linePath: `M ${x.toFixed(1)},${T} L ${x.toFixed(1)},${B}`,
-      nightPath: `M ${x.toFixed(1)},${T} L ${R},${T} L ${R},${B} L ${x.toFixed(1)},${B} Z`,
-    };
-  }
-
-  const line: string[] = [];
-  const poly: string[] = [];
-
-  for (let lon = -180; lon <= 180; lon += 0.8) {
-    const haRad = ((lon - sunLon) * Math.PI) / 180;
-    const latDeg = Math.max(-89, Math.min(89, (Math.atan(-Math.cos(haRad) / Math.tan(decRad)) * 180) / Math.PI));
-    const x = _lonToX(lon);
-    const y = _latToY(latDeg);
-    const cmd = lon === -180 ? 'M' : 'L';
-    line.push(`${cmd} ${x.toFixed(1)},${y.toFixed(1)}`);
-    poly.push(`${cmd} ${x.toFixed(1)},${y.toFixed(1)}`);
-  }
-
-  // Close polygon toward the pole that is in night
-  const rX = _lonToX(180).toFixed(1);
-  const lX = _lonToX(-180).toFixed(1);
-  if (decRad > 0) {
-    // South pole in night → close toward bottom edge
-    poly.push(`L ${rX},${B} L ${lX},${B} Z`);
-  } else {
-    // North pole in night → close toward top edge
-    poly.push(`L ${rX},${T} L ${lX},${T} Z`);
-  }
-
-  return { nightPath: poly.join(' '), linePath: line.join(' ') };
-}
-// ────────────────────────────────────────────────────────────────────────────
-
 export function WorldMap() {
   const { marketData, loading } = useMarketData(900000); // Refresh every 15 minutes (900000ms)
   const { theme } = useTheme();
@@ -635,7 +572,6 @@ export function WorldMap() {
   const isDarkMode = theme === "dark";
   const [isMobile, setIsMobile] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
-  const [terminator, setTerminator] = useState(() => buildTerminatorPaths(new Date()));
   const [isDrawing, setIsDrawing] = useState(false);
   const [selectedRegion, setSelectedRegion] = useState<string | null>(null);
   const [lastPoint, setLastPoint] = useState<{ x: number; y: number } | null>(
@@ -651,14 +587,6 @@ export function WorldMap() {
   const [savedPaths, setSavedPaths] = useState<string[]>([]);
   const [showShips, setShowShips] = useState(true);
   const svgRef = useRef<SVGSVGElement>(null);
-
-  // Update day/night terminator every minute
-  useEffect(() => {
-    const tick = () => setTerminator(buildTerminatorPaths(new Date()));
-    tick();
-    const id = setInterval(tick, 60_000);
-    return () => clearInterval(id);
-  }, []);
 
   // Check if current user has admin access
   useEffect(() => {
@@ -895,8 +823,6 @@ export function WorldMap() {
             filter: "none",
             background: "none",
             touchAction: isDrawing ? "none" : "auto",
-            transform: "perspective(900px) rotateX(5deg) scaleY(0.97)",
-            transformOrigin: "50% 50%",
           }}
         >
           <defs>
@@ -936,11 +862,6 @@ export function WorldMap() {
               <stop offset="0%" stopColor="#ef4444" stopOpacity="0.8" />
               <stop offset="100%" stopColor="#ef4444" stopOpacity="0" />
             </radialGradient>
-
-            {/* Terminator atmospheric glow filter */}
-            <filter id="terminatorGlow" x="-100%" y="-100%" width="300%" height="300%">
-              <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
-            </filter>
           </defs>
           {/* Saved Drawing Layer */}
           {showShips &&
@@ -1292,30 +1213,6 @@ export function WorldMap() {
               />
             );
           })}
-
-          {/* ── Day / Night terminator ── */}
-          <g style={{ pointerEvents: 'none' }}>
-            {/* Night side shading */}
-            <path
-              d={terminator.nightPath}
-              fill={isDarkMode ? "rgba(0,5,30,0.60)" : "rgba(10,20,60,0.38)"}
-            />
-            {/* Soft atmospheric glow along the terminator edge */}
-            <path
-              d={terminator.linePath}
-              fill="none"
-              stroke="rgba(80,140,255,0.45)"
-              strokeWidth="10"
-              filter="url(#terminatorGlow)"
-            />
-            {/* Sharp terminator edge line */}
-            <path
-              d={terminator.linePath}
-              fill="none"
-              stroke="rgba(140,190,255,0.70)"
-              strokeWidth="1.2"
-            />
-          </g>
 
           {/* Clickable region markers on the map — admin only */}
           {!isDrawing && isAdmin &&

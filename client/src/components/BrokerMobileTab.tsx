@@ -150,14 +150,14 @@ export function BrokerMobileTab({
           {/* 1 · 2 toggle */}
           <div className={`flex items-center rounded-full p-0.5 gap-0.5 transition-colors duration-300 flex-shrink-0 ${viewingSecondary ? "bg-violet-200 dark:bg-violet-800/60" : "bg-gray-100 dark:bg-gray-800"}`}>
             <button
-              onClick={() => setViewingSecondary(false)}
+              onClick={() => { setViewingSecondary(false); setShowBrokerDropdown(false); }}
               className={`w-7 h-7 rounded-full text-xs font-bold transition-all duration-200 ${!viewingSecondary ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-400 dark:text-gray-500"}`}
               data-testid="button-broker-slot-1"
             >
               1
             </button>
             <button
-              onClick={() => setViewingSecondary(true)}
+              onClick={() => { setViewingSecondary(true); setShowBrokerDropdown(false); }}
               className={`w-7 h-7 rounded-full text-xs font-bold transition-all duration-200 ${viewingSecondary ? "bg-violet-600 text-white shadow-sm" : "text-gray-400 dark:text-gray-500"}`}
               data-testid="button-broker-slot-2"
             >

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import React from 'react';
-import { Timer, TrendingUp, Zap, CalendarDays, ChevronDown } from 'lucide-react';
+import { Timer, TrendingUp, Zap, CalendarDays, ChevronDown, ChevronLeft, ChevronRight } from 'lucide-react';
 import { BarChart3 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -24,6 +24,7 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
   const [durFilterYear, setDurFilterYear] = useState<string>('all');
   const [durExpandedRows, setDurExpandedRows] = useState<Set<string>>(new Set());
   const [durTableOpen, setDurTableOpen] = useState<boolean>(false);
+  const [chartCarouselIndex, setChartCarouselIndex] = useState<number>(0);
 
   const parseDurMs = (dur: string): number => {
     if (!dur || dur === '-') return 0;
@@ -213,21 +214,14 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
             </div>
 
             {/* Dual chart panel */}
-            {lineData.length > 0 && (
-              <div className="grid md:grid-cols-2 gap-5">
-                {/* Line chart — duration trend over time */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4 text-orange-500" />
-                      Duration Trend Over Time
-                    </h4>
-                    <div className="flex gap-3 text-[10px] font-bold uppercase">
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block"/>Loss</span>
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"/>Profit</span>
-                    </div>
-                  </div>
-                  <div className="h-48">
+            {lineData.length > 0 && (() => {
+              const chartItems = [
+                {
+                  key: 'trend',
+                  icon: <TrendingUp className="w-4 h-4 text-orange-500" />,
+                  title: 'Duration Trend Over Time',
+                  hint: '↓ Red line falling = you\'re cutting losses faster over time ✅',
+                  chart: (
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={lineData} margin={{top:4,right:8,left:-14,bottom:0}}>
                         <CartesianGrid strokeDasharray="3 3" stroke={theme==='dark'?'#1e293b':'#f1f5f9'} />
@@ -236,7 +230,7 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                         <Tooltip
                           contentStyle={{background:theme==='dark'?'#1e293b':'#fff',border:`1px solid ${theme==='dark'?'#334155':'#e2e8f0'}`,borderRadius:'10px',fontSize:'11px'}}
                           formatter={(val:any,name:string)=>[`${val} min`,name==='lossDurMin'?'Avg Loss Hold':'Avg Profit Hold']}
-                          labelFormatter={(label,payload)=>{
+                          labelFormatter={(label:any,payload:any)=>{
                             if(payload?.[0]?.payload){const d=payload[0].payload;return `${label} • P&L: ₹${d.pnl.toLocaleString()}`;}
                             return label;
                           }}
@@ -245,23 +239,14 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                         <Line type="monotone" dataKey="profDurMin" stroke="#34d399" strokeWidth={2.5} dot={{r:4,fill:'#34d399',stroke:'white',strokeWidth:2}} activeDot={{r:6}} />
                       </LineChart>
                     </ResponsiveContainer>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-2 text-center">↓ Red line falling = you're cutting losses faster over time ✅</p>
-                </div>
-
-                {/* Bar chart — daily comparison */}
-                <div className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-700">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4 text-amber-500" />
-                      Daily Hold Time Comparison
-                    </h4>
-                    <div className="flex gap-3 text-[10px] font-bold uppercase">
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block"/>Loss</span>
-                      <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"/>Profit</span>
-                    </div>
-                  </div>
-                  <div className="h-48">
+                  ),
+                },
+                {
+                  key: 'daily',
+                  icon: <BarChart3 className="w-4 h-4 text-amber-500" />,
+                  title: 'Daily Hold Time Comparison',
+                  hint: 'Green taller than red on a day = disciplined exits that day ✅',
+                  chart: (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={barData} margin={{top:4,right:8,left:-14,bottom:0}} barGap={2}>
                         <CartesianGrid strokeDasharray="3 3" stroke={theme==='dark'?'#1e293b':'#f1f5f9'} />
@@ -270,7 +255,7 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                         <Tooltip
                           contentStyle={{background:theme==='dark'?'#1e293b':'#fff',border:`1px solid ${theme==='dark'?'#334155':'#e2e8f0'}`,borderRadius:'10px',fontSize:'11px'}}
                           formatter={(val:any,name:string)=>[`${val} min`,name==='lossDurMin'?'Avg Loss Hold':'Avg Profit Hold']}
-                          labelFormatter={(label,payload)=>{
+                          labelFormatter={(label:any,payload:any)=>{
                             if(payload?.[0]?.payload){const d=payload[0].payload;return `${label} • P&L: ₹${d.pnl.toLocaleString()}`;}
                             return label;
                           }}
@@ -279,11 +264,87 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                         <Bar dataKey="profDurMin" fill="#34d399" radius={[4,4,0,0]} maxBarSize={28} />
                       </BarChart>
                     </ResponsiveContainer>
-                  </div>
-                  <p className="text-[10px] text-slate-400 mt-2 text-center">Green taller than red on a day = disciplined exits that day ✅</p>
+                  ),
+                },
+              ];
+              const legend = (
+                <div className="flex gap-3 text-[10px] font-bold uppercase">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-400 inline-block"/>Loss</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-emerald-400 inline-block"/>Profit</span>
                 </div>
-              </div>
-            )}
+              );
+              return (
+                <>
+                  {/* ── Mobile carousel ── */}
+                  <div className="md:hidden">
+                    <div className="relative bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-700">
+                      {/* Header */}
+                      <div className="flex items-center justify-between mb-3">
+                        <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                          {chartItems[chartCarouselIndex].icon}
+                          {chartItems[chartCarouselIndex].title}
+                        </h4>
+                        {legend}
+                      </div>
+                      {/* Chart */}
+                      <div className="h-48">
+                        {chartItems[chartCarouselIndex].chart}
+                      </div>
+                      <p className="text-[10px] text-slate-400 mt-2 text-center">{chartItems[chartCarouselIndex].hint}</p>
+                      {/* Carousel controls */}
+                      <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-200 dark:border-slate-700">
+                        <button
+                          data-testid="button-chart-carousel-prev"
+                          onClick={() => setChartCarouselIndex(i => (i - 1 + chartItems.length) % chartItems.length)}
+                          className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          <ChevronLeft className="w-4 h-4" />
+                          Prev
+                        </button>
+                        {/* Dot indicators */}
+                        <div className="flex gap-1.5">
+                          {chartItems.map((_, i) => (
+                            <button
+                              key={i}
+                              data-testid={`button-chart-dot-${i}`}
+                              onClick={() => setChartCarouselIndex(i)}
+                              className={`w-2 h-2 rounded-full transition-colors ${i === chartCarouselIndex ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'}`}
+                            />
+                          ))}
+                        </div>
+                        <button
+                          data-testid="button-chart-carousel-next"
+                          onClick={() => setChartCarouselIndex(i => (i + 1) % chartItems.length)}
+                          className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                        >
+                          Next
+                          <ChevronRight className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* ── Desktop grid ── */}
+                  <div className="hidden md:grid md:grid-cols-2 gap-5">
+                    {chartItems.map(item => (
+                      <div key={item.key} className="bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-4 border border-slate-100 dark:border-slate-700">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                            {item.icon}
+                            {item.title}
+                          </h4>
+                          {legend}
+                        </div>
+                        <div className="h-48">
+                          {item.chart}
+                        </div>
+                        <p className="text-[10px] text-slate-400 mt-2 text-center">{item.hint}</p>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
 
             {/* Duration Bands — win rate per hold time bucket */}
             <div>

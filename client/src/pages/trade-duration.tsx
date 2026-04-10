@@ -191,26 +191,57 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
           </div>
         ) : (
           <>
-            {/* KPI row */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-4">
-              <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-xl md:rounded-2xl p-3 md:p-4">
-                <p className="text-[9px] md:text-[10px] uppercase tracking-wider font-bold text-red-400 mb-1">Avg Loss Hold</p>
-                <p className="text-lg md:text-2xl font-bold text-red-600 dark:text-red-400">{fmtDur(avgLossDurMs)}</p>
+            {/* KPI row — mobile compact */}
+            <div className="md:hidden grid grid-cols-2 gap-2">
+              <div className="flex items-center gap-2.5 border border-red-100 dark:border-red-500/20 bg-red-50 dark:bg-red-500/10 rounded-xl px-3 py-2.5">
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider block">Avg Loss Hold</span>
+                  <span className="text-base font-black leading-none text-red-600 dark:text-red-400">{fmtDur(avgLossDurMs)}</span>
+                </div>
+                <span className="text-[9px] text-slate-400 shrink-0">{lossTrades.length} losses</span>
+              </div>
+              <div className="flex items-center gap-2.5 border border-green-100 dark:border-green-500/20 bg-green-50 dark:bg-green-500/10 rounded-xl px-3 py-2.5">
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold text-green-500 uppercase tracking-wider block">Avg Profit Hold</span>
+                  <span className="text-base font-black leading-none text-green-600 dark:text-green-400">{fmtDur(avgProfDurMs)}</span>
+                </div>
+                <span className="text-[9px] text-slate-400 shrink-0">{profTrades.length} profits</span>
+              </div>
+              <div className="flex items-center gap-2.5 border border-orange-100 dark:border-orange-500/20 bg-orange-50 dark:bg-orange-500/10 rounded-xl px-3 py-2.5">
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold text-orange-500 uppercase tracking-wider block">Longest Loss</span>
+                  <span className="text-base font-black leading-none text-orange-600 dark:text-orange-400">{longestLoss.durationLabel||'-'}</span>
+                </div>
+                <span className="text-[9px] text-slate-400 shrink-0">{longestLoss.date!=='-'?new Date(longestLoss.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'-'}</span>
+              </div>
+              <div className={`flex items-center gap-2.5 border rounded-xl px-3 py-2.5 ${overHoldRatio>1.5?'bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20':'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700'}`}>
+                <div className="flex-1 min-w-0">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Over-hold</span>
+                  <span className={`text-base font-black leading-none ${overHoldRatio>1.5?'text-red-600 dark:text-red-400':'text-slate-700 dark:text-slate-300'}`}>{overHoldRatio>0?`${overHoldRatio.toFixed(1)}x`:'-'}</span>
+                </div>
+                <span className="text-[9px] text-slate-400 shrink-0">{overHoldRatio>1?'losses>wins':'balanced'}</span>
+              </div>
+            </div>
+            {/* KPI row — desktop */}
+            <div className="hidden md:grid md:grid-cols-4 gap-4">
+              <div className="bg-red-50 dark:bg-red-500/10 border border-red-100 dark:border-red-500/20 rounded-2xl p-4">
+                <p className="text-[10px] uppercase tracking-wider font-bold text-red-400 mb-1">Avg Loss Hold</p>
+                <p className="text-2xl font-bold text-red-600 dark:text-red-400">{fmtDur(avgLossDurMs)}</p>
                 <p className="text-[10px] text-slate-400 mt-1">{lossTrades.length} losses</p>
               </div>
-              <div className="bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 rounded-xl md:rounded-2xl p-3 md:p-4">
-                <p className="text-[9px] md:text-[10px] uppercase tracking-wider font-bold text-green-500 mb-1">Avg Profit Hold</p>
-                <p className="text-lg md:text-2xl font-bold text-green-600 dark:text-green-400">{fmtDur(avgProfDurMs)}</p>
+              <div className="bg-green-50 dark:bg-green-500/10 border border-green-100 dark:border-green-500/20 rounded-2xl p-4">
+                <p className="text-[10px] uppercase tracking-wider font-bold text-green-500 mb-1">Avg Profit Hold</p>
+                <p className="text-2xl font-bold text-green-600 dark:text-green-400">{fmtDur(avgProfDurMs)}</p>
                 <p className="text-[10px] text-slate-400 mt-1">{profTrades.length} profits</p>
               </div>
-              <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-xl md:rounded-2xl p-3 md:p-4">
-                <p className="text-[9px] md:text-[10px] uppercase tracking-wider font-bold text-orange-500 mb-1">Longest Loss Hold</p>
-                <p className="text-lg md:text-2xl font-bold text-orange-600 dark:text-orange-400">{longestLoss.durationLabel||'-'}</p>
+              <div className="bg-orange-50 dark:bg-orange-500/10 border border-orange-100 dark:border-orange-500/20 rounded-2xl p-4">
+                <p className="text-[10px] uppercase tracking-wider font-bold text-orange-500 mb-1">Longest Loss Hold</p>
+                <p className="text-2xl font-bold text-orange-600 dark:text-orange-400">{longestLoss.durationLabel||'-'}</p>
                 <p className="text-[10px] text-slate-400 mt-1">{longestLoss.date!=='-'?new Date(longestLoss.date).toLocaleDateString('en-IN',{day:'numeric',month:'short'}):'-'}</p>
               </div>
-              <div className={`rounded-xl md:rounded-2xl p-3 md:p-4 border ${overHoldRatio>1.5?'bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20':'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
-                <p className="text-[9px] md:text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Over-hold Ratio</p>
-                <p className={`text-lg md:text-2xl font-bold ${overHoldRatio>1.5?'text-red-600 dark:text-red-400':'text-slate-700 dark:text-slate-300'}`}>{overHoldRatio>0?`${overHoldRatio.toFixed(1)}x`:'-'}</p>
+              <div className={`rounded-2xl p-4 border ${overHoldRatio>1.5?'bg-red-50 dark:bg-red-500/10 border-red-100 dark:border-red-500/20':'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
+                <p className="text-[10px] uppercase tracking-wider font-bold text-slate-400 mb-1">Over-hold Ratio</p>
+                <p className={`text-2xl font-bold ${overHoldRatio>1.5?'text-red-600 dark:text-red-400':'text-slate-700 dark:text-slate-300'}`}>{overHoldRatio>0?`${overHoldRatio.toFixed(1)}x`:'-'}</p>
                 <p className="text-[10px] text-slate-400 mt-1">{overHoldRatio>1?'losses > wins':'balanced'}</p>
               </div>
             </div>

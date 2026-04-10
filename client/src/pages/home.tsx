@@ -7581,14 +7581,16 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   useEffect(() => {
     if (showOrderModal && activeBroker) {
       let cancelled = false;
-      let lastPositionsKey = '__uninit__';
+      let firstFetchDone = false;
       const fetchPositions = async () => {
         try {
           const { token, positionsEp: endpoint } = getBrokerEndpoints(activeBroker);
           const broker = activeBroker || '';
-          
+
           if (!endpoint) return;
-          
+
+          if (!firstFetchDone) setFetchingBrokerPositions(true);
+
           const res = await fetch(endpoint, {
             headers: { 'Authorization': `Bearer ${token}` }
           });
@@ -7598,37 +7600,32 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
             if (res.status === 401) {
               console.warn('⚠️ [POSITIONS] Session expired, please reconnect broker');
             }
+            if (!firstFetchDone) { firstFetchDone = true; setFetchingBrokerPositions(false); }
             return;
           }
           const data = await res.json();
           if (cancelled) return;
           const positions = data.positions || [];
 
-          // Build a key from symbols+qty+status to detect structural changes only (not price fluctuations)
-          const newKey = positions.map((p: any) =>
-            `${p.symbol}:${p.qty ?? p.quantity ?? p.netQty ?? 0}:${p.status ?? ''}`
-          ).join('|');
-
-          // Only update React state when positions actually changed — keeps UI completely stable between polls
-          if (newKey !== lastPositionsKey) {
-            lastPositionsKey = newKey;
-            setBrokerPositions(positions);
-            console.log('✅ [POSITIONS]', broker, 'Updated', positions.length, 'positions');
-          }
+          // Always update so LTP / P&L changes from the broker are reflected every poll
+          setBrokerPositions(positions);
+          console.log('✅ [POSITIONS]', broker, 'Updated', positions.length, 'positions');
+          if (!firstFetchDone) { firstFetchDone = true; setFetchingBrokerPositions(false); }
         } catch (err) {
           // Silent fail — keep whatever is currently displayed, don't blank out
           if (!cancelled) console.error('❌ [POSITIONS] Error fetching positions:', err);
+          if (!firstFetchDone) { firstFetchDone = true; setFetchingBrokerPositions(false); }
         }
       };
 
       // Fetch positions immediately when modal opens — data is ready before user even clicks the tab
       fetchPositions();
 
-      // Poll every 600ms in background — UI only updates when positions actually change
+      // Poll every 600ms so LTP / P&L values stay live
       const pollInterval = setInterval(fetchPositions, 600);
 
       // Cleanup: clear interval and mark cancelled to prevent stale state updates
-      return () => { cancelled = true; clearInterval(pollInterval); };
+      return () => { cancelled = true; clearInterval(pollInterval); setFetchingBrokerPositions(false); };
     }
   }, [activeBroker, showOrderModal, getBrokerEndpoints]);
   const [brokerOrders, setBrokerOrders] = useState<any[]>([]);
@@ -7738,14 +7735,13 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     return () => { cancelled = true; clearInterval(interval); };
   }, [secondaryBroker, getBrokerEndpoints]);
 
-  // Fetch second broker POSITIONS (700ms polling, live prices, change detection) — uses central registry
+  // Fetch second broker POSITIONS (600ms polling, always update for live LTP/P&L)
   useEffect(() => {
     if (!secondaryBroker || (!showOrderModal && !showSecondaryOrderModal)) {
       setBroker2Positions([]);
       return;
     }
     let cancelled = false;
-    let lastPositionsKey = '__uninit__';
     const fetchPositions = async () => {
       const { token, positionsEp: ep } = getBrokerEndpoints(secondaryBroker);
       if (!ep) return;
@@ -7757,12 +7753,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         }
         const data = await res.json();
         const positions = data.positions || [];
-        // Change detection — only update state when positions actually changed
-        const newKey = positions.map((p: any) =>
-          `${p.symbol}:${p.qty ?? p.quantity ?? p.netQty ?? 0}:${p.status ?? ''}`
-        ).join('|');
-        if (!cancelled && newKey !== lastPositionsKey) {
-          lastPositionsKey = newKey;
+        // Always update so LTP / P&L changes are reflected every poll
+        if (!cancelled) {
           setBroker2Positions(positions);
           console.log('✅ [BROKER2 POSITIONS]', secondaryBroker, 'Updated', positions.length, 'positions');
         }

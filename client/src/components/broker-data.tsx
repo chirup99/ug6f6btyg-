@@ -474,7 +474,7 @@ export function BrokerData(props: BrokerDataProps) {
     );
   };
 
-  const renderPositionsTable = (positions: any[], livePrices: Record<string, number> = {}) => {
+  const renderPositionsTable = (positions: any[], livePrices: Record<string, number> = {}, isFetching = false) => {
     const sorted = [...positions].sort((a, b) => {
       const aS = String(a.status || "Open").toUpperCase().trim();
       const bS = String(b.status || "Open").toUpperCase().trim();
@@ -483,7 +483,13 @@ export function BrokerData(props: BrokerDataProps) {
 
     return (
       <div className="space-y-2">
-        {positions.length === 0 ? (
+        {isFetching && positions.length === 0 ? (
+          <div className="space-y-2 animate-pulse">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="h-9 rounded-lg bg-gray-100 dark:bg-gray-800/60" />
+            ))}
+          </div>
+        ) : positions.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-gray-400 dark:text-gray-600">
             <TrendingUp className="w-8 h-8 mb-2 opacity-40" />
             <p className="text-xs">No positions</p>
@@ -622,7 +628,7 @@ export function BrokerData(props: BrokerDataProps) {
                   {renderOrdersTable(displayOrders, isFetchingOrders, recordAllBrokerOrders)}
                 </TabsContent>
                 <TabsContent value="positions" className="mt-0">
-                  {renderPositionsTable(displayPositions, activeBroker === 'groww' ? growwLivePrices : {})}
+                  {renderPositionsTable(displayPositions, activeBroker === 'groww' ? growwLivePrices : {}, fetchingBrokerPositions)}
                 </TabsContent>
               </div>
             </Tabs>
@@ -651,7 +657,7 @@ export function BrokerData(props: BrokerDataProps) {
                     {renderOrdersTable(secondaryBrokerOrders, fetchingSecondaryBroker || false, recordSecondaryBrokerOrders ? () => recordSecondaryBrokerOrders(secondaryBrokerOrders) : undefined)}
                   </TabsContent>
                   <TabsContent value="positions" className="mt-0">
-                    {renderPositionsTable(secondaryBrokerPositions, secondaryBroker === 'groww' ? growwLivePrices : {})}
+                    {renderPositionsTable(secondaryBrokerPositions, secondaryBroker === 'groww' ? growwLivePrices : {}, fetchingSecondaryBroker || false)}
                   </TabsContent>
                 </div>
               </Tabs>

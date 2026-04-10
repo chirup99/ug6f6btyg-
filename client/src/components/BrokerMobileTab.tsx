@@ -111,7 +111,7 @@ export function BrokerMobileTab({
   return (
     <div className="fixed inset-0 z-40 bg-white dark:bg-gray-950 flex flex-col pb-20">
       {/* Header */}
-      <div className="relative px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 flex-shrink-0">
+      <div className="relative px-4 pt-7 pb-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 flex-shrink-0">
         {/* Funds block — top of header */}
         <div className="mb-2.5">
           <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide leading-tight mb-0.5">

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Plug, ChevronDown, TrendingUp, BookOpen, TrendingDown } from "lucide-react";
+import { Plug, ChevronDown, TrendingUp, BookOpen, TrendingDown, X } from "lucide-react";
 
 interface BrokerMobileTabProps {
   isConnected: boolean;
@@ -17,6 +17,7 @@ interface BrokerMobileTabProps {
   mobileSecondaryBrokerAccountInfo?: { name: string; id: string } | null;
   setShowConnectDialog: (open: boolean) => void;
   recordAllBrokerOrders?: () => void;
+  onDisconnectBroker?: () => void;
   zerodhaIsConnected: boolean;
   upstoxIsConnected: boolean;
   angelOneIsConnected: boolean;
@@ -70,10 +71,12 @@ export function BrokerMobileTab({
   mobileSecondaryBrokerAccountInfo,
   setShowConnectDialog,
   recordAllBrokerOrders,
+  onDisconnectBroker,
 }: BrokerMobileTabProps) {
   const [subTab, setSubTab] = useState<"orders" | "positions">("orders");
   const [showSwitcher, setShowSwitcher] = useState(false);
   const [viewingSecondary, setViewingSecondary] = useState(false);
+  const [showBrokerDropdown, setShowBrokerDropdown] = useState(false);
 
   const currentBrokerKey = viewingSecondary ? secondaryBroker : activeBroker;
   const currentOrders = viewingSecondary ? mobileSecondaryBrokerOrders : mobileBrokerOrders;
@@ -124,7 +127,11 @@ export function BrokerMobileTab({
 
         {/* Broker info row + toggle */}
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+          <button
+            className="flex items-center gap-1.5 min-w-0 flex-1"
+            onClick={() => setShowBrokerDropdown((v) => !v)}
+            data-testid="button-broker-info-dropdown"
+          >
             {currentBrokerKey && brokerIconMap[currentBrokerKey] && (
               <img
                 src={brokerIconMap[currentBrokerKey]}
@@ -137,15 +144,8 @@ export function BrokerMobileTab({
                 {currentAccountInfo.id}
               </p>
             )}
-            {currentAccountInfo?.name && (
-              <>
-                <span className={`text-[10px] ${viewingSecondary ? "text-violet-300 dark:text-violet-700" : "text-gray-300 dark:text-gray-700"}`}>·</span>
-                <p className={`text-[11px] leading-tight truncate ${viewingSecondary ? "text-violet-400 dark:text-violet-500" : "text-gray-400 dark:text-gray-500"}`}>
-                  {currentAccountInfo.name}
-                </p>
-              </>
-            )}
-          </div>
+            <ChevronDown className={`w-3 h-3 flex-shrink-0 transition-transform duration-200 ${showBrokerDropdown ? "rotate-180" : ""} ${viewingSecondary ? "text-violet-400" : "text-gray-400"}`} />
+          </button>
 
           {/* 1 · 2 toggle */}
           <div className={`flex items-center rounded-full p-0.5 gap-0.5 transition-colors duration-300 flex-shrink-0 ${viewingSecondary ? "bg-violet-200 dark:bg-violet-800/60" : "bg-gray-100 dark:bg-gray-800"}`}>
@@ -165,6 +165,42 @@ export function BrokerMobileTab({
             </button>
           </div>
         </div>
+
+        {/* Broker dropdown panel */}
+        {showBrokerDropdown && currentBrokerKey && (
+          <div className={`absolute left-0 right-0 top-full z-50 px-4 py-3 border-b shadow-md transition-colors duration-300 ${viewingSecondary ? "bg-violet-50 dark:bg-violet-950 border-violet-200 dark:border-violet-800" : "bg-white dark:bg-gray-950 border-gray-100 dark:border-gray-800"}`}>
+            <div className="flex items-center gap-3">
+              {brokerIconMap[currentBrokerKey] && (
+                <img
+                  src={brokerIconMap[currentBrokerKey]}
+                  alt={currentBrokerKey}
+                  className={`w-8 h-8 flex-shrink-0 object-contain ${ROUNDED_BROKERS.has(currentBrokerKey) ? "rounded-full" : ""}`}
+                />
+              )}
+              <div className="flex-1 min-w-0">
+                <p className={`text-xs font-semibold leading-tight ${viewingSecondary ? "text-violet-800 dark:text-violet-200" : "text-gray-800 dark:text-gray-200"}`}>
+                  {getBrokerDisplayName(currentBrokerKey)}
+                </p>
+                {currentAccountInfo?.name && (
+                  <p className={`text-[11px] leading-tight truncate mt-0.5 ${viewingSecondary ? "text-violet-500 dark:text-violet-400" : "text-gray-500 dark:text-gray-400"}`}>
+                    {currentAccountInfo.name}
+                  </p>
+                )}
+              </div>
+              <button
+                onClick={() => {
+                  setShowBrokerDropdown(false);
+                  onDisconnectBroker?.();
+                }}
+                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 text-[11px] font-medium flex-shrink-0 active:scale-95 transition-transform"
+                data-testid="button-broker-disconnect"
+              >
+                <X className="w-3 h-3" />
+                Disconnect
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Secondary slot empty — connect screen */}

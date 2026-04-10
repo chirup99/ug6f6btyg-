@@ -350,20 +350,44 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
 
             {/* Duration Bands — win rate per hold time bucket */}
             <div>
-              <h4 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
-                <Zap className="w-4 h-4 text-purple-500" />
-                Win Rate by Holding Duration — Find Your Sweet Spot
+              <h4 className="text-xs md:text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2 md:mb-3 flex items-center gap-1.5">
+                <Zap className="w-3.5 h-3.5 md:w-4 md:h-4 text-purple-500" />
+                <span className="hidden sm:inline">Win Rate by Holding Duration — Find Your Sweet Spot</span>
+                <span className="sm:hidden">Win Rate by Hold Duration</span>
               </h4>
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-3">
+              {/* Mobile: flat horizontal strip */}
+              <div className="md:hidden flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+                {Object.entries(buckets).map(([label, data]) => {
+                  const total = data.wins + data.losses;
+                  const wr = total > 0 ? (data.wins / total) * 100 : 0;
+                  const isBest = label === bestBucket[0] && total > 0;
+                  const wrColor = wr>=60?'text-green-600 dark:text-green-400':wr>=40?'text-amber-500':'text-red-500';
+                  const barColor = wr>=60?'bg-green-500':wr>=40?'bg-amber-500':'bg-red-500';
+                  const bg = isBest?'bg-purple-50 dark:bg-purple-500/10 border-purple-300 dark:border-purple-500/40':'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700';
+                  return (
+                    <div key={label} className={`shrink-0 flex flex-col gap-1 border rounded-xl px-3 py-2 min-w-[72px] relative ${bg}`}>
+                      {isBest && <span className="absolute -top-1.5 right-1.5 text-[8px] font-black px-1 py-0 bg-purple-500 text-white rounded-full leading-4">BEST</span>}
+                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{label}</span>
+                      <span className={`text-base font-black leading-none ${wrColor}`}>{total>0?`${wr.toFixed(0)}%`:'-'}</span>
+                      <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden w-full">
+                        <div className={`h-full rounded-full ${barColor}`} style={{width:`${wr}%`}} />
+                      </div>
+                      <span className="text-[9px] text-slate-400">{data.wins}W·{data.losses}L</span>
+                    </div>
+                  );
+                })}
+              </div>
+              {/* Desktop: 4-col grid */}
+              <div className="hidden md:grid md:grid-cols-4 gap-3">
                 {Object.entries(buckets).map(([label, data]) => {
                   const total = data.wins + data.losses;
                   const wr = total > 0 ? (data.wins / total) * 100 : 0;
                   const isBest = label === bestBucket[0] && total > 0;
                   return (
-                    <div key={label} className={`rounded-xl md:rounded-2xl p-3 md:p-4 border relative ${isBest ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
-                      {isBest && <span className="absolute -top-2 right-2 text-[9px] font-black px-1.5 py-0.5 bg-purple-500 text-white rounded-full">BEST</span>}
-                      <p className="text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1.5">{label}</p>
-                      <p className={`text-lg md:text-xl font-black ${wr>=60?'text-green-600 dark:text-green-400':wr>=40?'text-amber-600 dark:text-amber-400':'text-red-600 dark:text-red-400'}`}>{total>0?`${wr.toFixed(0)}%`:'-'}</p>
+                    <div key={label} className={`rounded-2xl p-4 border relative ${isBest ? 'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30' : 'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
+                      {isBest && <span className="absolute -top-2 right-3 text-[10px] font-black px-2 py-0.5 bg-purple-500 text-white rounded-full">BEST</span>}
+                      <p className="text-xs font-bold text-slate-600 dark:text-slate-400 mb-2">{label}</p>
+                      <p className={`text-xl font-black ${wr>=60?'text-green-600 dark:text-green-400':wr>=40?'text-amber-600 dark:text-amber-400':'text-red-600 dark:text-red-400'}`}>{total>0?`${wr.toFixed(0)}%`:'-'}</p>
                       <div className="mt-2 h-1.5 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
                         <div className={`h-full rounded-full ${wr>=60?'bg-green-500':wr>=40?'bg-amber-500':'bg-red-500'}`} style={{width:`${wr}%`}} />
                       </div>
@@ -638,13 +662,11 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 ...avoidSlots.slice(0,3).map(slot=>({
                   key: `avoid-${slot.hour}`,
                   card: (
-                    <div className="flex gap-3 items-start rounded-xl p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 h-full">
-                      <span className="text-xl mt-0.5 shrink-0">🚫</span>
-                      <div>
-                        <p className="text-xs font-bold text-red-700 dark:text-red-400">Avoid {slot.label}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                          {Math.round(slot.lossRate*100)}% loss rate across {slot.total} trades. Avg loss: ₹{Math.abs(Math.round(slot.pnl/slot.total)).toLocaleString('en-IN')} per trade.
-                        </p>
+                    <div className="flex gap-2 items-center rounded-lg p-2 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30">
+                      <span className="text-base shrink-0">🚫</span>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-red-700 dark:text-red-400 leading-tight">Avoid {slot.label}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{Math.round(slot.lossRate*100)}% loss · {slot.total} trades · avg ₹{Math.abs(Math.round(slot.pnl/slot.total)).toLocaleString('en-IN')} loss</p>
                       </div>
                     </div>
                   )
@@ -652,13 +674,11 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 ...bestSlots.slice(0,2).map(slot=>({
                   key: `best-${slot.hour}`,
                   card: (
-                    <div className="flex gap-3 items-start rounded-xl p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 h-full">
-                      <span className="text-xl mt-0.5 shrink-0">✅</span>
-                      <div>
-                        <p className="text-xs font-bold text-green-700 dark:text-green-400">Best window: {slot.label}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                          {Math.round(slot.winRate*100)}% win rate across {slot.total} trades. Focus entries here.
-                        </p>
+                    <div className="flex gap-2 items-center rounded-lg p-2 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30">
+                      <span className="text-base shrink-0">✅</span>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-green-700 dark:text-green-400 leading-tight">Best: {slot.label}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{Math.round(slot.winRate*100)}% win rate · {slot.total} trades</p>
                       </div>
                     </div>
                   )
@@ -666,13 +686,11 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 ...riskDays.map(d=>({
                   key: `risk-${d.name}`,
                   card: (
-                    <div className="flex gap-3 items-start rounded-xl p-3 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 h-full">
-                      <span className="text-xl mt-0.5 shrink-0">⚠️</span>
-                      <div>
-                        <p className="text-xs font-bold text-orange-700 dark:text-orange-400">Be careful on {d.name}s</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                          {d.losses}L vs {d.wins}P on {d.name}. Net: {d.pnl<0?'-':''}₹{Math.abs(Math.round(d.pnl)).toLocaleString('en-IN')}. Trade smaller.
-                        </p>
+                    <div className="flex gap-2 items-center rounded-lg p-2 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30">
+                      <span className="text-base shrink-0">⚠️</span>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-orange-700 dark:text-orange-400 leading-tight">Careful on {d.name}s</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{d.losses}L vs {d.wins}P · Net {d.pnl<0?'-':''}₹{Math.abs(Math.round(d.pnl)).toLocaleString('en-IN')}</p>
                       </div>
                     </div>
                   )
@@ -680,13 +698,11 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 ...strongDays.slice(0,2).map(d=>({
                   key: `strong-${d.name}`,
                   card: (
-                    <div className="flex gap-3 items-start rounded-xl p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 h-full">
-                      <span className="text-xl mt-0.5 shrink-0">💪</span>
-                      <div>
-                        <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{d.name} is your strong day</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                          {d.wins}P vs {d.losses}L on {d.name}. Net: +₹{Math.round(d.pnl).toLocaleString('en-IN')}. Consider higher size.
-                        </p>
+                    <div className="flex gap-2 items-center rounded-lg p-2 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30">
+                      <span className="text-base shrink-0">💪</span>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-bold text-emerald-700 dark:text-emerald-400 leading-tight">{d.name} is strong</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 leading-tight">{d.wins}P vs {d.losses}L · +₹{Math.round(d.pnl).toLocaleString('en-IN')}</p>
                       </div>
                     </div>
                   )
@@ -700,35 +716,25 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                     <h4 className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200">Best Time to Trade — Pattern Alerts</h4>
                   </div>
                   {/* Mobile carousel */}
-                  <div className="md:hidden p-3">
+                  <div className="md:hidden px-3 py-2">
                     {patternItems.length === 0 ? (
-                      <p className="text-xs text-slate-400 text-center py-3">Add entry time to unlock time-of-day analysis.</p>
+                      <p className="text-[11px] text-slate-400 text-center py-2">Add entry time to unlock time-of-day analysis.</p>
                     ) : (
                       <>
-                        <div className="min-h-[72px]">{patternItems[safePatternIdx].card}</div>
-                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-amber-200 dark:border-amber-500/20">
-                          <button
-                            data-testid="button-pattern-carousel-prev"
+                        {patternItems[safePatternIdx].card}
+                        <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-amber-200 dark:border-amber-500/20">
+                          <button data-testid="button-pattern-carousel-prev"
                             onClick={() => setPatternCarouselIndex(i => (i - 1 + patternItems.length) % patternItems.length)}
-                            className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-500/10"
-                          >
-                            <ChevronLeft className="w-4 h-4" />Prev
+                            className="flex items-center gap-0.5 text-[11px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                            <ChevronLeft className="w-3.5 h-3.5" />Prev
                           </button>
-                          <div className="flex gap-1.5">
-                            {patternItems.map((_, i) => (
-                              <button key={i} data-testid={`button-pattern-dot-${i}`} onClick={() => setPatternCarouselIndex(i)}
-                                className={`w-2 h-2 rounded-full transition-colors ${i === safePatternIdx ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
-                            ))}
-                          </div>
-                          <button
-                            data-testid="button-pattern-carousel-next"
+                          <span className="text-[10px] text-slate-400">{safePatternIdx + 1}/{patternItems.length}</span>
+                          <button data-testid="button-pattern-carousel-next"
                             onClick={() => setPatternCarouselIndex(i => (i + 1) % patternItems.length)}
-                            className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-500/10"
-                          >
-                            Next<ChevronRight className="w-4 h-4" />
+                            className="flex items-center gap-0.5 text-[11px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                            Next<ChevronRight className="w-3.5 h-3.5" />
                           </button>
                         </div>
-                        <p className="text-center text-[10px] text-slate-400 mt-1">{safePatternIdx + 1} / {patternItems.length}</p>
                       </>
                     )}
                   </div>
@@ -752,12 +758,12 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 {
                   key: 'exits',
                   node: (
-                    <div className={`rounded-xl p-3 border flex gap-2.5 items-start h-full ${isOverHolding?'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30':'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30'}`}>
-                      <span className="text-xl shrink-0">{isOverHolding?'🚨':'✅'}</span>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">{isOverHolding?'Holding Losses Too Long':'Exits Are Disciplined'}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                          {isOverHolding?`You hold losing trades ${fmtDur(avgLossDurMs-avgProfDurMs)} longer than winners. Set a hard time stop.`:`Losses avg ${fmtDur(avgLossDurMs)}, equal to or shorter than profit holds. Keep this up.`}
+                    <div className={`rounded-lg p-2 border flex gap-2 items-start h-full ${isOverHolding?'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30':'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30'}`}>
+                      <span className="text-base shrink-0">{isOverHolding?'🚨':'✅'}</span>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[11px] text-slate-800 dark:text-slate-200 leading-tight">{isOverHolding?'Holding Losses Too Long':'Exits Are Disciplined'}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          {isOverHolding?`Losing trades held ${fmtDur(avgLossDurMs-avgProfDurMs)} longer than winners. Set a time stop.`:`Losses avg ${fmtDur(avgLossDurMs)}, equal or shorter than profit holds.`}
                         </p>
                       </div>
                     </div>
@@ -766,12 +772,12 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 {
                   key: 'profit-window',
                   node: (
-                    <div className="rounded-xl p-3 border bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 flex gap-2.5 items-start h-full">
-                      <span className="text-xl shrink-0">⏱️</span>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Your Profit Window</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                          Winners avg {fmtDur(avgProfDurMs)}.{shortestProfit?.durationLabel&&shortestProfit.durationLabel!=='-'?` Fastest: ${shortestProfit.durationLabel}.`:''} Book profit near {fmtDur(avgProfDurMs)}.
+                    <div className="rounded-lg p-2 border bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 flex gap-2 items-start h-full">
+                      <span className="text-base shrink-0">⏱️</span>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[11px] text-slate-800 dark:text-slate-200 leading-tight">Your Profit Window</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          Winners avg {fmtDur(avgProfDurMs)}.{shortestProfit?.durationLabel&&shortestProfit.durationLabel!=='-'?` Fastest: ${shortestProfit.durationLabel}.`:''} Book near {fmtDur(avgProfDurMs)}.
                         </p>
                       </div>
                     </div>
@@ -780,12 +786,12 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 {
                   key: 'overhold-days',
                   node: (
-                    <div className={`rounded-xl p-3 border flex gap-2.5 items-start h-full ${ohDays.length>sums.length/2?'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30':'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30'}`}>
-                      <span className="text-xl shrink-0">📅</span>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Over-holding Days</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                          {ohDays.length===0?'No over-holding on any day. Strong discipline!':`${ohDays.length} day${ohDays.length>1?'s':''} with losses held 30%+ longer: ${ohDays.slice(0,3).map(d=>d.label).join(', ')}.`}
+                    <div className={`rounded-lg p-2 border flex gap-2 items-start h-full ${ohDays.length>sums.length/2?'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30':'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30'}`}>
+                      <span className="text-base shrink-0">📅</span>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[11px] text-slate-800 dark:text-slate-200 leading-tight">Over-holding Days</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          {ohDays.length===0?'No over-holding. Strong discipline!':`${ohDays.length} day${ohDays.length>1?'s':''} held losses 30%+ longer: ${ohDays.slice(0,3).map(d=>d.label).join(', ')}.`}
                         </p>
                       </div>
                     </div>
@@ -794,13 +800,13 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 {
                   key: 'sweet-spot',
                   node: (
-                    <div className={`rounded-xl p-3 border flex gap-2.5 items-start h-full ${bestBucket[1].wins>0?'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30':'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
-                      <span className="text-xl shrink-0">🎯</span>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Best Holding Sweet Spot</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                    <div className={`rounded-lg p-2 border flex gap-2 items-start h-full ${bestBucket[1].wins>0?'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30':'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
+                      <span className="text-base shrink-0">🎯</span>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[11px] text-slate-800 dark:text-slate-200 leading-tight">Best Holding Sweet Spot</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
                           {(bestBucket[1].wins+bestBucket[1].losses)>0
-                            ?`Best win rate in ${bestBucket[0]} bucket (${((bestBucket[1].wins/(bestBucket[1].wins+bestBucket[1].losses))*100).toFixed(0)}%). Target exits here.`
+                            ?`Best win rate in ${bestBucket[0]} (${((bestBucket[1].wins/(bestBucket[1].wins+bestBucket[1].losses))*100).toFixed(0)}%). Target exits here.`
                             :'Add more trades to find your optimal holding duration.'}
                         </p>
                       </div>
@@ -810,12 +816,12 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 {
                   key: 'time-stop',
                   node: (
-                    <div className="rounded-xl p-3 border bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex gap-2.5 items-start h-full">
-                      <span className="text-xl shrink-0">💡</span>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Time-based Stop Rule</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                          If a trade hasn't moved your way within {fmtDur(avgProfDurMs)}, exit. Your data shows winners resolve quickly.
+                    <div className="rounded-lg p-2 border bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex gap-2 items-start h-full">
+                      <span className="text-base shrink-0">💡</span>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[11px] text-slate-800 dark:text-slate-200 leading-tight">Time-based Stop Rule</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          If no move within {fmtDur(avgProfDurMs)}, exit. Winners resolve quickly in your data.
                         </p>
                       </div>
                     </div>
@@ -824,15 +830,15 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 {
                   key: 'grade',
                   node: (
-                    <div className={`rounded-xl p-3 border flex gap-2.5 items-start h-full ${grade==='A'||grade==='B'?'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30':'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30'}`}>
-                      <span className="text-xl shrink-0">{grade==='A'?'🏆':grade==='B'?'⭐':grade==='C'?'📈':'🚨'}</span>
-                      <div>
-                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Exit Discipline Grade: {grade}</p>
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                          {grade==='A'?'Excellent! You cut losses as fast as profits.'
-                          :grade==='B'?'Good discipline. Minor tendency to hold losses longer.'
-                          :grade==='C'?'Moderate over-holding. Focus on time-based exits.'
-                          :'Critical over-holding. Implement strict time stops now.'}
+                    <div className={`rounded-lg p-2 border flex gap-2 items-start h-full ${grade==='A'||grade==='B'?'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30':'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30'}`}>
+                      <span className="text-base shrink-0">{grade==='A'?'🏆':grade==='B'?'⭐':grade==='C'?'📈':'🚨'}</span>
+                      <div className="min-w-0">
+                        <p className="font-bold text-[11px] text-slate-800 dark:text-slate-200 leading-tight">Exit Grade: {grade}</p>
+                        <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
+                          {grade==='A'?'Excellent! Losses cut as fast as profits.'
+                          :grade==='B'?'Good discipline. Minor over-holding tendency.'
+                          :grade==='C'?'Moderate over-holding. Use time-based exits.'
+                          :'Critical over-holding. Implement strict time stops.'}
                         </p>
                       </div>
                     </div>
@@ -843,32 +849,30 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
               return (
                 <>
                   {/* Mobile carousel */}
-                  <div className="md:hidden bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-700">
-                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Trade Insights</p>
-                    <div className="min-h-[80px]">{insightCards[safeInsightIdx].node}</div>
-                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-200 dark:border-slate-700">
-                      <button
-                        data-testid="button-insight-carousel-prev"
+                  <div className="md:hidden border border-slate-100 dark:border-slate-700 rounded-xl overflow-hidden">
+                    <div className="px-3 py-1.5 bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-700 flex items-center justify-between">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Trade Insights</span>
+                      <span className="text-[10px] text-slate-400">{safeInsightIdx + 1}/{insightCards.length}</span>
+                    </div>
+                    <div className="px-3 py-2">{insightCards[safeInsightIdx].node}</div>
+                    <div className="flex items-center justify-between px-3 py-1.5 border-t border-slate-100 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/30">
+                      <button data-testid="button-insight-carousel-prev"
                         onClick={() => setInsightCarouselIndex(i => (i - 1 + insightCards.length) % insightCards.length)}
-                        className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-                      >
-                        <ChevronLeft className="w-4 h-4" />Prev
+                        className="flex items-center gap-0.5 text-[11px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                        <ChevronLeft className="w-3.5 h-3.5" />Prev
                       </button>
-                      <div className="flex gap-1.5">
+                      <div className="flex gap-1">
                         {insightCards.map((_, i) => (
                           <button key={i} data-testid={`button-insight-dot-${i}`} onClick={() => setInsightCarouselIndex(i)}
-                            className={`w-2 h-2 rounded-full transition-colors ${i === safeInsightIdx ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                            className={`w-1.5 h-1.5 rounded-full transition-colors ${i === safeInsightIdx ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
                         ))}
                       </div>
-                      <button
-                        data-testid="button-insight-carousel-next"
+                      <button data-testid="button-insight-carousel-next"
                         onClick={() => setInsightCarouselIndex(i => (i + 1) % insightCards.length)}
-                        className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
-                      >
-                        Next<ChevronRight className="w-4 h-4" />
+                        className="flex items-center gap-0.5 text-[11px] font-semibold text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors">
+                        Next<ChevronRight className="w-3.5 h-3.5" />
                       </button>
                     </div>
-                    <p className="text-center text-[10px] text-slate-400 mt-1">{safeInsightIdx + 1} / {insightCards.length}</p>
                   </div>
                   {/* Desktop 3-col grid */}
                   <div className="hidden md:grid md:grid-cols-3 gap-4">

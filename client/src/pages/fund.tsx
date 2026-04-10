@@ -726,7 +726,7 @@ export function FundsAnalysis({
 
       {/* Journal Charges Dialog */}
       <Dialog open={showJournalChargesDialog} onOpenChange={setShowJournalChargesDialog}>
-        <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900">
+        <DialogContent className="w-[95vw] max-w-2xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-white dark:bg-slate-900 px-4 md:px-6">
           <button
             onClick={() => setShowJournalChargesDialog(false)}
             className="absolute top-3 right-3 z-10 p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 transition-colors"
@@ -734,15 +734,15 @@ export function FundsAnalysis({
           >
             <X className="w-4 h-4" />
           </button>
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2 text-lg font-bold">
-              <div className="p-2 bg-violet-500/10 rounded-lg text-violet-600 dark:text-violet-400">
-                <Receipt className="w-5 h-5" />
+          <DialogHeader className="pr-8">
+            <DialogTitle className="flex items-center gap-2 text-base md:text-lg font-bold">
+              <div className="p-1.5 md:p-2 bg-violet-500/10 rounded-lg text-violet-600 dark:text-violet-400 shrink-0">
+                <Receipt className="w-4 h-4 md:w-5 md:h-5" />
               </div>
-              Journal Charges Breakdown
+              Journal Charges
             </DialogTitle>
-            <DialogDescription className="text-slate-500 dark:text-slate-400">
-              Perala charges ₹2 per trade + 18% GST
+            <DialogDescription className="text-[11px] md:text-sm text-slate-500 dark:text-slate-400">
+              ₹2 per trade + 18% GST
             </DialogDescription>
           </DialogHeader>
           {(() => {
@@ -770,26 +770,26 @@ export function FundsAnalysis({
             const isFOMO = tradeCount > avgDailyTrades * 2 && avgDailyTrades > 0;
 
             return (
-              <div className="space-y-5 py-2">
+              <div className="space-y-3 md:space-y-5 py-1">
                 {/* Charge Summary */}
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-violet-50 dark:bg-violet-500/10 rounded-lg px-3 py-2 flex items-center justify-between border border-violet-100 dark:border-violet-500/20">
-                    <p className="text-[10px] font-bold text-violet-500 uppercase tracking-wide">Trades</p>
-                    <div className="text-right">
+                <div className="grid grid-cols-3 gap-1.5 md:gap-2">
+                  <div className="bg-violet-50 dark:bg-violet-500/10 rounded-lg px-2 md:px-3 py-2 flex flex-col md:flex-row md:items-center md:justify-between border border-violet-100 dark:border-violet-500/20 gap-1">
+                    <p className="text-[9px] md:text-[10px] font-bold text-violet-500 uppercase tracking-wide">Trades</p>
+                    <div className="md:text-right">
                       <p className="text-sm font-black text-violet-700 dark:text-violet-300">{tradeCount}</p>
-                      <p className="text-[9px] text-violet-400">× ₹2 each</p>
+                      <p className="text-[9px] text-violet-400">× ₹2</p>
                     </div>
                   </div>
-                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-3 py-2 flex items-center justify-between border border-slate-200 dark:border-slate-700">
-                    <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wide">GST 18%</p>
-                    <div className="text-right">
+                  <div className="bg-slate-50 dark:bg-slate-800/50 rounded-lg px-2 md:px-3 py-2 flex flex-col md:flex-row md:items-center md:justify-between border border-slate-200 dark:border-slate-700 gap-1">
+                    <p className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-wide">GST 18%</p>
+                    <div className="md:text-right">
                       <p className="text-sm font-black text-slate-700 dark:text-slate-200">₹{gstAmount.toFixed(2)}</p>
                       <p className="text-[9px] text-slate-400">on ₹{baseCharge.toFixed(2)}</p>
                     </div>
                   </div>
-                  <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-lg px-3 py-2 flex items-center justify-between border border-emerald-100 dark:border-emerald-500/20">
-                    <p className="text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Total</p>
-                    <div className="text-right">
+                  <div className="bg-emerald-50 dark:bg-emerald-500/10 rounded-lg px-2 md:px-3 py-2 flex flex-col md:flex-row md:items-center md:justify-between border border-emerald-100 dark:border-emerald-500/20 gap-1">
+                    <p className="text-[9px] md:text-[10px] font-bold text-emerald-600 uppercase tracking-wide">Total</p>
+                    <div className="md:text-right">
                       <p className="text-sm font-black text-emerald-700 dark:text-emerald-300">₹{totalCharge.toFixed(2)}</p>
                       <p className="text-[9px] text-emerald-500">incl. GST</p>
                     </div>
@@ -799,40 +799,40 @@ export function FundsAnalysis({
                 {/* Per-trade Breakdown */}
                 {tradeCount > 0 && (
                   <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700">
-                      <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Per-Trade Breakdown</h4>
+                    <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 border-b border-slate-200 dark:border-slate-700">
+                      <h4 className="text-[11px] md:text-xs font-bold text-slate-700 dark:text-slate-300">Per-Trade Breakdown</h4>
                     </div>
-                    <div className="max-h-48 overflow-y-auto">
-                      <table className="w-full text-xs text-left">
-                        <thead className="text-[10px] uppercase bg-slate-50/80 dark:bg-slate-800/30 text-slate-500 sticky top-0">
+                    <div className="max-h-40 md:max-h-48 overflow-y-auto">
+                      <table className="w-full text-[10px] md:text-xs text-left">
+                        <thead className="text-[9px] md:text-[10px] uppercase bg-slate-50/80 dark:bg-slate-800/30 text-slate-500 sticky top-0">
                           <tr>
-                            <th className="px-3 py-2 font-bold">#</th>
-                            <th className="px-3 py-2 font-bold">Trade</th>
-                            <th className="px-3 py-2 font-bold text-right">Base</th>
-                            <th className="px-3 py-2 font-bold text-right">GST</th>
-                            <th className="px-3 py-2 font-bold text-right">Total</th>
+                            <th className="px-1.5 md:px-3 py-1.5 font-bold">#</th>
+                            <th className="px-1.5 md:px-3 py-1.5 font-bold">Trade</th>
+                            <th className="px-1.5 md:px-3 py-1.5 font-bold text-right">Base</th>
+                            <th className="px-1.5 md:px-3 py-1.5 font-bold text-right">GST</th>
+                            <th className="px-1.5 md:px-3 py-1.5 font-bold text-right">Total</th>
                           </tr>
                         </thead>
                         <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                           {tradeHistoryData.map((trade: any, idx: number) => (
                             <tr key={idx} className="hover:bg-slate-50 dark:hover:bg-slate-800/30">
-                              <td className="px-3 py-2 text-slate-400">{idx + 1}</td>
-                              <td className="px-3 py-2">
+                              <td className="px-1.5 md:px-3 py-1.5 text-slate-400">{idx + 1}</td>
+                              <td className="px-1.5 md:px-3 py-1.5 max-w-[90px] md:max-w-none truncate">
                                 <span className={`font-bold ${trade.order === 'BUY' ? 'text-emerald-600' : 'text-red-500'}`}>{trade.order}</span>
-                                <span className="text-slate-600 dark:text-slate-400 ml-1">{trade.symbol || trade.name || '-'}</span>
+                                <span className="text-slate-600 dark:text-slate-400 ml-1 truncate">{trade.symbol || trade.name || '-'}</span>
                               </td>
-                              <td className="px-3 py-2 text-right text-slate-600 dark:text-slate-400">₹2.00</td>
-                              <td className="px-3 py-2 text-right text-slate-500">₹0.36</td>
-                              <td className="px-3 py-2 text-right font-bold text-violet-600 dark:text-violet-400">₹2.36</td>
+                              <td className="px-1.5 md:px-3 py-1.5 text-right text-slate-600 dark:text-slate-400">₹2.00</td>
+                              <td className="px-1.5 md:px-3 py-1.5 text-right text-slate-500">₹0.36</td>
+                              <td className="px-1.5 md:px-3 py-1.5 text-right font-bold text-violet-600 dark:text-violet-400">₹2.36</td>
                             </tr>
                           ))}
                         </tbody>
                         <tfoot className="bg-violet-50 dark:bg-violet-500/10 border-t border-violet-100 dark:border-violet-500/20">
                           <tr>
-                            <td className="px-3 py-2 font-bold text-violet-700 dark:text-violet-300" colSpan={2}>Total ({tradeCount} trades)</td>
-                            <td className="px-3 py-2 text-right font-bold text-violet-700 dark:text-violet-300">₹{baseCharge.toFixed(2)}</td>
-                            <td className="px-3 py-2 text-right font-bold text-violet-700 dark:text-violet-300">₹{gstAmount.toFixed(2)}</td>
-                            <td className="px-3 py-2 text-right font-black text-violet-700 dark:text-violet-300">₹{totalCharge.toFixed(2)}</td>
+                            <td className="px-1.5 md:px-3 py-1.5 font-bold text-violet-700 dark:text-violet-300 text-[9px] md:text-[10px]" colSpan={2}>{tradeCount} trades</td>
+                            <td className="px-1.5 md:px-3 py-1.5 text-right font-bold text-violet-700 dark:text-violet-300">₹{baseCharge.toFixed(2)}</td>
+                            <td className="px-1.5 md:px-3 py-1.5 text-right font-bold text-violet-700 dark:text-violet-300">₹{gstAmount.toFixed(2)}</td>
+                            <td className="px-1.5 md:px-3 py-1.5 text-right font-black text-violet-700 dark:text-violet-300">₹{totalCharge.toFixed(2)}</td>
                           </tr>
                         </tfoot>
                       </table>
@@ -843,19 +843,19 @@ export function FundsAnalysis({
                 {/* FOMO & Over-Trading Performance Trend */}
                 {fomoTrendData.length > 1 && (
                   <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                    <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">FOMO & Over-Trading Performance Trend</h4>
-                      <div className="flex items-center gap-3 text-[10px] text-slate-400">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between gap-2">
+                      <h4 className="text-[11px] md:text-xs font-bold text-slate-700 dark:text-slate-300 shrink-0">FOMO Trend</h4>
+                      <div className="flex items-center gap-2 md:gap-3 text-[9px] md:text-[10px] text-slate-400">
                         <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-orange-500 rounded" /> Trades</span>
-                        <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-violet-400 rounded border-t-2 border-dashed border-violet-400" /> Avg</span>
+                        <span className="flex items-center gap-1"><span className="inline-block w-3 h-0.5 bg-violet-400 rounded" /> Avg</span>
                       </div>
                     </div>
-                    <div className="p-3">
-                      <ResponsiveContainer width="100%" height={160}>
-                        <LineChart data={fomoTrendData} margin={{ top: 5, right: 15, left: 0, bottom: 5 }}>
+                    <div className="p-2 md:p-3">
+                      <ResponsiveContainer width="100%" height={130}>
+                        <LineChart data={fomoTrendData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.2)" />
-                          <XAxis dataKey="date" tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
-                          <YAxis tick={{ fontSize: 9, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={24} />
+                          <XAxis dataKey="date" tick={{ fontSize: 8, fill: '#94a3b8' }} tickLine={false} axisLine={false} interval="preserveStartEnd" />
+                          <YAxis tick={{ fontSize: 8, fill: '#94a3b8' }} tickLine={false} axisLine={false} width={20} />
                           <Tooltip
                             content={({ active, payload, label }: any) => {
                               if (active && payload && payload.length) {
@@ -864,18 +864,18 @@ export function FundsAnalysis({
                                 const isOver = d.trades > avgDailyTrades * 1.5;
                                 const isFomoDay = d.trades > avgDailyTrades * 2;
                                 return (
-                                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 shadow-lg text-xs">
-                                    <p className="font-bold text-slate-700 dark:text-slate-200 mb-1">{label}</p>
+                                  <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-2.5 py-1.5 shadow-lg text-[10px]">
+                                    <p className="font-bold text-slate-700 dark:text-slate-200 mb-0.5">{label}</p>
                                     <p className="text-orange-500">{d.trades} trades</p>
-                                    {isOver && <p className={`font-bold ${isFomoDay ? 'text-red-500' : 'text-orange-400'}`}>{isFomoDay ? '🔥 FOMO' : '⚠ Over-Trading'} +{pct}%</p>}
+                                    {isOver && <p className={`font-bold ${isFomoDay ? 'text-red-500' : 'text-orange-400'}`}>{isFomoDay ? '🔥 FOMO' : '⚠ Over'} +{pct}%</p>}
                                   </div>
                                 );
                               }
                               return null;
                             }}
                           />
-                          <ReferenceLine y={avgDailyTrades} stroke="#8b5cf6" strokeDasharray="4 2" strokeWidth={1.5} label={{ value: 'Avg', position: 'right', fontSize: 8, fill: '#8b5cf6' }} />
-                          <ReferenceLine y={avgDailyTrades * 2} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1} label={{ value: 'FOMO', position: 'right', fontSize: 8, fill: '#ef4444' }} />
+                          <ReferenceLine y={avgDailyTrades} stroke="#8b5cf6" strokeDasharray="4 2" strokeWidth={1.5} label={{ value: 'Avg', position: 'right', fontSize: 7, fill: '#8b5cf6' }} />
+                          <ReferenceLine y={avgDailyTrades * 2} stroke="#ef4444" strokeDasharray="3 3" strokeWidth={1} label={{ value: 'FOMO', position: 'right', fontSize: 7, fill: '#ef4444' }} />
                           <Line type="monotone" dataKey="trades" stroke="#f97316" strokeWidth={2} dot={({ cx, cy, payload, index }: any) => {
                             const isFomoDay = avgDailyTrades > 0 && payload.trades > avgDailyTrades * 2;
                             const isOverDay = avgDailyTrades > 0 && payload.trades > avgDailyTrades * 1.5;
@@ -890,30 +890,30 @@ export function FundsAnalysis({
 
                 {/* Plans Section */}
                 <div className="rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
-                  <div className="bg-slate-50 dark:bg-slate-800/50 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                    <h4 className="text-xs font-bold text-slate-700 dark:text-slate-300">Choose Your Plan</h4>
+                  <div className="bg-slate-50 dark:bg-slate-800/50 px-3 py-1.5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <h4 className="text-[11px] md:text-xs font-bold text-slate-700 dark:text-slate-300">Choose Your Plan</h4>
                     <span className="text-[9px] font-bold text-violet-600 dark:text-violet-400 bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/20 px-2 py-0.5 rounded-full">Pro Active</span>
                   </div>
-                  <div className="p-3 grid grid-cols-2 gap-3">
+                  <div className="p-2 md:p-3 grid grid-cols-2 gap-2 md:gap-3">
                     {/* Basic Plan — disabled, Pro is active */}
                     <div className="rounded-xl border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 flex flex-col overflow-hidden opacity-60">
-                      <div className="bg-slate-100 dark:bg-slate-800 px-3 py-2 text-center">
-                        <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Basic</p>
-                        <p className="text-2xl font-black text-slate-800 dark:text-slate-100 mt-0.5">₹2<span className="text-xs font-normal text-slate-400">/trade</span></p>
+                      <div className="bg-slate-100 dark:bg-slate-800 px-2 md:px-3 py-1.5 md:py-2 text-center">
+                        <p className="text-[9px] md:text-[10px] font-bold text-slate-500 uppercase tracking-widest">Basic</p>
+                        <p className="text-lg md:text-2xl font-black text-slate-800 dark:text-slate-100 mt-0.5">₹2<span className="text-[10px] md:text-xs font-normal text-slate-400">/trade</span></p>
                       </div>
-                      <div className="p-3 flex-1 space-y-1.5 text-[10px]">
-                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Chart analysis</div>
-                        <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> Image uploads</div>
-                        <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> Past trade chart analysis</div>
-                        <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> Paper trading</div>
-                        <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> Multiple brokers</div>
-                        <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> FOMO tracking</div>
-                        <div className="flex items-center gap-1.5 text-slate-400 line-through"><span>✗</span> Time duration analysis</div>
+                      <div className="p-2 md:p-3 flex-1 space-y-1 md:space-y-1.5 text-[9px] md:text-[10px]">
+                        <div className="flex items-center gap-1 md:gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Chart analysis</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-slate-400 line-through"><span>✗</span> Image uploads</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-slate-400 line-through"><span>✗</span> Past chart analysis</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-slate-400 line-through"><span>✗</span> Paper trading</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-slate-400 line-through"><span>✗</span> Multi-broker</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-slate-400 line-through"><span>✗</span> FOMO tracking</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-slate-400 line-through"><span>✗</span> Time analysis</div>
                       </div>
-                      <div className="p-3 pt-0">
+                      <div className="p-2 md:p-3 pt-0">
                         <button
                           disabled
-                          className="w-full py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 text-xs font-bold cursor-not-allowed"
+                          className="w-full py-1.5 rounded-lg bg-slate-200 dark:bg-slate-700 text-slate-400 dark:text-slate-500 text-[10px] md:text-xs font-bold cursor-not-allowed"
                           data-testid="activate-basic-plan"
                         >
                           Not Available
@@ -923,34 +923,34 @@ export function FundsAnalysis({
 
                     {/* Pro Plan — active by default */}
                     <div className="rounded-xl border-2 border-violet-500 dark:border-violet-400 bg-white dark:bg-slate-900 flex flex-col overflow-hidden relative ring-2 ring-violet-400/30 shadow-lg shadow-violet-500/10">
-                      <div className="absolute top-2 right-2 bg-red-500 text-white text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse">60% OFF</div>
-                      <div className="bg-violet-600 px-3 py-2 text-center">
-                        <p className="text-[10px] font-bold text-violet-200 uppercase tracking-widest">Pro</p>
-                        <div className="flex items-center justify-center gap-2 mt-0.5">
-                          <p className="text-sm font-bold text-violet-300 relative">
+                      <div className="absolute top-1.5 right-1.5 bg-red-500 text-white text-[8px] md:text-[9px] font-black px-1.5 py-0.5 rounded-full animate-pulse">60% OFF</div>
+                      <div className="bg-violet-600 px-2 md:px-3 py-1.5 md:py-2 text-center">
+                        <p className="text-[9px] md:text-[10px] font-bold text-violet-200 uppercase tracking-widest">Pro</p>
+                        <div className="flex items-center justify-center gap-1.5 md:gap-2 mt-0.5">
+                          <p className="text-xs md:text-sm font-bold text-violet-300 relative">
                             ₹5
                             <span className="absolute inset-0 flex items-center">
                               <span className="w-full border-t-2 border-red-400" />
                             </span>
                           </p>
-                          <p className="text-2xl font-black text-white">₹2<span className="text-xs font-normal text-violet-300">/trade</span></p>
+                          <p className="text-lg md:text-2xl font-black text-white">₹2<span className="text-[10px] md:text-xs font-normal text-violet-300">/trade</span></p>
                         </div>
                       </div>
-                      <div className="p-3 flex-1 space-y-1.5 text-[10px]">
-                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Live chart analysis</div>
-                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Image uploads</div>
-                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Past trade chart analysis</div>
-                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Paper trading</div>
-                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> 2 broker accounts</div>
-                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> FOMO & over-trade tracking</div>
-                        <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Time duration analysis</div>
+                      <div className="p-2 md:p-3 flex-1 space-y-1 md:space-y-1.5 text-[9px] md:text-[10px]">
+                        <div className="flex items-center gap-1 md:gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Live chart analysis</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Image uploads</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Past chart analysis</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Paper trading</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> 2 broker accounts</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> FOMO tracking</div>
+                        <div className="flex items-center gap-1 md:gap-1.5 text-emerald-600 dark:text-emerald-400"><span className="font-bold">✓</span> Time analysis</div>
                       </div>
-                      <div className="p-3 pt-0">
+                      <div className="p-2 md:p-3 pt-0">
                         <div
-                          className="w-full py-1.5 rounded-lg bg-violet-600 text-white text-xs font-bold flex items-center justify-center gap-1.5 cursor-default"
+                          className="w-full py-1.5 rounded-lg bg-violet-600 text-white text-[10px] md:text-xs font-bold flex items-center justify-center gap-1 cursor-default"
                           data-testid="pro-plan-active"
                         >
-                          <span className="text-[11px]">✓</span> Pro Active — ₹2/trade
+                          <span>✓</span> Pro Active — ₹2/trade
                         </div>
                       </div>
                     </div>

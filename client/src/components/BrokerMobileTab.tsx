@@ -109,103 +109,88 @@ export function BrokerMobileTab({
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-white dark:bg-gray-950 flex flex-col pb-20">
+    <div className={`fixed inset-0 z-40 flex flex-col pb-20 transition-colors duration-300 ${viewingSecondary ? "bg-violet-50 dark:bg-violet-950" : "bg-white dark:bg-gray-950"}`}>
       {/* Header */}
-      <div className="relative px-4 pt-7 pb-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 flex-shrink-0">
-        {/* Funds block — top of header */}
-        <div className="mb-2.5">
-          <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide leading-tight mb-0.5">
-            Available Fund
-          </p>
-          <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums leading-tight">
-            {fundsDisplay}
-          </p>
-        </div>
-
-        {/* Broker info row — below funds */}
-        <button
-          className="flex items-center gap-2 min-w-0 w-full"
-          onClick={() => setShowSwitcher((v) => !v)}
-          data-testid="button-mobile-broker-switcher"
-        >
-          {currentBrokerKey && brokerIconMap[currentBrokerKey] && (
-            <img
-              src={brokerIconMap[currentBrokerKey]}
-              alt={currentBrokerKey}
-              className={`w-5 h-5 flex-shrink-0 object-contain ${ROUNDED_BROKERS.has(currentBrokerKey) ? "rounded-full" : ""}`}
-            />
-          )}
-          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+      <div className={`relative px-4 pt-7 pb-3 border-b flex-shrink-0 transition-colors duration-300 ${viewingSecondary ? "border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950" : "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950"}`}>
+        {/* Top row: broker ID left, 1·2 toggle right */}
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-1.5 min-w-0">
+            {currentBrokerKey && brokerIconMap[currentBrokerKey] && (
+              <img
+                src={brokerIconMap[currentBrokerKey]}
+                alt={currentBrokerKey}
+                className={`w-4 h-4 flex-shrink-0 object-contain ${ROUNDED_BROKERS.has(currentBrokerKey) ? "rounded-full" : ""}`}
+              />
+            )}
             {currentAccountInfo?.id && (
-              <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-tight truncate">
+              <p className={`text-[11px] font-semibold leading-tight truncate ${viewingSecondary ? "text-violet-500 dark:text-violet-400" : "text-gray-500 dark:text-gray-400"}`}>
                 {currentAccountInfo.id}
               </p>
             )}
-            {currentAccountInfo?.id && currentAccountInfo?.name && (
-              <span className="text-gray-300 dark:text-gray-700 text-[10px]">·</span>
+            {currentAccountInfo?.name && (
+              <>
+                <span className={`text-[10px] ${viewingSecondary ? "text-violet-300 dark:text-violet-700" : "text-gray-300 dark:text-gray-700"}`}>·</span>
+                <p className={`text-[11px] leading-tight truncate ${viewingSecondary ? "text-violet-400 dark:text-violet-500" : "text-gray-400 dark:text-gray-500"}`}>
+                  {currentAccountInfo.name}
+                </p>
+              </>
             )}
-            <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-tight truncate">
-              {currentAccountInfo?.name || getBrokerDisplayName(currentBrokerKey || "")}
-            </p>
           </div>
-          {secondaryBroker && (
-            <ChevronDown
-              className={`w-3.5 h-3.5 text-gray-400 flex-shrink-0 transition-transform duration-200 ${showSwitcher ? "rotate-180" : ""}`}
-            />
-          )}
-        </button>
 
-        {/* Switcher dropdown */}
-        {showSwitcher && secondaryBroker && (
-          <div className="absolute top-full left-0 right-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-lg">
+          {/* 1 · 2 toggle */}
+          <div
+            className={`flex items-center rounded-full p-0.5 gap-0.5 transition-colors duration-300 ${viewingSecondary ? "bg-violet-200 dark:bg-violet-800/60" : "bg-gray-100 dark:bg-gray-800"}`}
+          >
             <button
-              className={`w-full flex items-center gap-2.5 px-4 py-3 ${!viewingSecondary ? "bg-gray-50 dark:bg-gray-800/60" : "hover:bg-gray-50 dark:hover:bg-gray-800/30"}`}
-              onClick={() => { setViewingSecondary(false); setShowSwitcher(false); }}
-              data-testid="button-mobile-view-primary"
+              onClick={() => setViewingSecondary(false)}
+              className={`w-7 h-7 rounded-full text-xs font-bold transition-all duration-200 ${!viewingSecondary ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm" : "text-gray-400 dark:text-gray-500"}`}
+              data-testid="button-broker-slot-1"
             >
-              {activeBroker && brokerIconMap[activeBroker] && (
-                <img
-                  src={brokerIconMap[activeBroker]}
-                  alt={activeBroker}
-                  className={`w-5 h-5 object-contain flex-shrink-0 ${ROUNDED_BROKERS.has(activeBroker) ? "rounded-full" : ""}`}
-                />
-              )}
-              <span className="text-xs font-medium text-gray-800 dark:text-gray-200 flex-1 text-left">
-                {mobileBrokerAccountInfo?.name || getBrokerDisplayName(activeBroker || "")}
-              </span>
-              {!viewingSecondary && (
-                <span className="text-[10px] bg-gray-900 dark:bg-white text-white dark:text-gray-900 px-2 py-0.5 rounded-full font-medium">
-                  Active
-                </span>
-              )}
+              1
             </button>
             <button
-              className={`w-full flex items-center gap-2.5 px-4 py-3 ${viewingSecondary ? "bg-violet-50 dark:bg-violet-950/40" : "hover:bg-gray-50 dark:hover:bg-gray-800/30"}`}
-              onClick={() => { setViewingSecondary(true); setShowSwitcher(false); }}
-              data-testid="button-mobile-view-secondary"
+              onClick={() => setViewingSecondary(true)}
+              className={`w-7 h-7 rounded-full text-xs font-bold transition-all duration-200 ${viewingSecondary ? "bg-violet-600 text-white shadow-sm" : "text-gray-400 dark:text-gray-500"}`}
+              data-testid="button-broker-slot-2"
             >
-              {brokerIconMap[secondaryBroker] && (
-                <img
-                  src={brokerIconMap[secondaryBroker]}
-                  alt={secondaryBroker}
-                  className={`w-5 h-5 object-contain flex-shrink-0 ${ROUNDED_BROKERS.has(secondaryBroker) ? "rounded-full" : ""}`}
-                />
-              )}
-              <span className="text-xs font-medium text-gray-800 dark:text-gray-200 flex-1 text-left">
-                {mobileSecondaryBrokerAccountInfo?.name || getBrokerDisplayName(secondaryBroker)}
-              </span>
-              {viewingSecondary && (
-                <span className="text-[10px] bg-violet-600 text-white px-2 py-0.5 rounded-full font-medium">
-                  Active
-                </span>
-              )}
+              2
             </button>
           </div>
-        )}
+        </div>
+
+        {/* Funds block */}
+        <div>
+          <p className={`text-[10px] font-medium uppercase tracking-wide leading-tight mb-0.5 ${viewingSecondary ? "text-violet-400 dark:text-violet-500" : "text-gray-400 dark:text-gray-500"}`}>
+            Available Fund
+          </p>
+          <p className={`text-2xl font-bold tabular-nums leading-tight ${viewingSecondary ? "text-violet-700 dark:text-violet-300" : "text-gray-900 dark:text-white"}`}>
+            {fundsDisplay}
+          </p>
+        </div>
       </div>
 
+      {/* Secondary slot empty — connect screen */}
+      {viewingSecondary && !secondaryBroker ? (
+        <div className="flex-1 flex flex-col items-center justify-center px-6 pb-10">
+          <div className="w-16 h-16 rounded-2xl bg-violet-100 dark:bg-violet-900/40 flex items-center justify-center mb-5">
+            <Plug className="w-8 h-8 text-violet-500 dark:text-violet-400" />
+          </div>
+          <p className="text-sm font-semibold text-violet-800 dark:text-violet-200 mb-1.5">No secondary broker</p>
+          <p className="text-xs text-violet-500 dark:text-violet-400 mb-7 text-center max-w-[220px] leading-relaxed">
+            Connect a second trading account to compare and manage both brokers side by side
+          </p>
+          <button
+            onClick={() => setShowConnectDialog(true)}
+            className="px-7 py-2.5 rounded-full bg-violet-600 text-white text-sm font-semibold shadow-md active:scale-95 transition-transform"
+            data-testid="button-mobile-broker-connect-secondary"
+          >
+            Connect Broker
+          </button>
+        </div>
+      ) : (
+        <>
       {/* Sub-tabs */}
-      <div className="px-4 pt-3 pb-0 flex-shrink-0 bg-white dark:bg-gray-950">
+      <div className={`px-4 pt-3 pb-0 flex-shrink-0 transition-colors duration-300 ${viewingSecondary ? "bg-violet-50 dark:bg-violet-950" : "bg-white dark:bg-gray-950"}`}>
         <div className={`flex gap-0 rounded-lg p-0.5 ${viewingSecondary ? "bg-violet-100/70 dark:bg-violet-900/30" : "bg-gray-100 dark:bg-gray-800/60"}`}>
           <button
             onClick={() => setSubTab("orders")}
@@ -361,6 +346,8 @@ export function BrokerMobileTab({
           </>
         )}
       </div>
+        </>
+      )}
     </div>
   );
 }

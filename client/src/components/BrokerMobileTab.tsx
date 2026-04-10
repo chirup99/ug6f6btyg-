@@ -112,29 +112,15 @@ export function BrokerMobileTab({
     <div className={`fixed inset-0 z-40 flex flex-col pb-20 transition-colors duration-300 ${viewingSecondary ? "bg-violet-50 dark:bg-violet-950" : "bg-white dark:bg-gray-950"}`}>
       {/* Header */}
       <div className={`relative px-4 pt-7 pb-3 border-b flex-shrink-0 transition-colors duration-300 ${viewingSecondary ? "border-violet-200 dark:border-violet-800 bg-violet-50 dark:bg-violet-950" : "border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950"}`}>
-        {/* Top row: broker ID left, 1·2 toggle right */}
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-1.5 min-w-0">
-            {currentBrokerKey && brokerIconMap[currentBrokerKey] && (
-              <img
-                src={brokerIconMap[currentBrokerKey]}
-                alt={currentBrokerKey}
-                className={`w-4 h-4 flex-shrink-0 object-contain ${ROUNDED_BROKERS.has(currentBrokerKey) ? "rounded-full" : ""}`}
-              />
-            )}
-            {currentAccountInfo?.id && (
-              <p className={`text-[11px] font-semibold leading-tight truncate ${viewingSecondary ? "text-violet-500 dark:text-violet-400" : "text-gray-500 dark:text-gray-400"}`}>
-                {currentAccountInfo.id}
-              </p>
-            )}
-            {currentAccountInfo?.name && (
-              <>
-                <span className={`text-[10px] ${viewingSecondary ? "text-violet-300 dark:text-violet-700" : "text-gray-300 dark:text-gray-700"}`}>·</span>
-                <p className={`text-[11px] leading-tight truncate ${viewingSecondary ? "text-violet-400 dark:text-violet-500" : "text-gray-400 dark:text-gray-500"}`}>
-                  {currentAccountInfo.name}
-                </p>
-              </>
-            )}
+        {/* Top row: funds left, 1·2 toggle right */}
+        <div className="flex items-start justify-between mb-2">
+          <div>
+            <p className={`text-[10px] font-medium uppercase tracking-wide leading-tight mb-0.5 ${viewingSecondary ? "text-violet-400 dark:text-violet-500" : "text-gray-400 dark:text-gray-500"}`}>
+              Available Fund
+            </p>
+            <p className={`text-2xl font-bold tabular-nums leading-tight ${viewingSecondary ? "text-violet-700 dark:text-violet-300" : "text-gray-900 dark:text-white"}`}>
+              {fundsDisplay}
+            </p>
           </div>
 
           {/* 1 · 2 toggle */}
@@ -158,14 +144,28 @@ export function BrokerMobileTab({
           </div>
         </div>
 
-        {/* Funds block */}
-        <div>
-          <p className={`text-[10px] font-medium uppercase tracking-wide leading-tight mb-0.5 ${viewingSecondary ? "text-violet-400 dark:text-violet-500" : "text-gray-400 dark:text-gray-500"}`}>
-            Available Fund
-          </p>
-          <p className={`text-2xl font-bold tabular-nums leading-tight ${viewingSecondary ? "text-violet-700 dark:text-violet-300" : "text-gray-900 dark:text-white"}`}>
-            {fundsDisplay}
-          </p>
+        {/* Broker info row — below funds */}
+        <div className="flex items-center gap-1.5 min-w-0">
+          {currentBrokerKey && brokerIconMap[currentBrokerKey] && (
+            <img
+              src={brokerIconMap[currentBrokerKey]}
+              alt={currentBrokerKey}
+              className={`w-4 h-4 flex-shrink-0 object-contain ${ROUNDED_BROKERS.has(currentBrokerKey) ? "rounded-full" : ""}`}
+            />
+          )}
+          {currentAccountInfo?.id && (
+            <p className={`text-[11px] font-semibold leading-tight truncate ${viewingSecondary ? "text-violet-500 dark:text-violet-400" : "text-gray-500 dark:text-gray-400"}`}>
+              {currentAccountInfo.id}
+            </p>
+          )}
+          {currentAccountInfo?.name && (
+            <>
+              <span className={`text-[10px] ${viewingSecondary ? "text-violet-300 dark:text-violet-700" : "text-gray-300 dark:text-gray-700"}`}>·</span>
+              <p className={`text-[11px] leading-tight truncate ${viewingSecondary ? "text-violet-400 dark:text-violet-500" : "text-gray-400 dark:text-gray-500"}`}>
+                {currentAccountInfo.name}
+              </p>
+            </>
+          )}
         </div>
       </div>
 

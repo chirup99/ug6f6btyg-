@@ -369,74 +369,100 @@ export default function TradeHistoryPanel({
     );
   }
 
+  // ── Mobile trade card (shared renderer) ─────────────────────────────────
+  function MobileTradeCard({ trade, index, isSecondary = false }: { trade: any; index: number; isSecondary?: boolean }) {
+    const symbol = isSecondary ? resolveSymbol(trade.symbol) : trade.symbol;
+    const isBuy = trade.order === "BUY";
+    const pnlPositive = (trade.pnl || "").includes("+");
+    const pnlNegative = (trade.pnl || "").includes("-");
+    const pnlClass = pnlPositive
+      ? "text-emerald-600 dark:text-emerald-400"
+      : pnlNegative
+      ? "text-red-600 dark:text-red-400"
+      : "text-slate-600 dark:text-slate-400";
+
+    return (
+      <div
+        key={index}
+        data-testid={`mobile-trade-card-${index}`}
+        className="border-b border-slate-100 dark:border-slate-800/60 px-3 py-2.5 hover:bg-slate-50 dark:hover:bg-slate-800/40 transition-colors"
+      >
+        {/* Row 1: Symbol + BUY/SELL badge + MIS + time */}
+        <div className="flex items-center justify-between mb-1.5">
+          <div className="flex items-center gap-1.5 min-w-0">
+            <span
+              className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                isBuy
+                  ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
+                  : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
+              }`}
+            >
+              {trade.order}
+            </span>
+            <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 truncate">
+              {symbol}
+            </span>
+            <span className="shrink-0 text-[10px] font-semibold text-indigo-600 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-1 rounded">
+              MIS
+            </span>
+          </div>
+          <span className="shrink-0 text-[10px] text-slate-500 dark:text-slate-400 ml-2">
+            {formatTradeTime(trade.time)}
+          </span>
+        </div>
+        {/* Row 2: Price · Qty · P&L · % · Duration */}
+        <div className="flex items-center gap-3 text-[11px] flex-wrap">
+          <div className="flex items-center gap-1">
+            <span className="text-slate-400 dark:text-slate-500">Qty</span>
+            <span className="font-medium text-slate-700 dark:text-slate-300">{trade.qty}</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-slate-400 dark:text-slate-500">@</span>
+            <span className="font-medium text-amber-600 dark:text-amber-300">
+              ₹{typeof trade.price === "number" ? trade.price.toFixed(2) : trade.price}
+            </span>
+          </div>
+          <div className="flex items-center gap-1">
+            <span className="text-slate-400 dark:text-slate-500">P&L</span>
+            <span className={`font-bold ${pnlClass}`}>{trade.pnl || "-"}</span>
+          </div>
+          <span className={`font-bold ${calcPctClass(trade)}`}>{calcPctString(trade)}</span>
+          {trade.duration && trade.duration !== "-" && (
+            <div className="flex items-center gap-1">
+              <Timer className="h-3 w-3 text-violet-500 dark:text-violet-400" />
+              <span className="text-violet-600 dark:text-violet-300 font-medium">
+                {normalizeDurationForDisplay(trade.duration)}
+              </span>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   // ── Mobile trade rows (window 1 – primary) ──────────────────────────────
   function MobileRows() {
     if (isLoadingHeatmapData && tradeHistoryData.length === 0) {
       return (
-        <tr>
-          <td colSpan={9} className="p-6 text-center">
-            <div className="flex flex-col items-center gap-2">
-              <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
-              <span className="text-xs text-slate-500 dark:text-slate-400">Loading...</span>
-            </div>
-          </td>
-        </tr>
+        <div className="p-6 text-center">
+          <div className="flex flex-col items-center gap-2">
+            <div className="w-5 h-5 border-2 border-slate-400 border-t-transparent rounded-full animate-spin"></div>
+            <span className="text-xs text-slate-500 dark:text-slate-400">Loading...</span>
+          </div>
+        </div>
       );
     }
     if (tradeHistoryData.length === 0) {
       return (
-        <tr>
-          <td colSpan={9} className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
-            {selectedDate ? "No trades for this date" : "Select a date to view trades"}
-          </td>
-        </tr>
+        <div className="p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+          {selectedDate ? "No trades for this date" : "Select a date to view trades"}
+        </div>
       );
     }
     return (
       <>
         {tradeHistoryData.map((trade, index) => (
-          <tr
-            key={index}
-            className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-          >
-            <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{formatTradeTime(trade.time)}</td>
-            <td className="px-2 py-2">
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  trade.order === "BUY"
-                    ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
-                    : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-                }`}
-              >
-                {trade.order}
-              </span>
-            </td>
-            <td className="px-2 py-2 text-slate-700 dark:text-slate-300 font-medium truncate max-w-[100px]">
-              {trade.symbol}
-            </td>
-            <td className="px-2 py-2 text-indigo-600 dark:text-indigo-300 font-semibold">MIS</td>
-            <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{trade.qty}</td>
-            <td className="px-2 py-2 text-amber-600 dark:text-amber-300 font-medium">
-              ₹{typeof trade.price === "number" ? trade.price.toFixed(2) : trade.price}
-            </td>
-            <td className={`px-2 py-2 font-bold ${(trade.pnl || "").includes("+") ? "text-emerald-600" : "text-red-600"}`}>
-              {trade.pnl}
-            </td>
-            <td className="px-2 py-2 font-bold text-slate-600 dark:text-slate-400">
-              {(() => {
-                if (!trade.pnl || trade.pnl === "-") return "-";
-                const pnlStr = (trade.pnl || "").replace(/[₹,+\s]/g, "");
-                const pnlValue = parseFloat(pnlStr) || 0;
-                const openPrice = trade.price;
-                const totalInvestment = openPrice * trade.qty || 1;
-                const percentage = (pnlValue / totalInvestment) * 100;
-                return `${percentage >= 0 ? "+" : ""}${percentage.toFixed(2)}%`;
-              })()}
-            </td>
-            <td className="px-2 py-2 text-violet-600 dark:text-violet-300 font-medium">
-              {normalizeDurationForDisplay(trade.duration)}
-            </td>
-          </tr>
+          <MobileTradeCard key={index} trade={trade} index={index} isSecondary={false} />
         ))}
       </>
     );
@@ -446,60 +472,17 @@ export default function TradeHistoryPanel({
   function MobileSecondaryRows() {
     if (tradeHistoryData2.length === 0) {
       return (
-        <tr>
-          <td colSpan={9} className="p-6 text-center">
-            <div className="flex flex-col items-center gap-1">
-              <p className="text-xs font-medium text-violet-700 dark:text-violet-300">
-                Connect your secondary broker to view trades here
-              </p>
-            </div>
-          </td>
-        </tr>
+        <div className="p-6 text-center">
+          <p className="text-xs font-medium text-violet-700 dark:text-violet-300">
+            Connect your secondary broker to view trades here
+          </p>
+        </div>
       );
     }
     return (
       <>
         {tradeHistoryData2.map((trade, index) => (
-          <tr
-            key={index}
-            className="border-b border-slate-100 dark:border-slate-800/50 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-          >
-            <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{formatTradeTime(trade.time)}</td>
-            <td className="px-2 py-2">
-              <span
-                className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
-                  trade.order === "BUY"
-                    ? "bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300"
-                    : "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300"
-                }`}
-              >
-                {trade.order}
-              </span>
-            </td>
-            <td className="px-2 py-2 text-slate-700 dark:text-slate-300 font-medium truncate max-w-[100px]">
-              {resolveSymbol(trade.symbol)}
-            </td>
-            <td className="px-2 py-2 text-indigo-600 dark:text-indigo-300 font-semibold">MIS</td>
-            <td className="px-2 py-2 text-slate-600 dark:text-slate-400">{trade.qty}</td>
-            <td className="px-2 py-2 text-amber-600 dark:text-amber-300 font-medium">
-              ₹{typeof trade.price === "number" ? trade.price.toFixed(2) : trade.price}
-            </td>
-            <td
-              className={`px-2 py-2 font-bold ${
-                (trade.pnl || "").includes("+")
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : (trade.pnl || "").includes("-")
-                  ? "text-red-600 dark:text-red-400"
-                  : "text-slate-600 dark:text-slate-400"
-              }`}
-            >
-              {trade.pnl}
-            </td>
-            <td className={`px-2 py-2 font-bold ${calcPctClass(trade)}`}>{calcPctString(trade)}</td>
-            <td className="px-2 py-2 text-violet-600 dark:text-violet-300 font-medium">
-              {normalizeDurationForDisplay(trade.duration)}
-            </td>
-          </tr>
+          <MobileTradeCard key={index} trade={trade} index={index} isSecondary={true} />
         ))}
       </>
     );
@@ -580,29 +563,18 @@ export default function TradeHistoryPanel({
                 </div>
               </div>
 
-              <div className="max-h-80 overflow-y-auto overflow-x-auto custom-thin-scrollbar">
-                <table className="text-xs w-full" style={{ minWidth: "600px" }}>
-                  <thead className={`sticky top-0 border-b ${
-                    tradeHistoryWindow === 2
-                      ? "bg-violet-100 dark:bg-violet-900/40 border-violet-200 dark:border-violet-700"
-                      : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
-                  }`}>
-                    <tr>
-                      <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[60px]">Time</th>
-                      <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[50px]">Order</th>
-                      <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[80px]">Symbol</th>
-                      <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[45px]">Type</th>
-                      <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[40px]">Qty</th>
-                      <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[60px]">Price</th>
-                      <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[60px]">P&L</th>
-                      <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[45px]">%</th>
-                      <th className="px-2 py-2 text-left text-slate-600 dark:text-slate-400 font-medium min-w-[50px]">Duration</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white dark:bg-slate-900">
-                    {tradeHistoryWindow === 2 ? <MobileSecondaryRows /> : <MobileRows />}
-                  </tbody>
-                </table>
+              <div className="max-h-80 overflow-y-auto custom-thin-scrollbar">
+                <div className={`sticky top-0 border-b px-3 py-1.5 flex items-center justify-between text-[10px] font-medium text-slate-500 dark:text-slate-400 ${
+                  tradeHistoryWindow === 2
+                    ? "bg-violet-50 dark:bg-violet-900/30 border-violet-200 dark:border-violet-700"
+                    : "bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700"
+                }`}>
+                  <span>Symbol / Order</span>
+                  <span>Qty · Price · P&L</span>
+                </div>
+                <div className="bg-white dark:bg-slate-900">
+                  {tradeHistoryWindow === 2 ? <MobileSecondaryRows /> : <MobileRows />}
+                </div>
               </div>
             </CardContent>
           </Card>

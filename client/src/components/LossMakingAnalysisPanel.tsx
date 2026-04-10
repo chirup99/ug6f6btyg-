@@ -311,94 +311,77 @@ export default function LossMakingAnalysisPanel({
                               .slice(0, 4);
 
                             return (
-                              <div className="space-y-6">
-                                {/* Risk Metrics Summary */}
-                                <div className="grid md:grid-cols-4 gap-4">
-                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                                    <div className="text-2xl font-bold">
-                                      {riskMetrics.totalLossingDays}
-                                    </div>
-                                    <div className="text-sm opacity-80">
-                                      Losing Days
+                              <div className="space-y-4">
+                                {/* Risk Metrics Summary — compact 2×2 on mobile */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 md:gap-4">
+                                  <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 md:p-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-[9px] md:text-[10px] uppercase tracking-wider opacity-70 font-bold">Losing Days</div>
+                                      <div className="text-base md:text-2xl font-bold leading-none mt-0.5">{riskMetrics.totalLossingDays}</div>
                                     </div>
                                   </div>
-                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                                    <div className="text-2xl font-bold">
-                                      {riskMetrics.emotionalTradingDays}
-                                    </div>
-                                    <div className="text-sm opacity-80">
-                                      Emotional Trading Days
+                                  <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 md:p-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-[9px] md:text-[10px] uppercase tracking-wider opacity-70 font-bold">Emotional Days</div>
+                                      <div className="text-base md:text-2xl font-bold leading-none mt-0.5">{riskMetrics.emotionalTradingDays}</div>
                                     </div>
                                   </div>
-                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                                    <div className="text-2xl font-bold">
-                                      {riskMetrics.impulsiveTrades}
-                                    </div>
-                                    <div className="text-sm opacity-80">
-                                      Impulsive Trades
+                                  <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 md:p-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-[9px] md:text-[10px] uppercase tracking-wider opacity-70 font-bold">Impulsive Trades</div>
+                                      <div className="text-base md:text-2xl font-bold leading-none mt-0.5">{riskMetrics.impulsiveTrades}</div>
                                     </div>
                                   </div>
-                                  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-4">
-                                    <div className="text-2xl font-bold">
-                                      {allData.length > 0
-                                        ? (
-                                            (riskMetrics.totalLossingDays /
-                                              allData.length) *
-                                            100
-                                          ).toFixed(0)
-                                        : 0}
-                                      %
-                                    </div>
-                                    <div className="text-sm opacity-80">
-                                      Loss Rate
+                                  <div className="flex items-center gap-2.5 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 md:p-4">
+                                    <div className="flex-1 min-w-0">
+                                      <div className="text-[9px] md:text-[10px] uppercase tracking-wider opacity-70 font-bold">Loss Rate</div>
+                                      <div className="text-base md:text-2xl font-bold leading-none mt-0.5">{allData.length > 0 ? ((riskMetrics.totalLossingDays / allData.length) * 100).toFixed(0) : 0}%</div>
                                     </div>
                                   </div>
                                 </div>
 
                                 {/* Actionable Insights & Recommendations */}
-                                <div className="space-y-4">
-                                  <h4 className="text-sm font-semibold flex items-center gap-2">
-                                    <Lightbulb className="w-4 h-4 text-amber-400" />
+                                <div className="space-y-2.5 md:space-y-4">
+                                  <h4 className="text-xs md:text-sm font-semibold flex items-center gap-2">
+                                    <Lightbulb className="w-3.5 h-3.5 md:w-4 md:h-4 text-amber-400" />
                                     Smart Trading Recommendations
                                   </h4>
-                                  <div className="grid md:grid-cols-3 gap-3">
-                                    {/* Core Actionable Insights */}
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-3">
                                     {analysisInsights.map((insight: any, i: number) => (
-                                      <div key={i} className={`p-4 rounded-xl border flex gap-3 items-start ${
+                                      <div key={i} className={`p-2.5 md:p-4 rounded-xl border flex gap-2.5 items-start ${
                                         insight.type === 'danger' ? 'bg-red-500/10 border-red-500/30' :
                                         insight.type === 'warning' ? 'bg-amber-500/10 border-amber-500/30' :
                                         'bg-green-500/10 border-green-500/30'
                                       }`}>
-                                        <div className="text-xl">{insight.type === 'danger' ? '🛑' : insight.type === 'warning' ? '⚠️' : '✅'}</div>
-                                        <div>
-                                          <p className="font-bold text-sm">{insight.title}</p>
-                                          <p className="text-xs opacity-80 leading-relaxed">{insight.message}</p>
+                                        <div className="text-base md:text-xl shrink-0">{insight.type === 'danger' ? '🛑' : insight.type === 'warning' ? '⚠️' : '✅'}</div>
+                                        <div className="min-w-0">
+                                          <p className="font-bold text-xs md:text-sm">{insight.title}</p>
+                                          <p className="text-[11px] md:text-xs opacity-80 leading-snug mt-0.5">{insight.message}</p>
                                         </div>
                                       </div>
                                     ))}
 
-                                    {/* Default Psychology & Habit Cards */}
-                                    <div className="p-4 rounded-xl border bg-indigo-500/10 border-indigo-500/30 flex gap-3 items-start">
-                                      <div className="text-xl">🧘</div>
-                                      <div>
-                                        <p className="font-bold text-sm">Mind Control</p>
-                                        <p className="text-xs opacity-80 leading-relaxed">If you're trading continuously, take 15-minute breaks every 2 hours to maintain focus and emotional balance.</p>
+                                    <div className="p-2.5 md:p-4 rounded-xl border bg-indigo-500/10 border-indigo-500/30 flex gap-2.5 items-start">
+                                      <div className="text-base md:text-xl shrink-0">🧘</div>
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-xs md:text-sm">Mind Control</p>
+                                        <p className="text-[11px] md:text-xs opacity-80 leading-snug mt-0.5">Take 15-min breaks every 2 hours to stay focused and emotionally balanced.</p>
                                       </div>
                                     </div>
 
-                                    <div className="p-4 rounded-xl border bg-purple-500/10 border-purple-500/30 flex gap-3 items-start">
-                                      <div className="text-xl">📅</div>
-                                      <div>
-                                        <p className="font-bold text-sm">Weekend Prep</p>
-                                        <p className="text-xs opacity-80 leading-relaxed">Use Saturdays to review your weekly journal. Identifying 1 mistake now prevents 5 losses next week.</p>
+                                    <div className="p-2.5 md:p-4 rounded-xl border bg-purple-500/10 border-purple-500/30 flex gap-2.5 items-start">
+                                      <div className="text-base md:text-xl shrink-0">📅</div>
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-xs md:text-sm">Weekend Prep</p>
+                                        <p className="text-[11px] md:text-xs opacity-80 leading-snug mt-0.5">Review your weekly journal on Saturdays. One fix now prevents 5 losses next week.</p>
                                       </div>
                                     </div>
 
-                                    <div className="p-4 rounded-xl border bg-orange-500/10 border-orange-500/30 flex gap-3 items-start">
-                                      <div className="text-xl">🛡️</div>
-                                      <div>
-                                        <p className="font-bold text-sm">Risk Shield</p>
-                                        <p className="text-xs opacity-80 leading-relaxed">If you lose more than 2% of your capital in a single day, stop trading immediately. Live to trade another day.</p>
+                                    <div className="p-2.5 md:p-4 rounded-xl border bg-orange-500/10 border-orange-500/30 flex gap-2.5 items-start">
+                                      <div className="text-base md:text-xl shrink-0">🛡️</div>
+                                      <div className="min-w-0">
+                                        <p className="font-bold text-xs md:text-sm">Risk Shield</p>
+                                        <p className="text-[11px] md:text-xs opacity-80 leading-snug mt-0.5">Lose more than 2% in a day? Stop immediately. Live to trade another day.</p>
                                       </div>
                                     </div>
                                   </div>
@@ -406,53 +389,39 @@ export default function LossMakingAnalysisPanel({
 
                                 {/* Worst Performing Tags */}
                                 <div>
-                                  <h4 className="text-lg font-semibold mb-4">
+                                  <h4 className="text-xs md:text-lg font-semibold mb-2.5 md:mb-4">
                                     🚨 Most Problematic Tags
                                   </h4>
-                                  <div className="flex overflow-x-auto gap-4 pb-4 snap-x no-scrollbar -mx-2 px-2 scroll-smooth">
+                                  <div className="flex overflow-x-auto gap-3 pb-3 snap-x no-scrollbar -mx-2 px-2 scroll-smooth">
                                     {worstTags.length > 0 ? (
                                       worstTags.map((tag: any, idx: number) => (
                                         <div
                                           key={idx}
-                                          className="flex-shrink-0 w-[280px] snap-start bg-white/10 backdrop-blur-sm rounded-2xl p-4 border border-white/20"
+                                          className="flex-shrink-0 w-[220px] md:w-[280px] snap-start bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-3 md:p-4 border border-white/20"
                                         >
-                                          <div className="flex items-start gap-3">
-                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                                              <AlertTriangle className="w-5 h-5" />
+                                          <div className="flex items-start gap-2.5">
+                                            <div className="w-8 h-8 md:w-10 md:h-10 bg-white/20 rounded-xl flex items-center justify-center shrink-0">
+                                              <AlertTriangle className="w-4 h-4 md:w-5 md:h-5" />
                                             </div>
-                                            <div className="flex-1">
-                                              <div className="font-semibold text-lg">
+                                            <div className="flex-1 min-w-0">
+                                              <div className="font-semibold text-sm md:text-lg truncate">
                                                 {(tag.displayTag || tag.tag).toUpperCase()}
                                               </div>
-                                              <div className="text-sm opacity-90 mb-2">
-                                                Avg Loss: ₹
-                                                {Math.abs(tag.avgLoss).toFixed(
-                                                  0
-                                                )}{" "}
-                                                • {tag.lossFrequency.toFixed(0)}
-                                                % loss rate
+                                              <div className="text-[11px] md:text-sm opacity-90 mb-1.5">
+                                                Avg Loss: ₹{Math.abs(tag.avgLoss).toFixed(0)} · {tag.lossFrequency.toFixed(0)}% loss rate
                                               </div>
-                                              <div className="text-xs bg-red-500/30 rounded-lg p-2">
-                                                Total Loss: ₹
-                                                {Math.abs(
-                                                  tag.totalPnL
-                                                ).toLocaleString("en-IN")}{" "}
-                                                across {tag.totalDays} days
+                                              <div className="text-[10px] md:text-xs bg-red-500/30 rounded-lg p-1.5">
+                                                Total: ₹{Math.abs(tag.totalPnL).toLocaleString("en-IN")} · {tag.totalDays} days
                                               </div>
                                             </div>
                                           </div>
                                         </div>
                                       ))
                                     ) : (
-                                      <div className="col-span-2 text-center py-8">
-                                        <div className="text-4xl mb-2">🎉</div>
-                                        <p className="font-medium">
-                                          No consistent loss-making patterns
-                                          detected!
-                                        </p>
-                                        <p className="text-sm opacity-80">
-                                          Your trading discipline is on track.
-                                        </p>
+                                      <div className="w-full text-center py-6">
+                                        <div className="text-3xl mb-2">🎉</div>
+                                        <p className="font-medium text-sm">No consistent loss-making patterns detected!</p>
+                                        <p className="text-xs opacity-80 mt-1">Your trading discipline is on track.</p>
                                       </div>
                                     )}
                                   </div>

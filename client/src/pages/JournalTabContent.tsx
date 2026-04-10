@@ -3190,7 +3190,7 @@ export function JournalTabContent({
                 </div>
                 {/* End of Main Journal Content */}
                 {/* Ranking Tab Content - Mobile only - Empty placeholder */}
-                {mobileBottomTab === "ranking" && (
+                {mobileBottomTab === "ranking" && localStorage.getItem('currentUserEmail') === 'chiranjeevi.perala99@gmail.com' && (
                   <div className="md:hidden p-4">
                     <div className="flex flex-col items-center justify-center py-16 text-center">
                       <div className="w-20 h-20 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center mb-4">
@@ -3920,18 +3920,20 @@ export function JournalTabContent({
                 <Plug className={`h-5 w-5 ${mobileBottomTab === "broker" ? "fill-current" : ""}`} />
               </button>
 
-              {/* Ranking Tab */}
-              <button
-                onClick={() => setMobileBottomTab("ranking")}
-                className={`flex items-center justify-center flex-1 rounded-full px-4 py-2 transition-all duration-200 ${
-                  mobileBottomTab === "ranking"
-                    ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md"
-                    : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white"
-                }`}
-                data-testid="mobile-tab-ranking"
-              >
-                <Trophy className={`h-5 w-5 ${mobileBottomTab === "ranking" ? "fill-current" : ""}`} />
-              </button>
+              {/* Ranking Tab — admin only */}
+              {localStorage.getItem('currentUserEmail') === 'chiranjeevi.perala99@gmail.com' && (
+                <button
+                  onClick={() => setMobileBottomTab("ranking")}
+                  className={`flex items-center justify-center flex-1 rounded-full px-4 py-2 transition-all duration-200 ${
+                    mobileBottomTab === "ranking"
+                      ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900 shadow-md"
+                      : "text-gray-500 dark:text-gray-400 hover:text-gray-900 dark:hover:text-slate-900 dark:hover:text-white"
+                  }`}
+                  data-testid="mobile-tab-ranking"
+                >
+                  <Trophy className={`h-5 w-5 ${mobileBottomTab === "ranking" ? "fill-current" : ""}`} />
+                </button>
+              )}
             </div>
           </div>
         </div>

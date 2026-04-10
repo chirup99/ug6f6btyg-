@@ -16833,31 +16833,29 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
                 <span className="text-xs font-semibold text-green-600 dark:text-green-400">Spot: ₹{(optionChainData?.spotPrice || 0)?.toLocaleString()}</span>
               </div>
 
-              {/* Desktop Controls */}
+              {/* Controls — native <select> for reliable Mobile Safari support */}
               <div className="flex items-center justify-center gap-2">
-                <Select value={selectedOptionIndex} onValueChange={(val) => { setSelectedOptionIndex(val); setSelectedOptionExpiryDate(""); setOptionChainData(null); setTimeout(() => fetchOptionChainData(val), 0); }}>
-                  <SelectTrigger className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white text-xs w-auto" data-testid="select-option-index">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg">
-                    <SelectItem value="NIFTY">NIFTY</SelectItem>
-                    <SelectItem value="BANKNIFTY">BANKNIFTY</SelectItem>
-                    <SelectItem value="SENSEX">SENSEX</SelectItem>
-                  </SelectContent>
-                </Select>
+                <select
+                  value={selectedOptionIndex}
+                  onChange={(e) => { setSelectedOptionIndex(e.target.value); setSelectedOptionExpiryDate(""); setOptionChainData(null); setTimeout(() => fetchOptionChainData(e.target.value), 0); }}
+                  data-testid="select-option-index"
+                  className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white text-xs appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  <option value="NIFTY">NIFTY</option>
+                  <option value="BANKNIFTY">BANKNIFTY</option>
+                  <option value="SENSEX">SENSEX</option>
+                </select>
 
-                <Select value={selectedOptionExpiryDate || (getOptionExpiryDates(selectedOptionIndex)[0]?.value || "")} onValueChange={(val) => { setSelectedOptionExpiryDate(val); fetchOptionChainData(selectedOptionIndex, val); }}>
-                  <SelectTrigger className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white text-xs w-auto" data-testid="select-option-expiry-date">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg">
-                    {getOptionExpiryDates(selectedOptionIndex).slice(0, 3).map((date) => (
-                      <SelectItem key={date.value} value={date.value}>
-                        {date.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <select
+                  value={selectedOptionExpiryDate || (getOptionExpiryDates(selectedOptionIndex)[0]?.value || "")}
+                  onChange={(e) => { setSelectedOptionExpiryDate(e.target.value); fetchOptionChainData(selectedOptionIndex, e.target.value); }}
+                  data-testid="select-option-expiry-date"
+                  className="px-2 py-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded text-gray-900 dark:text-white text-xs appearance-none cursor-pointer focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {getOptionExpiryDates(selectedOptionIndex).slice(0, 3).map((date) => (
+                    <option key={date.value} value={date.value}>{date.label}</option>
+                  ))}
+                </select>
               </div>
             </div>
 

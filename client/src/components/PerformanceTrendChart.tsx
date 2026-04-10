@@ -149,7 +149,7 @@ export function PerformanceTrendChart({
                       <stop offset="100%" stopColor="#ef4444" stopOpacity={0.05} />
                     </linearGradient>
                   </defs>
-                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: theme === 'dark' ? '#94a3b8' : '#64748b' }} interval="preserveStartEnd" />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 9, fill: theme === 'dark' ? '#94a3b8' : '#64748b' }} interval={0} minTickGap={0} />
                   <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: theme === 'dark' ? '#cbd5e1' : '#64748b' }} tickFormatter={v => `${v >= 0 ? '' : '-'}${(Math.abs(v) / 1000).toFixed(1)}K`} domain={['dataMin - 500', 'dataMax + 500']} />
                   <ReferenceLine y={0} stroke={theme === 'dark' ? '#475569' : '#cbd5e1'} strokeDasharray="4 4" />
                   <Tooltip

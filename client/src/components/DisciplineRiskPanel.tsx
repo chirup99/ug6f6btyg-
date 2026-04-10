@@ -226,89 +226,94 @@ export function DisciplineRiskPanel({
     const currentQuote = BRUCE_LEE_QUOTES[quoteIndex];
 
     return (
-      <div className="space-y-5">
+      <div className="space-y-3 md:space-y-5">
         {/* Live Market Clock */}
-        <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <Clock className="w-5 h-5 opacity-70" />
-            <div>
-              <div className={`text-sm font-bold ${marketStatus.color}`}>{marketStatus.label}</div>
-              <div className="text-xs opacity-60">{marketStatus.session} · NSE/BSE</div>
-            </div>
-          </div>
-          <div className="flex-1 min-w-[180px]">
-            <p className="text-xs opacity-80 leading-snug">{marketStatus.tip}</p>
+        <div className="bg-white/10 backdrop-blur-sm rounded-xl md:rounded-2xl p-2.5 md:p-4 flex items-center gap-3">
+          <Clock className="w-4 h-4 md:w-5 md:h-5 opacity-70 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <div className={`text-xs md:text-sm font-bold ${marketStatus.color}`}>{marketStatus.label} <span className="font-normal opacity-60 text-[10px] md:text-xs">· {marketStatus.session} · NSE/BSE</span></div>
+            <p className="text-[10px] md:text-xs opacity-80 leading-snug mt-0.5">{marketStatus.tip}</p>
           </div>
         </div>
 
-        {/* Discipline Metrics */}
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 text-center">
-            <div className="text-lg md:text-2xl font-bold">{plannedRatio.toFixed(0)}%</div>
-            <div className="text-xs md:text-sm opacity-80">Planned Trades</div>
+        {/* Discipline Metrics — compact 2×2 + 1 on mobile */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 md:p-4">
+            <div className="flex-1 min-w-0">
+              <div className="text-[9px] md:text-xs uppercase tracking-wider opacity-70 font-bold">Planned Trades</div>
+              <div className="text-base md:text-2xl font-bold leading-none mt-0.5">{plannedRatio.toFixed(0)}%</div>
+            </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 text-center">
-            <div className="text-lg md:text-2xl font-bold">{disciplineMetrics.avgTradesPerDay.toFixed(1)}</div>
-            <div className="text-xs md:text-sm opacity-80">Avg Trades/Day</div>
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 md:p-4">
+            <div className="flex-1 min-w-0">
+              <div className="text-[9px] md:text-xs uppercase tracking-wider opacity-70 font-bold">Avg Trades/Day</div>
+              <div className="text-base md:text-2xl font-bold leading-none mt-0.5">{disciplineMetrics.avgTradesPerDay.toFixed(1)}</div>
+            </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 text-center">
-            <div className="text-lg md:text-2xl font-bold">{consistencyRatio.toFixed(0)}%</div>
-            <div className="text-xs md:text-sm opacity-80">Consistent Days</div>
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 md:p-4">
+            <div className="flex-1 min-w-0">
+              <div className="text-[9px] md:text-xs uppercase tracking-wider opacity-70 font-bold">Consistent Days</div>
+              <div className="text-base md:text-2xl font-bold leading-none mt-0.5">{consistencyRatio.toFixed(0)}%</div>
+            </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 text-center border border-white/5">
-            <div className="text-lg md:text-2xl font-bold text-red-400">{maxLossStreak}</div>
-            <div className="text-xs md:text-sm opacity-80">Max Loss Streak</div>
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 md:p-4 border border-white/5">
+            <div className="flex-1 min-w-0">
+              <div className="text-[9px] md:text-xs uppercase tracking-wider opacity-70 font-bold">Max Loss Streak</div>
+              <div className="text-base md:text-2xl font-bold leading-none mt-0.5 text-red-400">{maxLossStreak}</div>
+            </div>
           </div>
-          <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 md:p-4 text-center border border-white/5">
-            <div className="text-lg md:text-2xl font-bold text-green-400">{maxWinStreak}</div>
-            <div className="text-xs md:text-sm opacity-80">Max Win Streak</div>
+          <div className="flex items-center gap-2 bg-white/10 backdrop-blur-sm rounded-xl px-3 py-2.5 md:p-4 border border-white/5">
+            <div className="flex-1 min-w-0">
+              <div className="text-[9px] md:text-xs uppercase tracking-wider opacity-70 font-bold">Max Win Streak</div>
+              <div className="text-base md:text-2xl font-bold leading-none mt-0.5 text-green-400">{maxWinStreak}</div>
+            </div>
           </div>
         </div>
 
         {/* Performance Insights + Tips */}
-        <div className="grid md:grid-cols-2 gap-5">
+        <div className="grid md:grid-cols-2 gap-3 md:gap-5">
           <div>
-            <h4 className="text-base font-semibold mb-3 flex items-center gap-2">
-              <Flame className="w-4 h-4" /> Performance Insights
+            <h4 className="text-xs md:text-base font-semibold mb-2 md:mb-3 flex items-center gap-1.5">
+              <Flame className="w-3.5 h-3.5 md:w-4 md:h-4" /> Performance Insights
             </h4>
-            <div className="space-y-2">
+            <div className="space-y-1.5 md:space-y-2">
               {disciplineInsights.length > 0 ? (
                 disciplineInsights.slice(0, 4).map((insight, idx) => (
-                  <div key={idx} className={`p-3 rounded-xl border ${
+                  <div key={idx} className={`p-2.5 md:p-3 rounded-xl border ${
                     insight.type === "success" ? "bg-emerald-500/20 border-emerald-400/30"
                     : insight.type === "warning" ? "bg-amber-500/20 border-amber-400/30"
                     : "bg-red-500/20 border-red-400/30"
                   }`}>
-                    <div className="flex items-start gap-3">
-                      <div className="text-lg">{insight.icon}</div>
-                      <div>
-                        <div className="font-medium text-sm">{insight.title}</div>
-                        <div className="text-xs opacity-90 mt-0.5 leading-snug">{insight.message}</div>
+                    <div className="flex items-start gap-2">
+                      <div className="text-base md:text-lg shrink-0">{insight.icon}</div>
+                      <div className="min-w-0">
+                        <div className="font-medium text-xs md:text-sm">{insight.title}</div>
+                        <div className="text-[10px] md:text-xs opacity-90 mt-0.5 leading-snug">{insight.message}</div>
                       </div>
                     </div>
                   </div>
                 ))
               ) : (
-                <div className="text-center py-6">
-                  <div className="text-3xl mb-2">📊</div>
-                  <p className="opacity-80 text-sm">Insights will appear as you build trading history</p>
+                <div className="text-center py-4 md:py-6">
+                  <div className="text-2xl md:text-3xl mb-2">📊</div>
+                  <p className="opacity-80 text-xs md:text-sm">Insights will appear as you build trading history</p>
                 </div>
               )}
             </div>
           </div>
 
           <div>
-            <h4 className="text-base font-semibold mb-3 flex items-center gap-2">
-              <Brain className="w-4 h-4" /> Discipline Tips
+            <h4 className="text-xs md:text-base font-semibold mb-2 md:mb-3 flex items-center gap-1.5">
+              <Brain className="w-3.5 h-3.5 md:w-4 md:h-4" /> Discipline Tips
             </h4>
-            <div className="drp-tips-scroll space-y-2 max-h-72 overflow-y-auto pr-1">
+            <div className="drp-tips-scroll space-y-1.5 md:space-y-2 max-h-56 md:max-h-72 overflow-y-auto pr-1">
               {tips.map((rec, idx) => (
-                <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-xl p-3">
-                  <div className="flex items-start gap-3">
-                    <div className="text-lg">{rec.icon}</div>
-                    <div>
-                      <div className="font-medium text-xs">{rec.title}</div>
-                      <div className="text-[11px] opacity-90 mt-0.5 leading-snug">{rec.tip}</div>
+                <div key={idx} className="bg-white/10 backdrop-blur-sm rounded-xl p-2.5 md:p-3">
+                  <div className="flex items-start gap-2 md:gap-3">
+                    <div className="text-base md:text-lg shrink-0">{rec.icon}</div>
+                    <div className="min-w-0">
+                      <div className="font-medium text-[10px] md:text-xs">{rec.title}</div>
+                      <div className="text-[10px] md:text-[11px] opacity-90 mt-0.5 leading-snug">{rec.tip}</div>
                     </div>
                   </div>
                 </div>
@@ -395,14 +400,14 @@ export function DisciplineRiskPanel({
   };
 
   return (
-    <div className="col-span-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-6 md:p-8 text-white shadow-2xl mt-6">
-      <div className="flex items-center gap-4 mb-6">
-        <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center">
-          <Shield className="w-6 h-6" />
+    <div className="col-span-12 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-3xl p-4 md:p-8 text-white shadow-2xl mt-6">
+      <div className="flex items-center gap-3 mb-4 md:mb-6">
+        <div className="w-9 h-9 md:w-12 md:h-12 bg-white/20 rounded-xl md:rounded-2xl flex items-center justify-center shrink-0">
+          <Shield className="w-4 h-4 md:w-6 md:h-6" />
         </div>
         <div>
-          <h3 className="text-xl font-bold">Discipline & Risk Management</h3>
-          <p className="opacity-80">Build consistent, profitable trading habits</p>
+          <h3 className="text-base md:text-xl font-bold">Discipline & Risk Management</h3>
+          <p className="opacity-80 text-xs md:text-sm">Build consistent, profitable trading habits</p>
         </div>
       </div>
       {renderContent()}

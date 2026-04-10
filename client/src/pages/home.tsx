@@ -7577,9 +7577,9 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     }
   }, [zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken, deltaExchangeIsConnected, deltaExchangeApiKey]);
 
-  // Fetch broker positions when tab changes
+  // Fetch broker positions as soon as the modal opens (prefetch in background regardless of active tab)
   useEffect(() => {
-    if (orderTab === "positions" && activeBroker) {
+    if (showOrderModal && activeBroker) {
       let cancelled = false;
       let lastPositionsKey = '__uninit__';
       const fetchPositions = async () => {
@@ -7602,31 +7602,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           }
           const data = await res.json();
           if (cancelled) return;
-          let positions = data.positions || [];
-
-          // Fetch live prices for each position from WebSocket stream
-          if (positions.length > 0) {
-            const livePositions = await Promise.all(
-              positions.map(async (pos: any) => {
-                try {
-                  const symbol = pos.symbol || '';
-                  const liveRes = await fetch(`/api/live-quotes/NSE:${symbol}-EQ`);
-                  if (liveRes.ok) {
-                    const liveData = await liveRes.json();
-                    return {
-                      ...pos,
-                      currentPrice: liveData.price || pos.currentPrice || pos.current_price || 0
-                    };
-                  }
-                } catch (err) {
-                  console.warn(`⚠️ [LIVE-PRICE] Could not fetch live price for ${pos.symbol}`);
-                }
-                return pos;
-              })
-            );
-            if (cancelled) return;
-            positions = livePositions;
-          }
+          const positions = data.positions || [];
 
           // Build a key from symbols+qty+status to detect structural changes only (not price fluctuations)
           const newKey = positions.map((p: any) =>
@@ -7645,7 +7621,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
         }
       };
 
-      // Fetch positions immediately when tab opens
+      // Fetch positions immediately when modal opens — data is ready before user even clicks the tab
       fetchPositions();
 
       // Poll every 700ms in background — UI only updates when positions actually change
@@ -7654,7 +7630,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Cleanup: clear interval and mark cancelled to prevent stale state updates
       return () => { cancelled = true; clearInterval(pollInterval); };
     }
-  }, [activeBroker, orderTab, getBrokerEndpoints]);
+  }, [activeBroker, showOrderModal, getBrokerEndpoints]);
   const [brokerOrders, setBrokerOrders] = useState<any[]>([]);
   const [fetchingBrokerOrders, setFetchingBrokerOrders] = useState(false);
   const [brokerPositions, setBrokerPositions] = useState<any[]>([]);
@@ -7780,26 +7756,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
           return;
         }
         const data = await res.json();
-        let positions = data.positions || [];
-        // Enrich with live prices — same as broker 1
-        if (positions.length > 0) {
-          const livePositions = await Promise.all(
-            positions.map(async (pos: any) => {
-              try {
-                const symbol = pos.symbol || '';
-                const liveRes = await fetch(`/api/live-quotes/NSE:${symbol}-EQ`);
-                if (liveRes.ok) {
-                  const liveData = await liveRes.json();
-                  return { ...pos, currentPrice: liveData.price || pos.currentPrice || pos.current_price || 0 };
-                }
-              } catch {
-                console.warn(`⚠️ [BROKER2 LIVE-PRICE] Could not fetch live price for ${pos.symbol}`);
-              }
-              return pos;
-            })
-          );
-          positions = livePositions;
-        }
+        const positions = data.positions || [];
         // Change detection — only update state when positions actually changed
         const newKey = positions.map((p: any) =>
           `${p.symbol}:${p.qty ?? p.quantity ?? p.netQty ?? 0}:${p.status ?? ''}`

@@ -16825,16 +16825,27 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
 
         {/* Option Chain Modal */}
         <Dialog open={showOptionChain} onOpenChange={(open) => { setShowOptionChain(open); if (open) { fetchOptionChainData(selectedOptionIndex); } }}>
-          <DialogContent className="w-[95vw] max-w-2xl p-0 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 max-h-[90dvh] overflow-y-auto">
+          <DialogContent className="w-[95vw] max-w-2xl p-0 bg-white dark:bg-gray-900 rounded-2xl border border-gray-200 dark:border-gray-700 max-h-[90dvh] overflow-y-auto [&>button]:hidden">
 
-            {/* Desktop Header */}
-            <div className="block border-b border-gray-200 dark:border-gray-700 px-4 py-2">
-              <div className="flex items-center justify-center mb-2">
-                <span className="text-xs font-semibold text-green-600 dark:text-green-400">Spot: ₹{(optionChainData?.spotPrice || 0)?.toLocaleString()}</span>
+            {/* Header */}
+            <div className="border-b border-gray-200 dark:border-gray-700 px-4 py-2.5">
+              {/* Title row */}
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-bold text-gray-900 dark:text-white">Option Chain</span>
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold text-green-600 dark:text-green-400">Spot: ₹{(optionChainData?.spotPrice || 0)?.toLocaleString()}</span>
+                  <button
+                    onClick={() => setShowOptionChain(false)}
+                    data-testid="button-close-option-chain"
+                    className="w-7 h-7 flex items-center justify-center rounded-full text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
 
               {/* Controls — native <select> for reliable Mobile Safari support */}
-              <div className="flex items-center justify-center gap-2">
+              <div className="flex items-center gap-2">
                 <select
                   value={selectedOptionIndex}
                   onChange={(e) => { setSelectedOptionIndex(e.target.value); setSelectedOptionExpiryDate(""); setOptionChainData(null); setTimeout(() => fetchOptionChainData(e.target.value), 0); }}

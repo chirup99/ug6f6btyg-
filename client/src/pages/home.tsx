@@ -7612,9 +7612,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     };
     // Fetch immediately on broker connect so data is cached before dialog opens
     fetchPositions();
-    // Fast 600ms when modal is open, slow 5s otherwise (same frequency as orders background polling)
-    const interval = showOrderModal ? 600 : 5000;
-    const pollInterval = setInterval(fetchPositions, interval);
+    // Always poll every 600ms so LTP / P&L stays live at all times
+    const pollInterval = setInterval(fetchPositions, 600);
     return () => { cancelled = true; clearInterval(pollInterval); setFetchingBrokerPositions(false); };
   }, [activeBroker, showOrderModal, getBrokerEndpoints]);
   const [brokerOrders, setBrokerOrders] = useState<any[]>([]);

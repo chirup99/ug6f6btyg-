@@ -7624,8 +7624,8 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       // Fetch positions immediately when modal opens — data is ready before user even clicks the tab
       fetchPositions();
 
-      // Poll every 700ms in background — UI only updates when positions actually change
-      const pollInterval = setInterval(fetchPositions, 700);
+      // Poll every 600ms in background — UI only updates when positions actually change
+      const pollInterval = setInterval(fetchPositions, 600);
 
       // Cleanup: clear interval and mark cancelled to prevent stale state updates
       return () => { cancelled = true; clearInterval(pollInterval); };
@@ -7771,7 +7771,7 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
       }
     };
     fetchPositions();
-    const interval = setInterval(fetchPositions, 700);
+    const interval = setInterval(fetchPositions, 600);
     return () => { cancelled = true; clearInterval(interval); };
   }, [secondaryBroker, showOrderModal, showSecondaryOrderModal, getBrokerEndpoints]);
 

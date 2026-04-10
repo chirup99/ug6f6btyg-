@@ -108,6 +108,21 @@ export function BrokerData(props: BrokerDataProps) {
 
   const queryClient = useQueryClient();
   const [secondaryOrderTab, setSecondaryOrderTab] = useState("history");
+  const [positionsLastUpdated, setPositionsLastUpdated] = useState<number | null>(null);
+  const [secondsAgo, setSecondsAgo] = useState(0);
+
+  useEffect(() => {
+    if (props.brokerPositions?.length >= 0 && showOrderModal) {
+      setPositionsLastUpdated(Date.now());
+      setSecondsAgo(0);
+    }
+  }, [props.brokerPositions, showOrderModal]);
+
+  useEffect(() => {
+    if (!positionsLastUpdated) return;
+    const t = setInterval(() => setSecondsAgo(Math.floor((Date.now() - positionsLastUpdated) / 1000)), 1000);
+    return () => clearInterval(t);
+  }, [positionsLastUpdated]);
 
   const isFyersConnected = fyersStatus?.connected && fyersStatus?.authenticated;
   const isConnected = zerodhaAccessToken || upstoxAccessToken || angelOneAccessToken || dhanAccessToken || growwAccessToken || deltaExchangeIsConnected || isFyersConnected;
@@ -601,7 +616,15 @@ export function BrokerData(props: BrokerDataProps) {
             </div>
           </>
         )}
-        <p className="text-[10px] text-gray-400 dark:text-gray-600 pt-1">{positions.length} position{positions.length !== 1 ? 's' : ''}</p>
+        <div className="flex items-center justify-between pt-1">
+          <span className="text-[10px] text-gray-400 dark:text-gray-600">{positions.length} position{positions.length !== 1 ? 's' : ''}</span>
+          {positions.length > 0 && positionsLastUpdated && (
+            <span className="flex items-center gap-1 text-[10px] text-gray-400 dark:text-gray-500">
+              <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              LIVE · {secondsAgo === 0 ? 'just now' : `${secondsAgo}s ago`}
+            </span>
+          )}
+        </div>
       </div>
     );
   };

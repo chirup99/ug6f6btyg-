@@ -292,6 +292,20 @@ if (process.env.NODE_ENV === 'development' && process.platform !== 'win32') {
   listenOptions.reusePort = true;
 }
 
+// Graceful shutdown — release port immediately so restarts don't get EADDRINUSE
+const shutdown = (signal: string) => {
+  log(`${signal} received — closing server gracefully`);
+  server.closeAllConnections?.();
+  server.close(() => {
+    log('Server closed');
+    process.exit(0);
+  });
+  // Force exit after 5s if close() hangs
+  setTimeout(() => process.exit(1), 5000).unref();
+};
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT',  () => shutdown('SIGINT'));
+
 server.listen(listenOptions, () => {
     log(`serving on port ${port}`);
     log(`Server ready - environment: ${app.get("env")}`);

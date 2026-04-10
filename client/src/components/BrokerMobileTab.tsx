@@ -111,10 +111,20 @@ export function BrokerMobileTab({
   return (
     <div className="fixed inset-0 z-40 bg-white dark:bg-gray-950 flex flex-col pb-20">
       {/* Header */}
-      <div className="relative flex items-center justify-between px-4 py-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 flex-shrink-0">
-        {/* Left: broker info + switcher trigger */}
+      <div className="relative px-4 pt-4 pb-3 border-b border-gray-100 dark:border-gray-800 bg-white dark:bg-gray-950 flex-shrink-0">
+        {/* Funds block — top of header */}
+        <div className="mb-2.5">
+          <p className="text-[10px] font-medium text-gray-400 dark:text-gray-500 uppercase tracking-wide leading-tight mb-0.5">
+            Available Fund
+          </p>
+          <p className="text-2xl font-bold text-gray-900 dark:text-white tabular-nums leading-tight">
+            {fundsDisplay}
+          </p>
+        </div>
+
+        {/* Broker info row — below funds */}
         <button
-          className="flex items-center gap-2 min-w-0 flex-1 mr-3"
+          className="flex items-center gap-2 min-w-0 w-full"
           onClick={() => setShowSwitcher((v) => !v)}
           data-testid="button-mobile-broker-switcher"
         >
@@ -122,16 +132,21 @@ export function BrokerMobileTab({
             <img
               src={brokerIconMap[currentBrokerKey]}
               alt={currentBrokerKey}
-              className={`w-7 h-7 flex-shrink-0 object-contain ${ROUNDED_BROKERS.has(currentBrokerKey) ? "rounded-full" : ""}`}
+              className={`w-5 h-5 flex-shrink-0 object-contain ${ROUNDED_BROKERS.has(currentBrokerKey) ? "rounded-full" : ""}`}
             />
           )}
-          <div className="min-w-0 text-left">
-            <p className="text-xs font-semibold text-gray-900 dark:text-gray-100 truncate leading-tight">
+          <div className="flex items-center gap-1.5 min-w-0 flex-1">
+            {currentAccountInfo?.id && (
+              <p className="text-[11px] font-medium text-gray-500 dark:text-gray-400 leading-tight truncate">
+                {currentAccountInfo.id}
+              </p>
+            )}
+            {currentAccountInfo?.id && currentAccountInfo?.name && (
+              <span className="text-gray-300 dark:text-gray-700 text-[10px]">·</span>
+            )}
+            <p className="text-[11px] text-gray-400 dark:text-gray-500 leading-tight truncate">
               {currentAccountInfo?.name || getBrokerDisplayName(currentBrokerKey || "")}
             </p>
-            {currentAccountInfo?.id && (
-              <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight truncate">{currentAccountInfo.id}</p>
-            )}
           </div>
           {secondaryBroker && (
             <ChevronDown
@@ -139,12 +154,6 @@ export function BrokerMobileTab({
             />
           )}
         </button>
-
-        {/* Right: funds */}
-        <div className="text-right flex-shrink-0">
-          <p className="text-[10px] text-gray-400 dark:text-gray-500 leading-tight">Available</p>
-          <p className="text-sm font-bold text-gray-900 dark:text-white tabular-nums leading-tight">{fundsDisplay}</p>
-        </div>
 
         {/* Switcher dropdown */}
         {showSwitcher && secondaryBroker && (

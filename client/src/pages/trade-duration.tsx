@@ -25,6 +25,8 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
   const [durExpandedRows, setDurExpandedRows] = useState<Set<string>>(new Set());
   const [durTableOpen, setDurTableOpen] = useState<boolean>(false);
   const [chartCarouselIndex, setChartCarouselIndex] = useState<number>(0);
+  const [patternCarouselIndex, setPatternCarouselIndex] = useState<number>(0);
+  const [insightCarouselIndex, setInsightCarouselIndex] = useState<number>(0);
 
   const parseDurMs = (dur: string): number => {
     if (!dur || dur === '-') return 0;
@@ -631,142 +633,252 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
             })()}
 
             {/* Smart Pattern Alerts — time-of-day & day-of-week */}
-            {hasPatternInsights && (
-              <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/5 overflow-hidden">
-                <div className="px-5 py-3 border-b border-amber-200 dark:border-amber-500/20 flex items-center gap-2">
-                  <span className="text-lg">🧠</span>
-                  <h4 className="text-sm font-bold text-slate-800 dark:text-slate-200">Best Time to Trade — Pattern Alerts from Your Data</h4>
-                </div>
-                <div className="p-4 grid sm:grid-cols-2 gap-3">
-                  {/* Avoid time slots */}
-                  {avoidSlots.slice(0,3).map(slot=>(
-                    <div key={slot.hour} className="flex gap-3 items-start rounded-xl p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30">
-                      <span className="text-xl mt-0.5">🚫</span>
+            {hasPatternInsights && (() => {
+              const patternItems: {key:string; card: React.ReactNode}[] = [
+                ...avoidSlots.slice(0,3).map(slot=>({
+                  key: `avoid-${slot.hour}`,
+                  card: (
+                    <div className="flex gap-3 items-start rounded-xl p-3 bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 h-full">
+                      <span className="text-xl mt-0.5 shrink-0">🚫</span>
                       <div>
                         <p className="text-xs font-bold text-red-700 dark:text-red-400">Avoid {slot.label}</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                          {Math.round(slot.lossRate*100)}% loss rate across {slot.total} trades in this window. Avg loss: ₹{Math.abs(Math.round(slot.pnl/slot.total)).toLocaleString('en-IN')} per trade.
+                          {Math.round(slot.lossRate*100)}% loss rate across {slot.total} trades. Avg loss: ₹{Math.abs(Math.round(slot.pnl/slot.total)).toLocaleString('en-IN')} per trade.
                         </p>
                       </div>
                     </div>
-                  ))}
-                  {/* Best time slots */}
-                  {bestSlots.slice(0,2).map(slot=>(
-                    <div key={slot.hour} className="flex gap-3 items-start rounded-xl p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30">
-                      <span className="text-xl mt-0.5">✅</span>
+                  )
+                })),
+                ...bestSlots.slice(0,2).map(slot=>({
+                  key: `best-${slot.hour}`,
+                  card: (
+                    <div className="flex gap-3 items-start rounded-xl p-3 bg-green-50 dark:bg-green-500/10 border border-green-200 dark:border-green-500/30 h-full">
+                      <span className="text-xl mt-0.5 shrink-0">✅</span>
                       <div>
                         <p className="text-xs font-bold text-green-700 dark:text-green-400">Best window: {slot.label}</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                          {Math.round(slot.winRate*100)}% win rate in this hour across {slot.total} trades. Focus entries here.
+                          {Math.round(slot.winRate*100)}% win rate across {slot.total} trades. Focus entries here.
                         </p>
                       </div>
                     </div>
-                  ))}
-                  {/* Risk days of week */}
-                  {riskDays.map(d=>(
-                    <div key={d.name} className="flex gap-3 items-start rounded-xl p-3 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30">
-                      <span className="text-xl mt-0.5">⚠️</span>
+                  )
+                })),
+                ...riskDays.map(d=>({
+                  key: `risk-${d.name}`,
+                  card: (
+                    <div className="flex gap-3 items-start rounded-xl p-3 bg-orange-50 dark:bg-orange-500/10 border border-orange-200 dark:border-orange-500/30 h-full">
+                      <span className="text-xl mt-0.5 shrink-0">⚠️</span>
                       <div>
                         <p className="text-xs font-bold text-orange-700 dark:text-orange-400">Be careful on {d.name}s</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                          {d.losses} loss day{d.losses>1?'s':''} vs {d.wins} profit day{d.wins!==1?'s':''} on {d.name}. Net P&L: {d.pnl<0?'-':''}₹{Math.abs(Math.round(d.pnl)).toLocaleString('en-IN')}. Trade smaller or skip.
+                          {d.losses}L vs {d.wins}P on {d.name}. Net: {d.pnl<0?'-':''}₹{Math.abs(Math.round(d.pnl)).toLocaleString('en-IN')}. Trade smaller.
                         </p>
                       </div>
                     </div>
-                  ))}
-                  {/* Strong days of week */}
-                  {strongDays.slice(0,2).map(d=>(
-                    <div key={d.name} className="flex gap-3 items-start rounded-xl p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30">
-                      <span className="text-xl mt-0.5">💪</span>
+                  )
+                })),
+                ...strongDays.slice(0,2).map(d=>({
+                  key: `strong-${d.name}`,
+                  card: (
+                    <div className="flex gap-3 items-start rounded-xl p-3 bg-emerald-50 dark:bg-emerald-500/10 border border-emerald-200 dark:border-emerald-500/30 h-full">
+                      <span className="text-xl mt-0.5 shrink-0">💪</span>
                       <div>
                         <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">{d.name} is your strong day</p>
                         <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 leading-snug">
-                          {d.wins} profit day{d.wins!==1?'s':''} vs {d.losses} loss on {d.name}. Net: +₹{Math.round(d.pnl).toLocaleString('en-IN')}. Consider higher size on {d.name}.
+                          {d.wins}P vs {d.losses}L on {d.name}. Net: +₹{Math.round(d.pnl).toLocaleString('en-IN')}. Consider higher size.
                         </p>
                       </div>
                     </div>
-                  ))}
-                  {/* Fallback if only no-time-data day insights */}
-                  {!hasTimeData && riskDays.length===0 && strongDays.length===0 && (
-                    <div className="col-span-2 text-center text-xs text-slate-400 py-4">
-                      Add entry time to your trades to unlock time-of-day pattern analysis.
+                  )
+                })),
+              ];
+              const safePatternIdx = patternCarouselIndex % Math.max(patternItems.length, 1);
+              return (
+                <div className="rounded-2xl border border-amber-200 dark:border-amber-500/30 bg-amber-50 dark:bg-amber-500/5 overflow-hidden">
+                  <div className="px-4 py-3 border-b border-amber-200 dark:border-amber-500/20 flex items-center gap-2">
+                    <span className="text-lg">🧠</span>
+                    <h4 className="text-xs md:text-sm font-bold text-slate-800 dark:text-slate-200">Best Time to Trade — Pattern Alerts</h4>
+                  </div>
+                  {/* Mobile carousel */}
+                  <div className="md:hidden p-3">
+                    {patternItems.length === 0 ? (
+                      <p className="text-xs text-slate-400 text-center py-3">Add entry time to unlock time-of-day analysis.</p>
+                    ) : (
+                      <>
+                        <div className="min-h-[72px]">{patternItems[safePatternIdx].card}</div>
+                        <div className="flex items-center justify-between mt-3 pt-2 border-t border-amber-200 dark:border-amber-500/20">
+                          <button
+                            data-testid="button-pattern-carousel-prev"
+                            onClick={() => setPatternCarouselIndex(i => (i - 1 + patternItems.length) % patternItems.length)}
+                            className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-500/10"
+                          >
+                            <ChevronLeft className="w-4 h-4" />Prev
+                          </button>
+                          <div className="flex gap-1.5">
+                            {patternItems.map((_, i) => (
+                              <button key={i} data-testid={`button-pattern-dot-${i}`} onClick={() => setPatternCarouselIndex(i)}
+                                className={`w-2 h-2 rounded-full transition-colors ${i === safePatternIdx ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                            ))}
+                          </div>
+                          <button
+                            data-testid="button-pattern-carousel-next"
+                            onClick={() => setPatternCarouselIndex(i => (i + 1) % patternItems.length)}
+                            className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-amber-100 dark:hover:bg-amber-500/10"
+                          >
+                            Next<ChevronRight className="w-4 h-4" />
+                          </button>
+                        </div>
+                        <p className="text-center text-[10px] text-slate-400 mt-1">{safePatternIdx + 1} / {patternItems.length}</p>
+                      </>
+                    )}
+                  </div>
+                  {/* Desktop grid */}
+                  <div className="hidden md:block p-4">
+                    <div className="grid sm:grid-cols-2 gap-3">
+                      {patternItems.map(item => <div key={item.key}>{item.card}</div>)}
+                      {!hasTimeData && riskDays.length===0 && strongDays.length===0 && (
+                        <div className="col-span-2 text-center text-xs text-slate-400 py-4">Add entry time to your trades to unlock time-of-day pattern analysis.</div>
+                      )}
                     </div>
-                  )}
+                  </div>
                 </div>
-              </div>
-            )}
+              );
+            })()}
 
-            {/* Insight cards — 6 cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-              <div className={`rounded-xl md:rounded-2xl p-3 md:p-4 border flex gap-2.5 items-start ${isOverHolding?'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30':'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30'}`}>
-                <span className="text-xl md:text-2xl shrink-0">{isOverHolding?'🚨':'✅'}</span>
-                <div>
-                  <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200">{isOverHolding?'Holding Losses Too Long':'Exits Are Disciplined'}</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    {isOverHolding?`You hold losing trades ${fmtDur(avgLossDurMs-avgProfDurMs)} longer than winners on average. Set a hard time-based stop.`:`Your losses average ${fmtDur(avgLossDurMs)}, equal to or shorter than your profit holds. Keep this up.`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-xl md:rounded-2xl p-3 md:p-4 border bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 flex gap-2.5 items-start">
-                <span className="text-xl md:text-2xl shrink-0">⏱️</span>
-                <div>
-                  <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200">Your Profit Window</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    Winning trades average {fmtDur(avgProfDurMs)}.{shortestProfit?.durationLabel&&shortestProfit.durationLabel!=='-'?` Fastest win: ${shortestProfit.durationLabel}.`:''} Book profit near {fmtDur(avgProfDurMs)} — don't wait for more.
-                  </p>
-                </div>
-              </div>
-
-              <div className={`rounded-xl md:rounded-2xl p-3 md:p-4 border flex gap-2.5 items-start ${sums.filter(d=>d.avgLossDurMs>d.avgProfitDurMs*1.3).length>sums.length/2?'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30':'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30'}`}>
-                <span className="text-xl md:text-2xl shrink-0">📅</span>
-                <div>
-                  <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200">Over-holding Days</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    {(()=>{
-                      const ohd=sums.filter(d=>d.avgLossDurMs>0&&d.avgProfitDurMs>0&&d.avgLossDurMs>d.avgProfitDurMs*1.3);
-                      if(ohd.length===0)return'No over-holding detected on any day. Strong discipline!';
-                      return`${ohd.length} day${ohd.length>1?'s':''} where losses held 30%+ longer than profits: ${ohd.slice(0,3).map(d=>d.label).join(', ')}.`;
-                    })()}
-                  </p>
-                </div>
-              </div>
-
-              <div className={`rounded-xl md:rounded-2xl p-3 md:p-4 border flex gap-2.5 items-start ${bestBucket[1].wins>0?'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30':'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
-                <span className="text-xl md:text-2xl shrink-0">🎯</span>
-                <div>
-                  <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200">Best Holding Sweet Spot</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    {(bestBucket[1].wins+bestBucket[1].losses)>0
-                      ?`Your best win rate is in the ${bestBucket[0]} bucket (${((bestBucket[1].wins/(bestBucket[1].wins+bestBucket[1].losses))*100).toFixed(0)}% win rate). Target exits in this window.`
-                      :'Add more trades to identify your optimal holding duration sweet spot.'}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-xl md:rounded-2xl p-3 md:p-4 border bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex gap-2.5 items-start">
-                <span className="text-xl md:text-2xl shrink-0">💡</span>
-                <div>
-                  <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200">Time-based Stop Rule</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    If a trade hasn't moved in your favour within {fmtDur(avgProfDurMs)}, exit regardless of P&L. Your data shows winners resolve quickly.
-                  </p>
-                </div>
-              </div>
-
-              <div className={`rounded-xl md:rounded-2xl p-3 md:p-4 border flex gap-2.5 items-start ${grade==='A'||grade==='B'?'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30':'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30'}`}>
-                <span className="text-xl md:text-2xl shrink-0">{grade==='A'?'🏆':grade==='B'?'⭐':grade==='C'?'📈':'🚨'}</span>
-                <div>
-                  <p className="font-bold text-xs md:text-sm text-slate-800 dark:text-slate-200">Exit Discipline Grade: {grade}</p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    {grade==='A'?'Excellent! You cut losses as fast as you take profits.'
-                    :grade==='B'?'Good discipline. Minor tendency to hold losses slightly longer.'
-                    :grade==='C'?'Moderate over-holding. Focus on time-based exits to improve.'
-                    :'Critical over-holding pattern. Implement strict time stops immediately.'}
-                  </p>
-                </div>
-              </div>
-            </div>
+            {/* Insight cards — 6 cards, carousel on mobile */}
+            {(() => {
+              const ohDays = sums.filter(d=>d.avgLossDurMs>0&&d.avgProfitDurMs>0&&d.avgLossDurMs>d.avgProfitDurMs*1.3);
+              const insightCards = [
+                {
+                  key: 'exits',
+                  node: (
+                    <div className={`rounded-xl p-3 border flex gap-2.5 items-start h-full ${isOverHolding?'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30':'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30'}`}>
+                      <span className="text-xl shrink-0">{isOverHolding?'🚨':'✅'}</span>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">{isOverHolding?'Holding Losses Too Long':'Exits Are Disciplined'}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                          {isOverHolding?`You hold losing trades ${fmtDur(avgLossDurMs-avgProfDurMs)} longer than winners. Set a hard time stop.`:`Losses avg ${fmtDur(avgLossDurMs)}, equal to or shorter than profit holds. Keep this up.`}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  key: 'profit-window',
+                  node: (
+                    <div className="rounded-xl p-3 border bg-amber-50 dark:bg-amber-500/10 border-amber-200 dark:border-amber-500/30 flex gap-2.5 items-start h-full">
+                      <span className="text-xl shrink-0">⏱️</span>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Your Profit Window</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                          Winners avg {fmtDur(avgProfDurMs)}.{shortestProfit?.durationLabel&&shortestProfit.durationLabel!=='-'?` Fastest: ${shortestProfit.durationLabel}.`:''} Book profit near {fmtDur(avgProfDurMs)}.
+                        </p>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  key: 'overhold-days',
+                  node: (
+                    <div className={`rounded-xl p-3 border flex gap-2.5 items-start h-full ${ohDays.length>sums.length/2?'bg-red-50 dark:bg-red-500/10 border-red-200 dark:border-red-500/30':'bg-blue-50 dark:bg-blue-500/10 border-blue-200 dark:border-blue-500/30'}`}>
+                      <span className="text-xl shrink-0">📅</span>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Over-holding Days</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                          {ohDays.length===0?'No over-holding on any day. Strong discipline!':`${ohDays.length} day${ohDays.length>1?'s':''} with losses held 30%+ longer: ${ohDays.slice(0,3).map(d=>d.label).join(', ')}.`}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  key: 'sweet-spot',
+                  node: (
+                    <div className={`rounded-xl p-3 border flex gap-2.5 items-start h-full ${bestBucket[1].wins>0?'bg-purple-50 dark:bg-purple-500/10 border-purple-200 dark:border-purple-500/30':'bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700'}`}>
+                      <span className="text-xl shrink-0">🎯</span>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Best Holding Sweet Spot</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                          {(bestBucket[1].wins+bestBucket[1].losses)>0
+                            ?`Best win rate in ${bestBucket[0]} bucket (${((bestBucket[1].wins/(bestBucket[1].wins+bestBucket[1].losses))*100).toFixed(0)}%). Target exits here.`
+                            :'Add more trades to find your optimal holding duration.'}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  key: 'time-stop',
+                  node: (
+                    <div className="rounded-xl p-3 border bg-slate-50 dark:bg-slate-800 border-slate-100 dark:border-slate-700 flex gap-2.5 items-start h-full">
+                      <span className="text-xl shrink-0">💡</span>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Time-based Stop Rule</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                          If a trade hasn't moved your way within {fmtDur(avgProfDurMs)}, exit. Your data shows winners resolve quickly.
+                        </p>
+                      </div>
+                    </div>
+                  )
+                },
+                {
+                  key: 'grade',
+                  node: (
+                    <div className={`rounded-xl p-3 border flex gap-2.5 items-start h-full ${grade==='A'||grade==='B'?'bg-green-50 dark:bg-green-500/10 border-green-200 dark:border-green-500/30':'bg-orange-50 dark:bg-orange-500/10 border-orange-200 dark:border-orange-500/30'}`}>
+                      <span className="text-xl shrink-0">{grade==='A'?'🏆':grade==='B'?'⭐':grade==='C'?'📈':'🚨'}</span>
+                      <div>
+                        <p className="font-bold text-xs text-slate-800 dark:text-slate-200">Exit Discipline Grade: {grade}</p>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
+                          {grade==='A'?'Excellent! You cut losses as fast as profits.'
+                          :grade==='B'?'Good discipline. Minor tendency to hold losses longer.'
+                          :grade==='C'?'Moderate over-holding. Focus on time-based exits.'
+                          :'Critical over-holding. Implement strict time stops now.'}
+                        </p>
+                      </div>
+                    </div>
+                  )
+                },
+              ];
+              const safeInsightIdx = insightCarouselIndex % insightCards.length;
+              return (
+                <>
+                  {/* Mobile carousel */}
+                  <div className="md:hidden bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-3 border border-slate-100 dark:border-slate-700">
+                    <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-2">Trade Insights</p>
+                    <div className="min-h-[80px]">{insightCards[safeInsightIdx].node}</div>
+                    <div className="flex items-center justify-between mt-3 pt-2 border-t border-slate-200 dark:border-slate-700">
+                      <button
+                        data-testid="button-insight-carousel-prev"
+                        onClick={() => setInsightCarouselIndex(i => (i - 1 + insightCards.length) % insightCards.length)}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                      >
+                        <ChevronLeft className="w-4 h-4" />Prev
+                      </button>
+                      <div className="flex gap-1.5">
+                        {insightCards.map((_, i) => (
+                          <button key={i} data-testid={`button-insight-dot-${i}`} onClick={() => setInsightCarouselIndex(i)}
+                            className={`w-2 h-2 rounded-full transition-colors ${i === safeInsightIdx ? 'bg-orange-500' : 'bg-slate-300 dark:bg-slate-600'}`} />
+                        ))}
+                      </div>
+                      <button
+                        data-testid="button-insight-carousel-next"
+                        onClick={() => setInsightCarouselIndex(i => (i + 1) % insightCards.length)}
+                        className="flex items-center gap-1 text-[11px] font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-colors px-2 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700"
+                      >
+                        Next<ChevronRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                    <p className="text-center text-[10px] text-slate-400 mt-1">{safeInsightIdx + 1} / {insightCards.length}</p>
+                  </div>
+                  {/* Desktop 3-col grid */}
+                  <div className="hidden md:grid md:grid-cols-3 gap-4">
+                    {insightCards.map(c => (
+                      <div key={c.key} className="[&>*]:!rounded-2xl [&>*]:!p-4">{c.node}</div>
+                    ))}
+                  </div>
+                </>
+              );
+            })()}
           </>
         )}
       </div>

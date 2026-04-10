@@ -355,8 +355,8 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                 <span className="hidden sm:inline">Win Rate by Holding Duration — Find Your Sweet Spot</span>
                 <span className="sm:hidden">Win Rate by Hold Duration</span>
               </h4>
-              {/* Mobile: flat horizontal strip */}
-              <div className="md:hidden flex gap-2 overflow-x-auto pb-1 -mx-1 px-1">
+              {/* Mobile: flat 2×2 grid */}
+              <div className="md:hidden grid grid-cols-2 gap-2">
                 {Object.entries(buckets).map(([label, data]) => {
                   const total = data.wins + data.losses;
                   const wr = total > 0 ? (data.wins / total) * 100 : 0;
@@ -365,14 +365,18 @@ export function TradeDurationAnalysis({ filteredHeatmapData, theme }: TradeDurat
                   const barColor = wr>=60?'bg-green-500':wr>=40?'bg-amber-500':'bg-red-500';
                   const bg = isBest?'bg-purple-50 dark:bg-purple-500/10 border-purple-300 dark:border-purple-500/40':'bg-slate-50 dark:bg-slate-800 border-slate-200 dark:border-slate-700';
                   return (
-                    <div key={label} className={`shrink-0 flex flex-col gap-1 border rounded-xl px-3 py-2 min-w-[72px] relative ${bg}`}>
-                      {isBest && <span className="absolute -top-1.5 right-1.5 text-[8px] font-black px-1 py-0 bg-purple-500 text-white rounded-full leading-4">BEST</span>}
-                      <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400">{label}</span>
-                      <span className={`text-base font-black leading-none ${wrColor}`}>{total>0?`${wr.toFixed(0)}%`:'-'}</span>
-                      <div className="h-1 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden w-full">
-                        <div className={`h-full rounded-full ${barColor}`} style={{width:`${wr}%`}} />
+                    <div key={label} className={`flex items-center gap-2.5 border rounded-xl px-3 py-2.5 relative ${bg}`}>
+                      {isBest && <span className="absolute -top-1.5 right-2 text-[8px] font-black px-1 py-0 bg-purple-500 text-white rounded-full leading-4">BEST</span>}
+                      <div className="flex-1 min-w-0">
+                        <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">{label}</span>
+                        <span className={`text-base font-black leading-none ${wrColor}`}>{total>0?`${wr.toFixed(0)}%`:'-'}</span>
                       </div>
-                      <span className="text-[9px] text-slate-400">{data.wins}W·{data.losses}L</span>
+                      <div className="flex flex-col items-end gap-1 shrink-0">
+                        <span className="text-[9px] text-slate-400">{data.wins}W·{data.losses}L</span>
+                        <div className="h-1 w-14 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                          <div className={`h-full rounded-full ${barColor}`} style={{width:`${wr}%`}} />
+                        </div>
+                      </div>
                     </div>
                   );
                 })}

@@ -5979,6 +5979,12 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const connectedBrokersCount = connectedBrokersList.length;
   const secondaryBroker = connectedBrokersList[1] || null;
 
+  const [angelOneApiKeyInput, setAngelOneApiKeyInput] = useState(() => localStorage.getItem("angel_one_api_key") || "");
+  const [angelOneClientCodeInput, setAngelOneClientCodeInput] = useState(() => localStorage.getItem("angel_one_client_code") || "");
+  const [angelOnePinInput, setAngelOnePinInput] = useState(() => localStorage.getItem("angel_one_pin") || "");
+  const [angelOneTotpInput, setAngelOneTotpInput] = useState(() => localStorage.getItem("angel_one_totp") || "");
+  const [dhanClientIdInput, setDhanClientIdInput] = useState(localStorage.getItem("dhan_client_id") || "");
+
   const mobileBrokerAccountInfo = (() => {
     switch (activeBroker) {
       case 'zerodha':  return { name: zerodhaUserName || 'Zerodha User', id: zerodhaClientId || '' };
@@ -6018,10 +6024,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [zerodhaApiSecretInput, setZerodhaApiSecretInput] = useState("");
   const [upstoxApiKeyInput, setUpstoxApiKeyInput] = useState("");
   const [upstoxApiSecretInput, setUpstoxApiSecretInput] = useState("");
-  const [angelOneApiKeyInput, setAngelOneApiKeyInput] = useState(() => localStorage.getItem("angel_one_api_key") || "");
-  const [angelOneClientCodeInput, setAngelOneClientCodeInput] = useState(() => localStorage.getItem("angel_one_client_code") || "");
-  const [angelOnePinInput, setAngelOnePinInput] = useState(() => localStorage.getItem("angel_one_pin") || "");
-  const [angelOneTotpInput, setAngelOneTotpInput] = useState(() => localStorage.getItem("angel_one_totp") || "");
   const [showZerodhaSecret, setShowZerodhaSecret] = useState(false);
   const [showUpstoxSecret, setShowUpstoxSecret] = useState(false);
   const [showAngelOneSecret, setShowAngelOneSecret] = useState(false);
@@ -6047,7 +6049,6 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
   const [deltaExchangeUserId, setDeltaExchangeUserId] = useState<string | null>(localStorage.getItem("delta_exchange_user_id"));
   const [deltaExchangeAccountName, setDeltaExchangeAccountName] = useState<string | null>(localStorage.getItem("delta_exchange_account_name"));
   const [showDeltaSecret, setShowDeltaSecret] = useState(false);
-  const [dhanClientIdInput, setDhanClientIdInput] = useState(localStorage.getItem("dhan_client_id") || "");
   const [dhanTokenInput, setDhanTokenInput] = useState(localStorage.getItem("dhan_access_token") || "");
   const [showDhanToken, setShowDhanToken] = useState(false);
   const [isGrowwDialogOpen, setIsGrowwDialogOpen] = useState(false);

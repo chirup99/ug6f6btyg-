@@ -238,17 +238,17 @@ export function FundsAnalysis({
           <div className="absolute top-0 right-0 -translate-y-1/2 translate-x-1/2 w-64 h-64 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
           <div className="absolute bottom-0 left-0 translate-y-1/2 -translate-x-1/2 w-64 h-64 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-          <CardHeader className="pb-2 relative z-10 border-b border-white/20 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
+          <CardHeader className="px-4 py-3 md:pb-2 relative z-10 border-b border-white/20 dark:border-white/5 bg-white/40 dark:bg-slate-900/40 backdrop-blur-md">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="p-2 bg-indigo-500/20 rounded-xl border border-indigo-500/30">
-                  <Wallet className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+              <div className="flex items-center gap-2.5">
+                <div className="p-1.5 md:p-2 bg-indigo-500/20 rounded-xl border border-indigo-500/30">
+                  <Wallet className="w-4 h-4 md:w-5 md:h-5 text-indigo-600 dark:text-indigo-400" />
                 </div>
                 <div>
-                  <CardTitle className="text-lg font-bold flex items-center gap-2">
+                  <CardTitle className="text-base md:text-lg font-bold flex items-center gap-2">
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600 dark:from-indigo-400 dark:to-purple-400">Funds Analysis</span>
                   </CardTitle>
-                  <CardDescription className="text-xs font-medium text-indigo-600/70 dark:text-indigo-400/70">
+                  <CardDescription className="text-[10px] md:text-xs font-medium text-indigo-600/70 dark:text-indigo-400/70">
                     Monitor and manage your trading capital
                   </CardDescription>
                 </div>
@@ -256,33 +256,33 @@ export function FundsAnalysis({
             </div>
           </CardHeader>
 
-          <CardContent className="p-6 relative z-10">
+          <CardContent className="p-3 md:p-6 relative z-10">
             {(() => {
               const displayFunds = Number(totalBrokerFunds) || 0;
               const displayBrokerFunds = allBrokerFunds;
               const needsBrokerForBalance = !isConnected;
 
               return (
-                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 md:gap-4">
                   {/* Net Balance Card */}
-                  <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="p-2 bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
-                        <Banknote className="w-5 h-5" />
+                  <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-3 md:p-5 rounded-xl md:rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                    <div className="flex items-center justify-between mb-2 md:mb-4">
+                      <div className="p-1.5 md:p-2 bg-emerald-500/10 rounded-lg text-emerald-600 dark:text-emerald-400">
+                        <Banknote className="w-4 h-4 md:w-5 md:h-5" />
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20">Available Cash</Badge>
+                        <Badge variant="outline" className="bg-emerald-500/5 text-emerald-600 border-emerald-500/20 text-[9px] md:text-xs px-1.5 py-0">Available</Badge>
 
                         {/* Multi-broker icons row */}
                         {Object.keys(displayBrokerFunds).length > 0 && (
                           <div
                             onClick={() => setShowBrokerBreakupDialog(true)}
-                            className="flex -space-x-2 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
+                            className="flex -space-x-1.5 overflow-hidden cursor-pointer hover:opacity-80 transition-opacity"
                           >
-                            {Object.keys(displayBrokerFunds).map((brokerId) => (
+                            {Object.keys(displayBrokerFunds).slice(0, 3).map((brokerId) => (
                               <div
                                 key={brokerId}
-                                className="inline-block h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-900 bg-white p-0.5"
+                                className="inline-block h-5 w-5 md:h-6 md:w-6 rounded-full ring-2 ring-white dark:ring-slate-900 bg-white p-0.5"
                                 title={getBrokerDisplayName(brokerId)}
                               >
                                 <img
@@ -293,7 +293,7 @@ export function FundsAnalysis({
                               </div>
                             ))}
                             {Object.keys(displayBrokerFunds).length > 3 && (
-                              <div className="flex items-center justify-center h-6 w-6 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800 text-[10px] font-bold text-slate-600 dark:text-slate-400">
+                              <div className="flex items-center justify-center h-5 w-5 md:h-6 md:w-6 rounded-full ring-2 ring-white dark:ring-slate-900 bg-slate-100 dark:bg-slate-800 text-[9px] font-bold text-slate-600 dark:text-slate-400">
                                 +{Object.keys(displayBrokerFunds).length - 3}
                               </div>
                             )}
@@ -302,28 +302,28 @@ export function FundsAnalysis({
                       </div>
                     </div>
                     {needsBrokerForBalance ? (
-                      <div className="flex flex-col items-center justify-center py-4 text-center gap-3">
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Net Balance</p>
-                        <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-snug">Connect a broker to view your live net balance</p>
+                      <div className="flex flex-col items-center justify-center py-2 md:py-4 text-center gap-2">
+                        <p className="text-xs font-medium text-slate-500 dark:text-slate-400">Net Balance</p>
+                        <p className="text-[10px] text-slate-400 dark:text-slate-500 leading-snug">Connect a broker to view live balance</p>
                         <Button
                           size="sm"
                           onClick={() => setShowConnectDialog(true)}
-                          className="mt-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[11px] px-4 py-1 h-7 rounded-full font-bold transition-all hover:scale-105 active:scale-95 shadow shadow-indigo-500/25"
+                          className="mt-1 bg-indigo-600 hover:bg-indigo-700 text-white text-[10px] px-3 py-0.5 h-6 rounded-full font-bold transition-all hover:scale-105 active:scale-95 shadow shadow-indigo-500/25"
                         >
-                          Connect Broker
+                          Connect
                         </Button>
                       </div>
                     ) : (
                       <>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Net Balance</p>
-                          <h4 className="text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1">
+                        <div className="space-y-0.5">
+                          <p className="text-[10px] md:text-sm font-medium text-slate-500 dark:text-slate-400">Net Balance</p>
+                          <h4 className="text-lg md:text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-0.5">
                             {activeBroker === 'delta' ? '$' : '₹'}
                             {displayFunds.toLocaleString(activeBroker === 'delta' ? 'en-US' : 'en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </h4>
                         </div>
-                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                          <span>Updated Just Now</span>
+                        <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                          <span>Live</span>
                           <div className="flex gap-1">
                             <div className="w-1 h-1 rounded-full bg-emerald-500" />
                             <div className="w-1 h-1 rounded-full bg-emerald-500/40" />
@@ -341,73 +341,73 @@ export function FundsAnalysis({
                     const isFree = hasInfluencer && !influencerHideUI;
                     const daysLeft = hasInfluencer ? Math.ceil((new Date(influencerPeriod!.expiryDate).getTime() - Date.now()) / 86400000) : 0;
                     return (
-                      <div className={`bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 relative ${isFree ? 'border-pink-300/60 dark:border-pink-700/40' : 'border-white/40 dark:border-white/10'}`}>
+                      <div className={`bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-3 md:p-5 rounded-xl md:rounded-2xl border shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 relative ${isFree ? 'border-pink-300/60 dark:border-pink-700/40' : 'border-white/40 dark:border-white/10'}`}>
                         {hasInfluencer && (
                           <button
                             onClick={toggleInfluencerHideUI}
-                            className="absolute top-3 right-3 p-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors z-10"
+                            className="absolute top-2.5 right-2.5 md:top-3 md:right-3 p-1 rounded-full bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition-colors z-10"
                             title={influencerHideUI ? "Show influencer view" : "Hide influencer tag"}
                             data-testid="button-influencer-hide-toggle"
                           >
                             {influencerHideUI ? <Eye className="w-3 h-3" /> : <EyeOff className="w-3 h-3" />}
                           </button>
                         )}
-                        <div className="flex items-center justify-between mb-4">
-                          <div className={`p-2 rounded-lg ${isFree ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400' : 'bg-green-500/10 text-green-600 dark:text-green-400'}`}>
-                            {isFree ? <Gift className="w-5 h-5" /> : <Wallet className="w-5 h-5" />}
+                        <div className="flex items-center justify-between mb-2 md:mb-4">
+                          <div className={`p-1.5 md:p-2 rounded-lg ${isFree ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400' : 'bg-green-500/10 text-green-600 dark:text-green-400'}`}>
+                            {isFree ? <Gift className="w-4 h-4 md:w-5 md:h-5" /> : <Wallet className="w-4 h-4 md:w-5 md:h-5" />}
                           </div>
                           {isFree ? (
-                            <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20 text-[10px] mr-6">Influencer Free</Badge>
+                            <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20 text-[9px] md:text-[10px] px-1.5 py-0 mr-5 md:mr-6">Free</Badge>
                           ) : (
-                            <Badge variant="outline" className={`bg-green-500/5 text-green-600 border-green-500/20 text-[10px] ${hasInfluencer ? 'mr-6' : ''}`}>Journal Fund</Badge>
+                            <Badge variant="outline" className={`bg-green-500/5 text-green-600 border-green-500/20 text-[9px] md:text-[10px] px-1.5 py-0 ${hasInfluencer ? 'mr-5 md:mr-6' : ''}`}>Fund</Badge>
                           )}
                         </div>
-                        <div className="space-y-1">
-                          <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Available Balance</p>
-                          <h4 className={`text-2xl font-black flex items-baseline gap-1 ${journalFundBase < 0 ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-900 dark:text-white'}`}>
+                        <div className="space-y-0.5">
+                          <p className="text-[10px] md:text-sm font-medium text-slate-500 dark:text-slate-400">Available Balance</p>
+                          <h4 className={`text-lg md:text-2xl font-black flex items-baseline gap-0.5 ${journalFundBase < 0 ? 'text-red-600' : isLow ? 'text-amber-600' : 'text-slate-900 dark:text-white'}`}>
                             ₹{Math.max(0, journalFundBase).toFixed(2)}
                           </h4>
                           {isFree ? (
-                            <div className="flex items-center gap-1.5 mt-1">
-                              <Clock className="w-3 h-3 text-pink-500" />
-                              <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{daysLeft} days free left • Expires {new Date(influencerPeriod!.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                            <div className="flex items-center gap-1 mt-0.5">
+                              <Clock className="w-2.5 h-2.5 text-pink-500 shrink-0" />
+                              <span className="text-[9px] md:text-[10px] font-bold text-pink-600 dark:text-pink-400">{daysLeft}d free</span>
                             </div>
                           ) : (
                             <button
                               onClick={() => setShowJournalChargesDialog(true)}
-                              className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-colors mt-1"
+                              className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-violet-50 dark:bg-violet-500/10 border border-violet-200 dark:border-violet-500/30 hover:bg-violet-100 dark:hover:bg-violet-500/20 transition-colors mt-1"
                               data-testid="button-journal-charges-info"
                             >
-                              <span className="text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-tight">
-                                {tradeHistoryData.length} trades × ₹2 + 18% GST
+                              <span className="text-[9px] md:text-[10px] font-bold text-violet-600 dark:text-violet-400 uppercase tracking-tight">
+                                {tradeHistoryData.length}t × ₹2+GST
                               </span>
-                              <Info className="w-3 h-3 text-violet-400 dark:text-violet-500 flex-shrink-0" />
+                              <Info className="w-2.5 h-2.5 text-violet-400 dark:text-violet-500 shrink-0" />
                             </button>
                           )}
                         </div>
-                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-2">
+                        <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center gap-1.5 md:gap-2">
                           <button
                             disabled
                             title="Payment gateway not integrated yet"
-                            className="flex-1 py-1.5 px-3 rounded-lg bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 text-[11px] font-bold flex items-center justify-center gap-1 cursor-not-allowed opacity-50"
+                            className="flex-1 py-1 md:py-1.5 px-2 md:px-3 rounded-lg bg-slate-100 dark:bg-slate-800/60 text-slate-400 dark:text-slate-500 text-[10px] md:text-[11px] font-bold flex items-center justify-center gap-1 cursor-not-allowed opacity-50"
                             data-testid="button-add-fund"
                           >
-                            <Plus className="w-3 h-3" />
-                            Add Fund
+                            <Plus className="w-2.5 h-2.5" />
+                            Add
                           </button>
                           <button
                             onClick={() => setShowReferDialog(true)}
-                            className="flex-1 py-1.5 px-3 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
+                            className="flex-1 py-1 md:py-1.5 px-2 md:px-3 rounded-lg bg-violet-500/10 hover:bg-violet-500/20 text-violet-600 dark:text-violet-400 text-[10px] md:text-[11px] font-bold flex items-center justify-center gap-1 transition-colors"
                             data-testid="button-refer-friend"
                           >
-                            <UserPlus className="w-3 h-3" />
+                            <UserPlus className="w-2.5 h-2.5" />
                             Refer
                           </button>
                         </div>
                         {isFree ? (
-                          <p className="text-[9px] text-pink-600 dark:text-pink-400 font-medium mt-2">🎁 Influencer offer — no journal charges during free period</p>
+                          <p className="text-[9px] text-pink-600 dark:text-pink-400 font-medium mt-1.5">🎁 No charges during free period</p>
                         ) : (
-                          <p className="text-[9px] text-green-600 dark:text-green-400 font-medium mt-2">🎁 ₹1,000 joining offer applied</p>
+                          <p className="text-[9px] text-green-600 dark:text-green-400 font-medium mt-1.5">🎁 ₹1,000 joining offer applied</p>
                         )}
                       </div>
                     );
@@ -438,53 +438,50 @@ export function FundsAnalysis({
 
                     return (
                       <div
-                        className={`bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer relative ${isFree ? 'border-pink-300/60 dark:border-pink-700/40' : 'border-white/40 dark:border-white/10'}`}
+                        className={`bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-3 md:p-5 rounded-xl md:rounded-2xl border shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1 cursor-pointer relative ${isFree ? 'border-pink-300/60 dark:border-pink-700/40' : 'border-white/40 dark:border-white/10'}`}
                         onClick={() => { if (!isFree) setShowJournalChargesDialog(true); }}
                         data-testid="journal-charges-card"
                       >
-                        <div className="flex items-center justify-between mb-4">
-                          <div className={`p-2 rounded-lg ${isFree ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400' : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'}`}>
-                            {isFree ? <Gift className="w-5 h-5" /> : <Receipt className="w-5 h-5" />}
+                        <div className="flex items-center justify-between mb-2 md:mb-4">
+                          <div className={`p-1.5 md:p-2 rounded-lg ${isFree ? 'bg-pink-500/10 text-pink-600 dark:text-pink-400' : 'bg-violet-500/10 text-violet-600 dark:text-violet-400'}`}>
+                            {isFree ? <Gift className="w-4 h-4 md:w-5 md:h-5" /> : <Receipt className="w-4 h-4 md:w-5 md:h-5" />}
                           </div>
                           {isFree ? (
-                            <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20 text-[10px]">No Charges</Badge>
+                            <Badge variant="outline" className="bg-pink-500/5 text-pink-600 border-pink-500/20 text-[9px] md:text-[10px] px-1.5 py-0">Free</Badge>
                           ) : (
-                            <Badge variant="outline" className="bg-violet-500/5 text-violet-600 border-violet-500/20 text-[10px]">Today's Fee</Badge>
+                            <Badge variant="outline" className="bg-violet-500/5 text-violet-600 border-violet-500/20 text-[9px] md:text-[10px] px-1.5 py-0">Fee</Badge>
                           )}
                         </div>
                         {isFree ? (
-                          <div className="space-y-2">
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Journal Charges</p>
-                            <h4 className="text-2xl font-black text-pink-600 dark:text-pink-400 flex items-baseline gap-1 line-through decoration-1 opacity-50">
+                          <div className="space-y-1">
+                            <p className="text-[10px] md:text-sm font-medium text-slate-500 dark:text-slate-400">Journal Charges</p>
+                            <h4 className="text-lg md:text-2xl font-black text-pink-600 dark:text-pink-400 flex items-baseline gap-0.5 line-through decoration-1 opacity-50">
                               ₹{totalCharge.toFixed(2)}
                             </h4>
-                            <div className="flex items-center gap-1.5">
-                              <Gift className="w-3.5 h-3.5 text-pink-500" />
-                              <span className="text-sm font-black text-green-600 dark:text-green-400">₹0.00 — Free!</span>
+                            <div className="flex items-center gap-1">
+                              <Gift className="w-3 h-3 text-pink-500" />
+                              <span className="text-xs md:text-sm font-black text-green-600 dark:text-green-400">₹0 — Free!</span>
                             </div>
-                            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800">
-                              <Clock className="w-3 h-3 text-pink-500 flex-shrink-0" />
-                              <span className="text-[10px] font-bold text-pink-600 dark:text-pink-400">{daysLeft} days remaining in free period</span>
+                            <div className="flex items-center gap-1 px-2 py-1 rounded-xl bg-pink-50 dark:bg-pink-900/20 border border-pink-200 dark:border-pink-800">
+                              <Clock className="w-2.5 h-2.5 text-pink-500 shrink-0" />
+                              <span className="text-[9px] md:text-[10px] font-bold text-pink-600 dark:text-pink-400">{daysLeft}d left</span>
                             </div>
-                            <p className="text-[10px] text-pink-500 dark:text-pink-400">
-                              Expires {new Date(influencerPeriod!.expiryDate).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
-                            </p>
                           </div>
                         ) : (
-                          <div className="space-y-1">
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Journal Charges</p>
-                            <h4 className="text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-1">
+                          <div className="space-y-0.5">
+                            <p className="text-[10px] md:text-sm font-medium text-slate-500 dark:text-slate-400">Journal Charges</p>
+                            <h4 className="text-lg md:text-2xl font-black text-slate-900 dark:text-white flex items-baseline gap-0.5">
                               ₹{totalCharge.toFixed(2)}
                             </h4>
-                            <p className="text-[10px] text-slate-400 dark:text-slate-500">
-                              {tradeCount} trade{tradeCount !== 1 ? 's' : ''} × ₹2 + 18% GST
+                            <p className="text-[9px] md:text-[10px] text-slate-400 dark:text-slate-500">
+                              {tradeCount}t × ₹2 + 18% GST
                             </p>
                           </div>
                         )}
-                        <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                        <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
                           <span className="flex items-center gap-1">
                             {isOverTrading && <span className="text-orange-500">⚠</span>}
-                            {isFree ? 'Influencer Offer' : isOverTrading ? 'Over-Trading' : 'Current Day'}
+                            {isFree ? 'Free' : isOverTrading ? 'Over-Trading' : 'Today'}
                           </span>
                           <div className="flex gap-1">
                             <div className={`w-1 h-1 rounded-full ${isFree ? 'bg-pink-500' : 'bg-violet-500'}`} />
@@ -497,18 +494,18 @@ export function FundsAnalysis({
                   })()}
 
                   {/* P&L Impact Card */}
-                  <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-5 rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="p-2 bg-indigo-500/10 rounded-lg text-indigo-600 dark:text-indigo-400">
-                        <Activity className="w-5 h-5" />
+                  <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl p-3 md:p-5 rounded-xl md:rounded-2xl border border-white/40 dark:border-white/10 shadow-sm group hover:shadow-md transition-all duration-300 hover:-translate-y-1">
+                    <div className="flex items-center justify-between mb-2 md:mb-4">
+                      <div className="p-1.5 md:p-2 bg-indigo-500/10 rounded-lg text-indigo-600 dark:text-indigo-400">
+                        <Activity className="w-4 h-4 md:w-5 md:h-5" />
                       </div>
-                      <Badge variant="outline" className="bg-indigo-500/5 text-indigo-600 border-indigo-500/20">P&L Impact</Badge>
+                      <Badge variant="outline" className="bg-indigo-500/5 text-indigo-600 border-indigo-500/20 text-[9px] md:text-xs px-1.5 py-0">P&L</Badge>
                     </div>
-                    <div className="space-y-1">
+                    <div className="space-y-0.5">
                       <div className="flex items-center justify-between">
-                        <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Unrealized P&L</p>
-                        <div className="flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-                          <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Inff. Brokerage</span>
+                        <p className="text-[10px] md:text-sm font-medium text-slate-500 dark:text-slate-400">Unrealized P&L</p>
+                        <div className="flex items-center gap-1 px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                          <span className="text-[9px] md:text-[10px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-tight">Brokerage</span>
                           <Dialog>
                             <DialogTrigger asChild>
                               <button className="text-slate-400 hover:text-indigo-500 transition-colors">
@@ -593,14 +590,14 @@ export function FundsAnalysis({
                           </Dialog>
                         </div>
                       </div>
-                      <h4 className={`text-2xl font-black flex items-baseline gap-1 ${performanceMetrics.netPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                      <h4 className={`text-lg md:text-2xl font-black flex items-baseline gap-0.5 ${performanceMetrics.netPnL >= 0 ? 'text-green-600' : 'text-red-600'}`}>
                         {activeBroker === 'delta' ? '$' : '₹'}
                         {performanceMetrics.netPnL.toLocaleString(activeBroker === 'delta' ? 'en-US' : 'en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </h4>
-                      <div className="flex items-center gap-1 mt-1">
-                        <span className="text-[10px] font-medium text-slate-400 uppercase">Est. Brokerage:</span>
+                      <div className="flex items-center gap-1 mt-0.5">
+                        <span className="text-[9px] md:text-[10px] font-medium text-slate-400 uppercase">Brokerage:</span>
                         <span
-                          className="text-[10px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
+                          className="text-[9px] md:text-[10px] font-bold text-slate-600 dark:text-slate-300 cursor-pointer hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors"
                           onClick={() => setShowBrokerageChargesDialog(true)}
                           data-testid="brokerage-amount-clickable"
                         >
@@ -640,8 +637,8 @@ export function FundsAnalysis({
                         </span>
                       </div>
                     </div>
-                    <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                      <span>Current Session</span>
+                    <div className="mt-2 md:mt-4 pt-2 md:pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[9px] md:text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+                      <span>Session</span>
                       <div className="flex gap-1">
                         <div className="w-1 h-1 rounded-full bg-indigo-500" />
                         <div className="w-1 h-1 rounded-full bg-indigo-500/40" />

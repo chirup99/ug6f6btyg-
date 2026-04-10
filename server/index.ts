@@ -306,9 +306,25 @@ const shutdown = (signal: string) => {
 process.on('SIGTERM', () => shutdown('SIGTERM'));
 process.on('SIGINT',  () => shutdown('SIGINT'));
 
-server.listen(listenOptions, () => {
+// Retry listen so a slow-dying previous process doesn't permanently block startup
+const startListen = (attemptsLeft = 8) => {
+  server.listen(listenOptions, () => {
     log(`serving on port ${port}`);
     log(`Server ready - environment: ${app.get("env")}`);
+    startBackgroundTasks();
+  });
+  server.once('error', (err: any) => {
+    if (err.code === 'EADDRINUSE' && attemptsLeft > 0) {
+      log(`Port ${port} busy — retrying in 1s (${attemptsLeft} attempts left)`);
+      server.removeAllListeners('error');
+      setTimeout(() => startListen(attemptsLeft - 1), 1000);
+    } else {
+      throw err;
+    }
+  });
+};
+
+const startBackgroundTasks = () => {
     
     // Start background tasks AFTER server is ready and health check passes
     // Delay startup to ensure Cloud Run health check succeeds first
@@ -431,5 +447,7 @@ server.listen(listenOptions, () => {
           console.log('⚠️  Server will continue running without live streaming');
         });
     }, 5000); // Delay background tasks by 5 seconds for Cloud Run health check
-  });
+};
+
+startListen();
 })();

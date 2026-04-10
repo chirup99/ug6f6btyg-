@@ -7577,56 +7577,45 @@ const [zerodhaTradesDialog, setZerodhaTradesDialog] = useState(false);
     }
   }, [zerodhaAccessToken, upstoxAccessToken, userAngelOneToken, dhanAccessToken, growwAccessToken, deltaExchangeIsConnected, deltaExchangeApiKey]);
 
-  // Fetch broker positions as soon as the modal opens (prefetch in background regardless of active tab)
+  // Fetch broker positions in background as soon as broker connects (same as orders).
+  // Modal-open switches to fast 600ms polling; background uses 5s (same as orders) to avoid hammering the API.
   useEffect(() => {
-    if (showOrderModal && activeBroker) {
-      let cancelled = false;
-      let firstFetchDone = false;
-      const fetchPositions = async () => {
-        try {
-          const { token, positionsEp: endpoint } = getBrokerEndpoints(activeBroker);
-          const broker = activeBroker || '';
-
-          if (!endpoint) return;
-
-          if (!firstFetchDone) setFetchingBrokerPositions(true);
-
-          const res = await fetch(endpoint, {
-            headers: { 'Authorization': `Bearer ${token}` }
-          });
-          if (cancelled) return;
-          // On any error, leave the existing positions on screen — don't blank them out
-          if (!res.ok) {
-            if (res.status === 401) {
-              console.warn('⚠️ [POSITIONS] Session expired, please reconnect broker');
-            }
-            if (!firstFetchDone) { firstFetchDone = true; setFetchingBrokerPositions(false); }
-            return;
-          }
-          const data = await res.json();
-          if (cancelled) return;
-          const positions = data.positions || [];
-
-          // Always update so LTP / P&L changes from the broker are reflected every poll
-          setBrokerPositions(positions);
-          console.log('✅ [POSITIONS]', broker, 'Updated', positions.length, 'positions');
+    if (!activeBroker) return;
+    let cancelled = false;
+    let firstFetchDone = false;
+    const fetchPositions = async () => {
+      if (cancelled) return;
+      try {
+        const { token, positionsEp: endpoint } = getBrokerEndpoints(activeBroker);
+        const broker = activeBroker || '';
+        if (!endpoint) return;
+        if (!firstFetchDone) setFetchingBrokerPositions(true);
+        const res = await fetch(endpoint, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (cancelled) return;
+        if (!res.ok) {
+          if (res.status === 401) console.warn('⚠️ [POSITIONS] Session expired, please reconnect broker');
           if (!firstFetchDone) { firstFetchDone = true; setFetchingBrokerPositions(false); }
-        } catch (err) {
-          // Silent fail — keep whatever is currently displayed, don't blank out
-          if (!cancelled) console.error('❌ [POSITIONS] Error fetching positions:', err);
-          if (!firstFetchDone) { firstFetchDone = true; setFetchingBrokerPositions(false); }
+          return;
         }
-      };
-
-      // Fetch positions immediately when modal opens — data is ready before user even clicks the tab
-      fetchPositions();
-
-      // Poll every 600ms so LTP / P&L values stay live
-      const pollInterval = setInterval(fetchPositions, 600);
-
-      // Cleanup: clear interval and mark cancelled to prevent stale state updates
-      return () => { cancelled = true; clearInterval(pollInterval); setFetchingBrokerPositions(false); };
-    }
+        const data = await res.json();
+        if (cancelled) return;
+        const positions = data.positions || [];
+        setBrokerPositions(positions);
+        console.log('✅ [POSITIONS]', broker, 'Updated', positions.length, 'positions');
+        if (!firstFetchDone) { firstFetchDone = true; setFetchingBrokerPositions(false); }
+      } catch (err) {
+        if (!cancelled) console.error('❌ [POSITIONS] Error fetching positions:', err);
+        if (!firstFetchDone) { firstFetchDone = true; setFetchingBrokerPositions(false); }
+      }
+    };
+    // Fetch immediately on broker connect so data is cached before dialog opens
+    fetchPositions();
+    // Fast 600ms when modal is open, slow 5s otherwise (same frequency as orders background polling)
+    const interval = showOrderModal ? 600 : 5000;
+    const pollInterval = setInterval(fetchPositions, interval);
+    return () => { cancelled = true; clearInterval(pollInterval); setFetchingBrokerPositions(false); };
   }, [activeBroker, showOrderModal, getBrokerEndpoints]);
   const [brokerOrders, setBrokerOrders] = useState<any[]>([]);
   const [fetchingBrokerOrders, setFetchingBrokerOrders] = useState(false);
